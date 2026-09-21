@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Screen Capture (see docs/ai/ARCHITECTURE.md).
+
+    Deliberately dependency-free and UI-free. The Windows.Graphics.Capture and
+    Windows.Graphics.Imaging projections come from the Microsoft.Windows.SDK.NET.Ref
+    reference pack that ships with the .NET SDK, selected purely by the TargetFramework —
+    so there is still no PackageReference anywhere, and no Windows App SDK is taken here.
+    A future WinUI 3 shell consumes this module as-is.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.ScreenCapture</RootNamespace>
+    <AssemblyName>HeyGanesh.ScreenCapture</AssemblyName>
+  </PropertyGroup>
+
+</Project>

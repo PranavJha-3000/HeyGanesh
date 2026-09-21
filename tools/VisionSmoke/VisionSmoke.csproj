@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Vision / Coordinate Detection module (see docs/ai/ARCHITECTURE.md).
+
+    Not product code: it exists so the module can be proven end-to-end against a real screen and a real
+    model call before any app shell, Context Orchestrator or Screen Overlay exists. Delete once the app
+    can host Vision itself (see docs/ai/HANDOVER.md). It mirrors tools/ScreenCaptureSmoke.csproj: same
+    dependency-free stance (Windows.Graphics.* come from the TargetFramework, no PackageReference), and
+    the same per-monitor-v2 DPI awareness requirement.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.VisionSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.VisionSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HeyGanesh.Vision\HeyGanesh.Vision.csproj" />
+  </ItemGroup>
+
+</Project>

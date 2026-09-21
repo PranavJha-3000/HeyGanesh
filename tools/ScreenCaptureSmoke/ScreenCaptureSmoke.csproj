@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Screen Capture module.
+    Not product code: it exists so the module can be proven on a real desktop before any app
+    shell, Context Orchestrator or Screen Overlay exists. Delete it once the app can host the
+    module itself (see docs/ai/HANDOVER.md).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.ScreenCaptureSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.ScreenCaptureSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Global Hotkey Monitor (see docs/ai/ARCHITECTURE.md).
+
+    Deliberately dependency-free and UI-free: BCL + Win32 P/Invoke only.
+    No WinUI / Windows App SDK reference is taken here so the future app shell can
+    consume this module without dragging UI types into it — and so this project
+    builds and can be verified standalone, before any app shell exists.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.GlobalHotkeyMonitor</RootNamespace>
+    <AssemblyName>HeyGanesh.GlobalHotkeyMonitor</AssemblyName>
+  </PropertyGroup>
+
+</Project>

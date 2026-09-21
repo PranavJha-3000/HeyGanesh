@@ -1,0 +1,10 @@
+# Build output
+bin/
+obj/
+
+# Tool/IDE local state
+*.user
+.vs/
+
+# Hotkey smoke harness event log (see tools/HotkeySmoke)
+smoke.log

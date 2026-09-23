@@ -9,8 +9,10 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
-| [DEC-007](#dec-007--2026-09-21--glm-53-flash) | 2026-09-21 | GLM-5.3-Flash / Laguna S 2.1 | Vision via injectable `IVisionClient`; direct-key stopgap pending the API key security proxy | accepted |
-| [DEC-006](#dec-006--2026-09-21--glm-53-flash) | 2026-09-21 | GLM-5.3-Flash / Laguna S 2.1 | Vision on DeepSeek with a 0..1000 grid + blend/consistency confidence (no resolution matching) | accepted |
+| [DEC-009](#dec-009--2026-09-22--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-22 | Cline agent (model id not exposed to the agent) | Primary/fallback result-type unification deferred to the Context Orchestrator; SelectionResult/VisionResult kept separate-but-uniform, fallback gate deferred to a future Jev component | accepted |
+| [DEC-008](#dec-008--2026-09-22--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-22 | Cline agent (model id not exposed to the agent) | Element Selection primary (UIA+Jev jev-1.13.0, 120-cap, none-option + hallucination guard); Vision fallback | accepted |
+| [DEC-007](#dec-007--2026-09-22--laguna-s-21) | 2026-09-22 | Laguna S 2.1 | Temporary direct DeepSeek key from `DEEPSEEK_API_KEY` env var behind an injectable `IVisionClient` seam, pending the API key security proxy | accepted |
+| [DEC-006](#dec-006--2026-09-22--laguna-s-21) | 2026-09-22 | Laguna S 2.1 | Vision asks `deepseek-flash` for a 0..1000 grid box in JSON mode and derives consistency across samples; no standard-resolution preprocessing for DeepSeek | accepted |
 | [DEC-005](#dec-005--2026-09-21--glm-53-flash) | 2026-09-21 | GLM-5.3-Flash | Self-exclusion via `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` on our own windows | accepted |
 | [DEC-004](#dec-004--2026-09-21--glm-53-flash) | 2026-09-21 | GLM-5.3-Flash | Screen Capture on Windows.Graphics.Capture with zero dependencies; bounded settle window | accepted |
 | [DEC-003](#dec-003--2026-09-21--glm-53-flash) | 2026-09-21 | GLM-5.3-Flash | No automatic re-hook watchdog for the silent-unhook case (deferred) | accepted |
@@ -21,49 +23,110 @@
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
 
-## DEC-007 — 2026-09-21 — GLM-5.3-Flash / Laguna S 2.1
+## DEC-009 — 2026-09-22 — Cline agent (model id not exposed to the agent)
 
 - **Status:** accepted
-- **Decision:** Vision reaches DeepSeek through the injectable `IVisionClient` seam (one method, `AskAsync`); the only implementation today is a direct `DeepSeekVisionClient` that reads `DEEPSEEK_API_KEY` from the environment as an explicitly-temporary stopgap, overridable to a proxy via `VisionOptions.BaseUrl`. VisionService never sees a key and is unchanged when the proxy lands.
+- **Decision:** Primary (Element Selection) and fallback (Vision) results stay as deliberately SEPARATE types — `SelectionResult.cs` states the two modules "must not reference each other (DEC-008)" — but are kept UNIFORM in shape (Found, Description, BoxOnScreen/CenterOnScreen in global physical pixels, a three-tier Confidence at 0.8/0.5 boundaries, plus the raw probability signals) so a future Context Orchestrator can consume both paths behind a single consumer and a future Jev confidence-gate (`SelectionResult.cs`: "a future Jev confidence-gate can branch on" the tier) decides ES→Vision fallback. No shared result type, abstraction assembly, or resolver is introduced now; unification is deferred until the Context Orchestrator exists.
 
 ### Context / alternatives considered
-- Option A — `IVisionClient` seam with direct-HTTP default now, proxy later.
-- Option B — raw `HttpClient` injected into VisionService.
-- Option C — `DelegatingHandler` on the client's pipeline.
+- `SelectionResult` and `VisionResult` already carry parallel verdicts (Found, Description, BoxOnScreen/CenterOnScreen, three-tier Confidence, raw signals), which is what makes a uniform consumer shape possible today.
+- Option A — unify behind one shared result type + a resolver now. Option B — Vision-centric (let VisionResult drive). Option C — keep both types, uniform in shape, defer unification.
 
 ### Chosen because
-- The proxy is a different auth topology, not a transport tweak: a separate type keeps it greppable, testable, and swappable in one constructor argument. The key never appears in the module contract, in logs (presence/length only), or in any committed file.
+- Option C: smallest blast radius, touches no working module, and the shape parity is already provable from the code. Option A would force a cross-module reference that `SelectionResult.cs` forbids now; Option B inverts the ES-primary / Vision-fallback contract (DEC-008).
 
 ### Rejected because
-- Option B — leaks transport concerns into the service and cannot express a proxy that rewrites bodies/auth.
-- Option C — couples the proxy to the client's HTTP internals rather than to a clean boundary.
+- Option A — a shared type + resolver requires one module to reference the other (or a new abstraction), violating "the two modules must not reference each other" and shipping a resolver before its consumer (the Context Orchestrator) exists.
+- Option B — Vision-centric unification inverts DEC-008's ES-primary ordering.
 
 ### Consequences
-- **RISK (explicit, temporary):** until the API key security proxy module exists, the key lives in the shell/process environment (inherited by children), transits to `api.deepseek.com` from the client, and could land inside a screen capture if visible in a terminal. The harness never echoes it; `--fake` exists for keyless verification. This exception dies when the proxy module lands.
-- **Privacy (CONSTRAINTS-relevant, undecided):** screens are sent to a cloud API by design; redaction/off-peak policy belongs to a future constraints decision, not to this module.
+- **Deferred (explicit):** no shared result type, abstraction assembly, or resolver exists in this tree; the uniform `SelectionResult` / `VisionResult` shape and the 0.8/0.5 Confidence tiers are the only contract. Those names are a future, Context-Orchestrator-driven decision.
+- When the Context Orchestrator lands, DEC-008's fallback policy applies: empty tree / unmapped choice / UIA access-denied / no-choice → Vision; `Confidence == High` and a non-degraded verdict accept Element Selection.
+- ConfidenceLevel stays classification here, not a gate — the gate belongs to a future Jev component (`SelectionResult.cs`: "a future Jev confidence-gate can branch on").
 
-## DEC-006 — 2026-09-21 — GLM-5.3-Flash / Laguna S 2.1
+## DEC-008 — 2026-09-22 — Cline agent (model id not exposed to the agent)
 
 - **Status:** accepted
-- **Decision:** Vision grounds elements with DeepSeek (`deepseek-flash`) over a **0..1000 integer grid** on the JPEG, no aspect-ratio preprocessing (the provider accepts any ratio; resizing would add distortion), temp **0.7** with **2 samples** driving a pairwise-center **consistency** signal blended 50/50 with the model's self-reported confidence into a High/Medium/Low verdict for a future Jev gate.
+- **Decision:** Element Selection is the PRIMARY coordinate-detection path (`ElementSelectionService.cs`: "the PRIMARY coordinate-detection path (DEC-008)"): it enumerates the target window's UIA tree, caps it to an interactive candidate manifest (MaxCandidates default 120; text/pane/group/custom controls are deliberately excluded as dense-text territory), and has Jev (model id `jev-1.13.0`, TypeSafe System One "choice" API at `api.typesafe.ai`; bearer key read from `TYPESAFE_API_KEY`) select among the offered `c001..` candidate ids; the selected candidate's UIA BoundingRectangle is the coordinate answer. DeepSeek Vision is the FALLBACK, invoked only when Element Selection returns a Failed result (no resolvable window, empty interactive tree, Jev returned no choice, or Jev chose an id never offered).
 
 ### Context / alternatives considered
-- Option A — pixels; Option B — 0..1 floats; Option C — 0..1000 integer grid.
-- Standard-resolution matching (Clicky's approach): confirmed unnecessary for DeepSeek; rejected.
-- JSON-mode-only parsing: rejected as a single point of failure (documented empty-content mode); tolerant fallback + one retry.
-- Temp 0 sampling: rejected — agreement by construction makes the consistency signal always 1.0.
-- Single signal (model confidence only): rejected — self-reports are poorly calibrated.
+- Candidate enumeration via UIA using hand-declared classic-COM interop (no WPF, no UIA SDK package, no `<COMReference>`; on .NET Core MSBuild this is rejected with MSB4803 and no Tlbimp host is present).
+- Jev as the System One bounded-choice selector only: it receives the candidate ids plus the question and returns one id (or the synthetic `none` option) — never free text, never coordinates, never geometry (`IJevClient.cs`: "Jev returns typed decisions only — a choice among offered options … never free text, never coordinates").
+- Vision over DeepSeek pixels (model `deepseek-flash`, 0..1000 integer grid); Vision-primary was the pre-ES design (DEC-006/007).
 
 ### Chosen because
-- The integer grid follows the Qwen-VL convention for exactly this problem; exact dimensions in the prompt remove scale ambiguity without touching the image; two samples at 0.7 keep accuracy while making variance measurable; `VisionResult` carries both raw inputs so Jev owns thresholds, not Vision.
+- UIA exposes real structure; Jev selects among real candidates → the answer is an exact UIA rectangle rather than a visual estimate. For an interaction-target question (click Save) the UIA rectangle is authoritative; Vision is strongest for the excluded dense-text case. The `none` escape (`SelectionOptions.IncludeNoneOption`, default true) makes an honest no-match possible, and the hallucination guard (Jev choosing an unmapped id is refused — `MapResponse`) makes coordinate fabrication impossible.
 
 ### Rejected because
-- Pixels force the model to guess the image's internal scale (encoders tile/resize); floats are emitted less reliably than integers; Clicky-style resizing solves a problem this provider does not have.
+- Vision-primary — least accurate for dense text (where-does-it-say-X) and imprecise for interaction targets; it also costs a screen capture on the happy path this module avoids.
+- A shared result type + resolver now — deferred to DEC-009 until the Context Orchestrator exists to consume it.
 
 ### Consequences
+- Public surface: `ElementSelectionService.SelectAsync(string question, SelectionTarget? target = null, CancellationToken ct = default) -> Task<SelectionResult>` (`SelectionTarget`: CursorWindow default, ForegroundWindow). `SelectionResult` mirrors `VisionResult` — Found, Description, BoxOnScreen/CenterOnScreen in global physical px, ConfidenceLevel (High≥0.8 / Medium≥0.5), raw JevConfidence/WinnerProbability/NoneProbability/PlausibleProbability, plus diagnostics (Latency, InputTokens/OutputTokens, ModelId, candidate counts, Target, chosen UiaCandidate, FailureReason; `Failed => FailureReason != null`). `IJevClient` is the transport seam; `SelectionOptions` (MaxCandidates=120, ModelId=`jev-1.13.0`, BaseUrl=`api.typesafe.ai`, IncludeNoneOption=true, PerCallTimeout=30s).
+- Geometry reuses `PixelRect` (ScreenCapture) in global physical screen pixels (DEC-003); DPI awareness stays the host's decision.
+- **Threshold-free by contract** (same as Vision/DEC-006): raw signals are surfaced, not thresholded — the 0.8/0.5 tier (`blended = 0.5 * JevConfidence + 0.5 * WinnerProbability`; `Mapping.cs`: `blended >= 0.8f ? ConfidenceLevel.High : blended >= 0.5f ? ConfidenceLevel.Medium : ConfidenceLevel.Low`) and the ES→Vision fallback decision belong to a future Jev confidence-gate (DEC-009).
+- **Guide-only (CONSTRAINTS.md):** locates and describes only; never moves the cursor, never focuses/activates, never injects input. The UIA `SetFocus` slot exists only to keep the COM vtable aligned.
+- Fallback triggers return a Failed `SelectionResult` (FailureReason), not exceptions — signals, not errors: no resolvable window; `COMException` / `InvalidOperationException` during enumeration; empty interactive tree (manifest.Count == 0); Jev no-choice; Jev chose `none`; or Jev chose an id not in the manifest (hallucination guard).
+- Keys: bearer read from `TYPESAFE_API_KEY` in TypeSafeJevClient, extending DEC-007's stopgap through a second seam; never in the module contract, logs (presence/length only), or committed files — ends when the API key security proxy lands as another `IJevClient`.
+
+## DEC-007 — 2026-09-22 — Laguna S 2.1
+
+- **Status:** accepted
+- **Decision:** Vision calls DeepSeek directly through an injectable `IVisionClient` seam, reading the bearer key from the `DEEPSEEK_API_KEY` environment variable at call time only. This direct-key path is an explicitly temporary stopgap that dies when the **API key security proxy** module lands.
+
+### Context / alternatives considered
+- **Option A — injectable `IVisionClient` seam + env-var key** (what VisionService depends on; `DeepSeekVisionClient` is today's implementation).
+- Option B — hardcode the endpoint/transport into VisionService and read the key there.
+- Option C — block Vision until the proxy module exists.
+- Option D — commit a dev key file alongside the code for the harness.
+
+### Chosen because
+- VisionService never touches a key, a URL, or HTTP: the proxy arrives later as another `IVisionClient` implementation (or as a `BaseUrl` redirect — both supported), with no change to the module. Clicky's key-isolation pattern is reproduced as a type boundary, not as prose intent.
+
+### Rejected because
+- Option B — couples transport to the module; a proxy that rewrites bodies/auth cannot be expressed as "just another HttpClient".
+- Option C — serialises the whole project behind one module; the seam makes the proxy a drop-in.
+- Option D — unacceptable: a committed key is a leaked key. The repo carries none (verified by scan).
+
+### Consequences
+- **Explicit key-handling risk until the proxy exists:** the key lives in a developer-shell environment (inheritable by child processes), transits directly to the provider, and could sit visibly in a terminal during a screen capture. Mitigations: harness never echoes it (presence/length only), fail-fast `KEY ERROR` (exit 12) when absent, loud TEMPORARY header on `DeepSeekVisionClient`, and this entry records the expiry condition.
+- Privacy/product note for the owner: this module sends screen contents to a cloud API. Redaction/off-peak policy belongs at the proxy layer and may become a CONSTRAINTS entry later.
+- The harness also accepts a recording fake `IVisionClient`, so the full parse→map→annotate path is verifiable with no key and no network (V-4).
+
+## DEC-006 — 2026-09-22 — Laguna S 2.1
+
+- **Status:** accepted
+- **Decision:** Vision sends the capture JPEG inline (base64 data URL) to model id `deepseek-flash` via OpenAI-compatible Chat Completions, in JSON mode with a prompt-pinned **0..1000 integer grid** coordinate convention, takes **2 samples at temperature 0.7** by default, and derives **consistency** (1 − mean pairwise centre distance / grid diagonal) alongside the model's self-reported confidence.
+
+### Context / alternatives considered
+- **Option A — 0..1000 integer grid, box + confidence, 2 samples @ 0.7** (chosen).
+- Option B — ask the model for raw pixel coordinates.
+- Option C — normalised 0..1 float coordinates.
+- Option D — single sample at temperature 0 (deterministic).
+- Option E — resize/match the JPEG to a standard resolution before sending (Clicky's habit).
+- Option F — self-reported confidence only, or no confidence at all.
+
+### Chosen because
+- Pixels force the model to guess internal scale (encoders tile/resize); ints are more reliably emitted than long decimals; and 2 @ 0.7 gives a measurable consistency signal (at temp 0 two samples agree by construction, so the signal would be permanently 1.0 and useless to Jev).
+- 1.28 px granularity at 1280 px width is finer than the model's own grounding error (RefCOCO 86.0), so the grid is not the limiting factor.
+
+### Rejected because
+- Option B — systematic scale drift; exactly the distortion Clicky's matching tried to avoid.
+- Option C — LLM decimal outputs are less reliable than integer grid outputs.
+- Option D — yields determinism but zero consistency signal; the Jev gate would have nothing to weight.
+- Option E — **answered by research, not assumed:** verified in the official DeepSeek vision docs (2026-09-21 session research) that V4.1-Flash accepts arbitrary aspect ratios natively (8192 px/side cap, any aspect, JPEG native). No standard-resolution matching is required or recommended; applying it would add distortion, not remove it. What removes scale ambiguity instead is stating exact image dimensions in the prompt + the grid convention.
+- Option F — self-reports are poorly calibrated; the feasibility concern (DeepSeek vision vs a dedicated coordinate tool) demands doubt be *measurable*. Both signals are carried so Jev can weight consistency heaviest.
+
+### Consequences
+- JSON mode needs the word "json" + schema example in the prompt; it is documented to occasionally return empty content, so parsing is tolerant (fence strip → strict JSON → regex) with one parse retry.
+- Out-of-grid values are parse failures (not silent clamps), so a scale-confused model cannot poison the result.
+- `detail: high` is the default (fidelity over tokens); `--max-dim` lets later accuracy work trade tokens for small-target recall.
+- Blank frames (Secure Desktop/elevated/RDP) short-circuit before any network call via the capture's non-black ratio.
+- `CoordinateMapper` is the single place scale conversion lives (grid → JPEG px → monitor px → screen px); screen-space output assumes a PerMonitorV2 host (standing DPI risk, now load-bearing for coordinates).
+- The blended High/Medium/Low verdict is Vision's *raw* signal only — `VisionResult` carries `RawConfidence` and `Consistency` separately so the future Jev gate owns thresholds, not Vision.
 - Grounding precision on dense desktop UI is still unproven (RefCOCO 86% is natural images): the visual hit-check + `--max-dim` tuning remain the evidence path; bad numbers are a feasibility finding, not a bug to hide.
-- `CoordinateMapper` is the only place scale conversion lives; screen-space output assumes a PerMonitorV2 host (standing DPI risk).
-- Out-of-range model answers are rejected, never clamped silently; blank frames short-circuit to `Failed` with `WasBlankFrame`.
+
+## DEC-005 — 2026-09-21 — GLM-5.3-Flash
 
 - **Status:** accepted
 - **Decision:** HeyGanesh's own windows mark themselves with `SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)`, exposed as `CaptureExclusion.TryExcludeFromCapture`. Screen Capture does **not** attempt to filter its own output; the OS omits marked windows from capture output, for every capture path, ours included.
@@ -126,7 +189,7 @@
 - **DPI awareness stays the host's decision.** Coordinates and frames are physical pixels; the library never calls `SetProcessDpiAwarenessContext` because that is process-global. The verification host sets `PerMonitorV2` itself, and this machine's 150% scaling makes the difference visible (2560x1600 physical vs 1707x1067 virtualised).
 - Each capture opens and closes its own session and pool, so no capture runs while the user is not asking a question. Verified: 25 consecutive captures, handle delta 1, flat managed heap.
 
-
+## DEC-003 — 2026-09-21 — GLM-5.3-Flash
 
 - **Status:** accepted
 - **Decision:** Do not build an automatic re-hook watchdog for the silent-unhook failure mode. Instead keep the hook callback trivial, publish diagnostics (`HookCallbackCount`, `MaxCallbackLatency`, `DroppedEventCount`, `LastError`), and document the failure mode.

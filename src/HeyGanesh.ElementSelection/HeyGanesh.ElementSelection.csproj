@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Element Selection (see docs/ai/ARCHITECTURE.md) — the primary coordinate-detection path (DEC-008).
+
+    Deliberately dependency-free: no PackageReference anywhere. UI Automation is reached through
+    hand-declared classic-COM interop (UiaInterop.cs) against UIAutomationClient's stable interfaces.
+    The originally-planned <COMReference> tlbimp route (see the git history of this file and DEC-008)
+    was rejected by the toolchain itself: "ResolveComReference" is not supported on .NET Core MSBuild
+    (MSB4803), and TlbImp.exe is not present on this machine. Risk containment for hand-interop, per
+    DEC-008: every GUID was verified against the live registry before being committed to source
+    (Interface\{...} and CLSID\{...} keys), vtable declarations are restricted to interface PREFIXES
+    (element properties are all read via GetCachedPropertyValue at slot 9 by property id, so the
+    declaration never reaches the deep property-getter region), and the verification host proves the
+    declarations against a real window every run (ES series in TEST-CHECKLIST.md).
+
+    The Jev transport needs only System.Net.Http + System.Text.Json from the shared framework (no
+    .NET SDK exists for TypeSafe — Python/JS only).
+
+    NOTE on the coordinate surface: candidates reuse HeyGanesh.ScreenCapture.PixelRect. UIA's
+    BoundingRectangle is already in global physical screen pixels — the same space as
+    MonitorInfo.Bounds. The verification host cross-checks the two (UIA root rect vs GetWindowRect)
+    so the "verify, don't recall" rule is enforced by a running check, not by memory.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.ElementSelection</RootNamespace>
+    <AssemblyName>HeyGanesh.ElementSelection</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+  </ItemGroup>
+
+</Project>

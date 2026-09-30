@@ -8,6 +8,11 @@
 
 | Date | Model / version | Headline | Branch / commit |
 |------|-----------------|----------|-----------------|
+| 2026-09-30 | Cline agent (model id not exposed to the agent) | App Shell wired to Voice — press listens, release ends the utterance, transcript becomes the question; `--question` demoted to legacy (DEC-014); SH-10..SH-14, live rows human-gated | `main` (working tree) |
+| 2026-09-30 | Cline agent (model id not exposed to the agent) | Voice pipeline built — Qwen Gateway GCP-7.0 listen seam with cancel/discard suppression + Fish WAV TTS behind `ITtsClient` (DEC-013); VO-1..VO-10 offline rows green, all live paths unrun | `main` (working tree) |
+| 2026-09-29 | Pixel Canary | App Shell built — the process host that wires hotkey → Context Orchestrator → Screen Overlay (DEC-012); offline rows SH-1..SH-8 green, live path still unrun | `main` (working tree) |
+| 2026-09-24 | Muse Spark (muse-spark) | Screen Overlay built — dependency-free Win32 click-through highlight over `GuidanceResult` (DEC-011, SO-1..SO-9, EX-5 ✅) | `main` (working tree) |
+| 2026-09-23 | Cline agent (Claude Sonnet 4.5) | Context Orchestrator built — ES primary, Vision fallback on failure only, normalized `GuidanceResult` (DEC-010) | `main` @ `8824568` (working tree) |
 | 2026-09-23 | Muse Spark (muse-spark) | Scoped the AGENTS.md invariants claim — enforced vs design-only groups | `main` @ `94a8af1` (working tree) |
 | 2026-09-23 | Muse Spark (muse-spark) | AGENTS.md sync to Element Selection reality + line-endings correction | `main` @ `94a8af1` (working tree) |
 | 2026-09-23 | Muse Spark (muse-spark) | ES doc sync to green (ARCHITECTURE/TEST-CHECKLIST) + host `choice` print fix | `main` @ `94a8af1` (working tree) |
@@ -21,6 +26,167 @@
 ---
 
 <!-- SESSION ENTRIES BELOW THIS LINE — newest first -->
+## 2026-09-30 — Cline agent (model id not exposed to the agent) — App Shell: the microphone is the question source
+
+- **Branch / commit:** `main` — working tree, uncommitted (`src/HeyGanesh.App/` is **untracked**, so a `git checkout` rollback cannot restore it; the file copies at `%TEMP%\hg-rollback-shell-20260930\` can — see ROLLBACK).
+- **Did:** `HeyGanesh.App` now composes one `VoiceService` (4th project-ref) and a chord turn is `Pressed → ListenOnceAsync (pool)`, `Released → end the utterance`, committed `FinalText → options.Question → the unchanged HandleHotkeyPressedAsync → ShowAsync`. `TriggerPump` became a 3-state machine (`Idle/Listening/Resolving`) with a per-turn CTS created on press and disposed by the next press / `RunDirectAsync` / `DrainAsync`. `--question` demoted to legacy: ignored with a warning in hooked mode, still deterministic under `--once`; `--once` without it runs one live listen. `SpeakAsync` is composed but never called (no Tutor). Exit 2 is now only "the shell could not start".
+- **Left / Watch:** `UtteranceResult.Failed` maps to **exit 1**, not 12/3 — the reason is a returned string and Voice is frozen, so the typed signal does not exist (DEC-014). **Release cannot force-commit** (no finalize call in the Voice API): releasing mid-sentence abandons the utterance, exit 0, no capture — this is the accepted limitation, not a bug. `IsNoSpeech` and a release-abandoned turn never reach the orchestrator. Press/release ordering and the IsNoSpeech short-circuit are human-gated; a `ShellSmoke` host with an injectable trigger is the filed follow-up. `OnReleased` cancels *outside* the gate on purpose (cancel callbacks re-take it) and relies on `hotkey.Stop()` joining the monitor thread before `DrainAsync` disposes — do not "tidy" that ordering.
+- **Next:** run SH-13/SH-14 live (Gateway + keys + mic) — that run also confirms the two GCP details DEC-013 left unverified — then build `ShellSmoke`; the Tutor Engine and `SpeakAsync` stay separate changes.
+- **Verified:** `dotnet build src\HeyGanesh.App` → 0 warnings/0 errors; `--help` 0; `--seconds 4` (no flag) hooks and exits 0; `--once --question` still exits 12 at the key gate (SH-4/7/8 intact); `--question x --seconds 4` warns and exits 0; `--once` with no Gateway → `VOICE FAILURE` exit 1, no capture, no crash; regression sweep green for VO/CO/SO rows. **Not verified:** SH-13, SH-14's silence half, and `HotkeySmoke --seconds 4` (needs real keystrokes; would not self-terminate here — two orphans killed; the hotkey module itself was not modified).
+
+## 2026-09-30 — Cline agent (model id not exposed to the agent) — Voice pipeline: the speech seam, not a second teacher
+
+- **Branch / commit:** `main` — working tree, uncommitted (App Shell / CO / Overlay work also uncommitted; HEAD `8824568`).
+- **Scope:** one logical change — build `src/HeyGanesh.Voice/` + `tools/VoiceSmoke/` as the speech in/out seam, with the Qwen Gateway as an external realtime frontend (Backend Agent off) and Fish TTS behind `ITtsClient`. No Tutor Engine, no shell rewiring (`--question` stays), no edits to ElementSelection / Vision / ContextOrchestrator / ScreenOverlay source, no WinUI/WPF, no new NuGet.
+
+### Done
+- `src/HeyGanesh.Voice/` — zero `PackageReference`, zero `ProjectReference`. Seams: `IVoiceListener`, `ITtsClient`, `IAudioOutput`, `IMicrophoneSource`; results: `UtteranceResult` (silence≠failure), `SpeakRequest`/`SpeakResult`; facade `VoiceService` (`ListenOnceAsync`/`SpeakAsync`, one session at a time, linked-token cancellation, refuse-not-queue).
+- **Qwen side:** `QwenGatewayClient` speaks the Gateway Client Protocol (wire 7.0): per-utterance socket, `session.hello` (input-only capabilities, `output_enabled=false`), version-checked `session.ready`, mic → `input_audio_buffer.append`, `transcript.final role=user` as the only question source. **Pre-generation suppression does not exist for live audio** (investigated: connection prefs are presentation, AgentDelivery context-mode is Client-Events-only, sleep/suspend/mute are capture-side) → cancel/discard after `response.started`, all assistant audio/transcripts discarded, everything counted in `GatewaySuppressionLedger` (DEC-013 L-1). `task.*` aborts (`AGENT_PROTOCOL=none`), health pre-flight asserts capability `realtime.conversation-client-v1` + backend-none when reported ("unknown" recorded, never trusted). Pure layer: `QwenGatewayProtocol.Classify`/builders — replay-testable with no Gateway.
+- **Fish side:** `FishTtsClient` behind `ITtsClient` — `POST /v1/tts`, `format=wav` @ 44100 (v1 enum `wav|pcm|mp3|opus`; WAV is the only zero-decoder choice), key from `FISH_AUDIO_API_KEY` at call time (DEC-007 pattern), HTTP `ResponseHeadersRead` = **transport streaming only** (no generation-streaming claim). `WavPcmReader` validates RIFF/PCM16/mono and fails loud.
+- **Devices:** `WinMmMicrophoneSource` (waveIn, 4 rotating buffers, static thunk + GCHandle) and `WinMmAudioOutput` (waveOut, `CALLBACK_EVENT`, cancellation = real `waveOutReset` stop) — P/Invoke we own, no audio package.
+- `tools/VoiceSmoke/` — offline rows over fakes + recorded frames: transcript/no-speech/auth/cancel/burst/speak + `--assert-gcp-events` / `--assert-tutor-authority` / `--assert-no-backend` / `--assert-fish-format`.
+- Docs: DEC-013, ARCHITECTURE Voice detail, FLOW Voice path, TEST-CHECKLIST VO-1..VO-10, this entry, FEATURE-004, rollback point, four AGENTS commands.
+
+### In progress / next
+- **Wire the shell:** move the trigger `Pressed` → `Released` (record on press, submit on release) and retire `--question` — FEATURE-003's filed follow-up, deliberately not mixed in here. Then the (future) Tutor Engine inserts between `ListenOnceAsync` and `SpeakAsync`.
+
+### Risks & gotchas
+- **L-1:** the frontend still *generates* an answer per utterance; we cancel its effects, not its occurrence. A generation the Gateway completes before our cancel is wasted cost, never wasted *audio* (VO-5 asserts the discard side).
+- **Known-unverified protocol details** (marked in TEST-CHECKLIST): `input_audio_buffer.append` payload field names (`audio`/`sample_rate`) and `session.ready`'s version field name — both live-only to confirm; VO-6 pins everything else. GCP takes **one active client per owner**: a listen evicts the operator's TUI/WebUI for the utterance's duration.
+- **Two real bugs this session's own rows caught:** `CALLBACK_EVENT` for waveform is `0x00050000` (the `0x00010000` window value made `waveOutOpen` fail with MMSYSERR 11), and the winmm `Describe` code→message table was off by N (code 4 is ALLOCATED, not NODRIVER). Both fixed before the row went green.
+- The health pre-flight treats "cannot reach/parse health" as `unknown`, not as safe — the `task.*` runtime abort is the guarantee that does not depend on the Gateway's honesty. `WaitToReadAsync` has no timeout overload on this TFM; the silence/utterance deadlines are enforced with a linked token + `CancelAfter` (do not "simplify" it into a blocking wait).
+
+### Files touched
+- `src/HeyGanesh.Voice/` — 29 new files (csproj + facade partials + seams/results/options/exceptions + Qwen options/client/protocol/ledger + Fish options/client/WAV reader + winmm P/Invoke/mic/speaker); `tools/VoiceSmoke/` — 6 new files (csproj + Program + host + rows + asserts + fakes). Full names are in the HANDOVER diff.
+- `docs/ai/features/FEATURE-004.md` — new ticket; `docs/ai/{DECISIONS,ARCHITECTURE,FLOW,TEST-CHECKLIST,ROLLBACK,HANDOVER}.md` + `AGENTS.md` — DEC-013, one module detail, one flow section, ten check rows, one rollback point, one entry, four commands.
+- No existing source file was edited.
+
+### Verification run (all run this session, all green)
+- `dotnet build src\HeyGanesh.Voice -c Debug` → **Build succeeded. 0 Warning(s) 0 Error(s)** (VO-1); same for `tools\VoiceSmoke` (after fixing an XML-comment `--` in the csproj).
+- `VoiceSmoke --fake-transcript "where is the Save button"` → verdict printed, exit **0** (VO-3); `--fake-nospeech` → `no speech: True`, no FAILURE line, exit **0** (VO-4).
+- `VoiceSmoke --fake-auth-error` → `KEY ERROR: …`, exit **12** (VO-10); `--cancel-ms 50` → `CANCELLED: … no verdict`, exit **13**; `--burst-fake` → `second ListenOnceAsync REFUSED (not queued)`, first completes, exit **0** (VO-9).
+- `--assert-gcp-events` → 20/20 PASS, exit **0** (VO-6); `--assert-tutor-authority` → 7/7 PASS, exit **0** (VO-5); `--assert-no-backend` → 4/4 PASS, exit **0** (VO-7); `--assert-fish-format` → 8/8 PASS, exit **0** (VO-8).
+- `--speak-fake --text "Found the Save button"` → `SpeakResult: 21 chars, 0.35s audio via fish-audio (327 ms)` through the **real** winmm speaker, exit **0** (VO-10).
+- **Not run / not verified:** every live path — real Gateway listen (incl. health capability/backend fields, append payload names, live suppression), real microphone capture, real Fish synthesis, and the listen-loop `task.*` abort end-to-end (its classifier+ledger half is VO-7 offline).
+
+## 2026-09-29 — Pixel Canary — App Shell: the process host that finally subscribes the hotkey
+
+- **Branch / commit:** `main` — working tree, uncommitted (the Context Orchestrator and Screen Overlay work is also still uncommitted; HEAD is `8824568`).
+- **Scope:** one logical change — build the App Shell, the first assembly that *drives* the pipeline rather than being driven by a verification host, closing the two gaps DEC-010 and DEC-011 deliberately left to it. No Voice pipeline, no WinUI/WPF, no tray icon, no Jev gate, no Tutor/Lesson/Notes/Proxy work, and **no edit to any existing source file**.
+
+### Done
+- `src/HeyGanesh.App/` — new `OutputType=Exe` console host, `net8.0-windows10.0.22621.0`, **zero `PackageReference`**; project-refs GlobalHotkeyMonitor + ContextOrchestrator + ScreenOverlay (ScreenCapture/ElementSelection/Vision arrive transitively and are used directly). Files: `Program.cs` (PerMonitorV2 first), `NativeFns.cs` (the one P/Invoke pair — set awareness, and read back what the process actually got), `ShellHost.cs` (composition root + lifecycle + `RunHookedAsync`), `ShellHost.Args.cs` (flags/usage/header), `ShellHost.Session.cs` (`RunSessionAsync` + `TriggerPump`).
+- The wiring DEC-010 left open: `monitor.Pressed` → `HandleHotkeyPressedAsync` → `ShowAsync`, with the handler handing the session to the thread pool so the hook callback is never blocked, and one-session-at-a-time enforced with the busy window spanning the overlay's visible duration. `--once` runs the **identical** method with no hook, so the scriptable path and the chord path cannot drift.
+- Shutdown ordered and bounded: release hook → cancel lifetime token → wait ≤5 s for the session in flight → reverse-declaration disposal (hotkey, overlay, orchestrator, legs, capture). The wait is what stops a session completing into a disposed overlay.
+- One `ScreenCaptureService` for the process, shared into `ScreenOverlayService` as its topology source (the overlay only disposes a capture service it created itself).
+- Exit-code contract carried over from the module hosts: 0 verdict (an honest no-match counts) / 1 failed verdict / 2 could not start / 3 provider error / 4 unexpected fault / 12 key missing / 13 cancelled.
+- Docs: `DECISIONS.md` **DEC-012** (dependency-free console shell; WinUI 3 deferred again; no test doubles in product code), `ARCHITECTURE.md` (module row + implemented section), `FLOW.md` (shell leg, redrawn diagram, corrected "entry point" prose), `TEST-CHECKLIST.md` (SH-1..SH-9), `ROLLBACK.md` (rollback point written *before* the change), `AGENTS.md` (subsystem row + run commands), `features/FEATURE-003.md` (new file), this entry.
+
+### In progress / next
+- **SH-9 is the one that matters and it is unrun:** with both keys set, hold Ctrl+Alt and confirm a real verdict becomes a real highlight that removes itself, then press twice in a row for `REFUSED`. Everything else about the shell is verified; the drawn verdict is not.
+- Then: decide the Voice trigger move (`Pressed` → `Released`, record on press / submit on release) and retire `--question`.
+
+### Risks & gotchas
+- **The shell has no `--fake` flags on purpose**, so its offline coverage stops exactly where the real key gates stop. Everything past the gate — the visible highlight, `--no-overlay`, the `--duration-ms` effect, the `REFUSED` overlap path, `not-per-monitor-dpi-aware` — is unverified, not unverifiable. If those rows need to be green offline, the seam to add is a `tools/ShellSmoke` that injects fake legs into the shell's composition — *not* fake flags in the product.
+- **A leg exception cannot be located to a pipeline stage from outside.** `ContextOrchestratorService` resets `Phase = Idle` in its catch-all before rethrowing, so `KEY ERROR (Vision)` and `KEY ERROR (Element Selection)` are distinguishable only by exception type. A phase diagnostic was added to the shell's leg-error paths, observed to print `Idle` for every thrown session, and **removed again** rather than shipped implying an answer it does not have. Changing that is the orchestrator's error contract to change, not a side effect of the shell.
+- **`HotkeyState` is the chord state, not the hook state.** After a successful `Start()`, `State` is `Idle` (nothing held) while `IsRunning` is `True`. The shell prints both; a single-value line read as a failed start.
+- **Watch the stale binary.** Running the shell in the same batch as its `dotnet build` executed the *previous* binary and briefly showed a diagnostic already deleted. Build, then run, then read.
+- **Cancellation is observed, not forced.** `--cancel-ms 10` aborted at ~704 ms and `--cancel-ms 300` at ~572 ms: the token is only seen at an await boundary and UIA enumeration is not cancellable mid-flight. Do not read the requested ms as the abort latency.
+
+### Files touched
+- `src/HeyGanesh.App/HeyGanesh.App.csproj`, `Program.cs`, `NativeFns.cs`, `ShellHost.cs`, `ShellHost.Args.cs`, `ShellHost.Session.cs` — new.
+- `docs/ai/features/FEATURE-003.md` — new ticket.
+- `docs/ai/DECISIONS.md`, `ARCHITECTURE.md`, `FLOW.md`, `TEST-CHECKLIST.md`, `ROLLBACK.md`, `HANDOVER.md`, `AGENTS.md` — one decision, one module, one flow leg, nine check rows, one rollback point, one entry, four commands.
+- No existing source file was edited.
+
+### Verification run
+- `dotnet build src\HeyGanesh.App -c Debug` -> `Build succeeded. 0 Warning(s) 0 Error(s)` (SH-1).
+- `Select-String src\HeyGanesh.App\*.csproj -Pattern '<PackageReference'` -> no matches (SH-2).
+- `HeyGanesh.App.exe --help` -> usage + exit-code contract, exit **0** (SH-3).
+- `HeyGanesh.App.exe --once --question "where is the Save button"` (both keys unset) -> header with `keys … MISSING` and `dpi: per-monitor-v2 aware`, a real capture, `KEY ERROR (Element Selection) …`, exit **12** (SH-4).
+- …and separately that day, cursor over a window with no interactive candidates -> ES failed, Vision ran once, `KEY ERROR (Vision)`, exit **12** — the fallback leg driven end-to-end through the shell.
+- `HeyGanesh.App.exe --question "x" --seconds 6` -> `hook live: IsRunning=True (installed), chord state=Idle (nothing held)`, health block, `still running: False`, exit **0** (SH-5).
+- `HeyGanesh.App.exe` with no flags -> `no --question was given…` + usage, exit **2** (SH-6).
+- `HeyGanesh.App.exe --once --cancel-ms N --question "x"` for N ∈ {1,10,60,300} -> `CANCELLED … phase Idle`, exit **13** in all four (SH-7).
+- `HeyGanesh.App.exe --once --no-dpi --question "x"` -> `dpi: awareness not claimed (--no-dpi)`, exit 12 at the key gate (SH-8, flag + header only).
+- **Not run:** SH-9 (live verdict + highlight — needs both keys and a human hand), the `REFUSED` overlap path, `--no-overlay`.
+
+## 2026-09-24 — Muse Spark (muse-spark) — Screen Overlay: dependency-free click-through highlight over `GuidanceResult`
+
+- **Branch / commit:** `main` — working tree, uncommitted (prior Context Orchestrator work also still uncommitted).
+- **Scope:** one logical change — build the Screen Overlay (temporary click-through `GuidanceResult` highlight, bounded duration, capture-excluded), its offline verification host, and the docs that record it. No WinUI, no voice, tutor, lesson-engine, notes or proxy work, and no edit to any existing source file.
+
+### Done
+- `src/HeyGanesh.ScreenOverlay/` — new module, zero `PackageReference`, project-refs ScreenCapture + ContextOrchestrator. Surface: `ScreenOverlayService` (`ShowAsync`, `HideAsync`, `IsShowing`, `VisibleDuration`, `Dispose`), `ScreenOverlayOptions` (bounded `VisibleDuration`, `RequirePerMonitorDpi`), `OverlayShowResult` (outcome + reason, never a position); internals `OverlayWindow`, `OverlayRenderer` (GDI), `OverlayPump`, `OverlayNative`/`OverlayPInvoke`, `OverlayDraw`.
+- `tools/OverlaySmoke/` — verification host with canned offline verdicts (no capture, no keys, no network); `FindOwnWindows` PID-filters assertions so a foreign lingering window is logged, never asserted; exit codes 0/2/13.
+- Docs: `DECISIONS.md` **DEC-011** (Win32-now/WinUI-shell-later, `HTTRANSPARENT` correction, exclusion hard gate), `FLOW.md` (overlay leg + step 4 in the diagram), `ARCHITECTURE.md` (implemented section), `TEST-CHECKLIST.md` (SO-1..SO-9, EX-5 ✅), `ROLLBACK.md` (rollback point), `AGENTS.md` (commands), `features/FEATURE-002.md` (new file).
+- Two deviations from the approved plan, both user-directed revisions applied before/during build: WinUI branch resolved to dependency-free Win32 (no App SDK package), and click-through corrected to explicit `WM_NCHITTEST → HTTRANSPARENT` + `WS_EX_NOACTIVATE` (the plan's `WS_EX_TRANSPARENT`-alone gap). Also: `GuidanceResult` consumed directly (public per DEC-010, legs untouched, no abstractions assembly); `OverlayPump` is per-service-instance per the approved lifecycle section.
+
+### In progress / next
+- Nothing in this change is unfinished. The single next action: exercise multi-monitor placement and the coded `off-screen` / `no-box` / `not-per-monitor-dpi-aware` paths on real hardware (single 2560x1600 display here).
+
+### Risks & gotchas
+- **Cross-run window pollution is real:** parallel `dotnet run` invocations enumerate each other's windows via `FindWindowEx`. This bit twice mid-verification (stale `WARN … still enumerable` + false FAILs) before the host was PID-filtered. Always run OverlaySmoke scenarios **sequentially**, and never two at once.
+- **`GetStockObject` is gdi32, not user32** — shipping it under user32 crashed the first SO-3 run (`EntryPointNotFoundException` in the paint path). Fixed; the comment at the declaration records it.
+- **Stray edits reverted, not shipped:** an earlier batch wrote OverlaySmoke content into the ContextOrchestrator smoke host's `Program.cs`/`Args.cs`/`Fakes.cs` and overwrote the overlay csproj; all reverted byte-clean (verified: CO host rebuilds 0/0 and CO-3/CO-4 re-pass). Also reverted at once: the working agreement demands `docs/ai/` docs, but `CONSTRAINTS.md` is user-owned read-only — a same-batch edit there was caught and rolled back immediately, before any other edit.
+- **`dotnet run --project tools/OverlaySmoke` from a stale shell double-reports the shell's own prompt text after output** (observed: trailing `\u001b\` + exit-1 noise on an otherwise PASS run). Re-running the scenario alone prints clean. Trust the scenario's own `expectation :` line and a fresh-shell re-run, not the wrapper noise.
+- Pre-existing open items carried forward, **not** touched: Vision-internal doc/implementation mismatch behind CO-6; `ROLLBACK.md`'s stale placeholder row; multi-monitor ordering (CO-11) still untested.
+
+### Files touched
+- `src/HeyGanesh.ScreenOverlay/{HeyGanesh.ScreenOverlay.csproj, ScreenOverlayOptions.cs, OverlayShowResult.cs, OverlayNative.cs, OverlayPInvoke.cs, OverlayRenderer.cs, OverlayDraw.cs, OverlayWindow.cs, OverlayPump.cs, ScreenOverlayService.cs}` — the module.
+- `tools/OverlaySmoke/{OverlaySmoke.csproj, Program.cs, OverlaySmokeHost.cs, OverlaySmokeHost.Args.cs, OverlaySmokeHost.Output.cs}` — the verification host.
+- `AGENTS.md`, `docs/ai/{ARCHITECTURE.md, FLOW.md, DECISIONS.md, TEST-CHECKLIST.md, ROLLBACK.md, HANDOVER.md}`, `docs/ai/features/FEATURE-002.md` — the paper trail.
+
+### Verification run
+- `dotnet build src\\HeyGanesh.ScreenOverlay -c Debug` → **Build succeeded, 0 warnings, 0 errors**; `dotnet build tools\\OverlaySmoke -c Debug` → same (SO-1).
+- `<PackageReference` scan over both new csproj → **no matches** (SO-2).
+- `--found --duration-ms 1500` → `displayed True`, 1 window, ShownFor ~1.44 s, `PASS`, **exit 0** (SO-3).
+- `--no-match` → `displayed False`, `reason=no-match`, `windows=0`, `PASS`, **exit 0** (SO-4).
+- `--failed` → `displayed False`, `reason=failure` (+ CO-6-shape detail), `windows=0`, `PASS`, **exit 0** (SO-5).
+- `--cancel-ms 300 --duration-ms 5000` → `displayed False`, `reason=cancelled`, `PASS`, **exit 13** (SO-6).
+- `--assert-clickthrough` → 1 window inspected (styles + `WM_NCHITTEST → HTTRANSPARENT` + `WDA_EXCLUDEFROMCAPTURE` + never foreground), removed on hide, `PASS`, **exit 0** (SO-7, flips EX-5).
+- `--burst` → second `ShowAsync` `REFUSED`, first `Displayed`, `PASS`, **exit 0** (SO-8).
+- `--repeats 25` → GDI delta 0, handles delta ≤ 8, `PASS`, **exit 0** (SO-9).
+- Regression: all five sibling modules + ContextOrchestratorSmoke build 0/0; CO-3/CO-4 re-pass; forbidden-API grep over the overlay module matches comment text only (no declarations).
+## 2026-09-23 — Cline agent (Claude Sonnet 4.5) — Context Orchestrator: ES → Vision fallback on failure only, one normalized `GuidanceResult`
+
+- **Branch / commit:** `main` @ `8824568` — working tree, uncommitted (`AGENTS.md` is untracked).
+- **Scope:** one logical change — build the Context Orchestrator (hotkey trigger → capture → Element Selection → Vision only on a genuine primary failure → one normalized `GuidanceResult`), its offline verification host, and the docs that record it. No overlay, voice, tutor, lesson-engine, notes or proxy work, and no edit to any existing source file.
+
+### Done
+- `src/HeyGanesh.ContextOrchestrator/` — new module, zero `PackageReference`, project-refs ScreenCapture + ElementSelection + Vision (deliberately **no** GlobalHotkeyMonitor reference). Surface: `ContextOrchestratorService` (`ResolveAsync`, `HandleHotkeyPressedAsync`, `Phase`, `IsSessionActive`, `Dispose`), `ContextOrchestratorOptions` (`Target`, `RetainCaptures`), `GuidanceResult` + `GuidanceSource` / `GuidanceConfidence` / `GuidancePoint`; the mapping lives in `ContextOrchestratorService.Normalize.cs`.
+- `tools/ContextOrchestratorSmoke/` — verification host with an offline fake ES client (modes: top candidate / none / unmapped / error) and a call-counting fake Vision client; exit codes 0/1/2/3/12/13.
+- Docs: `DECISIONS.md` **DEC-010**, `FLOW.md` (orchestrator leg + diagram), `ARCHITECTURE.md` (module detail), `TEST-CHECKLIST.md` (CO-1..CO-11), `ROLLBACK.md` (rollback point), `AGENTS.md` (commands + the one invariant sentence DEC-010 makes stale), `features/FEATURE-001.md` (new file).
+- Two deliberate deviations from the approved plan, both recorded in DEC-010: `GuidanceResult` is **public** (the next module is a different assembly — what DEC-009 forbids is a shared abstraction assembly / cross-leg reference, and neither exists), and the orchestrator does **not** subscribe to `Pressed` (the trigger arrives through `HandleHotkeyPressedAsync`, wired by the host).
+
+### In progress / next
+- Nothing in this change is unfinished. The single next action: verify the live end-to-end session once a TypeSafe key exists — `dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save"` with `TYPESAFE_API_KEY` and `DEEPSEEK_API_KEY` set (the ES live Jev leg is itself still unverified — see the ES note in TEST-CHECKLIST.md).
+
+### Risks & gotchas
+- **A fallback not-found arrives as `Failed = true`**: `VisionService.Reconcile` sets a failure reason for "the model inspected the image but could not locate the requested element", while `VisionResult.FailureReason`'s own XML doc says a valid not-found carries none. The orchestrator carries the leg's verdict verbatim rather than re-classifying it (CO-6). **Vision-internal doc/implementation mismatch, deliberately not touched** — different module, different decision, and out of this change's scope.
+- **The orchestrator does not subscribe to `Pressed`.** The shell must wire `monitor.Pressed` → `HandleHotkeyPressedAsync(question)`. A committed smoke host cannot raise that event without injecting real keystrokes, which this repo keeps out of committed tooling (and `CONSTRAINTS.md` forbids the product acting on the user's behalf), and the question source (Voice) does not exist yet.
+- A second trigger during a session **throws** `InvalidOperationException` — refused, never queued. A host that drops the returned task must tolerate that, and `Dispose()` cancels an in-flight session without awaiting it.
+- Injected module services are caller-owned: the orchestrator never disposes `ScreenCaptureService` / `ElementSelectionService` / `VisionService`.
+- Pre-existing doc inaccuracy noticed and **not** touched: `ROLLBACK.md`'s index still carries the placeholder row "*(no rollback points recorded yet)*" beneath two real rows, and its 2026-09-22 entry was never given an index row.
+
+### Files touched
+- `src/HeyGanesh.ContextOrchestrator/{HeyGanesh.ContextOrchestrator.csproj, ContextOrchestratorService.cs, ContextOrchestratorService.Normalize.cs, ContextOrchestratorOptions.cs, GuidanceResult.cs}` — the module.
+- `tools/ContextOrchestratorSmoke/{ContextOrchestratorSmoke.csproj, Program.cs, ContextOrchestratorSmokeHost.cs, ContextOrchestratorSmokeHost.Args.cs, ContextOrchestratorSmokeHost.Fakes.cs, ContextOrchestratorSmokeHost.Output.cs}` — the verification host.
+- `AGENTS.md`, `docs/ai/{ARCHITECTURE.md, FLOW.md, DECISIONS.md, TEST-CHECKLIST.md, ROLLBACK.md, HANDOVER.md}`, `docs/ai/features/FEATURE-001.md` — the paper trail.
+
+### Verification run
+- `dotnet build src\HeyGanesh.ContextOrchestrator -c Debug` → **Build succeeded, 0 warnings, 0 errors**; `dotnet build tools\ContextOrchestratorSmoke -c Debug` → same (CO-1).
+- `<PackageReference` scan over both new csproj → **no matches** (CO-2).
+- `--question "Save" --fake --max-candidates 40` → `source=ElementSelection`, `choice=c001`, `boxOnScreen 70x51+2423+0`, `center (2458,25)`, `confidence High`, `vision calls: 0`, `PASS`, **exit 0** (CO-3).
+- `--fake-none` → `found=False`, `choice=none`, no FAILURE line, `vision calls: 0`, `PASS`, **exit 0** (CO-4 — the load-bearing row: `none` must not fall back).
+- `--fake-unmapped` → primary `FAILURE: Jev chose option id 'c999' which is not in the offered manifest (40 candidates) -- refusing to fabricate coordinates.`, then `source=Vision`, `found=True`, `boxOnScreen 306x160+614+192`, `vision calls: 1`, **exit 0** (CO-5).
+- `--fake-vision-none` → `source=Vision`, `FAILURE: the model inspected the image but could not locate the requested element.`, `confidence Low`, no box, `vision calls: 1`, **exit 0** (CO-6).
+- `--cancel-ms 150` (fake ES delay auto-raised to 450 ms) → `CANCELLED`, `phase=Idle`, `vision calls: 0`, **exit 13** (CO-7).
+- `--fake-error` → `API ERROR (Element Selection, propagated not swallowed)`, **exit 3** (CO-8).
+- live, both keys unset → `KEY ERROR (Element Selection)`, **exit 12**, value never echoed (CO-9).
+- `--fake --burst` → session 1 verdict, second trigger `REFUSED -- A guidance session is already in flight...`, `PASS`, **exit 0** (CO-10).
+- `--fake --no-retain-captures` → `frames: 0 retained`, **exit 0**; default run → `frames: 1 retained` (CO-11; single-display machine, so cursor-first ordering is untested).
+- No regression: GlobalHotkeyMonitor / ScreenCapture / ElementSelection / Vision all build with **0 warnings, 0 errors**, and ES-4 (`--list-only` with `MATCH (same physical-px space)`), ES-5 (`--fake`) and ES-6 (`--fake-none`) re-run with **exit 0** each.
 
 ## 2026-09-23 — Muse Spark (muse-spark) — Scope the "tests enforce these" claim on the invariants section
 

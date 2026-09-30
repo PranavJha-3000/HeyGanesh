@@ -9,6 +9,11 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-014](#dec-014--2026-09-30--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-30 | Cline agent (model id not exposed to the agent) | Push-to-talk shell wiring: press listens, release ends the utterance, committed transcript becomes the question; `--question` demoted to legacy/`--once`; `Failed` utterance → exit 1 | accepted |
+| [DEC-013](#dec-013--2026-09-30--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-30 | Cline agent (model id not exposed to the agent) | Voice owns the integration boundary: Qwen Gateway GCP-7.0 client with cancel/discard suppression (no pre-generation suppression exists for live audio) + Fish TTS behind `ITtsClient` as WAV/44.1 kHz; external runtimes, not dependencies | accepted |
+| [DEC-012](#dec-012--2026-09-29--pixel-canary) | 2026-09-29 | Pixel Canary | App Shell as a dependency-free console host that owns DPI awareness, the service graph and the hotkey→orchestrator→overlay wiring; WinUI 3 deferred again; no test doubles in product code | accepted |
+| [DEC-011](#dec-011--2026-09-24--muse-spark) | 2026-09-24 | Muse Spark (muse-spark) | Screen Overlay as dependency-free Win32 (WinUI 3 deferred to the shell); explicit `WM_NCHITTEST → HTTRANSPARENT` + `WS_EX_NOACTIVATE` click-through; capture exclusion as a hard gate | accepted |
+| [DEC-010](#dec-010--2026-09-23--cline-agent-claude-sonnet-45) | 2026-09-23 | Cline agent (Claude Sonnet 4.5) | Context Orchestrator composes ES→Vision behind one entry point with orchestrator-internal normalization; fallback on the failure signal only; trigger received via `HandleHotkeyPressedAsync` | accepted |
 | [DEC-009](#dec-009--2026-09-22--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-22 | Cline agent (model id not exposed to the agent) | Primary/fallback result-type unification deferred to the Context Orchestrator; SelectionResult/VisionResult kept separate-but-uniform, fallback gate deferred to a future Jev component | accepted |
 | [DEC-008](#dec-008--2026-09-22--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-22 | Cline agent (model id not exposed to the agent) | Element Selection primary (UIA+Jev jev-1.13.0, 120-cap, none-option + hallucination guard); Vision fallback | accepted |
 | [DEC-007](#dec-007--2026-09-22--laguna-s-21) | 2026-09-22 | Laguna S 2.1 | Temporary direct DeepSeek key from `DEEPSEEK_API_KEY` env var behind an injectable `IVisionClient` seam, pending the API key security proxy | accepted |
@@ -22,6 +27,167 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-014 — 2026-09-30 — Cline agent (model id not exposed to the agent)
+
+**Decision — push-to-talk shell wiring.** The App Shell composes one `VoiceService` and a chord press
+opens the microphone: `Pressed → TriggerPump.OnPressed → VoiceService.ListenOnceAsync (on the pool)`;
+`Released → TriggerPump.OnReleased → end the utterance`; a committed `UtteranceResult.FinalText` becomes
+`options.Question` and flows into the one unchanged `HandleHotkeyPressedAsync → ShowAsync` path.
+`--question` is demoted to a legacy/verification flag (ignored with a warning in hooked mode; still
+deterministic under `--once`), and `--once` without it runs a single live listen. `SpeakAsync` is
+composed but never called, because the Tutor Engine that would supply its text does not exist.
+
+**Reasoning.**
+- The trigger point moves, exactly as FEATURE-003 filed it: with speech, the chord's *press* starts an
+  utterance and its *release* ends it. Keeping press as "resolve now" would ask the Gateway to commit
+  an empty transcript.
+- The orchestrator, overlay and legs keep their contracts untouched. Only the question's origin changes,
+  so no screen, cursor, capture or fallback behaviour can shift (verified: `--once --question` output is
+  byte-identical to before, and the ContextOrchestrator/Overlay/VoiceSmoke rows still pass).
+- Voice stays a replaceable seam: the shell depends on `VoiceService`, never on `QwenGatewayClient`,
+  `FishTtsClient` or any wire type.
+
+**Limitation, accepted and recorded — "release finalises" can only mean "end the utterance".** Voice's
+API (DEC-013) is one `ListenOnceAsync` per utterance with no force-commit call, and this task freezes
+the Voice module, so the shell cannot make the Gateway commit early. Releasing before the transcript
+commits therefore cancels the listen: the turn is abandoned cleanly (exit 0, nothing resolved, no
+capture spent). Holding the chord through the sentence — the normal case — is the contract.
+
+**Exit-code mapping (the one deliberate deviation).** `UtteranceResult.Failure` is a *returned* reason
+string, not a typed exception, so the shell cannot recover 12-vs-3 without sniffing text, and Voice is
+frozen so no typed channel can be added. A failed listen is therefore **exit 1** ("no transcript was
+produced"), never a fabricated verdict; thrown `VoiceAuthenticationException`/`VoiceClientException`
+still map to 12/3. A release-abandoned turn is exit 0 (a user action is not Ctrl+C); shutdown during a
+listen is 13. Silence is a verdict: `IsNoSpeech` never reaches the orchestrator, so no capture is spent.
+
+**Rejected.**
+- *Force-commit on release* — needs a Voice-module change and a second unverified protocol claim; the
+  Gateway's `smart_turn` commit is server-side. Rejected in favour of the accepted limitation above.
+- *Delete `--question`* — would break SH-4/SH-7/SH-8, the only scripted coverage the shell has (DEC-012
+  forbids `--fake` flags in the product host). Demoted, not deleted.
+- *Queue a second trigger instead of refusing it* — contradicts CO-10/SO-8 and would open two
+  microphones against one Gateway owner slot (DEC-013: GCP takes one active client per owner).
+- *Inject keystrokes for an automated chord test* — forbidden by DEC-010; a `ShellSmoke` host with an
+  injectable trigger is the correct follow-up, filed in FEATURE-005.
+- *A second CTS per phase (listen then session)* — needless: the resolve half already links its own
+  token inside `RunSessionAsync`, and one source per turn keeps `OnReleased` able to cancel the listen.
+
+**Consequences.** Teardown gains a step (hotkey → voice → overlay → …) because a draining listen must
+never outlive its `VoiceService`. The header prints the voice keys' presence, not values. Press/release
+timing, the IsNoSpeech short-circuit and REFUSED-during-listen are human-gated until a `ShellSmoke` host
+exists; the failure/cancel/refusal mappings above are exercised offline.
+
+
+## DEC-013 — 2026-09-30 — Cline agent (model id not exposed to the agent)
+
+- **Status:** accepted
+- **Decision:** The Voice module (`src/HeyGanesh.Voice/`) owns the entire speech integration boundary behind three seams — `IVoiceListener` (speech in), `ITtsClient` (speech out), `IAudioOutput` (speaker) — with **both external runtimes kept out of the dependency graph**: the qwen-audio-agent Gateway is an operator-run service spoken to over its **Gateway Client Protocol (wire 7.0)** on a WebSocket (`session.hello` → `session.ready`, `input_audio_buffer.append` for microphone frames, `transcript.*` for text), and Fish Audio is a plain HTTPS `POST /v1/tts` behind `FishTtsClient`. Zero `PackageReference`; microphone and speaker are owned `winmm.dll` P/Invoke. **The Qwen frontend is never trusted to answer:** `transcript.final` with `role: user` is the only frame that becomes a question; every assistant-side frame is cancelled/discarded and counted in `GatewaySuppressionLedger`; a `task.*` Backend Agent event aborts the listen (`AGENT_PROTOCOL=none` is asserted at the health endpoint when reported, and enforced at runtime either way). **Fish format is `wav` @ 44.1 kHz** — the v1 enum is exactly `wav|pcm|mp3|opus`, and WAV is the only choice playable with zero decoder dependencies.
+
+### Context / alternatives considered
+- **Pre-generation suppression for live audio** — investigated against the Gateway/realtime interface before accepting generate-then-cancel: `session.hello` `connection.output_enabled`/`text_only` are client capability/presentation preferences, not generation gates; AgentDelivery's `handle`/`context`/`respond` modes apply to typed Client Events (`client.event.publish`), not to live audio appended via `input_audio_buffer.append`; sleep/`input.suspend`/`input.mute` are capture-side; `conversation.item.create` has no verified client-callable transcribe-without-reply semantic (the `contextOnly` concept belongs to the Gateway→provider adapter, not to GCP); prompt-level "stay silent" is advisory, not enforced. **No supported pre-generation suppression exists** — so cancel/discard is the design, marked as protocol limitation L-1 rather than a preference.
+- Option A — treat `qwen-audio-agent` as a pure STT engine (first plan draft). Option B — in-process Qwen SDK/NuGet. Option C — invented NDJSON/stdio `partial|final|no_speech|error` protocol over a self-chosen localhost socket (first plan draft). Option D — Fish realtime-v3 MessagePack WebSocket. Option E — `mp3`/`opus` output with a decoder package. Option F — hold the Gateway socket open between utterances.
+
+### Chosen because
+- GCP 7.0 event names are published and version-negotiated (`session.ready` may state `protocolVersion`; a major mismatch refuses), so the module is pinned to a contract it can assert offline rather than a protocol it invented.
+- Cancel/discard, enforced in HeyGanesh code, is the only Tutor-authority guarantee that survives a Gateway that reports nothing — which is why `GatewaySuppressionLedger` is pure and replay-tested (VO-5).
+- WAV + `winmm` keeps the zero-NuGet invariant: `WavPcmReader` validates RIFF/PCM16/mono loudly, `WinMmAudioOutput` plays it with `waveOut*` (`CALLBACK_EVENT = 0x00050000` — the `0x00010000` window-callback value was a real bug caught by the smoke row).
+- Per-utterance transport (`connect → hello → listen → close`) matches press-to-talk and bounds the GCP one-active-client-per-owner takeover to the utterance itself.
+
+### Rejected because
+- Option A is false: `AGENT_PROTOCOL=none` disables only the Backend Agent; the DashScope realtime frontend still converses (text+audio output, function calling), so a "pure STT" reading would let Qwen answer academic questions by accident.
+- Option B violates the zero-dependency invariant and makes "backend disabled" a review promise instead of an asserted boundary.
+- Option C couples HeyGanesh to a protocol the upstream repo does not define; it would break on the next upstream release and could never be verified against the real service.
+- Option D adds a second stateful protocol (msgpack subprotocol + ticket auth) for no capability this module needs.
+- Option E (mp3/opus) requires decoder packages; raw `pcm` has no header to validate. Option F keeps TUI/WebUI clients evicted between questions for no benefit.
+
+### Consequences
+- **L-1 (accepted):** each utterance may cost one wasted frontend generation. Its *effects* are bounded — no assistant bytes reach the speaker, overlay, or Context pipeline — but HeyGanesh prevents the effect, not the occurrence, because no supported pre-generation switch exists for live audio.
+- HTTP `ResponseHeadersRead` is **transport streaming only**; no incremental-generation/first-audio claim is made for Fish `POST /v1/tts` (the verified contract does not guarantee one).
+- `FISH_AUDIO_API_KEY` extends DEC-007's temporary direct-key arrangement (env, read at call time, presence/length only); the Gateway's provider key never crosses the Gateway Client Protocol, and `QwenGatewayOptions.SafeEndpoint` strips path/query so an endpoint can never leak a token into a log.
+- The App Shell still takes `--question`; wiring `Released`-submits and retiring the flag is the next step (FEATURE-003's filed follow-up) and was deliberately not mixed into this change.
+
+## DEC-012 — 2026-09-29 — Pixel Canary
+
+- **Status:** accepted
+- **Decision:** The App Shell is `src/HeyGanesh.App/` — an `OutputType=Exe` console host on `net8.0-windows10.0.22621.0` with **zero `PackageReference`**, project-referencing GlobalHotkeyMonitor, ContextOrchestrator and ScreenOverlay. It owns the three things no module may own: process-wide PerMonitorV2 DPI awareness, the single `ScreenCaptureService` (shared into `ScreenOverlayService` for monitor topology), and the wiring `GlobalHotkeyMonitor.Pressed` → `ContextOrchestratorService.HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync`. It renders no window of its own. Windows App SDK / WinUI 3 is deferred again, and **test doubles stay out of product code**: the shell has no `--fake` flags, so its offline coverage stops exactly where the real key gates stop.
+
+### Context / alternatives considered
+- Option A — WinUI 3 / Windows App SDK now, the "eventual shell direction" DEC-011 named.
+- Option B — WPF (`<UseWPF>true</UseWPF>`): no NuGet needed, since WPF ships in the Windows Desktop runtime.
+- Option C — dependency-free console host now, UI framework deferred until something actually needs a window.
+- Option D — put the shell in `tools/` as `ShellSmoke` rather than `src/`.
+- Option E — carry `--fake-jev` / `--fake-vision` flags so the whole chain could be verified without keys.
+
+### Chosen because
+- Option C is the smallest step that closes the gap DEC-010 left open ("Both gaps close in the app shell (Voice pipeline + this wiring)"), and it needs no dependency, no packaging story, and no UI thread. Its correctness is inspectable in one place: the wiring is the same method for `--once` (scriptable, no keystrokes) and for a real chord, so the deterministic path and the human path cannot drift.
+
+### Rejected because
+- Option A — requires `Microsoft.WindowsAppSDK`, this repo's first external package, and a packaging/self-contained-runtime decision DEC-011 already recorded as unresolved (the capture border needs a *packaged* app; `TryCreateFromDisplayId` is the documented fallback "once the Windows App SDK shell exists"). It also puts an activation-taking XAML window next to an overlay whose entire contract is `WS_EX_NOACTIVATE` + `HTTRANSPARENT`. Deferred, not repudiated — DEC-011 still names it.
+- Option B — no NuGet, but it adds `Application`/dispatcher lifetime and an STA UI for a process that draws nothing today; the overlay is already the UI and it is Win32.
+- Option D — the wiring here is product behaviour. A smoke host cannot legitimately own the process's DPI awareness or the hotkey subscription, and hosting it in `tools/` would have meant duplicating the very wiring the shell exists to own.
+- Option E — shipping test doubles inside the product to make its own tests easier is the wrong trade. The cost is real and is recorded honestly instead: with no keys, the shell proves composition, the trigger seam, key fail-fast, cancellation and lifecycle, but **not** a drawn verdict.
+
+### Consequences
+- **The shell's own entry point is also its verification path.** `--once` makes the composition exercisable by a script with no microphone, no keystrokes and (until a key is missing) no human — which is why the `REFUSED` overlap path and a real chord remain unverified: they are the only two behaviours that need a person.
+- **WinUI 3 remains unbuilt, now twice deferred.** It needs its own decision entry when something genuinely requires a window; the capture-border and packaged-identity questions travel with it.
+- **The question source is a flag.** `--question` is required rather than defaulted, so the Voice pipeline cannot silently be replaced by a constant. When Voice lands, the trigger should move from `Pressed` to `Released` (record on press, submit the transcript on release) — recorded as an open item in [HANDOVER.md](./HANDOVER.md).
+- **A leg exception cannot be located to a pipeline stage from outside.** `ContextOrchestratorService` resets `Phase` to `Idle` in its catch-all before rethrowing, so a `KEY ERROR (Vision)` and a `KEY ERROR (Element Selection)` are distinguishable only by which exception type arrived — not by phase. The shell prints what it can and claims nothing more; fixing it would mean changing the orchestrator's error contract, which is out of scope here.
+- **Nothing in any module changed.** This is a new-file-only change; every behaviour the shell exercises was already verified by CO-1..CO-11 and SO-1..SO-9.
+
+## DEC-011 — 2026-09-24 — Muse Spark (muse-spark)
+
+- **Status:** accepted
+- **Decision:** The Screen Overlay is dependency-free Win32 C# in `src/HeyGanesh.ScreenOverlay/` — BCL plus user32/gdi32 P/Invoke, zero `PackageReference` — consuming `GuidanceResult` directly. Windows App SDK / WinUI 3 stays the eventual *shell* direction, not this module. Every overlay window is a borderless `WS_POPUP` layered window carrying `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TOOLWINDOW`, answering `WM_NCHITTEST` with `HTTRANSPARENT` for every point (`WS_EX_TRANSPARENT` alone is insufficient for a top-level window) and `WM_MOUSEACTIVATE` with `MA_NOACTIVATE`, so input falls through and activation is impossible. Capture exclusion is a hard gate: a window the OS still photographs is destroyed, never shown. `Found=false` and any `Failed` verdict draw nothing. No `SendInput`, no cursor/focus APIs, no injection, no UIA writes exist in the assembly.
+
+### Context / alternatives considered
+- Option A — WinUI 3 / Windows App SDK now (what the original overlay brief assumed).
+- Option B — dependency-free Win32 now (layered windows + GDI), WinUI 3 deferred to the packaged shell.
+- Option C — `WS_EX_TRANSPARENT` alone as the click-through mechanism.
+- Option D — accept `PixelRect`/raw coordinates or a new shared `OverlayTarget` type instead of `GuidanceResult`.
+- Option E — queue overlapping shows instead of refusing the second.
+
+### Chosen because
+- Option B keeps the zero-NuGet invariant intact with the smallest blast radius: it is the same shape as every existing module and host, satisfies "Windows-native C#" without a packaging story, and leaves the WinUI 3 shell direction untouched. The original brief's WinUI-vs-zero-NuGet branch is resolved by this entry, not left open.
+
+### Rejected because
+- Option A — requires the Windows App SDK NuGet package inside a core module, violating the enforced zero-`PackageReference` invariant, and drags in packaging/deployment requirements for a module whose job is one temporary highlight.
+- Option C — `WS_EX_TRANSPARENT` is a painting/hit-test hint whose behaviour for top-level windows has varied; returning `HTTRANSPARENT` from `WM_NCHITTEST` is the explicit, authoritative statement. The correction's own history (user-flagged mid-build) is why the smoke host asserts it from the OS side.
+- Option D — a raw-rect overload would create a second de-facto coordinate contract bypassing the `Found` gate; a shared type or `HeyGanesh.Abstractions` is what DEC-009/DEC-010 forbid.
+- Option E — two simultaneous pointers are ambiguous output; the orchestrator's burst guard (CO-10) sets the precedent: refuse, don't queue.
+
+### Consequences
+- **Multi-monitor clipping math ships single-display-verified only** (this machine reports one 2560x1600 display): negative-origin handling and per-window clipping are coded but the second-display half is asserted synthetically, not measured.
+- **`Displayed=true` requires the full duration:** an early end (cancel, hide, dispose) reports `Displayed=false` even if a window appeared briefly — windows are always removed before the result returns.
+- **Stale coordinates are inherent, not tracked:** the screen may change between `ResolveAsync` and `ShowAsync`; the overlay shows the verdict it was given, never re-resolves.
+- **Still open:** WinUI 3 shell integration, any error *presentation* (this module reports `failure`, the future shell decides what the user sees), confidence-gated display (tiers are carried through `GuidanceResult`, never gated here).
+
+## DEC-010 — 2026-09-23 — Cline agent (Claude Sonnet 4.5)
+
+- **Status:** accepted
+- **Decision:** The Context Orchestrator composes the two coordinate legs behind one entry point and one result type. `ContextOrchestratorService.ResolveAsync(question, ct)` opens a session: capture every monitor once (cursor's display first) → PRIMARY `ElementSelectionService.SelectAsync` → FALLBACK `VisionService.LocateAsync` on `captures[0]` **only** when the primary result is `Failed` (`FailureReason != null`) → one normalized `GuidanceResult`. `Choice == "none"` (`Found = false`, no `FailureReason`) is a verdict, not a failure, and never reaches Vision. The normalization (`SelectionResult`/`VisionResult` → `GuidanceResult`) lives in the orchestrator assembly only: `GuidanceResult`, `GuidanceSource`, `GuidanceConfidence`, `GuidancePoint` are new orchestrator-owned types, the legs' types and their duplicated `ConfidenceLevel` are untouched, no `HeyGanesh.Abstractions` exists, and no threshold is applied anywhere. This executes DEC-009's deferral rather than superseding it.
+- **Also decided (trigger seam):** the orchestrator does **not** subscribe to `GlobalHotkeyMonitor.Pressed`. The trigger arrives through `HandleHotkeyPressedAsync(question, ct)` and the host maps the event to it; the question source (Voice pipeline) does not exist yet, and `Pressed` cannot be raised by a committed verification host without injecting real keystrokes into the user's session. A trigger arriving while a session is in flight is refused, not queued.
+
+### Context / alternatives considered
+- Option A — a shared `HeyGanesh.Abstractions` assembly holding one result type that both legs populate (the shape DEC-009 deferred "until the Context Orchestrator exists").
+- Option B — the orchestrator calls Vision from inside the Element Selection failure path, i.e. the legs reference each other.
+- Option C — gate on confidence too: fall back unless the primary leg returned High, or re-blend the two legs' scores.
+- Option D — keep both result types and normalize them privately in the orchestrator, falling back on the failure signal only.
+- Option E — the orchestrator owns a `GlobalHotkeyMonitor` and subscribes to `Pressed` itself.
+
+### Chosen because
+- Option D satisfies DEC-009's intent with the smallest blast radius, and DEC-009's own Consequences section names this exact policy ("empty tree / unmapped choice / UIA access-denied / no-choice → Vision; Confidence == High and a non-degraded verdict accept Element Selection"). The uniform shape plus the preserved raw signals mean the future Jev gate can be added without re-plumbing either leg.
+
+### Rejected because
+- Option A — it forces a cross-module reference that `SelectionResult.cs` forbids today, and would install a resolver in a neutral assembly before its consumer needs it; DEC-009 reserves those names for a deliberate decision, not a side effect of wiring.
+- Option B — inverts the DEC-008/DEC-009 sibling boundary and puts fallback policy inside a leg.
+- Option C — would invent a threshold and a fallback rule the legs deliberately do not own (both are threshold-free by contract; the tier is classification, not a gate). Nothing measured yet says a Medium primary verdict is worse than a pixel-model answer.
+- Option E — would ship unverifiable code: the event fires on the monitor's worker thread and cannot be raised by the smoke host without SendInput, which this repo deliberately keeps out of committed tooling (CONSTRAINTS.md also forbids the product acting on the user's behalf), and the question source such a subscription would need does not exist.
+
+### Consequences
+- **New public surface lives in the orchestrator** (`GuidanceResult`, `GuidanceSource`, `GuidanceConfidence`, `GuidancePoint`). It has to be visible to the next module (a different assembly), which is why it is public; what DEC-009 forbids — a shared abstraction assembly and any cross-leg reference — still holds, and the legs' own files are unchanged.
+- **A fallback not-found arrives as `Failed = true`.** `VisionService.Reconcile` reports a model-side not-found as a failure, and the orchestrator carries the leg's verdict verbatim instead of re-classifying it (CO-6 in TEST-CHECKLIST.md records this).
+- **One session at a time is now enforced:** a second trigger during a session throws `InvalidOperationException` rather than queueing, so a host awaits the returned task or tolerates the refusal.
+- **Still open:** no confidence-tier gate (that stays Jev's), no question source (Voice pipeline), no overlay, no rendering, no input injection — nothing in this change captures, draws, or acts on the user's behalf.
 
 ## DEC-009 — 2026-09-22 — Cline agent (model id not exposed to the agent)
 
@@ -260,4 +426,3 @@
 - Each monitor owns two background threads and a channel; events are raised on a non-UI thread, so UI subscribers must marshal.
 - A slow subscriber delays *subsequent events* but can never delay system input — this separation is the reason for the split, and it is why the hook proc must never raise events itself.
 - Anything added to `HookProc` risks the OS's ~300 ms callback budget; `MaxCallbackLatency` exists to police that.
-

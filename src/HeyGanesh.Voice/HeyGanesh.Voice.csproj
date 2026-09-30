@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Voice pipeline (see docs/ai/ARCHITECTURE.md) — the speech seam HeyGanesh owns so that its own
+    Tutor/Context pipeline stays the only thing allowed to answer the user.
+
+    Dependency-free, like every module before it: no PackageReference anywhere. ClientWebSocket,
+    HttpClient and System.Text.Json ship in the .NET 8 shared framework, and the microphone and the
+    speaker are reached through winmm.dll P/Invoke we own outright (DEC-001's stance, applied twice).
+
+    It deliberately takes NO ProjectReference either — not to ElementSelection, Vision,
+    ContextOrchestrator or ScreenOverlay. Voice turns audio into text and text into audio; it knows
+    nothing about coordinates, guidance verdicts or overlays. The host wires the two halves together,
+    exactly as DEC-010 required the host to wire the hotkey to the orchestrator.
+
+    Two external runtimes sit behind seams in this assembly and are NOT dependencies of it:
+      * the qwen-audio-agent Gateway (realtime speech frontend, Backend Agent disabled) is spoken to
+        over its Gateway Client Protocol on a WebSocket — see QwenGatewayClient;
+      * Fish Audio (TTS) is spoken to over plain HTTPS — see FishTtsClient.
+    Both are replaceable by swapping the IVoiceListener / ITtsClient implementation the host injects.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Voice</RootNamespace>
+    <AssemblyName>HeyGanesh.Voice</AssemblyName>
+  </PropertyGroup>
+
+</Project>

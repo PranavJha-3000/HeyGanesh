@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Voice pipeline (see docs/ai/ARCHITECTURE.md).
+
+    Not product code: it exists so the speech seams can be proven offline — transcript verdicts,
+    the suppression policy, the GCP message shapes, the WAV contract, cancellation, burst refusal —
+    without a Gateway, a microphone, a key, or a network. It mirrors tools/VisionSmoke.csproj:
+    same dependency-free stance (no PackageReference anywhere), same fake-seam pattern.
+
+    Live rows (a human with keys and hardware) exist alongside them; the offline
+    rows are what scripted verification runs.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.VoiceSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.VoiceSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HeyGanesh.Voice\HeyGanesh.Voice.csproj" />
+  </ItemGroup>
+
+</Project>

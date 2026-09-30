@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tutor Engine (see docs/ai/ARCHITECTURE.md) — the authoritative teaching layer, and the only
+    component in HeyGanesh allowed to answer the user (DEC-013's suppression in Voice exists precisely
+    because this module is the one that will speak).
+
+    It turns one question — plus optional, bounded, already-resolved screen grounding — into one
+    explanation string, and nothing else. No actuation of any kind: the P/Invoke surface of this
+    assembly is empty because there is none. No clicks, no typing, no UIA writes, no windows, no
+    audio, no capture. Describing an action in prose ("click Save") is teaching; performing one is
+    not this module's job.
+
+    Dependency-free, like every module before it: zero PackageReference (all types here are BCL),
+    and — deliberately — ZERO ProjectReference either. Not ContextOrchestrator (the input is a
+    plain-data TutorContext snapshot, not GuidanceResult), not ScreenCapture (the optional visual is
+    opaque JPEG bytes the caller cropped from an already-retained frame; this module never decodes,
+    never re-captures, and cannot reach the screen), not Voice/ES/Vision/Overlay (siblings stay
+    siblings; DEC-008/DEC-009 discipline). The host wires the edges.
+
+    The one external thing that will ever live behind ITutorClient is an academic/teaching LLM —
+    a provider decision deliberately NOT made in this change: the seam ships with fakes and recorded
+    frames only, so no provider, model, endpoint, or key name is pre-committed (see DEC-015). No
+    field in this assembly can carry a credential.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.TutorEngine</RootNamespace>
+    <AssemblyName>HeyGanesh.TutorEngine</AssemblyName>
+  </PropertyGroup>
+
+</Project>

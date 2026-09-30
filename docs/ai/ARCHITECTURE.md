@@ -7,6 +7,7 @@
 
 ## Modules
 
+- **App Shell** — process host: owns DPI awareness, the service graph, and the hotkey → Voice → Context Orchestrator → Screen Overlay wiring.
 - **Context Orchestrator** — top-level state machine driving session lifecycle.
 - **Screen Overlay** — per-monitor click-through overlay window.
 - **Global Hotkey Monitor** — system-wide hotkey registration and dispatch.
@@ -16,7 +17,7 @@
 - **Jev** — classification / intent-routing engine; placement TBD, sits before the Tutor Engine call.
 - **Tutor Engine** — lesson generation.
 - **Visual Lesson Engine** — structured diagram rendering.
-- **Voice pipeline** — STT / TTS.
+- **Voice pipeline** — speech in/out seam: Qwen Gateway frontend → user transcript out, answer text in → Fish TTS (behind `ITtsClient`); never answers questions itself.
 - **Notes persistence** — SQLite-backed notes store.
 - **API key security proxy** — isolates LLM API keys from the rest of the application.
 
@@ -30,6 +31,27 @@
 _(Not yet defined — see [FLOW.md](./FLOW.md).)_
 
 ## Module details
+
+### App Shell (implemented)
+- **Assembly:** `src/HeyGanesh.App/`, `net8.0-windows10.0.22621.0`, zero NuGet (project-refs GlobalHotkeyMonitor + Voice + ContextOrchestrator + ScreenOverlay; ScreenCapture/ElementSelection/Vision arrive transitively and are used directly). See [DEC-012](./DECISIONS.md#dec-012--2026-09-29--pixel-canary) and [DEC-014](./DECISIONS.md#dec-014--2026-09-30--cline-agent-model-id-not-exposed-to-the-agent).
+- **Public surface:** an entry point and flags, not a library — `--once` (one turn at startup, hook never installed: with `--question` the legacy text path, without it one live listen), `--question` (LEGACY/verification only; ignored with a warning in hooked mode, where the microphone is the question source), `--seconds`, `--cancel-ms`, `--duration-ms`, `--no-overlay`, `--foreground`, `--no-retain-captures`, `--max-dim`, `--max-candidates`, `--no-dpi`, `--help`. Exit codes: 0 verdict produced (an honest no-match counts, and so does a silent or release-abandoned voice turn) / 1 verdict failed **or no transcript was produced** / 2 shell could not start / 3 provider error propagated / 4 unexpected fault / 12 required key missing / 13 cancelled.
+- **Pipeline:** `Program` sets process-wide PerMonitorV2 awareness, then composes one `ScreenCaptureService`, `ElementSelectionService`, `VisionService`, `ContextOrchestratorService` and `ScreenOverlayService` (the overlay borrowing the same capture service for monitor topology), one `GlobalHotkeyMonitor`, and one `VoiceService` (its constructor opens no devices — the microphone is taken per listen). A **turn** is: `Pressed` → `TriggerPump.OnPressed` starts `VoiceService.ListenOnceAsync` on the pool; `Released` → `OnReleased` ends the utterance; a committed `FinalText` becomes `options.Question` and flows through the one unchanged `HandleHotkeyPressedAsync` → `ShowAsync` → reported `OverlayShowResult` path. The hook callback and the monitor's worker thread are never blocked by a microphone, a Gateway socket, or a capture. A second trigger while a turn is in flight — or while its highlight is still on screen — is refused rather than queued, mirroring CO-10 and SO-8.
+- **Voice turn outcomes (DEC-014):** a released-before-commit listen is abandoned cleanly (exit 0, nothing resolved — the Voice API has no force-commit call); `IsNoSpeech` is a verdict, not an error (exit 0, the orchestrator is never called, so silence costs no capture); a `Failed` utterance is exit 1 (no transcript, no fabricated verdict); shutdown during a listen is exit 13. `VoiceService.SpeakAsync` is composed but **not** called: the Tutor Engine that would supply its text does not exist yet.
+- **Lifecycle:** shutdown is ordered and load-bearing — release the hook, cancel the lifetime token, wait (bounded, 5 s) for the turn in flight, then let reverse-declaration disposal run: hotkey → voice → overlay → orchestrator → legs → capture. Awaiting the turn before the overlay and the Voice service are disposed is what stops a turn completing into a disposed listener. Ctrl+C is a clean exit (0) and reports hook health; a turn interrupted by shutdown is reported, not propagated as the process's code.
+- **Boundary:** it owns process-global state and nothing else. No confidence threshold, no fallback rule, no display policy — a verdict is reported and drawn exactly as the orchestrator normalized it (DEC-009/DEC-010/DEC-011 all keep those decisions out of the host). It renders no window of its own: the overlay is the UI. No input injection of any kind, and no test doubles — fakes stay in verification hosts, so the shell carries no `--fake` flags. It never answers a question: Voice supplies the transcript, the orchestrator decides, the overlay draws.
+
+### Context Orchestrator (implemented)
+- **Assembly:** `src/HeyGanesh.ContextOrchestrator/`, `net8.0-windows10.0.22621.0`, zero NuGet (project-refs ScreenCapture + ElementSelection + Vision; deliberately no reference to GlobalHotkeyMonitor). See [DEC-010](./DECISIONS.md#dec-010--2026-09-23--cline-agent-claude-sonnet-45).
+- **Public surface:** `ContextOrchestratorService.ResolveAsync(question, ct)` → `GuidanceResult`, plus `HandleHotkeyPressedAsync(question, ct)` — the trigger receive point the host wires `GlobalHotkeyMonitor.Pressed` to — and `Phase` / `IsSessionActive` / `Options`; `ContextOrchestratorOptions` (`Target`, `RetainCaptures`); the normalized verdict types `GuidanceResult` / `GuidanceSource` / `GuidanceConfidence` / `GuidancePoint`.
+- **Pipeline:** one session = one capture (`CaptureAllMonitorsAsync`, cursor's display first) → PRIMARY leg `ElementSelectionService.SelectAsync` → only if that result is Failed, the FALLBACK leg `VisionService.LocateAsync` on the cursor's frame, once → the leg's verdict normalized into `GuidanceResult`. Phases: `Idle → Capturing → Selecting → [VisionFallback] → Resolved`. Overlapping sessions are refused, never queued; all awaits share one token linked to the caller's and to `Dispose`.
+- **Normalization boundary:** this is the only assembly that sees both result types. `SelectionResult`/`VisionResult` and their duplicated `ConfidenceLevel` stay untouched; the mapping is total and lossless (Found, description, box/center in global physical px, tier, every raw signal) and gates nothing — no threshold, no re-scoring, no invented fallback rule (DEC-009's deferral, executed here, without a shared abstraction assembly).
+- **Boundary:** guide-only — it resolves coordinates for the next module and never injects input, renders, or captures anything beyond the one frame per session. It does not own DPI awareness, hook lifecycle, or the question source (the question arrives as a `UtteranceResult` from Voice and is already committed when it gets there), so key/HTTP failures and cancellation propagate to the caller unchanged.
+
+### Screen Overlay (implemented)
+- **Assembly:** `src/HeyGanesh.ScreenOverlay/`, `net8.0-windows10.0.22621.0`, zero NuGet (project-refs ScreenCapture + ContextOrchestrator). See [DEC-011](./DECISIONS.md#dec-011--2026-09-24--muse-spark).
+- **Public surface:** `ScreenOverlayService.ShowAsync(GuidanceResult, ct)` → `OverlayShowResult` (`Displayed`, `Reason`, `ShownFor`, `WindowCount`), plus `HideAsync`, `IsShowing`, `VisibleDuration`, `Dispose`; `ScreenOverlayOptions` (bounded `VisibleDuration`, `ShowBox`/`ShowPointer`, `RequirePerMonitorDpi`, `BoxThickness`/`PointerRadius`).
+- **Pipeline:** verdict checks (`Failed` before `Found` — the CO-6 asymmetry) → one borderless `WS_POPUP` layered window per monitor the box touches (global-to-local is a translation, never a scaling) → `CaptureExclusion.TryExcludeFromCapture` on every real top-level HWND (hard gate) → show without activating → remove on duration, `HideAsync`, cancellation or disposal. `Found=false`/failure/off-screen renders nothing; one show at a time (second call refused, never queued).
+- **Input contract:** windows carry `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TOOLWINDOW`, return `HTTRANSPARENT` from `WM_NCHITTEST` (`WS_EX_TRANSPARENT` alone is insufficient for a top-level window) and `MA_NOACTIVATE` from `WM_MOUSEACTIVATE`. No `SendInput`, no `SetCursorPos`/`SetFocus`/`SetForegroundWindow`, no injection, no UIA writes exist anywhere in the assembly — the first visual act of the tutor answers, the user always acts (CONSTRAINTS.md, DEC-011).
 
 ### Screen Capture (implemented)
 - **Assembly:** `src/HeyGanesh.ScreenCapture/`, `net8.0-windows10.0.22621.0`, zero NuGet.
@@ -51,4 +73,11 @@ _(Not yet defined — see [FLOW.md](./FLOW.md).)_
 
 ### Screen Overlay (contract inherited)
 - Before drawing anything, call `CaptureExclusion.TryExcludeFromCapture(hwnd)` on the real top-level HWND so the capture module cannot photograph its own output. Affinity is per window and must be re-applied on every window recreation.
+
+### Voice pipeline (implemented — wired into the shell as the question source; DEC-013/DEC-014)
+- **Assembly:** `src/HeyGanesh.Voice/`, `net8.0-windows10.0.22621.0`, zero `PackageReference`, **no project-refs at all** (not to ElementSelection, Vision, ContextOrchestrator or ScreenOverlay — Voice turns audio into text and text into audio and knows nothing about coordinates, guidance verdicts or overlays). See [DEC-013](./DECISIONS.md#dec-013--2026-09-30--cline-agent-model-id-not-exposed-to-the-agent).
+- **Public surface:** `VoiceService.ListenOnceAsync(ct)` → `UtteranceResult` (`FinalText` | `IsNoSpeech` | `FailureReason`+`Failed`); `VoiceService.SpeakAsync(SpeakRequest)` → `SpeakResult`; seams `IVoiceListener`, `ITtsClient`, `IAudioOutput`, `IMicrophoneSource`; implementations `QwenGatewayClient`, `FishTtsClient`, `WinMmAudioOutput`, `WinMmMicrophoneSource`; pure protocol layer `QwenGatewayProtocol` + `GatewaySuppressionLedger`.
+- **Pipeline (in):** winmm capture (16 kHz mono PCM16) → `input_audio_buffer.append` over the qwen-audio-agent Gateway Client Protocol (wire 7.0, `session.hello` → `session.ready`) → `transcript.final role=user` is the ONLY text ever returned; `response.started` triggers `response.cancel`+`interrupt`, all `audio.delta` is dropped, all `role=assistant` transcripts are dropped and counted (`GatewaySuppressionLedger`), `task.*` aborts the listen (Backend Agent must be off, `AGENT_PROTOCOL=none`). Transport is per-utterance. See [FLOW.md](./FLOW.md).
+- **Pipeline (out):** `SpeakRequest` → `FishTtsClient` (`POST /v1/tts`, `format=wav`, `sample_rate=44100`, transport-streamed response body) → `WavPcmReader` (validates RIFF/PCM16/mono, fails loud) → `WinMmAudioOutput` (`waveOut*`, cancellation is a real stop via `waveOutReset`).
+- **Boundary:** it answers nothing — no intent classification, no question routing, no computer actions (the P/Invoke surface moves audio only). Keys stay in env at call time (`FISH_AUDIO_API_KEY`, DEC-007 pattern); the Gateway's provider key never crosses the protocol; results and logs carry presence/length only. Silence (`IsNoSpeech`) is a verdict distinct from provider/network/auth failure (`Failed`), mirroring the `Choice=="none"` vs failed-selection rule. Both external runtimes (Gateway, Fish) are replaceable by swapping the injected seam — they are services, never dependencies.
 

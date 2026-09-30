@@ -14,6 +14,7 @@ Subsystems, and the seams between them are load-bearing:
 
 | Subsystem | Assembly / Package | Role |
 |---|---|---|
+| App Shell | `src/HeyGanesh.App/` | The process host: owns PerMonitorV2 DPI awareness, the service graph, and the `GlobalHotkeyMonitor.Pressed` → `VoiceService.ListenOnceAsync` → `HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync` wiring (DEC-012/DEC-014). |
 | Context Orchestrator | `src/HeyGanesh.ContextOrchestrator/` | Top-level state machine driving session lifecycle and module coordination. |
 | Global Hotkey Monitor | `src/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only push-to-talk modifier chord monitor (Ctrl+Alt). |
 | Screen Capture | `src/HeyGanesh.ScreenCapture/` | On-demand multi-monitor frame acquisition via `Windows.Graphics.Capture` and `CaptureExclusion` contract. |
@@ -49,9 +50,59 @@ dotnet run --project tools/VisionSmoke -c Debug -- --question "where is the Star
 dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "x" --list-only
 dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "Save" --fake
 dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "Save" --fake --fake-none
+
+# Screen Overlay verification host (offline verdict paths -- no API key required)
+# --found: show a canned found box for the full duration.
+# --no-match / --failed: honest no-match / synthetic failure must create no window.
+# --assert-clickthrough: styles + WM_NCHITTEST -> HTTRANSPARENT + capture exclusion + no activation.
+# --burst: a second ShowAsync while one is active is refused. --repeats: GDI/handle leak soak.
+dotnet build src/HeyGanesh.ScreenOverlay -c Debug
+dotnet run --project tools/OverlaySmoke -c Debug -- --found --duration-ms 1500
+dotnet run --project tools/OverlaySmoke -c Debug -- --no-match
+dotnet run --project tools/OverlaySmoke -c Debug -- --assert-clickthrough
+
+# Context Orchestrator verification host (offline composition paths -- no API key required)
+# --fake: primary leg answers. --fake-none: honest no-match, Vision must NOT be called.
+# --fake-unmapped: primary leg fails (Jev chose an id never offered) -> exactly one Vision fallback.
+# --burst: two overlapping triggers, second refused. --cancel-ms / --fake-error: propagation paths.
+dotnet build src/HeyGanesh.ContextOrchestrator -c Debug
+dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake
+dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake-none
+dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake-unmapped
+
+# App Shell — the process host (DEC-012/DEC-014). Real legs only: no --fake flags, so with no keys set the
+# offline rows stop at the key gate. Run the built EXE, not `dotnet run`: the wrapper hides exit codes.
+# --question is LEGACY: the product path speaks (press Ctrl+Alt to listen, release to end the utterance).
+dotnet build src/HeyGanesh.App -c Debug
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --help
+#   -> usage + exit-code contract (incl. "1 = ... or no transcript was produced"), exit 0
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --question "where is the Save button"
+#   keys unset -> header, real capture, KEY ERROR (Element Selection), exit 12  (legacy scripted path)
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --seconds 4
+#   -> no flag needed now: hook live: IsRunning=True; auto-stops, health block, exit 0
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --question "x" --seconds 4
+#   -> "--question is legacy and is IGNORED in hooked mode", hook live, exit 0
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once
+#   -> one LIVE listen (mic as question source). No HEYGANESH_QWEN_GATEWAY_URL -> VOICE FAILURE, exit 1
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --cancel-ms 60 --question "x"
+#   -> CANCELLED, phase Idle, exit 13
+#   Gateway running + keys + mic: hold Ctrl+Alt, speak, release -> utterance line, verdict, highlight
+#   (SH-9/SH-13). Release early -> "released before the transcript committed", exit 0, no capture.
+
+# Voice pipeline verification host (offline fakes + protocol assertions -- no Gateway, mic or key needed)
+# --fake-transcript / --fake-nospeech: verdict shapes. --fake-auth-error: KEY ERROR, exit 12.
+# --cancel-ms: OCE propagates, exit 13. --burst-fake: second listen refused, not queued.
+# --speak-fake: fake TTS through the REAL winmm speaker + SpeakResult (needs an output device).
+# --assert-gcp-events / --assert-tutor-authority / --assert-no-backend / --assert-fish-format:
+#   recorded-frame contract checks -- message allowlist, assistant-output neutralised (DEC-013 L-1),
+#   task.* abort guard, wav/44100 + WAV parser. Live paths (real Gateway, mic, Fish) are human-gated.
+dotnet build src/HeyGanesh.Voice -c Debug
+dotnet run --project tools/VoiceSmoke -c Debug -- --fake-transcript "where is the Save button"
+dotnet run --project tools/VoiceSmoke -c Debug -- --assert-tutor-authority
+dotnet run --project tools/VoiceSmoke -c Debug -- --speak-fake --text "Found the Save button"
 ```
 
-Models: **DeepSeek V4.1 Flash** is used for visual grounding and coordinate detection. Live runs require `DEEPSEEK_API_KEY` set in the environment or passed via the Security Proxy module. Element Selection uses the Jev choice model over a ranked UIA manifest via TypeSafe (`ModelId` `jev-1.13.0`); live Element Selection runs require `TYPESAFE_API_KEY`, reported as presence/length only and never as a value — the same temporary direct-key arrangement as Vision's, pending the Security Proxy.
+Models: **DeepSeek V4.1 Flash** is used for visual grounding and coordinate detection. Live runs require `DEEPSEEK_API_KEY` set in the environment or passed via the Security Proxy module. Element Selection uses the Jev choice model over a ranked UIA manifest via TypeSafe (`ModelId` `jev-1.13.0`); live Element Selection runs require `TYPESAFE_API_KEY`, reported as presence/length only and never as a value — the same temporary direct-key arrangement as Vision's, pending the Security Proxy. Voice's TTS is **Fish Audio** (`format=wav`, `sample_rate=44100`; key `FISH_AUDIO_API_KEY`, same presence/length-only rule), and its speech-in frontend is an externally-run **qwen-audio-agent Gateway** (Gateway Client Protocol wire 7.0; `AGENT_PROTOCOL=none` required, its provider key never crosses the protocol; endpoint via `HEYGANESH_QWEN_GATEWAY_URL` — no default URL on purpose). Both are external runtimes behind `ITtsClient`/`IVoiceListener`, never C# dependencies.
 
 ## Architecture invariants — keep them true
 
@@ -64,7 +115,7 @@ Enforced by automated checks (rows in `docs/ai/TEST-CHECKLIST.md`):
 
 Design invariants — hold by review and the cited decisions; no automated check yet:
 
-- **Element Selection and Vision are siblings, not one API.** They must never reference each other: Element Selection is the PRIMARY coordinate path (`ElementSelectionService.SelectAsync`) and Vision the FALLBACK (`VisionService.LocateAsync`), each returning its own result type with a duplicated `ConfidenceLevel` and a matching 0.8/0.5 tier boundary. The ES→Vision fallback is decided by a future Jev confidence-gate, not by either module (DEC-008 / DEC-009).
+- **Element Selection and Vision are siblings, not one API.** They must never reference each other: Element Selection is the PRIMARY coordinate path (`ElementSelectionService.SelectAsync`) and Vision the FALLBACK (`VisionService.LocateAsync`), each returning its own result type with a duplicated `ConfidenceLevel` and a matching 0.8/0.5 tier boundary. The ES→Vision fallback is decided by the Context Orchestrator on a *failed* Element Selection result, never by either module; the finer confidence-tier gate stays a future Jev component (DEC-008 / DEC-009 / DEC-010).
 
 ## Environment facts
 

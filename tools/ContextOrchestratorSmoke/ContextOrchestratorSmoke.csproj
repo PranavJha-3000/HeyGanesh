@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Context Orchestrator (see docs/ai/ARCHITECTURE.md).
+
+    Not product code: it exists so the orchestrator's composition can be proven end-to-end — one
+    capture, Element Selection first, Vision only on a genuine primary failure, and `none` never
+    falling back — before any app shell, overlay or Voice pipeline exists. Delete once the app can host
+    the orchestrator itself (see docs/ai/HANDOVER.md). Mirrors tools/ElementSelectionSmoke.csproj:
+    same dependency-free stance (no PackageReference) and the same per-monitor-v2 DPI awareness
+    requirement, because the boxes the legs return are physical pixels.
+
+    One project reference is enough: the orchestrator references Screen Capture, Element Selection and
+    Vision, and this host uses those types directly for its fakes and its printing.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.ContextOrchestratorSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.ContextOrchestratorSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
+  </ItemGroup>
+
+</Project>

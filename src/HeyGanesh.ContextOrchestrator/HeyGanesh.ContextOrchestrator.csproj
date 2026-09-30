@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Context Orchestrator (see docs/ai/ARCHITECTURE.md) — the top-level state machine that turns one
+    hotkey trigger into one resolved guidance verdict.
+
+    Deliberately dependency-free: no PackageReference anywhere. It composes the modules that already
+    exist (Screen Capture, Element Selection, Vision) purely through ProjectReference, and it takes no
+    reference to HeyGanesh.GlobalHotkeyMonitor at all — the monitor only *raises* the trigger, and the
+    host maps that event to HandleHotkeyPressedAsync (see that method's remarks and docs/ai/FLOW.md).
+
+    This is the only assembly allowed to see BOTH result types at once and normalize them into one
+    shape: Element Selection is the PRIMARY leg and Vision the FALLBACK (DEC-008), and unification was
+    deferred to exactly this module (DEC-009). No shared abstraction assembly is introduced and the two
+    legs still never reference each other.
+
+    TargetFramework matches ScreenCapture/ElementSelection/Vision; a lower-versioned TFM cannot
+    reference them (the orchestrator consumes MonitorCapture and PixelRect from the capture module).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.ContextOrchestrator</RootNamespace>
+    <AssemblyName>HeyGanesh.ContextOrchestrator</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+    <ProjectReference Include="..\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj" />
+    <ProjectReference Include="..\HeyGanesh.Vision\HeyGanesh.Vision.csproj" />
+  </ItemGroup>
+
+</Project>

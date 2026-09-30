@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Screen Overlay (see docs/ai/ARCHITECTURE.md) — the temporary, click-through pointer/highlight that
+    shows where the Context Orchestrator resolved an answer.
+
+    Dependency-free Win32, deliberately. Windows App SDK / WinUI 3 is the eventual *shell* direction,
+    not this module: taking it here would mean a PackageReference inside a core module, which the
+    project's standing invariant forbids. Everything below is BCL + user32/gdi32 P/Invoke from
+    OverlayNative.cs, the same shape as the Global Hotkey Monitor and Screen Capture modules.
+
+    ProjectReferences: ScreenCapture (monitor topology, PixelRect, and the CaptureExclusion contract the
+    overlay must satisfy) and ContextOrchestrator (GuidanceResult — consumed directly, never re-mapped:
+    a second coordinate type or a shared abstraction assembly would break DEC-009).
+
+    The overlay renders; it never acts. No input injection of any kind exists in this assembly (see
+    CONSTRAINTS.md and docs/ai/DECISIONS.md DEC-011).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.ScreenOverlay</RootNamespace>
+    <AssemblyName>HeyGanesh.ScreenOverlay</AssemblyName>
+    <!-- The overlay owns an STA thread; nothing else in the module needs COM. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+    <ProjectReference Include="..\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
+  </ItemGroup>
+
+</Project>

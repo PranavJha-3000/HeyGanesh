@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    App Shell (see docs/ai/ARCHITECTURE.md) — the process that owns the desktop assistant's lifetime.
+
+    This is the first assembly in the repo that *drives* the pipeline rather than being driven by a
+    verification host. It exists because two decisions deliberately left their wiring here rather than
+    inside a module:
+
+      * DEC-010 — the Context Orchestrator does not subscribe to GlobalHotkeyMonitor.Pressed; "Both
+        gaps close in the app shell (Voice pipeline + this wiring)". The shell is that host.
+      * DEC-011 — the Screen Overlay reports a failure but "the future shell decides what the user
+        sees". The shell is that decision-maker.
+
+    Dependency-free, like every module: zero PackageReference. WinUI 3 / Windows App SDK remains the
+    eventual shell direction (DEC-011) and is deferred again by DEC-012 — nothing in the pipeline
+    renders a window today (the overlay already is the UI, and it is Win32), and taking the SDK here
+    would mean the repo's first external package plus a packaging story, and would put an
+    activation-taking UI thread next to an overlay whose whole contract is WS_EX_NOACTIVATE.
+
+    The one thing this assembly owns that no module may own is process-global state: PerMonitorV2 DPI
+    awareness (DEC-004 makes that the host's decision) and the single ScreenCaptureService whose monitor
+    topology is shared by both the orchestrator and the overlay.
+
+    TargetFramework is the highest in the repo: it must consume PixelRect/MonitorCapture from
+    ScreenCapture (net8.0-windows10.0.22621.0) and the hotkey monitor (net8.0-windows, which a
+    higher platform version may reference).
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.App</RootNamespace>
+    <AssemblyName>HeyGanesh.App</AssemblyName>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Four references, and they are the whole pipeline: the monitor raises the trigger, Voice turns
+      that trigger's speech into the question, the orchestrator answers it, the overlay shows the
+      answer. ScreenCapture, ElementSelection and Vision arrive transitively through
+      ContextOrchestrator and are used directly here — the same stance tools/ContextOrchestratorSmoke
+      takes, where one reference is documented as enough.
+    -->
+    <ProjectReference Include="..\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj" />
+    <ProjectReference Include="..\HeyGanesh.Voice\HeyGanesh.Voice.csproj" />
+    <ProjectReference Include="..\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
+    <ProjectReference Include="..\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
+  </ItemGroup>
+
+</Project>

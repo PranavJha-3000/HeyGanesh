@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Screen Overlay (see docs/ai/ARCHITECTURE.md).
+
+    Not product code: it exists so the overlay's window contract can be proven end-to-end — draws the
+    resolved box for a bounded time, click-through and non-activating, capture-excluded, and removed
+    on timeout/cancellation — before any app shell exists. Delete once the app can host the overlay
+    itself (see docs/ai/HANDOVER.md). Mirrors tools/ContextOrchestratorSmoke.csproj: same
+    dependency-free stance (no PackageReference) and the same per-monitor-v2 DPI awareness
+    requirement, because the canned box it hands the overlay is in physical pixels.
+
+    One project reference is enough: the overlay references ScreenCapture and ContextOrchestrator,
+    and this host uses those types for its canned verdicts and its monitor queries. No API keys are
+    involved anywhere — every verdict is constructed offline.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.OverlaySmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.OverlaySmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
+  </ItemGroup>
+
+</Project>

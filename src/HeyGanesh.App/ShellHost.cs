@@ -2,6 +2,7 @@ using HeyGanesh.ContextOrchestrator;
 using HeyGanesh.ElementSelection;
 using HeyGanesh.ScreenCapture;
 using HeyGanesh.ScreenOverlay;
+using HeyGanesh.TutorEngine;
 using HeyGanesh.Vision;
 using HeyGanesh.Voice;
 
@@ -19,7 +20,7 @@ namespace HeyGanesh.App;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This assembly owns the three things no module is allowed to own:
+/// This assembly owns the four things no module is allowed to own:
 /// </para>
 /// <list type="number">
 /// <item><description>
@@ -38,6 +39,12 @@ namespace HeyGanesh.App;
 /// speech: a chord press opens the microphone, a chord release closes it, and the committed
 /// transcript becomes the question. <c>--question</c> survives only for <c>--once</c>, the
 /// deterministic scripted path, and is ignored (loudly) when it cannot take effect.
+/// </description></item>
+/// <item><description>
+/// The verdict-to-lesson mapping. A non-Failed verdict is turned by the shell alone into a plain-data
+/// <c>TutorContext</c> (plus a visual derived from an already-retained frame), and the Tutor's answer
+/// is what the shell feeds to <c>SpeakAsync</c> — so no orchestrator or capture type ever reaches the
+/// teacher, and Voice never learns what it is reading aloud (DEC-015/DEC-016).
 /// </description></item>
 /// </list>
 /// <para>
@@ -111,6 +118,16 @@ internal static partial class ShellHost
             new ScreenOverlayOptions { VisibleDuration = TimeSpan.FromMilliseconds(options.DurationMs) },
             monitors: capture);
 
+        // The teaching seam, composed like the speech one — and, like it, harmless at rest.
+        // CreateTutorClient() returns null today (DEC-015 keeps the provider decision the owner's),
+        // so the tutor leg reports its skip after every verdict and costs nothing. When a live
+        // client lands, only CreateTutorClient changes. The using covers the (currently absent)
+        // client, which the shell owns because TutorService never disposes the seam it was handed;
+        // declared before voice so in teardown the speaker outlives the teacher — a lesson can
+        // always finish being read aloud after its call completed.
+        using ITutorClient? tutorClient = CreateTutorClient();
+        var tutor = tutorClient is null ? null : new TutorService(tutorClient);
+
         // The speech seam, composed with the default real legs (Qwen Gateway in, Fish/WAV out). The
         // constructor opens no devices: the microphone is taken per listen and released when the listen
         // ends, so sitting idle here costs nothing. Declaration order still sets teardown order — voice
@@ -132,7 +149,7 @@ internal static partial class ShellHost
                 // chord's voice turn feeds, one question source swapped for the other.
                 Console.WriteLine("resolving once at startup (the hook is never installed)...");
                 Console.WriteLine();
-                return await RunSessionAsync(orchestrator, overlay, options, lifetime.Token).ConfigureAwait(false);
+                return await RunSessionAsync(orchestrator, overlay, voice, tutor, options, lifetime.Token).ConfigureAwait(false);
             }
 
             // --once without a question: one live listen instead of one canned text — the scripted
@@ -141,11 +158,11 @@ internal static partial class ShellHost
                               "microphone is the question source)...");
             Console.WriteLine("speak now — the turn ends on its own at the silence timeout; Ctrl+C cancels.");
             Console.WriteLine();
-            var oncePump = new TriggerPump(voice, orchestrator, overlay, options, lifetime.Token);
+            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, options, lifetime.Token);
             return await oncePump.RunDirectAsync().ConfigureAwait(false);
         }
 
-        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, options, lifetime).ConfigureAwait(false);
+        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, options, lifetime).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -163,10 +180,11 @@ internal static partial class ShellHost
         ContextOrchestratorService orchestrator,
         ScreenOverlayService overlay,
         VoiceService voice,
+        TutorService? tutor,
         ShellOptions options,
         CancellationTokenSource lifetime)
     {
-        var pump = new TriggerPump(voice, orchestrator, overlay, options, lifetime.Token);
+        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, options, lifetime.Token);
 
         // Press starts the utterance; release ends it. Both handlers only flip state under the pump's
         // gate and hand work to the pool — the hook callback and the monitor's worker thread are never

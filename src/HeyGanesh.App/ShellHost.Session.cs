@@ -2,6 +2,7 @@ using System.Diagnostics;
 using HeyGanesh.ContextOrchestrator;
 using HeyGanesh.ElementSelection;
 using HeyGanesh.ScreenOverlay;
+using HeyGanesh.TutorEngine;
 using HeyGanesh.Vision;
 using HeyGanesh.Voice;
 
@@ -22,17 +23,27 @@ namespace HeyGanesh.App;
 // transcript, 3 a provider/HTTP error propagated rather than swallowed, 4 an unexpected fault,
 // 12 a required key is missing, 13 cancelled. 2 is "the shell could not start" and is decided in
 // ShellHost.RunAsync.
+//
+// The teach/speak leg that follows a non-Failed verdict (DEC-016) reuses that alphabet, never a new
+// code: 0 when a lesson is produced and reported — or when the wired-but-clientless seam honestly
+// reports its skip (DEC-015) — 12 for a key error from the teaching seam or the speaker, 3 for
+// either leg's provider fault, 13 when cancelled mid-leg, 4 for a mapping fault in the shell. The
+// verdict has always been reported (and drawn, when enabled) before any of those can fire: a leg
+// failure replaces the exit code, it never hides the answer the user already got.
 
 internal static partial class ShellHost
 {
     /// <summary>
-    /// Resolves <see cref="ShellOptions.Question"/> once, draws whatever verdict came back, and reports
-    /// what happened. Never throws: every documented failure mode of the pipeline is mapped to a line of
-    /// output and an exit code.
+    /// Resolves <see cref="ShellOptions.Question"/> once, draws whatever verdict came back, reports
+    /// what happened — and, on any non-Failed verdict, hands it to the teaching leg (mapped to a
+    /// plain-data TutorContext there, never to orchestrator or capture types). Never throws: every
+    /// documented failure mode of the pipeline is mapped to a line of output and an exit code.
     /// </summary>
     private static async Task<int> RunSessionAsync(
         ContextOrchestratorService orchestrator,
         ScreenOverlayService overlay,
+        VoiceService voice,
+        TutorService? tutor,
         ShellOptions options,
         CancellationToken lifetime)
     {
@@ -104,7 +115,13 @@ internal static partial class ShellHost
         if (!options.Overlay)
         {
             Console.WriteLine("overlay     : skipped (--no-overlay)");
-            return guidance.Failed ? 1 : 0;
+
+            // The Failed short-circuit holds here too: exit 1, and the Tutor is never handed a
+            // "no verdict" to teach from. A produced verdict (found or honest no-match) continues
+            // into the teach/speak leg exactly as the drawn path below does.
+            return guidance.Failed
+                ? 1
+                : await TeachAndSpeakAsync(tutor, voice, options, guidance, linked.Token).ConfigureAwait(false);
         }
 
         try
@@ -124,12 +141,19 @@ internal static partial class ShellHost
         catch (InvalidOperationException ex)
         {
             // SO-8: a second simultaneous show is refused. The shell should never manage to ask for one,
-            // because the pump keeps a session in flight until the overlay is done.
+            // because the pump keeps a session in flight until the overlay is done. The verdict was
+            // still reported above; teaching is skipped on this unreachable-by-design path.
             Console.WriteLine($"REFUSED (overlay): {ex.Message}");
             return 0;
         }
 
-        return guidance.Failed ? 1 : 0;
+        // The highlight has left the screen; now a produced verdict may be taught. Failed short-circuits
+        // to exit 1 exactly as before — never mapped, never taught from. This is also the CO-6 guard:
+        // Vision's model-side not-found arrives Found=false WITH Failed=true, and branching on Failed
+        // first sends it here, not to the Tutor.
+        return guidance.Failed
+            ? 1
+            : await TeachAndSpeakAsync(tutor, voice, options, guidance, linked.Token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -206,6 +230,7 @@ internal static partial class ShellHost
         private readonly VoiceService _voice;
         private readonly ContextOrchestratorService _orchestrator;
         private readonly ScreenOverlayService _overlay;
+        private readonly TutorService? _tutor;
         private readonly ShellOptions _options;
         private readonly CancellationToken _lifetime;
 
@@ -223,12 +248,14 @@ internal static partial class ShellHost
             VoiceService voice,
             ContextOrchestratorService orchestrator,
             ScreenOverlayService overlay,
+            TutorService? tutor,
             ShellOptions options,
             CancellationToken lifetime)
         {
             _voice = voice;
             _orchestrator = orchestrator;
             _overlay = overlay;
+            _tutor = tutor;
             _options = options;
             _lifetime = lifetime;
         }
@@ -412,10 +439,13 @@ internal static partial class ShellHost
                 }
 
                 // options-with rather than a new parameter: RunSessionAsync is the one session path and
-                // keeps reading ShellOptions.Question, which here is the committed transcript.
+                // keeps reading ShellOptions.Question, which here is the committed transcript. The pump
+                // hands down the same voice service it listened with, plus the shell's teaching service.
                 return await RunSessionAsync(
                     _orchestrator,
                     _overlay,
+                    _voice,
+                    _tutor,
                     _options with { Question = utter.FinalText },
                     _lifetime).ConfigureAwait(false);
             }

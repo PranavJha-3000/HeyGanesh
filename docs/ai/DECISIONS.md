@@ -9,6 +9,9 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-017](#dec-017--2026-10-01--cline-agent-pixel-canary) | 2026-10-01 | Cline agent (Pixel Canary) | First live teaching provider: internal DeepSeekTutorClient (deepseek-flash, direct Chat Completions, DEEPSEEK_API_KEY at call time per DEC-007, fixed thinking:disabled) exposed only through TutorClientFactory.CreateDeepSeek → ITutorClient; verified offline through the exact public construction path via a loopback BaseUrl stub (no InternalsVisibleTo, no handler seam); TU-11/TU-12 | accepted |
+| [DEC-016](#dec-016--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Teaching leg wired into the shell: non-Failed verdict maps to a TutorContext snapshot at the call edge (Failed short-circuits; no-match → Empty; Found carries the whole retained frame as a DownscaledFrame visual), the explanation is spoken verbatim behind a new `--no-speak`; seam composed by `CreateTutorClient()` which returns null — DEC-015's provider decision stays unmade | accepted |
+| [DEC-015](#dec-015--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Tutor Engine as a provider-agnostic teaching layer: question-first prompt owned by the service, screen data as labelled untrusted input, opaque bounded JPEG visuals over a caller-supplied seam; no live client, no actuation, no disposal of the injected seam | accepted |
 | [DEC-014](#dec-014--2026-09-30--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-30 | Cline agent (model id not exposed to the agent) | Push-to-talk shell wiring: press listens, release ends the utterance, committed transcript becomes the question; `--question` demoted to legacy/`--once`; `Failed` utterance → exit 1 | accepted |
 | [DEC-013](#dec-013--2026-09-30--cline-agent-model-id-not-exposed-to-the-agent) | 2026-09-30 | Cline agent (model id not exposed to the agent) | Voice owns the integration boundary: Qwen Gateway GCP-7.0 client with cancel/discard suppression (no pre-generation suppression exists for live audio) + Fish TTS behind `ITtsClient` as WAV/44.1 kHz; external runtimes, not dependencies | accepted |
 | [DEC-012](#dec-012--2026-09-29--pixel-canary) | 2026-09-29 | Pixel Canary | App Shell as a dependency-free console host that owns DPI awareness, the service graph and the hotkey→orchestrator→overlay wiring; WinUI 3 deferred again; no test doubles in product code | accepted |
@@ -27,6 +30,125 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-017 — 2026-10-01 — Cline agent (Pixel Canary)
+
+**Decision — the first live teaching provider is DeepSeek `deepseek-flash`, direct, internal, and factory-fronted.** `DeepSeekTutorClient` (internal) sends one OpenAI-compatible Chat Completions request per turn — `model`, `messages` (system string; user plain string, or the verified `text`+`image_url` content-part array when a `TutorVisual` rides along, as a `data:image/jpeg;base64,` URL of the exact opaque bytes), `max_tokens` from the prompt's budget, `stream:false` — plus the fixed v1 decision `thinking: {"type": "disabled"}`. The bearer key is `DEEPSEEK_API_KEY`, read at call time only (DEC-007's temporary stopgap, extended through a second seam; the same variable Vision reads, which DEC-017 accepts as recorded coupling). `TutorService`, the shell and every other module are untouched; `TutorClientFactory.CreateDeepSeek(DeepSeekTutorOptions?) → ITutorClient` is the only new public construction API, and the shell's flip is that one call.
+
+**Reasoning.**
+- Fields were verified against the live DeepSeek API docs before writing (endpoint, message shapes, `image_url.detail` vocab, `thinking` object, usage echo) — nothing invented. `deepseek-flash` is the current name and the vision-capable model; `detail: high` keeps screen legibility for teaching.
+- `thinking: {"type": "disabled"}` is fixed in the payload, not an options knob: the model currently defaults to thinking enabled at high effort, which spends unpredictable latency and the `max_tokens` budget on a reasoning trace for an answer meant to be SPOKEN. `MaxOutputTokens` must bound the lesson. Re-enabling is a future decision with measured evidence, not a flag to drift on.
+- Internal client + public factory returning the seam: the concrete provider type never enters any consumer's compile-time world, which is DEC-015's "swapping providers touches construction only" enforced at the API level. A public concrete client, a handler parameter, or a provider enum/registry were all rejected; one static method, seam-typed.
+- Verification tests the REAL construction path (TU-11): the smoke host builds via the factory and points `DeepSeekTutorOptions.BaseUrl` at a strictly-loopback `HttpListener` stub (free-port probe via `TcpListener` on :0, concrete-prefix bind with bounded retry — `HttpListener` cannot bind `:0`; no wildcard prefix, no admin/URLACL). No `InternalsVisibleTo`, no exposed `HttpMessageHandler` — an assembly-identity hole would verify a path production cannot take. Stub replies are canned in enqueue order (request N ← Nth response; last repeats), deterministically, and the row owns `DEEPSEEK_API_KEY` for its duration only, sentinel-never-printed.
+- Error mapping lives in the client (`401/403`→auth status-only message, body never quoted; `429`→rate-limit; other→client+status with a ≤500-char snippet); everything else is left to the service's single `Translate` authority. Empty content crosses as empty text — the service owns calling it a failure.
+
+**Rejected.** Thinking-on/server-defaults (spoken latency/budget); thinking as a knob (policy before evidence); shared DeepSeek HTTP helper assembly (DEC-009 — the ~40 transport lines duplicated from Vision are the accepted price); reusing `DeepSeekVisionClient` (JSON-mode grid prompt ≠ teaching); a second env key (rotation drift); shell flip in this change (scope — TU-12's live half is the gate); `response_format`/sampling/stream fields (the teaching contract has no such policy).
+
+**Consequences.** `deepseek-flash` + `DEEPSEEK_API_KEY` are now committed names (DEC-015's neutrality ends by owner decision, not by drift). Vision and Tutor share one key and one concurrency pool — typed 429s on both seams, token accounting in both results. TU-11 pins the wire offline; TU-12's live half (and the injection row) remain the human-gated truth. The shell flip — `CreateTutorClient()` returning `TutorClientFactory.CreateDeepSeek()` — is now a one-line change, deliberately not taken here.
+
+## DEC-016 — 2026-09-30 — Cline agent (Pixel Canary)
+
+**Decision — the shell wires the teaching leg; it does not wire a provider.** After every non-Failed
+verdict — reported, and drawn when enabled — `RunSessionAsync` runs `TeachAndSpeakAsync`: the shell
+maps the `GuidanceResult` into the plain-data `TutorContext` exactly as DEC-015's remarks prescribed
+(`!Found` maps to `TutorContext.Empty`; `Captures[0]` — the cursor's display, already JPEG ≤ 1280 px —
+attaches as a `DownscaledFrame` visual when `Found`, by reference), calls `TutorService.ExplainAsync`,
+and feeds `ExplanationText` **verbatim** into the already-composed `SpeakAsync` (skippable with the
+new `--no-speak`). `HeyGanesh.App` gains its fifth ProjectReference (TutorEngine; zero NuGet
+unchanged). The seam is composed by one method, `CreateTutorClient()`, which **returns null today**:
+DEC-015's boundary holds — the change wires the leg, not a provider, and a clientless leg says so
+after the verdict (skip line, exit 0) instead of pretending to teach or refusing the working path.
+
+**Reasoning.**
+- DEC-015 left exactly one forward-declaration point; a null-returning factory with zero call-site
+  changes is the honest minimum. Fail-closed ("no client ⇒ refuse the turn") would have broken the
+  product path that works today; shipping a real client would have smuggled the owner's provider
+  decision in as plumbing.
+- Short-circuiting on `Failed` at the call sites — branch first, map never — is the CO-6 guard, not
+  mapping paranoia: Vision's model-side not-found arrives `Found=false` WITH `Failed=true`, and a
+  "no verdict" is not mappable; teaching from absence is fabrication, and the overlay already
+  refuses to draw on exactly this signal.
+- The whole-frame visual is the only derivation that exists without an image pipeline: no decode, no
+  crop, no re-encode, no new package — `Captures[0]` already carries the bytes and the declared
+  dimensions. Crop-around-box needs a JPEG decoder and is explicitly deferred (FEATURE-006), not
+  quietly built.
+- Size caps are enforced by `TutorService` alone (pre-seam, `ArgumentException` = caller bug), and the
+  shell maps that to exit 4 labeled `TUTOR MAPPING FAULT (shell bug)`. Pre-checking caps in the shell
+  would give the caps a second enforcer, and second enforcers drift.
+- The exit-code alphabet is reused, never extended: 0/12/3/13/4 mean what they meant, and the verdict
+  is always reported (and drawn) before any leg code can replace it. `--no-speak` exists because once
+  a live client lands, the scripted `--once` path must be runnable without taking the audio device —
+  a real-surface flag, not a test double, so DEC-012's no-`--fake` rule holds.
+
+**Rejected.**
+- *Always-attach visual, including no-match turns* — spends visual budget on a verdict that says
+  nothing was seen and muddies the on-screen/in-general split the system prompt defends.
+- *Fire-and-forget `SpeakAsync`* — breaks Voice's one-voice-session rule (VO-9) and the
+  shutdown/Drain ordering; sequential speak keeps both true.
+- *Summarising or rewriting the explanation before speaking* — the Tutor owns the prose;
+  `MaxExplanationChars` is already the contract with this consumer.
+- *A shared-abstractions assembly for the confidence-tier switch* — DEC-009; three switch arms in
+  the shell instead.
+- *A `--no-tutor` kill-switch* — with a clientless seam it can test nothing, and once a client
+  exists, "no lesson" is a provider decision, not a flag; `--no-speak` covers the device concern.
+
+**Consequences.** Both turn modes share the leg (one `RunSessionAsync`, no drift). A long lesson now
+extends the busy window — a second chord is refused while speech plays (VO-9 surfacing one layer up);
+recorded, not fixed. Offline verification reaches the gates and legacy invariance only (SH-15..SH-17);
+end-to-end teach-and-speak is a live-only row until the first `ITutorClient` exists — which the owner
+owns. Cropped-region visuals and scripted mapping coverage belong to the future `ShellSmoke` host
+(FEATURE-005), now the natural next verification artifact.
+
+## DEC-015 — 2026-09-30 — Cline agent (Pixel Canary)
+
+**Decision — the Tutor Engine is the teaching layer, and it ships with no provider.**
+`HeyGanesh.TutorEngine` turns one `TutorRequest` — a question (the teaching task, primary) plus an
+optional `TutorContext` (a plain-data snapshot of already-resolved grounding, possibly carrying one
+opaque `TutorVisual` JPEG) — into one `TutorResult.ExplanationText` over an `ITutorClient` seam.
+The seam ships with fakes only: **no provider, model, endpoint or key name is committed by this
+change.** `TutorService` owns the system prompt; everything screen-derived enters as data explicitly
+labelled `UNTRUSTED DATA`, and the rendered prompt forbids following instructions found inside it;
+coordinates travel as labelled metadata and are banned from answer prose; the visual is capped
+(512 KiB, 1568 px edges), crosses as separate binary, never base64-spliced into text. The service
+implements no `IDisposable` and never disposes the injected client, and the assembly carries zero
+ProjectReference and an empty P/Invoke surface — there is nothing in it that could touch a screen.
+
+**Reasoning.**
+- DEC-013 made the Tutor the answer authority — Voice suppresses the Gateway's own answers precisely
+  because this module will speak. Question-first is the load-bearing rule: an explanation must be a
+  real lesson when the screen resolved nothing (TU-5 asserts exactly that), or the module degrades
+  into a caption engine and duplicates the legs.
+- `GuidanceResult` is NOT passed — the shell maps it into a `TutorContext` snapshot at the call edge.
+  A reference to ContextOrchestrator would weld the teacher to the session state machine and drag
+  capture/leg types along; DEC-009's discipline (siblings stay siblings, the host wires the edges)
+  applies to the teacher too.
+- A provider-neutral seam rather than a live client: the owner has not chosen a teaching provider, and
+  choosing one here would smuggle a decision in as plumbing. `TutorPrompt`'s shape
+  (system text / user text / max tokens / separate visual) is the least-common-denominator of
+  Chat-Completions-style APIs, so freezing it now is safe.
+- The untrusted-data labelling is prompt-level mitigation, not a guarantee: fakes can prove the
+  labelling, the carrying and the non-echo — they cannot prove a real model's resistance. The
+  checklist records live injection-resistance as an OPEN row rather than pretending otherwise.
+
+**Rejected.**
+- *Passing `GuidanceResult` / referencing ContextOrchestrator* — welds the layers; see above.
+- *Base64-splicing the visual into the user text* — defeats byte-cap auditability and makes the text
+  channels unscannable for secrets; the seam carries bytes as its own field instead.
+- *Silently downscaling an over-cap visual* — quietly teaching a different picture than the caller
+  cropped is drift; over-cap throws `ArgumentException` (caller bug) instead, named per option.
+- *Shipping a live client with a chosen model now* — the decision belongs to the owner; when it lands
+  it follows the DEC-007 stopgap pattern at call time. No field in this assembly can hold a
+  credential (TU-8), and the service deliberately reads none itself.
+- *A `TutorService : IDisposable` disposing the client* — the service never created the seam;
+  disposal belongs to whoever opened it (TU-9 pins the absence via reflection, because the XML docs
+  legitimately *talk about* disposal and would false-fail a text scan).
+
+**Consequences.** `SpeakAsync` still has no caller: mapping `TutorResult → SpeakRequest` (and
+`GuidanceResult → TutorContext`) in the shell is a separate change, filed with FEATURE-006; Jev's
+position "before the Tutor Engine call" stays open. TU-1..TU-10 are green offline; every claim about
+model behaviour is open by construction. `TutorOptions`' caps (1600-char answer, 500 output tokens,
+400-char untrusted-description clamp, 512 KiB/1568 px visual) become shell config decisions at wiring
+time.
+
 ## DEC-014 — 2026-09-30 — Cline agent (model id not exposed to the agent)
 
 **Decision — push-to-talk shell wiring.** The App Shell composes one `VoiceService` and a chord press

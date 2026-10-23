@@ -1,4 +1,21 @@
+## 2026-10-23 · Cline agent (S0.4: CI and Safety Gates)
+
+- **Change:** add .github/workflows/ci.yml, docs/ai/CI.md, .github/workflows/scan-forbidden.ps1, .github/workflows/scan-secrets.ps1, and add six new standing rows (S-10..S-13, S-15..S-16) + local-only note to docs/ai/TEST-CHECKLIST.md. No source code, no project changes, no new dependencies, no live provider calls, no target-framework changes, no restructuring. docs/ai/HANDOVER.md is NOT modified as part of S0.4 (missing R1 closeout is reported separately).
+- **Rollback point:** remove the 6 files listed above; restore docs/ai/TEST-CHECKLIST.md to its pre-S0.4 state; leave docs/ai/ROLLBACK.md unchanged except for this entry.
+- **Files to remove:** .github/workflows/ci.yml, .github/workflows/scan-forbidden.ps1, .github/workflows/scan-secrets.ps1, docs/ai/CI.md, docs/ai/TEST-CHECKLIST.md (new rows only), docs/ai/ROLLBACK.md (this entry).
+- **Re-check after revert:** dotnet build -c Debug (0 warnings/0 errors), all 9 project builds succeed, all existing verification hosts pass with the original arguments, docs/ai/CONFIGS.md and docs/ai/AGENTS.md unchanged, docs/ai/HANDOVER.md unchanged (no R1 closeout written as part of S0.4).
+- **Re-verify with:** dotnet build -c Debug, dotnet build -c Debug <each of 9 projects>, dotnet run --project tools\<Host> -c Debug -- <original offline args>; confirm zero warnings/errors and original exit codes (0 for offline fakes, 12 for keyless live-path, 13 for cancel).
+- **Dependencies:** None. All CI checks run offline; no external tools are installed.
+
+---
 # ROLLBACK — Rollback Points & Procedures
+## 2026-10-23 · Cline agent (R1: Solution and Build Hygiene)
+
+- **Change:** add `HeyGanesh.sln`, `global.json`, `Directory.Build.props`, `.editorconfig` at repository root for solution-wide build hygiene; no source changes, no dependency additions, no target-framework changes, no restructuring. All 9 existing projects remain at their current paths.
+- **Rollback point:** delete the 4 newly added root files. Verify pre-R1 state: each of 9 projects builds individually with explicit project paths (no wildcards, no `-project` flag). No solution file, no `global.json`, no `Directory.Build.props`, no `.editorconfig` present.
+- **Files to remove:** `HeyGanesh.sln`, `global.json`, `Directory.Build.props`, `.editorconfig`
+- **Re-check after revert:** `dotnet build -c Debug src\\HeyGanesh.App\\HeyGanesh.App.csproj` plus all 8 remaining project builds; `dotnet build -c Debug` (no solution) should fail as it did before R1.
+- **Verified:** `dotnet build -c Debug src\\HeyGanesh.App\\HeyGanesh.App.csproj`, `dotnet build -c Debug src\\HeyGanesh.ContextOrchestrator\\HeyGanesh.ContextOrchestrator.csproj`, `dotnet build -c Debug src\\HeyGanesh.GlobalHotkeyMonitor\\HeyGanesh.GlobalHotkeyMonitor.csproj`, `dotnet build -c Debug src\\HeyGanesh.ScreenCapture\\HeyGanesh.ScreenCapture.csproj`, `dotnet build -c Debug src\\HeyGanesh.ElementSelection\\HeyGanesh.ElementSelection.csproj`, `dotnet build -c Debug src\\HeyGanesh.Vision\\HeyGanesh.Vision.csproj`, `dotnet build -c Debug src\\HeyGanesh.TutorEngine\\HeyGanesh.TutorEngine.csproj`, `dotnet build -c Debug src\\HeyGanesh.Voice\\HeyGanesh.Voice.csproj`, `dotnet build -c Debug src\\HeyGanesh.ScreenOverlay\\HeyGanesh.ScreenOverlay.csproj` all succeed with no solution scaffolding.
 
 > Record of known-good states and the steps to return to them. Add an entry before or
 > immediately after any change that is hard to reverse. One entry, newest first.
@@ -7,6 +24,9 @@
 
 | Date | Rollback point (commit / tag) | Applies to | Verified |
 |------|-------------------------------|------------|----------|
+| 2026-10-01 | delete the four untracked files in `src/HeyGanesh.TutorEngine/` (`DeepSeekTutorClient.cs`, `DeepSeekTutorOptions.cs`, `DeepSeekTutorMessages.cs`, `TutorClientFactory.cs`) + the three in `tools/TutorSmoke/` (`TutorSmokeHost.Payload.cs`, `TutorSmokeHost.Live.cs`, `TutorSmokeHost.StubServer.cs`), revert this session's edits (`TutorSmokeHost.cs` modes/usage/header, `TutorSmokeHost.Source.cs` audit, docs) | first live provider + smoke rows + docs; no service/shell/sibling file's behaviour changed | TU-11, TU-12 offline shape, TU-1..TU-10 regression |
+| 2026-09-30 | `git checkout 9e73fdb -- src/HeyGanesh.App` + delete the untracked `src/HeyGanesh.App/ShellHost.Tutor.cs`, revert this session's doc edits | teaching-leg wiring in the App Shell + docs; no module source touched | SH-15..SH-17 |
+| 2026-09-30 | revert commit `9d3ff37` for the module; delete `tools/TutorSmoke/` + `docs/ai/features/FEATURE-006.md` and revert this session's doc edits for the rest | new Tutor module (committed) + new smoke host + docs; no existing file's behaviour changed | TU-1..TU-10 offline rows |
 | 2026-09-30 | restore 4 App Shell files from `%TEMP%\hg-rollback-shell-20260930`, delete `docs/ai/features/FEATURE-005.md`, revert this session's doc edits | push-to-talk shell wiring in `src/HeyGanesh.App/` + docs | SH-10..SH-14 (13 live-gated) |
 | 2026-09-30 | delete `src/HeyGanesh.Voice/` + `tools/VoiceSmoke/` + `docs/ai/features/FEATURE-004.md`, revert this session's doc edits | new Voice module + new smoke host + docs; no existing file's behaviour changed | VO-1..VO-10 offline rows |
 | 2026-09-29 | delete `src/HeyGanesh.App/` + `docs/ai/features/FEATURE-003.md`, revert this session's doc edits | new shell host + docs; no existing file's behaviour changed | SH-1..SH-6 offline rows |
@@ -16,6 +36,67 @@
 ---
 
 <!-- ROLLBACK ENTRIES BELOW THIS LINE — newest first -->
+
+## 2026-10-01 · Cline agent (Pixel Canary)
+
+- **Change:** the first live teaching provider (DEC-017) — `src/HeyGanesh.TutorEngine/`:
+  `DeepSeekTutorClient.cs` (internal client, call-time `DEEPSEEK_API_KEY`, fixed
+  `thinking:{"type":"disabled"}`), `DeepSeekTutorOptions.cs`, `DeepSeekTutorMessages.cs`
+  (payload mapping), `TutorClientFactory.cs` (the only new public construction API).
+  `tools/TutorSmoke/`: `TutorSmokeHost.StubServer.cs` (loopback stub, free-port probe +
+  bounded bind retry), `TutorSmokeHost.Payload.cs` (TU-11), `TutorSmokeHost.Live.cs`
+  (TU-12); edits: host modes/usage/header, `--assert-source` audit extension. Docs:
+  DEC-017, TU-11/TU-12 + scope note, ARCHITECTURE/FEATURE-006/FLOW updates, HANDOVER,
+  this entry, AGENTS notes.
+- **Rollback point:** every new file is UNTRACKED and no existing file's runtime behaviour
+  changed (the shell's `CreateTutorClient()` still returns null). Delete the seven new files,
+  hand-revert the two smoke-host edits and the doc rows, and `dotnet build` returns to
+  yesterday's shape with no provider name committed.
+- **Re-check after revert:** `dotnet build src\HeyGanesh.TutorEngine -c Debug` +
+  `dotnet build tools\TutorSmoke -c Debug` → 0 warnings; `TutorSmoke --assert-source` exits
+  0 without the provider rows; `--help` no longer lists `--assert-tutor-payload`/`--live-explain`.
+- **Blast radius if left in place:** none at runtime — no caller constructs the factory yet.
+  The committed surface is names only (`deepseek-flash`, `DEEPSEEK_API_KEY`, the factory).
+
+## 2026-09-30 · Cline agent (Pixel Canary)
+
+- **Change:** the shell's teaching leg (DEC-016) — `src/HeyGanesh.App/`: new `ShellHost.Tutor.cs`
+  (untracked; mapping, visual derivation, `CreateTutorClient()` null seam factory, `TeachAndSpeakAsync`
+  with the exit-code mapping) plus edits to `HeyGanesh.App.csproj` (5th ProjectReference), `ShellHost.cs`
+  (composition + plumbing), `ShellHost.Session.cs` (post-verdict call sites, pump, exit-code header),
+  `ShellHost.Args.cs` (`--no-speak`, header/footer honesty). Docs: DEC-016, SH-15..SH-17, FLOW tutor
+  path flip, ARCHITECTURE App Shell/Voice/Tutor bullets, FEATURE-006 item 1, HANDOVER, this entry,
+  AGENTS notes.
+- **Rollback point:** the App Shell is committed through `9e73fdb`; this change is entirely
+  **uncommitted**. `git checkout 9e73fdb -- src/HeyGanesh.App` restores the four edited files, and
+  deleting the untracked `ShellHost.Tutor.cs` removes the leg — the build fails on nothing else, since
+  no other assembly was touched. Hand-revert this session's doc rows (DEC-016 entry + index row, the
+  SH-15..SH-17 rows + scope-note sentence, the FLOW tutor-path flip, the ARCHITECTURE bullets,
+  FEATURE-006's status, the HANDOVER row + entry, this entry, the AGENTS notes).
+- **Re-check after revert:** `dotnet build src\HeyGanesh.App -c Debug` → 0 warnings; the legacy row
+  `HeyGanesh.App.exe --once --question "where is the Save button"` → `KEY ERROR (Element Selection)`,
+  exit **12** (keys unset); `--help` no longer lists `--no-speak`.
+- **Blast radius if left in place:** runtime behavior changes only on the post-verdict path (new
+  report lines; the honest skip line while `CreateTutorClient()` returns null; with a future live
+  client, audio + 12/3/4/13 leg codes). Every pre-verdict path is untouched by construction.
+
+## 2026-09-30 · Cline agent (Pixel Canary)
+
+- **Change:** Tutor Engine module (`src/HeyGanesh.TutorEngine/`, committed as `9d3ff37 feat: add Tutor
+  Engine module`) + TutorSmoke verification host (`tools/TutorSmoke/`, untracked) + docs (DEC-015,
+  TEST-CHECKLIST TU-1..TU-10, FLOW Tutor path, ARCHITECTURE module line + detail, FEATURE-006, AGENTS
+  module row + commands, HANDOVER index + entry).
+- **Rollback point:** the module is a single clean commit — `git revert 9d3ff37` removes it. The smoke
+  host and FEATURE-006 are untracked: delete `tools/TutorSmoke/` and
+  `docs/ai/features/FEATURE-006.md`. The doc edits are uncommitted: hand-revert this session's rows
+  (DEC-015 entry + index row; the `## Tutor Engine checks` section; the `## Tutor path` section; the
+  ARCHITECTURE Tutor line + detail block; the AGENTS Tutor table row + commands block; the HANDOVER
+  index row + entry; this ROLLBACK row + entry). No existing source file was modified — nothing
+  pre-existing can regress.
+- **Re-check after revert:** `dotnet build src\HeyGanesh.App -c Debug` (the shell never referenced the
+  Tutor, so it must be unaffected) and any VoiceSmoke offline row, e.g. `--fake-transcript "x"`.
+- **Blast radius if left in place:** none at runtime — no other module or the shell references
+  `HeyGanesh.TutorEngine` yet; wiring it in is FEATURE-006's next change.
 
 ## 2026-09-30 · Cline agent (model id not exposed to the agent)
 

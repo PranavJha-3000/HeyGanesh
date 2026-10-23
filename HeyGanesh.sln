@@ -1,0 +1,83 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4453BD60-341D-402A-BC24-74E62DDB2C7F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.App", "src\HeyGanesh.App\HeyGanesh.App.csproj", "{DFBAECAF-5A5C-47F5-A01E-42E723179401}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ContextOrchestrator", "src\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj", "{820FA599-B7A6-40E2-A48F-5905A26DA218}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.GlobalHotkeyMonitor", "src\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj", "{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ScreenCapture", "src\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj", "{19BA7471-E91F-45DC-8B87-4395B07B1025}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ElementSelection", "src\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj", "{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Vision", "src\HeyGanesh.Vision\HeyGanesh.Vision.csproj", "{1A0CF669-84E3-4779-9308-E50853166374}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.TutorEngine", "src\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj", "{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Voice", "src\HeyGanesh.Voice\HeyGanesh.Voice.csproj", "{A26B694A-53E4-404C-9733-FD21163F9613}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ScreenOverlay", "src\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj", "{3C49876F-456E-453C-828A-932914002FD2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFBAECAF-5A5C-47F5-A01E-42E723179401}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFBAECAF-5A5C-47F5-A01E-42E723179401}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFBAECAF-5A5C-47F5-A01E-42E723179401}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFBAECAF-5A5C-47F5-A01E-42E723179401}.Release|Any CPU.Build.0 = Release|Any CPU
+		{820FA599-B7A6-40E2-A48F-5905A26DA218}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{820FA599-B7A6-40E2-A48F-5905A26DA218}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{820FA599-B7A6-40E2-A48F-5905A26DA218}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{820FA599-B7A6-40E2-A48F-5905A26DA218}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19BA7471-E91F-45DC-8B87-4395B07B1025}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19BA7471-E91F-45DC-8B87-4395B07B1025}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19BA7471-E91F-45DC-8B87-4395B07B1025}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19BA7471-E91F-45DC-8B87-4395B07B1025}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A0CF669-84E3-4779-9308-E50853166374}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A0CF669-84E3-4779-9308-E50853166374}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A0CF669-84E3-4779-9308-E50853166374}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A0CF669-84E3-4779-9308-E50853166374}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A26B694A-53E4-404C-9733-FD21163F9613}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A26B694A-53E4-404C-9733-FD21163F9613}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A26B694A-53E4-404C-9733-FD21163F9613}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A26B694A-53E4-404C-9733-FD21163F9613}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C49876F-456E-453C-828A-932914002FD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C49876F-456E-453C-828A-932914002FD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C49876F-456E-453C-828A-932914002FD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C49876F-456E-453C-828A-932914002FD2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DFBAECAF-5A5C-47F5-A01E-42E723179401} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{820FA599-B7A6-40E2-A48F-5905A26DA218} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{19BA7471-E91F-45DC-8B87-4395B07B1025} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{1A0CF669-84E3-4779-9308-E50853166374} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{A26B694A-53E4-404C-9733-FD21163F9613} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{3C49876F-456E-453C-828A-932914002FD2} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+	EndGlobalSection
+EndGlobal

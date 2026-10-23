@@ -12,7 +12,7 @@ internal static partial class ShellHost
     {
         var question = "";
         var help = false; var once = false; var overlay = true; var foreground = false;
-        var retainCaptures = true; var expectDpi = true;
+        var retainCaptures = true; var expectDpi = true; var noSpeak = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
 
@@ -25,6 +25,7 @@ internal static partial class ShellHost
                 case "--no-overlay": overlay = false; break;
                 case "--foreground": foreground = true; break;
                 case "--no-retain-captures": retainCaptures = false; break;
+                case "--no-speak": noSpeak = true; break;
                 case "--no-dpi": expectDpi = false; break;
                 case "--seconds": seconds = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -43,12 +44,12 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak);
     }
 
     private static void PrintUsage()
     {
-        Console.WriteLine("Hey Ganesh — app shell (speak -> Voice -> Context Orchestrator -> Screen Overlay)");
+        Console.WriteLine("Hey Ganesh — app shell (speak -> Voice -> Context Orchestrator -> Screen Overlay -> Tutor -> spoken answer)");
         Console.WriteLine();
         Console.WriteLine("Usage: HeyGanesh.App.exe [--once [--question \"<text>\"]] [options]");
         Console.WriteLine();
@@ -63,6 +64,9 @@ internal static partial class ShellHost
         Console.WriteLine("--cancel-ms n     cancel the current turn's token after n ms, to watch a turn unwind.");
         Console.WriteLine("--duration-ms n   how long the overlay stays on screen (default 3000).");
         Console.WriteLine("--no-overlay      resolve and report, but draw nothing.");
+        Console.WriteLine("--no-speak        teach but stay silent: skip the speech-out leg. The lesson (when one is");
+        Console.WriteLine("                  produced) is still reported as text — headless scripted runs and anyone");
+        Console.WriteLine("                  who does not want the desk speaking should use it.");
         Console.WriteLine("--foreground      walk the foreground window instead of the window under the cursor.");
         Console.WriteLine("--no-retain-captures  drop the captured frames from the verdict (RetainCaptures=false).");
         Console.WriteLine("--max-dim         capture downscale cap in px (default 1280).");
@@ -78,7 +82,9 @@ internal static partial class ShellHost
         Console.WriteLine("release-abandoned voice turn, which resolves nothing on purpose) | 1 the verdict is a");
         Console.WriteLine("failure, or no transcript was produced | 2 the shell could not start | 3 provider/HTTP");
         Console.WriteLine("error propagated rather than swallowed | 4 an unexpected fault | 12 a required API key");
-        Console.WriteLine("is missing | 13 cancelled.");
+        Console.WriteLine("is missing | 13 cancelled. The teach/speak leg after a non-Failed verdict reuses these");
+        Console.WriteLine("codes: 12/3 are a key/provider error from the teaching seam or the speaker, 4 is a mapping");
+        Console.WriteLine("fault in the shell; the verdict is always reported (and drawn) before either can fire.");
         Console.WriteLine();
         Console.WriteLine("Live listens need HEYGANESH_QWEN_GATEWAY_URL (the qwen-audio-agent Gateway is a separate");
         Console.WriteLine("process that runs with its own provider key; no key crosses the protocol to HeyGanesh). The");
@@ -125,7 +131,10 @@ internal static partial class ShellHost
         Console.WriteLine($"  keys       : TYPESAFE_API_KEY={(typesafeKey ? "present (value suppressed)" : "MISSING")}  " +
                           $"DEEPSEEK_API_KEY={(deepseekKey ? "present (value suppressed)" : "MISSING")}");
         Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
-                          $"FISH_AUDIO_API_KEY={(fishKey ? "present (value suppressed)" : "MISSING")} (TTS not wired into the shell yet)");
+                          $"FISH_AUDIO_API_KEY={(fishKey ? "present (value suppressed)" : "MISSING")} (TTS speaks the lesson when one is produced)");
+        // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
+        // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
+        Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
     }
@@ -142,6 +151,7 @@ internal static partial class ShellHost
         int CancelMs,
         int DurationMs,
         int MaxDim,
-        int MaxCandidates);
+        int MaxCandidates,
+        bool NoSpeak);
 }
 

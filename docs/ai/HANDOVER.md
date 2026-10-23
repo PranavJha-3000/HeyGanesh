@@ -8,6 +8,9 @@
 
 | Date | Model / version | Headline | Branch / commit |
 |------|-----------------|----------|-----------------|
+| 2026-10-01 | Cline agent (Pixel Canary) | First live teaching provider — internal `DeepSeekTutorClient` (`deepseek-flash`, call-time `DEEPSEEK_API_KEY`, fixed `thinking:disabled`) behind `TutorClientFactory.CreateDeepSeek → ITutorClient`; TU-11 pins the wire offline via loopback-`BaseUrl` stub on the exact factory path (no `InternalsVisibleTo`); TU-12 offline shape exit 12; shell flip deliberately NOT taken (DEC-017); TU-11/TU-12 | `main` (working tree) |
+| 2026-09-30 | Cline agent (Pixel Canary) | Shell teaching leg wired — verdict maps to `TutorContext` at the call edge (Failed short-circuits, no-match → Empty, Found attaches the retained frame as a visual), lesson spoken verbatim behind `--no-speak`; seam composed null-client until the provider decision (DEC-016); SH-15..SH-17 | `main` (working tree) |
+| 2026-09-30 | Cline agent (Pixel Canary) | Tutor Engine built — question-first teaching layer over `ITutorClient`; untrusted-data prompt, capped opaque visuals, zero actuation, no live provider by design (DEC-015); TU-1..TU-10 offline rows green; shell wiring pending | `main` (working tree) |
 | 2026-09-30 | Cline agent (model id not exposed to the agent) | App Shell wired to Voice — press listens, release ends the utterance, transcript becomes the question; `--question` demoted to legacy (DEC-014); SH-10..SH-14, live rows human-gated | `main` (working tree) |
 | 2026-09-30 | Cline agent (model id not exposed to the agent) | Voice pipeline built — Qwen Gateway GCP-7.0 listen seam with cancel/discard suppression + Fish WAV TTS behind `ITtsClient` (DEC-013); VO-1..VO-10 offline rows green, all live paths unrun | `main` (working tree) |
 | 2026-09-29 | Pixel Canary | App Shell built — the process host that wires hotkey → Context Orchestrator → Screen Overlay (DEC-012); offline rows SH-1..SH-8 green, live path still unrun | `main` (working tree) |
@@ -26,6 +29,164 @@
 ---
 
 <!-- SESSION ENTRIES BELOW THIS LINE — newest first -->
+## 2026-10-01 — Cline agent (Pixel Canary) — First live teaching provider: DeepSeek behind the factory; shell flip still one line away
+
+- **Branch / commit:** `main` @ `9e73fdb` (+ the uncommitted DEC-016 shell leg from the previous
+  session) — this change adds ONLY new untracked files plus two smoke-host edits and doc rows;
+  rollback in ROLLBACK.md. `TutorService`, the shell, Voice/ES/Vision/CO/Overlay untouched;
+  the App still builds against the unchanged public surface.
+- **Scope:** close FEATURE-006 item 2 by owner decision — DeepSeek `deepseek-flash`, direct,
+  `DEEPSEEK_API_KEY`, DEC-007 pattern (DEC-017).
+
+### Done
+- `src/HeyGanesh.TutorEngine/`: `DeepSeekTutorOptions` (public options: model/base/detail/timeout,
+  no key, no handler, no thinking knob by design); `DeepSeekTutorMessages` (internal mapping:
+  system string; user plain string or text+`image_url` data-URL parts — exact bytes, no decode);
+  `DeepSeekTutorClient` (internal; call-time key; `{model, messages, max_tokens, stream:false,
+  thinking:{type:disabled}}`; 401/403→auth status-only, 429→rate-limit, other→client+status+
+  ≤500-char snippet; empty stays empty for the service); `TutorClientFactory.CreateDeepSeek` (the
+  only new public API, returns the seam).
+- `tools/TutorSmoke/`: loopback `StubServer` (TcpListener :0 probe → concrete-prefix `HttpListener`
+  bind with bounded retry — `HttpListener` cannot bind `:0`; strictly 127.0.0.1, no wildcard, no
+  admin; canned responses served in enqueue order, take-before-delay); TU-11 `--assert-tutor-payload`
+  (34 checks: endpoint/headers/payload/thinking-pinned/absent-fields/data-URL byte fidelity/error
+  families/empty/OCE/visibility pins — client built ONLY via the factory + stub `BaseUrl`);
+  TU-12 `--live-explain` (offline shape: KEY ERROR exit 12); `--assert-source` extended (no
+  `InternalsVisibleTo`, single sanctioned env read, factory shape, options carry no key/handler).
+- Docs: DEC-017, TU-11/TU-12 + rewritten Tutor scope note, ARCHITECTURE (module line + Tutor
+  bullets), FEATURE-006 (item 2 closed, flip named as the remainder), FLOW seam block, ROLLBACK,
+  AGENTS (table row + new commands), this entry.
+
+### In progress / next
+- **The flip:** shell `CreateTutorClient()` returning `TutorClientFactory.CreateDeepSeek()` —
+  deliberately not taken here; gate it on TU-12's live half being run once with a real key
+  (owner's machine, owner's key).
+
+### Risks & gotchas
+- **`thinking:{"type":"disabled"}` is a pinned v1 decision, not a knob** — if live lessons read
+  worse without the reasoning trace, the fix is a measured DECISIONS entry changing the payload
+  value, never a new options property added "temporarily".
+- **TU-11 alignment discipline:** the stub serves the Nth enqueued response to the Nth request — a
+  row that drives a request must enqueue exactly one response first, or scenarios shift (a silent
+  500 "ran out of canned responses" is the tripwire). Cancellation sub-row proves take-before-delay.
+- **Stub ≠ provider acceptance** — TU-11 pins what we SEND only; the real 400-class surprises
+  (if any) surface first in TU-12's live half, which is why the flip waits for it.
+- Shared `DEEPSEEK_API_KEY` with Vision: 429s are typed on both seams; token budgets interact.
+- `--live-explain` with a bad-but-present key also exits 12 (401 maps to auth) — same code,
+  different cause; the header's presence/length line distinguishes them.
+- The row mutates `DEEPSEEK_API_KEY` in-process (restored in `finally`) — do not parallelize
+  smoke rows in one process.
+
+### Files touched
+- New: `src/HeyGanesh.TutorEngine/{DeepSeekTutorClient,DeepSeekTutorOptions,DeepSeekTutorMessages,TutorClientFactory}.cs`;
+  `tools/TutorSmoke/{TutorSmokeHost.StubServer,TutorSmokeHost.Payload,TutorSmokeHost.Live}.cs`.
+- Edited: `tools/TutorSmoke/TutorSmokeHost.cs` (modes/usage/header), `TutorSmokeHost.Source.cs`
+  (audit), docs: `DECISIONS`, `TEST-CHECKLIST`, `ARCHITECTURE`, `FLOW`, `HANDOVER`, `ROLLBACK`,
+  `features/FEATURE-006`, `AGENTS.md`.
+- No module outside `HeyGanesh.TutorEngine` (additive files only) and no shell file touched.
+
+### Verification run (all run this session, all green)
+- `dotnet build src\HeyGanesh.TutorEngine` → 0 warnings; `dotnet build tools\TutorSmoke` → 0
+  warnings; `dotnet build src\HeyGanesh.App` → 0 warnings (public surface unchanged).
+- `--assert-tutor-payload` → 34/34 PASS, exit **0** (incl. `thinking.type == disabled` on both
+  text and visual turns, 401/403/429/500 mapping, empty→service failure, cancel→OCE, factory/
+  internal visibility pins; stub bound 127.0.0.1 with a probed free port).
+- `--assert-source` → 15 PASS exit **0** (new provider audit rows included); `<PackageReference`
+  real tags → 0; TU-1..TU-10 regression: prompt/grounding/parity/client-error exits 0,
+  auth-error exit **12**, `--cancel-ms 60` exit **13**, `--fake-explain` exit 0.
+- `--live-explain` (no key in this shell) → `KEY ERROR` naming the variable, exit **12** — the
+  offline shape; **live half not run** (needs the owner's key).
+- **Not run / not verified:** the real-provider call (TU-12 live), the shell flip (not built by
+  design), SH-17 end-to-end (still gated on both).
+
+## 2026-09-30 — Cline agent (Pixel Canary) — Shell teaching leg: the verdict now reaches the Tutor, no provider yet
+
+- **Branch / commit:** `main` @ `9e73fdb` — this change is entirely **uncommitted** (four edited
+  `src/HeyGanesh.App/` files + new untracked `ShellHost.Tutor.cs` + doc rows); rollback recorded in
+  ROLLBACK.md. No module assembly touched — the App gained only a ProjectReference to TutorEngine.
+- **Scope:** close FEATURE-006 item 1 — App Shell → Tutor Engine wiring per DEC-015's prescription,
+  without choosing a provider and without changing any pre-verdict behavior.
+
+### Done
+- `src/HeyGanesh.App/ShellHost.Tutor.cs` (new): `CreateTutorClient()` — THE forward-declaration point,
+  returns null today by design; `MapGuidanceToContext` — scalar snapshot exactly as TutorContext's
+  remarks prescribe (`!Found → Empty`; Choice/Jev probabilities/`Captures` deliberately unmapped);
+  `BuildVisual` — `Captures[0]`'s already-encoded JPEG attached by reference as `DownscaledFrame`
+  only when `Found` (no decoder, no crop, no re-capture); `TeachAndSpeakAsync` — ExplainAsync → print
+  → `SpeakAsync` verbatim (or `--no-speak`), never throws; leg errors map 12/3/13/4 after the verdict.
+- `ShellHost.Session.cs`: both post-verdict return sites (`--no-overlay`, after-show tail) became
+  `Failed ? 1 : TeachAndSpeakAsync(...)` — branch-before-map is the CO-6 guard; pump + `RunSessionAsync`
+  plumbing; exit-code header extended. `ShellHost.cs`: seam composed via the null factory (using-owned),
+  `--once` and hooked paths share the leg. `ShellHost.Args.cs`: `--no-speak` + usage/footer/header
+  honesty (the stale "TTS not wired into the shell yet" line is gone). csproj: 5th ProjectReference.
+- Docs: DEC-016, SH-15..SH-17 + scope note, FLOW tutor-path flip, ARCHITECTURE bullets, FEATURE-006
+  item 1 closed (+ 1b crop follow-up), ROLLBACK point, this entry, AGENTS notes.
+
+### In progress / next
+- The single next action is the owner's: **decide the first live `ITutorClient`** — then
+  `CreateTutorClient()` returns it and SH-17 (live teach-and-speak) becomes runnable.
+
+### Risks & gotchas
+- **`CreateTutorClient()` returning null is the design, not a bug** — SH-17 being impossible offline
+  is by DEC-015; never "fix" the leg to fake a lesson or fail closed when it skips.
+- Header's `tutor      : seam wired, no client yet` line must stay in step with the factory.
+- `ArgumentException` from `ExplainAsync` means the shell's own mapping produced a malformed snapshot
+  → exit 4 `TUTOR MAPPING FAULT` — do not re-map it to 3.
+- A spoken lesson now extends the busy window: the second chord REFUSED during speech is VO-9
+  surfacing at the trigger, not a new bug. Speak runs sequentially (fire-and-forget would break
+  Drain/shutdown).
+- Caps live in `TutorService` alone; shell-side pre-checks would be a second enforcer (rejected,
+  DEC-016). Crop-around-box is FEATURE-006 item 1b — needs a JPEG decoder, stop-and-ask territory.
+
+### Files touched
+- `src/HeyGanesh.App/`: `ShellHost.Tutor.cs` (new), `ShellHost.cs`, `ShellHost.Session.cs`,
+  `ShellHost.Args.cs`, `HeyGanesh.App.csproj`. Docs: `DECISIONS` (DEC-016), `TEST-CHECKLIST`
+  (SH-15..17), `FLOW`, `ARCHITECTURE`, `HANDOVER`, `ROLLBACK`, `features/FEATURE-006.md`, `AGENTS.md`.
+- No module source outside `src/HeyGanesh.App/` was edited.
+
+### Verification run (all run this session, all green)
+- `dotnet build src\HeyGanesh.TutorEngine` then `src\HeyGanesh.App` (sequential) → **0 Warning(s)
+  0 Error(s)**; `<PackageReference` in the App csproj → **0** (SH-15).
+- `--help` → lists `--no-speak` + reused-code footer, exit **0**;
+  `--once --question "…"` (keys unset) → unchanged `KEY ERROR (Element Selection)`, exit **12**;
+  `--once --cancel-ms 60 --question "x"` → exit **13**; `--once --no-speak --question "x"` and
+  `--once --no-overlay --no-speak --question "x"` → exit **12** each (SH-16).
+- **Not run / not verified:** SH-17 end-to-end teach-and-speak (needs a live `ITutorClient` — none
+  exists); the skip line itself never printed in a live run (every offline row stops at the key gate
+  before the verdict); the mapping's scripted assertion (deferred to ShellSmoke, FEATURE-005).
+
+## 2026-09-30 — Cline agent (Pixel Canary) — Tutor Engine: the teaching seam, deliberately provider-less
+
+- **Branch / commit:** `main` @ `9e73fdb`. The module itself is **committed** — `9d3ff37 feat: add Tutor Engine module` (10 files, 808 insertions; working tree identical to that commit, builds verified green against it). Uncommitted after this session: `tools/TutorSmoke/` (untracked), `docs/ai/features/FEATURE-006.md` (untracked), and the doc edits listed under Files touched — all reversible; no existing **source** file outside the new module was edited (rollback point recorded in ROLLBACK.md).
+- **Scope:** build the Tutor Engine per the owner's requirement — an academic/technical tutor taking question + optional bounded screen context/visuals, strictly separated from screen interaction; verify offline; change no other module.
+
+### Done
+- `src/HeyGanesh.TutorEngine/` (10 files, zero PackageReference, **zero ProjectReference**): `TutorService.ExplainAsync(TutorRequest, ct) → TutorResult` — validation → deterministic `RenderPrompt` → seam call → `Translate`d failures → capped result. Contracts: `ITutorClient` (disposable, caller-owned; **no live implementation shipped — DEC-015**), `TutorRequest/Context/Visual/Prompt/Completion/Result`, `TutorOptions` (1600-char answer, 500 tokens, 400-char untrusted-description clamp, 512 KiB/1568 px visual caps), `TutorClientException`/`TutorAuthenticationException`/`TutorRateLimitException` (Voice-mirrored shapes, no shared assembly).
+- Load-bearing semantics: question is the teaching task and leads every prompt; all screen text enters labelled `UNTRUSTED DATA`; coordinates are metadata banned from answer prose; visuals cross as separate capped bytes, never base64 in text; over-cap is `ArgumentException` (caller bug) never silent downscale; empty completion is provider failure, never a blank lesson.
+- `tools/TutorSmoke/` (7 files): `--fake-explain`, `--assert-prompt`, `--assert-grounding`, `--assert-parity`, `--assert-source`, `--assert-client-error`, `--assert-auth-error`, `--cancel-ms` — TU-1..TU-10 of TEST-CHECKLIST.
+- Docs: DEC-015, TU rows + scope notes, FLOW Tutor path section, ARCHITECTURE module line + detail section, FEATURE-006, this entry, AGENTS.md module row + smoke commands.
+
+### In progress / next
+- **The shell wiring is the next change** (FEATURE-006): map `GuidanceResult → TutorContext` at the call edge, call `ExplainAsync`, feed `ExplanationText` into the already-composed `SpeakAsync`; a `Failed` verdict skips the Tutor (branch first for the CO-6 quirk: Found=false can arrive with Failed=true).
+- The first **live `ITutorClient`** is the owner's provider decision — deliberately not made here (DEC-015); it will resolve its key at call time, DEC-007 pattern, outside this assembly's surface.
+
+### Risks & gotchas
+- **Do not add `InternalsVisibleTo`** — `RenderPrompt`/`SystemContract` are internal and pinned through the recording fake; that seam is the test surface.
+- `ArgumentException` from validation/caps must stay unre-wrapped (`Translate`'s default passes it through); tidying it into a client exception would erase the caller-bug/provider fault line.
+- The auth smoke row **exits 12** and cancel **exits 13** on purpose; read codes from the built EXE (CO-8 lesson). The fake auth message embeds a sentinel credential — the row prints type+length only; never "improve" it into printing the message.
+- Source-audit tokens are anchored (`<PackageReference`, not `PackageReference`) because csproj comments legitimately contain the bare words; keep new banned tokens anchored the same way.
+- `TutorVisual` bytes are never decoded here — if a future provider needs a data URL, that mapping belongs to the provider client, not to `TutorPrompt`.
+
+### Files touched
+- `src/HeyGanesh.TutorEngine/` — new: csproj + 9 source files. `tools/TutorSmoke/` — new: csproj, `Program.cs`, `Fakes.cs`, `TutorSmokeHost.cs`, `.Rows.cs`, `.Errors.cs`, `.Asserts.cs`, `.Grounding.cs`, `.Source.cs` (9 total incl. csproj/Program).
+- `docs/ai/DECISIONS.md` (DEC-015), `TEST-CHECKLIST.md` (TU-1..TU-10), `FLOW.md` (Tutor path), `ARCHITECTURE.md` (module line + detail), `HANDOVER.md` (index + entry), `features/FEATURE-006.md` (new), `AGENTS.md` (module row + commands). No existing **source** file was edited.
+
+### Verification run (all run this session, all green)
+- `dotnet build src\HeyGanesh.TutorEngine -c Debug` → **0 Warning(s) 0 Error(s** (TU-1); same for `tools\TutorSmoke`.
+- `TutorSmoke --fake-explain "what does git rebase actually do"` → result block, exit **0** (TU-2); `--assert-prompt` → **15/15 PASS**, exit **0** (TU-3/TU-4); `--assert-grounding` → **9/9 PASS**, exit **0** (TU-5); `--assert-parity` → **3/3 PASS**, exit **0** (TU-10).
+- `--assert-client-error` → **5/5 PASS**, exit **0**; `--assert-auth-error` → **3/3 PASS**, exit **12**; sentinel absent from console (TU-6); `--cancel-ms 60` → exit **13** (TU-7); `--assert-source` → **11/11 PASS**, exit **0** (TU-8/TU-9).
+- **Not run / not verified:** everything a real model would decide — injection resistance, lesson quality, live transport. There is no live client to run (DEC-015). Shell integration is untouched by design.
+
 ## 2026-09-30 — Cline agent (model id not exposed to the agent) — App Shell: the microphone is the question source
 
 - **Branch / commit:** `main` — working tree, uncommitted (`src/HeyGanesh.App/` is **untracked**, so a `git checkout` rollback cannot restore it; the file copies at `%TEMP%\hg-rollback-shell-20260930\` can — see ROLLBACK).

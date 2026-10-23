@@ -7,26 +7,26 @@ This file provides guidance to AI coding assistants when working with code in th
 A Windows-native **AI desktop assistant & visual context engine**. It listens for global hotkeys, captures desktop screen state on demand, performs visual element grounding and coordinate detection, routes user intent, and delivers interactive visual lessons and voice feedback overlayed on the desktop.
 
 ```
-hotkey -> Screen Capture -> Element Selection (PRIMARY; Vision is FALLBACK) -> Jev -> Tutor Engine -> Visual Lesson Engine -> Screen Overlay / Voice
+hotkey -> Screen Capture -> Element Selection (PRIMARY; Vision is FALLBACK) → Jev choice → resolved element box → GuidanceResult → Screen Overlay → Tutor Engine → Voice TTS  (question source: committed transcript from VoiceService)
 ```
 
 Subsystems, and the seams between them are load-bearing:
 
 | Subsystem | Assembly / Package | Role |
 |---|---|---|
-| App Shell | `src/HeyGanesh.App/` | The process host: owns PerMonitorV2 DPI awareness, the service graph, and the `GlobalHotkeyMonitor.Pressed` → `VoiceService.ListenOnceAsync` → `HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync` wiring (DEC-012/DEC-014). |
+| App Shell | `src/HeyGanesh.App/` | The process host: owns PerMonitorV2 DPI awareness, the service graph, and the `GlobalHotkeyMonitor.Pressed` → `VoiceService.ListenOnceAsync` → `HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync` → teaching-leg (`GuidanceResult`→`TutorContext`→`TutorService.ExplainAsync`→`SpeakAsync`, DEC-016) wiring (DEC-012/DEC-014/DEC-016). |
 | Context Orchestrator | `src/HeyGanesh.ContextOrchestrator/` | Top-level state machine driving session lifecycle and module coordination. |
 | Global Hotkey Monitor | `src/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only push-to-talk modifier chord monitor (Ctrl+Alt). |
 | Screen Capture | `src/HeyGanesh.ScreenCapture/` | On-demand multi-monitor frame acquisition via `Windows.Graphics.Capture` and `CaptureExclusion` contract. |
-| Element Selection | `src/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. |
-| Vision / Coordinate Detection | `src/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection (DeepSeek V4.1 Flash) — FALLBACK to Element Selection. |
-| Jev | `src/HeyGanesh.Jev/` | Intent classification, turn routing (PROMOTE/PRUNE/DEFER), and fast gate. |
-| Tutor Engine | `src/HeyGanesh.TutorEngine/` | Interactive lesson generation and teaching logic. |
-| Visual Lesson Engine | `src/HeyGanesh.VisualLessonEngine/` | Structured visual diagram and explanation rendering. |
+| Element Selection (PRIMARY) | `src/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
+| Vision / Coordinate Detection (FALLBACK) | `src/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
+| **Jev choice model** | **Integrated within `ElementSelection`** | **The Jev choice model routes Element Selection's ranked UIA candidates (`c001..`) to a selection; implemented via `IJevClient` / `TypeSafeJevClient` with `ModelId "jev-1.13.0"`; not a separate assembly. |
+| Tutor Engine | `src/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
+| Visual Lesson Engine | PLANNED — no assembly yet | Structured visual diagram and explanation rendering; no `src/HeyGanesh.VisualLessonEngine/` assembly exists today (PLATFORM.md §95). |
 | Screen Overlay | `src/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
-| Notes Persistence | `src/HeyGanesh.Notes/` | SQLite-backed notes store for user learning session context. |
-| Security Proxy | `src/HeyGanesh.SecurityProxy/` | API key isolation proxy preventing direct key exposure to runtime modules. |
+| Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
+| API key security proxy | PLANNED — no assembly yet | Isolates LLM API keys from the rest of the application; no `src/HeyGanesh.SecurityProxy/` assembly exists today (PLATFORM.md §95). |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
 
@@ -86,6 +86,13 @@ src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once
 #   -> one LIVE listen (mic as question source). No HEYGANESH_QWEN_GATEWAY_URL -> VOICE FAILURE, exit 1
 src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --cancel-ms 60 --question "x"
 #   -> CANCELLED, phase Idle, exit 13
+# --no-speak skips the speech-out leg only. The teach/speak leg (DEC-016) runs only AFTER a produced
+# non-Failed verdict, so the offline key gates are unchanged. A live ITutorClient EXISTS since
+# DEC-017 (TutorClientFactory.CreateDeepSeek), but the shell's CreateTutorClient() still returns
+# null -- the one-line flip is deliberately not taken -- so the leg reports its skip after every
+# verdict and teach-and-speak end to end is still gated on that flip (SH-17).
+src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-speak --question "x"
+#   -> flag accepted; keys unset -> same KEY ERROR (Element Selection), exit 12
 #   Gateway running + keys + mic: hold Ctrl+Alt, speak, release -> utterance line, verdict, highlight
 #   (SH-9/SH-13). Release early -> "released before the transcript committed", exit 0, no capture.
 
@@ -100,6 +107,26 @@ dotnet build src/HeyGanesh.Voice -c Debug
 dotnet run --project tools/VoiceSmoke -c Debug -- --fake-transcript "where is the Save button"
 dotnet run --project tools/VoiceSmoke -c Debug -- --assert-tutor-authority
 dotnet run --project tools/VoiceSmoke -c Debug -- --speak-fake --text "Found the Save button"
+
+# Tutor Engine verification host (offline fakes + prompt/error/source-contract assertions +
+# the live provider's wire contract over a loopback stub -- no key or network needed for
+# TU-1..TU-11; DEC-017 commits deepseek-flash + DEEPSEEK_API_KEY for the live rows only).
+# Read exit codes from the built EXE: --assert-auth-error exits 12 and --cancel-ms <n> exits 13 BY DESIGN.
+# Build library and host SEQUENTIALLY (shared obj DLL, the CS2012 trap).
+dotnet build src/HeyGanesh.TutorEngine -c Debug
+dotnet run --project tools/TutorSmoke -c Debug -- --fake-explain "what does git rebase actually do"
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-prompt
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-grounding
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-parity
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-client-error
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-source
+# TU-11: the live provider's wire contract, offline -- the factory-built client's BaseUrl points at
+# a loopback stub (no key, no real network; pins deepseek-flash payload + thinking:disabled).
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-tutor-payload
+#   -> 34 PASS, exit 0
+# TU-12: one real lesson. WITHOUT DEEPSEEK_API_KEY this prints KEY ERROR and exits 12 BY DESIGN
+# (the offline shape); with the key it prints the live TutorResult and exits 0.
+dotnet run --project tools/TutorSmoke -c Debug -- --live-explain "what does git rebase actually do"
 ```
 
 Models: **DeepSeek V4.1 Flash** is used for visual grounding and coordinate detection. Live runs require `DEEPSEEK_API_KEY` set in the environment or passed via the Security Proxy module. Element Selection uses the Jev choice model over a ranked UIA manifest via TypeSafe (`ModelId` `jev-1.13.0`); live Element Selection runs require `TYPESAFE_API_KEY`, reported as presence/length only and never as a value — the same temporary direct-key arrangement as Vision's, pending the Security Proxy. Voice's TTS is **Fish Audio** (`format=wav`, `sample_rate=44100`; key `FISH_AUDIO_API_KEY`, same presence/length-only rule), and its speech-in frontend is an externally-run **qwen-audio-agent Gateway** (Gateway Client Protocol wire 7.0; `AGENT_PROTOCOL=none` required, its provider key never crosses the protocol; endpoint via `HEYGANESH_QWEN_GATEWAY_URL` — no default URL on purpose). Both are external runtimes behind `ITtsClient`/`IVoiceListener`, never C# dependencies.

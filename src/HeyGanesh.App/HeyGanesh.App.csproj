@@ -40,16 +40,20 @@
 
   <ItemGroup>
     <!--
-      Four references, and they are the whole pipeline: the monitor raises the trigger, Voice turns
+      Five references, and they are the whole pipeline: the monitor raises the trigger, Voice turns
       that trigger's speech into the question, the orchestrator answers it, the overlay shows the
-      answer. ScreenCapture, ElementSelection and Vision arrive transitively through
-      ContextOrchestrator and are used directly here — the same stance tools/ContextOrchestratorSmoke
-      takes, where one reference is documented as enough.
+      answer, and the Tutor Engine teaches from it (DEC-016 — the shell wires the leg to a seam that
+      still has no live client; DEC-015 leaves the provider to the owner). ScreenCapture,
+      ElementSelection and Vision arrive transitively through ContextOrchestrator and are used
+      directly here — the same stance tools/ContextOrchestratorSmoke takes, where one reference is
+      documented as enough. The Tutor reference is direct and deliberate: the shell is the ONLY
+      mapper between a verdict and a teaching request, and the Tutor itself references nothing.
     -->
     <ProjectReference Include="..\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj" />
     <ProjectReference Include="..\HeyGanesh.Voice\HeyGanesh.Voice.csproj" />
     <ProjectReference Include="..\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
     <ProjectReference Include="..\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
+    <ProjectReference Include="..\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj" />
   </ItemGroup>
 
 </Project>

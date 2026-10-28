@@ -53,6 +53,6 @@ SH-1..SH-9 in [TEST-CHECKLIST.md](../TEST-CHECKLIST.md).
 
 ## Rollback
 
-Delete `src/HeyGanesh.App/` and `docs/ai/features/FEATURE-003.md`, then revert this session's doc edits.
+Delete `src/Experience/HeyGanesh.App/` and `docs/ai/features/FEATURE-003.md`, then revert this session's doc edits.
 No existing source file is edited by this feature, so no module behaviour can regress — the 2026-09-29
 entry in [ROLLBACK.md](../ROLLBACK.md) records the point and what to re-check afterwards.

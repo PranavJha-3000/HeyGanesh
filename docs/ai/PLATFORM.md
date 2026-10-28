@@ -58,15 +58,15 @@ no-match maps to `TutorContext.Empty`, so the general concept is still taught.
 
 | Component | Assembly | Role |
 |---|---|---|
-| Global Hotkey Monitor | `src/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only Ctrl+Alt push-to-talk chord; nothing is swallowed. |
-| Screen Capture | `src/HeyGanesh.ScreenCapture/` | `Windows.Graphics.Capture` frames per monitor (JPEG, <=1280 px) + the `CaptureExclusion` contract. |
-| Element Selection (PRIMARY) | `src/HeyGanesh.ElementSelection/` | UIA enumeration of the target window -> interactive filter -> lexical rank, cap 120 (`c001..`) -> Jev choice -> the chosen candidate's UIA `BoundingRectangle` is the answer. Entry point `SelectAsync`, not `LocateAsync`. |
-| Vision / Coordinate Detection (FALLBACK) | `src/HeyGanesh.Vision/` | DeepSeek over the captured frame; the model returns a box on a 0..1000 integer grid, back-mapped to physical pixels. Entry point `LocateAsync`. |
-| Context Orchestrator | `src/HeyGanesh.ContextOrchestrator/` | One session per trigger; composes capture -> ES -> (fallback) Vision; normalises both verdicts into `GuidanceResult`. The only assembly that sees both legs. |
-| Screen Overlay | `src/HeyGanesh.ScreenOverlay/` | Per-monitor click-through layered window; draws the box and the centre glyph, capture-excluded, bounded duration. |
-| Voice pipeline | `src/HeyGanesh.Voice/` | Speech in (Qwen Gateway, 16 kHz mono PCM) and speech out (Fish TTS, wav/44.1 kHz). Answers nothing. |
-| Tutor Engine | `src/HeyGanesh.TutorEngine/` | The only component allowed to answer the user: question (+ bounded untrusted grounding) -> explanation. |
-| App Shell | `src/HeyGanesh.App/` | Process host: PerMonitorV2 DPI awareness, the service graph, and the wiring. Draws no window of its own. |
+| Global Hotkey Monitor | `src/Platform/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only Ctrl+Alt push-to-talk chord; nothing is swallowed. |
+| Screen Capture | `src/Platform/HeyGanesh.ScreenCapture/` | `Windows.Graphics.Capture` frames per monitor (JPEG, <=1280 px) + the `CaptureExclusion` contract. |
+| Element Selection (PRIMARY) | `src/Perception/HeyGanesh.ElementSelection/` | UIA enumeration of the target window -> interactive filter -> lexical rank, cap 120 (`c001..`) -> Jev choice -> the chosen candidate's UIA `BoundingRectangle` is the answer. Entry point `SelectAsync`, not `LocateAsync`. |
+| Vision / Coordinate Detection (FALLBACK) | `src/Perception/HeyGanesh.Vision/` | DeepSeek over the captured frame; the model returns a box on a 0..1000 integer grid, back-mapped to physical pixels. Entry point `LocateAsync`. |
+| Context Orchestrator | `src/Intelligence/HeyGanesh.ContextOrchestrator/` | One session per trigger; composes capture -> ES -> (fallback) Vision; normalises both verdicts into `GuidanceResult`. The only assembly that sees both legs. |
+| Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through layered window; draws the box and the centre glyph, capture-excluded, bounded duration. |
+| Voice pipeline | `src/Experience/HeyGanesh.Voice/` | Speech in (Qwen Gateway, 16 kHz mono PCM) and speech out (Fish TTS, wav/44.1 kHz). Answers nothing. |
+| Tutor Engine | `src/Intelligence/HeyGanesh.TutorEngine/` | The only component allowed to answer the user: question (+ bounded untrusted grounding) -> explanation. |
+| App Shell | `src/Experience/HeyGanesh.App/` | Process host: PerMonitorV2 DPI awareness, the service graph, and the wiring. Draws no window of its own. |
 | CursorTarget abstraction | (none) | **Planned.** No such type exists in the tree today. |
 
 **The sibling rule:** Element Selection and Vision must never reference each other. They are
@@ -90,7 +90,7 @@ by either module; the finer confidence-tier gate stays a future Jev component.
 | App Shell | DONE-UNVERIFIED | SH-1..SH-16 automated offline; the shell carries no `--fake` flags, so coverage stops at the real key gates. SH-9, SH-13 and SH-14 are human-gated; SH-17 is blocked on the one-line `CreateTutorClient()` flip. |
 | Teaching leg (shell -> Tutor -> speaker) | DONE-UNVERIFIED | Wired end to end and mapped (DEC-016), but the shell's `CreateTutorClient()` still returns null, so the leg reports its honest skip after every verdict. |
 | Jev intent/routing component | PLANNED | No `src/HeyGanesh.Jev/` assembly exists. Today Jev is only the Element Selection choice model behind `IJevClient`. The confidence-gate and the intent classifier are both unbuilt. |
-| Visual Lesson Engine | PLANNED | No `src/HeyGanesh.VisualLessonEngine/` assembly exists. |
+| Visual Lesson Engine | PLANNED | No `src/Intelligence/HeyGanesh.VisualLessonEngine/` assembly exists. |
 | Notes persistence | PLANNED | No `src/HeyGanesh.Notes/` assembly exists; no lesson is stored anywhere today. |
 | API key security proxy | PLANNED | No `src/HeyGanesh.SecurityProxy/` assembly exists. Vision, Element Selection, Tutor and Voice all read their key from the environment at call time (a temporary stopgap). |
 | WinUI 3 / packaged shell | PLANNED | Deferred twice (DEC-011, DEC-012). |

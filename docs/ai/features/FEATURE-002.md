@@ -43,6 +43,6 @@ SO-1..SO-9 in [TEST-CHECKLIST.md](../TEST-CHECKLIST.md).
 
 ## Rollback
 
-Delete `src/HeyGanesh.ScreenOverlay/` and `tools/OverlaySmoke/` and revert this session's doc
+Delete `src/Platform/HeyGanesh.ScreenOverlay/` and `tools/OverlaySmoke/` and revert this session's doc
 edits; the 2026-09-24 entry in [ROLLBACK.md](../ROLLBACK.md) records the point. No existing source
 file is touched by this feature, so nothing else needs reverting.

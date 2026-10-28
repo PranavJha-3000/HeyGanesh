@@ -16,19 +16,20 @@ internal static partial class LessonSmokeHost
         AssertRefs,
         AssertDegrade,
         AssertFixtures,
+        AssertPlay,
     }
 
-    public static Task<int> RunAsync(string[] args)
+    public static async Task<int> RunAsync(string[] args)
     {
         var mode = ParseArgs(args);
         if (mode is null)
         {
-            return Task.FromResult(2);
+            return 2;
         }
 
         if (mode == Mode.Help)
         {
-            return Task.FromResult(PrintUsage());
+            return PrintUsage();
         }
 
         Console.WriteLine("Visual Lesson Engine verification host (offline fixtures + contract assertions)");
@@ -36,7 +37,7 @@ internal static partial class LessonSmokeHost
 
         try
         {
-            return Task.FromResult(mode switch
+            return mode switch
             {
                 Mode.AssertSource => RunAssertSource(),
                 Mode.AssertParse => RunAssertParse(),
@@ -44,15 +45,16 @@ internal static partial class LessonSmokeHost
                 Mode.AssertRefs => RunAssertRefs(),
                 Mode.AssertDegrade => RunAssertDegrade(),
                 Mode.AssertFixtures => RunAssertFixtures(),
+                Mode.AssertPlay => await RunAssertPlayAsync(),
                 _ => PrintUsage(),
-            });
+            };
         }
         catch (Exception ex)
         {
             // The contract under test promises never to throw on model output, so any escape here
             // is itself a failed row, not a crash to shrug off.
             Console.WriteLine($"UNEXPECTED: {ex.GetType().Name}: {ex.Message}");
-            return Task.FromResult(1);
+            return 1;
         }
     }
 
@@ -69,6 +71,7 @@ internal static partial class LessonSmokeHost
                 case "--assert-refs": mode = Mode.AssertRefs; break;
                 case "--assert-degrade": mode = Mode.AssertDegrade; break;
                 case "--assert-fixtures": mode = Mode.AssertFixtures; break;
+                case "--assert-play": mode = Mode.AssertPlay; break;
                 case "--help": case "-h": case "/?": mode = Mode.Help; break;
                 default:
                     Console.WriteLine($"unknown argument '{arg}' (exit 2)");
@@ -92,6 +95,9 @@ internal static partial class LessonSmokeHost
         Console.WriteLine("  --assert-refs                 reference integrity over time + physical-pixel mark bounds, exit 0");
         Console.WriteLine("  --assert-degrade              bad beat -> speech only; mostly bad -> text; silent -> rejected, exit 0");
         Console.WriteLine("  --assert-fixtures             golden lessons validate clean + deterministic, exit 0");
+        Console.WriteLine();
+        Console.WriteLine("Playback rows (fake canvas + fake speaker, no renderer, no TTS):");
+        Console.WriteLine("  --assert-play                 draw-then-speak per beat, speech is the clock, report, exit 0");
         return 0;
     }
 

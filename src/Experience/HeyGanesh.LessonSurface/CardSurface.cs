@@ -98,7 +98,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
             cards[i].SurfaceId = i < surfaces.Count ? surfaces[i].Id : string.Empty;
         }
 
-        await Task.WhenAll(surfaces.Select((s, i) => SendAsync(cards[i], seq => new { kind = "reset", seq, title = s.Title }, cancellationToken)));
+        await Task.WhenAll(surfaces.Select((s, i) => SendAsync(cards[i], "reset", seq => new { kind = "reset", seq, title = s.Title }, cancellationToken)));
         Arrange(cards.Take(surfaces.Count).ToArray());
         foreach (var hidden in cards.Skip(surfaces.Count))
         {
@@ -168,7 +168,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         {
             var card = cards.FirstOrDefault(c => c.SurfaceId == kv.Key)
                 ?? throw new InvalidOperationException($"beat '{beat.Id}' draws on surface '{kv.Key}', which was not laid out by ResetAsync");
-            return SendAsync(card, seq => new { kind = "beat", seq, ops = kv.Value }, cancellationToken);
+            return SendAsync(card, "beat", seq => new { kind = "beat", seq, ops = kv.Value }, cancellationToken);
         });
         await Task.WhenAll(sends);
         NoteFocus(cards);
@@ -184,8 +184,8 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
 
         var cards = Snapshot();
         cards[0].SurfaceId = "notice";
-        await SendAsync(cards[0], seq => new { kind = "reset", seq, title = "heyganesh" }, cancellationToken);
-        await SendAsync(cards[0], seq => new { kind = "notice", seq, text = notice }, cancellationToken);
+        await SendAsync(cards[0], "reset", seq => new { kind = "reset", seq, title = "heyganesh" }, cancellationToken);
+        await SendAsync(cards[0], "notice", seq => new { kind = "notice", seq, text = notice }, cancellationToken);
         Arrange(new[] { cards[0] });
         foreach (var hidden in cards.Skip(1))
         {
@@ -238,7 +238,8 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
             d.GetProperty("img").GetInt32(),
             d.GetProperty("script").GetInt32(),
             d.GetProperty("bold").GetInt32(),
-            d.GetProperty("notice").GetString() ?? string.Empty);
+            d.GetProperty("notice").GetString() ?? string.Empty,
+            card.BrowserAcceleratorKeysEnabled);
     });
 
     /// <summary>Writes one card's page as PNG to <paramref name="destination"/> (review / lesson history).</summary>
@@ -261,7 +262,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         await Task.Delay(400);
         var origin = await card.RunHostScriptAsync("location.origin");
         var navigationBlocked = card.BlockedNavigations > before && origin == JsonSerializer.Serialize(CardWindow.PageOrigin);
-        var reply = await SendAsync(card, seq => new { kind = "probe", seq }, CancellationToken.None, TimeSpan.FromSeconds(5));
+        var reply = await SendAsync(card, "probe", seq => new { kind = "probe", seq }, CancellationToken.None, TimeSpan.FromSeconds(5));
         var fetchBlocked = reply.TryGetProperty("fetch", out var f) && f.GetString() == "blocked";
         return new IsolationProbe(navigationBlocked, fetchBlocked);
     });
@@ -337,10 +338,12 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         return card;
     }
 
-    private Task<JsonElement> SendAsync(CardWindow card, Func<int, object> build, CancellationToken cancellationToken, TimeSpan? timeout = null)
+    /// <summary>Beats get <see cref="CardSurfaceOptions.ApplyTimeout"/>; layout/notice messages get the control budget.</summary>
+    private Task<JsonElement> SendAsync(CardWindow card, string kind, Func<int, object> build, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         var seq = ++_seq;
-        return card.SendAsync(seq, build(seq), timeout ?? _options.ApplyTimeout, cancellationToken);
+        var budget = timeout ?? (kind == "beat" ? _options.ApplyTimeout : _options.ControlTimeout);
+        return card.SendAsync(seq, kind, build(seq), budget, cancellationToken);
     }
 
     /// <summary>Top-right of the monitor under the cursor, in a grid that fits its working area.</summary>
@@ -357,6 +360,10 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         int w = S(_options.CardWidthDip), h = S(_options.CardHeightDip), gap = S(_options.GapDip), m = S(_options.MarginDip);
         var cols = Math.Clamp((area.Width - 2 * m + gap) / (w + gap), 1, cards.Length);
         var width = Math.Min(w, area.Width - 2 * m);
+        // Rows must fit the working area too (a 1080p laptop at 125-150% cannot stack two full-height
+        // rows): shrink the card height; the page zooms its content to fit whatever height it gets.
+        var rows = (cards.Length + cols - 1) / cols;
+        h = Math.Max(S(160), Math.Min(h, (area.Height - 2 * m - (rows - 1) * gap) / rows));
         var x0 = area.Right - m - cols * width - (cols - 1) * gap;
         for (var i = 0; i < cards.Length; i++)
         {

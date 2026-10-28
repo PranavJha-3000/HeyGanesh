@@ -61,7 +61,10 @@ public sealed class PlotExpression
 
     /// <summary>
     /// <paramref name="count"/> evenly spaced samples over [XMin, XMax], ends exact. A non-finite y
-    /// (an asymptote, ln of a negative) is a null — a gap the renderer must not join across.
+    /// (an asymptote, ln of a negative) is a null — a gap the renderer must not join across. So is a
+    /// finite outlier far outside the bulk of the curve (tan(x) sampled a hair from pi/2 is ~1.6e16):
+    /// left in, one sample would autoscale the whole plot into a flat line. Outliers are y outside
+    /// [p10 - 4*(p90 - p10), p90 + 4*(p90 - p10)], which keeps steep real growth such as exp(x).
     /// Empty when the expression does not parse (the validator has already refused such a plot).
     /// </summary>
     public static IReadOnlyList<PlotPoint?> Sample(PlotOp op, int count = 121)
@@ -80,6 +83,22 @@ public sealed class PlotExpression
             var x = op.XMin + (op.XMax - op.XMin) * i / (count - 1);
             var y = e!.Evaluate(x);
             points[i] = double.IsFinite(y) ? new PlotPoint(x, y) : null;
+        }
+
+        var ys = points.Where(p => p is not null).Select(p => p!.Y).OrderBy(y => y).ToArray();
+        if (ys.Length >= 8)
+        {
+            var p10 = ys[(int)(ys.Length * 0.1)];
+            var p90 = ys[(int)(ys.Length * 0.9)];
+            var spread = Math.Max(p90 - p10, 1e-9);
+            double lo = p10 - 4 * spread, hi = p90 + 4 * spread;
+            for (var i = 0; i < count; i++)
+            {
+                if (points[i] is { } p && (p.Y < lo || p.Y > hi))
+                {
+                    points[i] = null;
+                }
+            }
         }
 
         return points;
@@ -205,6 +224,14 @@ public sealed class PlotExpression
                 {
                     var start = _pos;
                     while (_pos < _s.Length && (char.IsDigit(_s[_pos]) || _s[_pos] == '.')) _pos++;
+
+                    // "2e3" would otherwise parse as 2*e*3 = 16.3 - a confident wrong curve. Exponent
+                    // notation is refused outright; a number followed by the constant e (2e, 2e^x) is fine.
+                    if (_pos + 1 < _s.Length && (_s[_pos] == 'e' || _s[_pos] == 'E')
+                        && (char.IsDigit(_s[_pos + 1]) || _s[_pos + 1] == '+' || _s[_pos + 1] == '-'))
+                    {
+                        throw new FormatException($"exponent notation at {start} is not supported; write it as a*10^b");
+                    }
                     if (!double.TryParse(_s.AsSpan(start, _pos - start), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var n))
                     {
                         throw new FormatException($"bad number at {start}");

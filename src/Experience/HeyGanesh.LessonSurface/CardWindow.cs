@@ -83,6 +83,11 @@ internal sealed class CardWindow : Form
         settings.IsGeneralAutofillEnabled = false;
         settings.IsPasswordAutosaveEnabled = false;
         settings.IsWebMessageEnabled = true;
+        // A click on a card (to drag it) can focus the page; F5 / Ctrl+R would then reload it blank
+        // mid-lesson (same origin, so the navigation guard allows it). No browser shortcuts on a card.
+        settings.AreBrowserAcceleratorKeysEnabled = false;
+        settings.IsPinchZoomEnabled = false;
+        settings.IsSwipeNavigationEnabled = false;
         core.SetVirtualHostNameToFolderMapping("lesson.heyganesh.invalid", pageFolder, CoreWebView2HostResourceAccessKind.Deny);
 
         // The page may only ever be the lesson page: anything else (a link, a script setting
@@ -104,14 +109,23 @@ internal sealed class CardWindow : Form
     }
 
     /// <summary>Posts one message and waits for the page's matching "done" (or the timeout).</summary>
-    public async Task<JsonElement> SendAsync(int seq, object message, TimeSpan timeout, CancellationToken cancellationToken)
+    public async Task<JsonElement> SendAsync(int seq, string kind, object message, TimeSpan timeout, CancellationToken cancellationToken)
     {
         var tcs = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[seq] = tcs;
         try
         {
             _web.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(message));
-            var reply = await tcs.Task.WaitAsync(timeout, cancellationToken);
+            JsonElement reply;
+            try
+            {
+                reply = await tcs.Task.WaitAsync(timeout, cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                throw new TimeoutException($"the lesson page did not acknowledge '{kind}' message {seq} within {timeout.TotalMilliseconds:F0} ms");
+            }
+
             if (reply.TryGetProperty("error", out var error))
             {
                 // The page caught its own exception and said so: a render fault, not a silent blank.
@@ -132,6 +146,8 @@ internal sealed class CardWindow : Form
     /// </summary>
     public Task CapturePageAsync(Stream destination) =>
         _web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, destination);
+
+    public bool BrowserAcceleratorKeysEnabled => _web.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled;
 
     /// <summary>Runs one fixed, host-owned script. Never called with model text.</summary>
     public Task<string> RunHostScriptAsync(string script) => _web.CoreWebView2.ExecuteScriptAsync(script);

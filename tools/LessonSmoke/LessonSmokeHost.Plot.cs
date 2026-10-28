@@ -34,6 +34,20 @@ internal static partial class LessonSmokeHost
             "1/x on [-1, 1] -> 121 samples, a null gap at x=0, ends at (-1,-1) and (1,1)",
             failures);
 
+        // Final review I-2: 2e3 must never quietly mean 2·e·3 — exponent notation is refused, plain e stays e.
+        failures = Check(Refused("2e3") && Refused("1e-3x") && Refused("5E2"), "scientific notation (2e3, 1e-3x, 5E2) -> refused, never misread", failures);
+        failures = Check(At("2e", 0, 2 * Math.E) && At("2e^x", 1, 2 * Math.E) && At("3e x", 1, 3 * Math.E), "a number then the constant e still works: 2e, 2e^x, 3e x", failures);
+
+        // Final review I-4: a near-asymptote sample (tan at -pi/2 ~ 1.6e16) is finite but must not flatten the plot.
+        var tan = PlotExpression.Sample(new PlotOp("c", "p", "tan(x)", -Math.PI, Math.PI));
+        var finite = tan.Where(p => p is not null).Select(p => Math.Abs(p!.Y)).ToList();
+        failures = Check(
+            tan.Count(p => p is null) >= 2 && finite.Max() < 100 && finite.Count > 100,
+            $"tan(x) on [-pi, pi] -> outliers become gaps near the asymptotes (max |y| {finite.Max():F1} < 100)",
+            failures);
+        var exp = PlotExpression.Sample(new PlotOp("c", "p", "exp(x)", 0, 10));
+        failures = Check(exp.All(p => p is not null), "exp(x) on [0, 10] -> steep but real growth keeps every sample", failures);
+
         var basePlan = VisualPlanParser.Parse(Fixture("chain-rule.json")).Plan!;
         var badExpr = WithBeat(basePlan, 4, b => b with { Ops = new LessonOp[] { new PlotOp("card-main", "p1", "x+", 1, 4) } });
         failures = Check(Has(Validate(badExpr), LessonIssueCodes.ValueInvalid, "b5"), "validator: plot expr 'x+' -> value.invalid on its beat", failures);

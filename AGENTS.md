@@ -134,14 +134,14 @@ dotnet build src/Intelligence/HeyGanesh.VisualLessonEngine -c Debug
 dotnet build tools/LessonSmoke -c Debug
 tools/LessonSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSmoke.exe --assert-source
 #   -> 6 PASS, exit 0   (also: --assert-parse 9, --assert-limits 20, --assert-refs 15, --assert-degrade 7, --assert-fixtures 6)
-#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 12
+#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 16
 
 # Lesson Surface host (real WebView2 cards on the desktop; needs an interactive session, no key).
 # Build library then host SEQUENTIALLY. Cards are capture-excluded: use --snapshot to see them as PNGs.
 dotnet build src/Experience/HeyGanesh.LessonSurface -c Debug
 dotnet build tools/LessonSurfaceSmoke -c Debug
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --assert-render
-#   -> 17 PASS, exit 0   (also: --assert-source 4, --assert-window 7, --assert-security 4, --assert-marks 2)
+#   -> 17 PASS, exit 0   (also: --assert-source 4, --assert-window 9, --assert-security 4, --assert-marks 2)
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --demo all --voice sapi
 #   -> the three golden lessons drawn and spoken on screen (manual row LSU-6)
 ```

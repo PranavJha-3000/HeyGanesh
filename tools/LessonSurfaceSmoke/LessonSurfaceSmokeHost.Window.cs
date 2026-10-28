@@ -42,21 +42,34 @@ internal static partial class LessonSurfaceSmokeHost
         // deterministic form: the page answers in ~2.5 ms but no answer can exist synchronously.
         await using (var surface = await CardSurface.CreateAsync(new CardSurfaceOptions { ApplyTimeout = TimeSpan.Zero }))
         {
-            var timedOut = false;
-            try
+            // Final review I-3: the timeout must come from ApplyBeatAsync (reset has its own budget),
+            // and a real hang must fail this row rather than masquerade as the expected timeout.
+            var play = new LessonPlayer(surface, new PauseSpeaker(10)).PlayAsync(lesson);
+            var finished = await Task.WhenAny(play, Task.Delay(TimeSpan.FromSeconds(10))) == play;
+            var fromBeat = finished && play.Exception?.InnerException is TimeoutException t && t.Message.Contains("'beat'", StringComparison.Ordinal);
+            failures = Check(fromBeat, $"an unacknowledged BEAT -> TimeoutException from ApplyBeatAsync, well inside the 10 s hang guard{(finished ? "" : " (HUNG)")}", failures);
+        }
+
+        // Final review I-1: four cards never spill off the working area, even when they are asked to be huge.
+        await using (var surface = await CardSurface.CreateAsync(new CardSurfaceOptions { CardHeightDip = 2000 }))
+        {
+            var four = Plan("chain-rule.json") with
             {
-                await new LessonPlayer(surface, new PauseSpeaker(10)).PlayAsync(lesson).WaitAsync(TimeSpan.FromSeconds(10));
-            }
-            catch (TimeoutException)
+                Surfaces = Enumerable.Range(1, 4).Select(i => new VisualLessonEngine.LessonSurface(i == 1 ? "card-main" : $"card-{i}", SurfaceKind.Card, $"card {i}")).ToList(),
+            };
+            await new LessonPlayer(surface, new PauseSpeaker(20)).PlayAsync(Validated(four));
+            var area = Screen.FromPoint(Cursor.Position).WorkingArea;
+            var all = new List<CardSnapshot>();
+            foreach (var s in four.Surfaces)
             {
-                timedOut = true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"        (threw {ex.GetType().Name}: {ex.Message})");
+                all.Add(await surface.DescribeCardAsync(s.Id));
             }
 
-            failures = Check(timedOut, "a beat whose render is never acknowledged in time -> TimeoutException (no hang)", failures);
+            failures = Check(
+                all.All(c => c.Bounds.X >= area.Left && c.Bounds.Y >= area.Top && c.Bounds.Right <= area.Right && c.Bounds.Bottom <= area.Bottom),
+                $"4 cards with an oversized height all fit the working area {area.Width}x{area.Height} ({string.Join(" ", all.Select(c => c.Bounds))})",
+                failures);
+            failures = Check(!all[0].BrowserAcceleratorKeys, "browser accelerator keys (F5/Ctrl+R reload, Ctrl+P, Ctrl+F) are off on cards", failures);
         }
 
         // Disposing mid-lesson closes the cards and ends the play promptly.

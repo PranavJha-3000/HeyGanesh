@@ -13,6 +13,9 @@ public sealed class CardSurfaceOptions
     /// <summary>How long a beat may take to be acknowledged by the page before it is a fault.</summary>
     public TimeSpan ApplyTimeout { get; init; } = TimeSpan.FromSeconds(3);
 
+    /// <summary>Budget for laying cards out and showing a notice (reset / notice messages).</summary>
+    public TimeSpan ControlTimeout { get; init; } = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// WebView2's profile folder. Default: %LOCALAPPDATA%/HeyGanesh/webview2 (or
     /// $HEYGANESH_DATA_DIR/webview2), the project's runtime-data convention.
@@ -41,7 +44,8 @@ public sealed record CardSnapshot(
     int ImgElements,
     int ScriptElements,
     int BoldElements,
-    string Notice);
+    string Notice,
+    bool BrowserAcceleratorKeys);
 
 /// <summary>Result of the page-isolation self-test.</summary>
 public sealed record IsolationProbe(bool NavigationBlocked, bool FetchBlocked);

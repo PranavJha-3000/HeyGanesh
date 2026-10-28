@@ -14,6 +14,7 @@ internal static partial class LessonSmokeHost
         AssertParse,
         AssertLimits,
         AssertRefs,
+        AssertDegrade,
     }
 
     public static Task<int> RunAsync(string[] args)
@@ -40,6 +41,7 @@ internal static partial class LessonSmokeHost
                 Mode.AssertParse => RunAssertParse(),
                 Mode.AssertLimits => RunAssertLimits(),
                 Mode.AssertRefs => RunAssertRefs(),
+                Mode.AssertDegrade => RunAssertDegrade(),
                 _ => PrintUsage(),
             });
         }
@@ -63,6 +65,7 @@ internal static partial class LessonSmokeHost
                 case "--assert-parse": mode = Mode.AssertParse; break;
                 case "--assert-limits": mode = Mode.AssertLimits; break;
                 case "--assert-refs": mode = Mode.AssertRefs; break;
+                case "--assert-degrade": mode = Mode.AssertDegrade; break;
                 case "--help": case "-h": case "/?": mode = Mode.Help; break;
                 default:
                     Console.WriteLine($"unknown argument '{arg}' (exit 2)");
@@ -84,6 +87,7 @@ internal static partial class LessonSmokeHost
         Console.WriteLine("  --assert-parse                fixture parse, json fence, malformed/oversize/deep input, exit 0");
         Console.WriteLine("  --assert-limits               v1 limits, id rules, closed vocabularies, exit 0");
         Console.WriteLine("  --assert-refs                 reference integrity over time + physical-pixel mark bounds, exit 0");
+        Console.WriteLine("  --assert-degrade              bad beat -> speech only; mostly bad -> text; silent -> rejected, exit 0");
         return 0;
     }
 

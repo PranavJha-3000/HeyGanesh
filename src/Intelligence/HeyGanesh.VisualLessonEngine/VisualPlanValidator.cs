@@ -59,8 +59,8 @@ public sealed class VisualPlanValidator
 
         var plan = parsed.Plan;
         CheckPlan(plan, issues);
-        CheckBeats(plan, issues, virtualDesktop);
-        return Decide(plan, issues);
+        var degraded = CheckBeats(plan, issues, virtualDesktop);
+        return Decide(plan, issues, degraded);
     }
 
     private void CheckPlan(VisualPlan plan, List<LessonIssue> issues)
@@ -100,15 +100,21 @@ public sealed class VisualPlanValidator
         public required HashSet<string> Surfaces { get; init; }
         public required PixelRect Desktop { get; init; }
         public HashSet<string> EverUsed { get; } = new(StringComparer.Ordinal);
-        public Dictionary<string, string> Live { get; } = new(StringComparer.Ordinal);
+        public Dictionary<string, string> Live { get; set; } = new(StringComparer.Ordinal);
     }
 
-    private void CheckBeats(VisualPlan plan, List<LessonIssue> issues, PixelRect desktop)
+    /// <summary>Walks the beats in order and returns the indices of beats that lose their drawing.</summary>
+    private HashSet<int> CheckBeats(VisualPlan plan, List<LessonIssue> issues, PixelRect desktop)
     {
+        var degraded = new HashSet<int>();
+        var parserFlagged = issues.Where(i => i.BeatId is not null).Select(i => i.BeatId!).ToHashSet(StringComparer.Ordinal);
         var beatIds = new HashSet<string>(StringComparer.Ordinal);
         var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Desktop = desktop };
-        foreach (var beat in plan.Beats)
+        for (var index = 0; index < plan.Beats.Count; index++)
         {
+            var beat = plan.Beats[index];
+            var issuesBefore = issues.Count;
+            var liveBefore = new Dictionary<string, string>(board.Live, StringComparer.Ordinal);
             CheckId(beat.Id, "beat", beat.Id, beatIds, issues);
             CheckText(beat.Say, _limits.MaxSayChars, "say", beat.Id, issues);
             if (beat.Ops.Count > _limits.MaxOpsPerBeat)
@@ -120,7 +126,17 @@ public sealed class VisualPlanValidator
             {
                 CheckOp(op, beat.Id, board, issues);
             }
+
+            // A degraded beat is never drawn, so nothing it wrote or cleared happens: roll the board
+            // back, and any later beat pointing at its elements fails its own reference check.
+            if (issues.Count > issuesBefore || parserFlagged.Contains(beat.Id))
+            {
+                degraded.Add(index);
+                board.Live = liveBefore;
+            }
         }
+
+        return degraded;
     }
 
     private void CheckOp(LessonOp op, string beatId, Board board, List<LessonIssue> issues)
@@ -243,7 +259,12 @@ public sealed class VisualPlanValidator
 
     private static LessonIssue Plan(string code, string message) => new(code, null, message);
 
-    private static LessonValidationResult Decide(VisualPlan plan, List<LessonIssue> issues)
+    /// <summary>
+    /// The degrade policy (FEATURE-007 Phase 1, M7 S7.1): speech survives whenever any exists. A
+    /// plan-level issue, or degraded beats at or above <see cref="LessonLimits.FallbackDegradedRatio"/>,
+    /// means a drawing too gappy to teach from — speak the whole text instead of showing fragments.
+    /// </summary>
+    private LessonValidationResult Decide(VisualPlan plan, List<LessonIssue> issues, HashSet<int> degraded)
     {
         var fallback = string.Join(" ", plan.Beats.Select(b => b.Say).Where(s => !string.IsNullOrWhiteSpace(s)));
         if (fallback.Length == 0)
@@ -251,11 +272,22 @@ public sealed class VisualPlanValidator
             return new LessonValidationResult(LessonOutcome.Rejected, null, string.Empty, issues);
         }
 
-        if (issues.Any(i => i.BeatId is null))
+        if (issues.Any(i => i.BeatId is null) || (double)degraded.Count / plan.Beats.Count >= _limits.FallbackDegradedRatio)
         {
             return new LessonValidationResult(LessonOutcome.TextFallback, null, fallback, issues);
         }
 
-        return new LessonValidationResult(issues.Count == 0 ? LessonOutcome.Valid : LessonOutcome.PartiallyDegraded, plan, fallback, issues);
+        if (degraded.Count == 0)
+        {
+            return new LessonValidationResult(LessonOutcome.Valid, plan, fallback, issues);
+        }
+
+        // Degraded beats keep their sentence and lose their drawing; a degraded beat with nothing
+        // to say has nothing left at all and is dropped.
+        var beats = plan.Beats
+            .Select((b, i) => degraded.Contains(i) ? b with { Ops = Array.Empty<LessonOp>(), Degraded = true } : b)
+            .Where(b => !(b.Degraded && string.IsNullOrWhiteSpace(b.Say)))
+            .ToList();
+        return new LessonValidationResult(LessonOutcome.PartiallyDegraded, plan with { Beats = beats }, fallback, issues);
     }
 }

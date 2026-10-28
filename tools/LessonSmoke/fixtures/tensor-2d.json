@@ -1,0 +1,44 @@
+{
+  "schema": "heyganesh.visualplan/1",
+  "lessonId": "tensor-2d",
+  "title": "What a 2-D tensor is",
+  "mode": "explain",
+  "surfaces": [
+    { "id": "card-tensor", "kind": "card", "title": "a 2-D tensor" }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "say": "A tensor is a grid of numbers with a shape.",
+      "ops": [
+        { "op": "write", "surface": "card-tensor", "id": "w-grid", "text": "tensor t", "style": "heading", "math": "\\begin{bmatrix} 3 & 8 & 1 & 6 \\\\ 9 & 2 & 15 & 4 \\end{bmatrix}" }
+      ]
+    },
+    {
+      "id": "b2",
+      "say": "Its shape is two rows by four columns.",
+      "ops": [
+        { "op": "write", "surface": "card-tensor", "id": "w-row", "text": "2 rows", "style": "body" },
+        { "op": "write", "surface": "card-tensor", "id": "w-col", "text": "4 columns", "style": "body" },
+        { "op": "arrow", "surface": "card-tensor", "from": "w-row", "to": "w-col", "label": "shape (2, 4)" }
+      ]
+    },
+    {
+      "id": "b3",
+      "say": "Indexing starts at zero, for rows and for columns.",
+      "ops": [
+        { "op": "step", "surface": "card-tensor", "id": "s-rows", "index": 1, "text": "rows are 0 and 1" },
+        { "op": "step", "surface": "card-tensor", "id": "s-cols", "index": 2, "text": "columns are 0 to 3" }
+      ]
+    },
+    {
+      "id": "b4",
+      "say": "So row one, column two holds fifteen.",
+      "ops": [
+        { "op": "write", "surface": "card-tensor", "id": "w-cell", "text": "t[1, 2] = 15", "style": "note", "math": "t_{1,2} = 15" },
+        { "op": "highlight", "target": "w-cell" },
+        { "op": "highlight", "target": "w-grid" }
+      ]
+    }
+  ]
+}

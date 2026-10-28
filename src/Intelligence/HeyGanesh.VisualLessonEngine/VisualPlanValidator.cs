@@ -59,7 +59,7 @@ public sealed class VisualPlanValidator
 
         var plan = parsed.Plan;
         CheckPlan(plan, issues);
-        CheckBeats(plan, issues);
+        CheckBeats(plan, issues, virtualDesktop);
         return Decide(plan, issues);
     }
 
@@ -89,10 +89,24 @@ public sealed class VisualPlanValidator
         }
     }
 
-    private void CheckBeats(VisualPlan plan, List<LessonIssue> issues)
+    /// <summary>
+    /// Running state of the beat walk. Element ids are unique plan-wide (<see cref="EverUsed"/>), but
+    /// only elements still on a card (<see cref="Live"/>) can be pointed at — a clear removes them,
+    /// and an element written in a later beat does not exist yet. That ordering is what lets a
+    /// renderer play beats strictly in sequence without ever meeting a dangling reference.
+    /// </summary>
+    private sealed class Board
+    {
+        public required HashSet<string> Surfaces { get; init; }
+        public required PixelRect Desktop { get; init; }
+        public HashSet<string> EverUsed { get; } = new(StringComparer.Ordinal);
+        public Dictionary<string, string> Live { get; } = new(StringComparer.Ordinal);
+    }
+
+    private void CheckBeats(VisualPlan plan, List<LessonIssue> issues, PixelRect desktop)
     {
         var beatIds = new HashSet<string>(StringComparer.Ordinal);
-        var elementIds = new HashSet<string>(StringComparer.Ordinal);
+        var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Desktop = desktop };
         foreach (var beat in plan.Beats)
         {
             CheckId(beat.Id, "beat", beat.Id, beatIds, issues);
@@ -104,21 +118,21 @@ public sealed class VisualPlanValidator
 
             foreach (var op in beat.Ops)
             {
-                CheckOp(op, beat.Id, elementIds, issues);
+                CheckOp(op, beat.Id, board, issues);
             }
         }
     }
 
-    private void CheckOp(LessonOp op, string beatId, HashSet<string> elementIds, List<LessonIssue> issues)
+    private void CheckOp(LessonOp op, string beatId, Board board, List<LessonIssue> issues)
     {
         switch (op)
         {
             case WriteOp w:
-                CheckId(w.Id, "element", beatId, elementIds, issues);
+                Create(w.Surface, w.Id, beatId, board, issues);
                 CheckText(w.Text, _limits.MaxTextChars, "write text", beatId, issues);
                 break;
             case StepOp s:
-                CheckId(s.Id, "element", beatId, elementIds, issues);
+                Create(s.Surface, s.Id, beatId, board, issues);
                 CheckText(s.Text, _limits.MaxTextChars, "step text", beatId, issues);
                 if (s.Index < 1)
                 {
@@ -127,7 +141,7 @@ public sealed class VisualPlanValidator
 
                 break;
             case IconOp i:
-                CheckId(i.Id, "element", beatId, elementIds, issues);
+                Create(i.Surface, i.Id, beatId, board, issues);
                 if (!LessonVocabulary.Glyphs.Contains(i.Glyph))
                 {
                     issues.Add(new LessonIssue(LessonIssueCodes.GlyphUnknown, beatId, $"glyph '{i.Glyph}'"));
@@ -135,7 +149,7 @@ public sealed class VisualPlanValidator
 
                 break;
             case PlotOp p:
-                CheckId(p.Id, "element", beatId, elementIds, issues);
+                Create(p.Surface, p.Id, beatId, board, issues);
                 CheckText(p.Expr, _limits.MaxTextChars, "plot expr", beatId, issues);
                 if (!(double.IsFinite(p.XMin) && double.IsFinite(p.XMax) && p.XMin < p.XMax))
                 {
@@ -143,9 +157,63 @@ public sealed class VisualPlanValidator
                 }
 
                 break;
+            case ArrowOp a:
+                CheckSurface(a.Surface, beatId, board, issues);
+                CheckTarget(a.From, beatId, board, issues);
+                CheckTarget(a.To, beatId, board, issues);
+                break;
+            case HighlightOp h:
+                CheckTarget(h.Target, beatId, board, issues);
+                break;
+            case ClearOp c:
+                CheckSurface(c.Surface, beatId, board, issues);
+                foreach (var gone in board.Live.Where(kv => kv.Value == c.Surface).Select(kv => kv.Key).ToList())
+                {
+                    board.Live.Remove(gone);
+                }
+
+                break;
+            case ScreenMarkOp m:
+                CheckMark(m.Region, beatId, board.Desktop, issues);
+                break;
             case UnknownOp u:
                 issues.Add(new LessonIssue(LessonIssueCodes.OpUnknown, beatId, $"op '{u.Name}' is not in v1"));
                 break;
+        }
+    }
+
+    private static void Create(string surface, string id, string beatId, Board board, List<LessonIssue> issues)
+    {
+        CheckSurface(surface, beatId, board, issues);
+        CheckId(id, "element", beatId, board.EverUsed, issues);
+        board.Live[id] = surface;
+    }
+
+    private static void CheckSurface(string surface, string beatId, Board board, List<LessonIssue> issues)
+    {
+        if (!board.Surfaces.Contains(surface))
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.RefSurface, beatId, $"surface '{surface}' is not declared"));
+        }
+    }
+
+    private static void CheckTarget(string target, string beatId, Board board, List<LessonIssue> issues)
+    {
+        if (!board.Live.ContainsKey(target))
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.RefTarget, beatId, $"element '{target}' does not exist at this beat"));
+        }
+    }
+
+    private static void CheckMark(PixelRect r, string beatId, PixelRect d, List<LessonIssue> issues)
+    {
+        if (r.Width <= 0 || r.Height <= 0)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"mark {r} has no area"));
+        }
+        else if (r.X < d.X || r.Y < d.Y || r.Right > d.Right || r.Bottom > d.Bottom)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.MarkOutOfBounds, beatId, $"mark {r} is outside the desktop {d}"));
         }
     }
 

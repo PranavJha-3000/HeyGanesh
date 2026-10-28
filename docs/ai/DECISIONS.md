@@ -37,6 +37,23 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-027 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the lesson leg is wired into the App Shell behind `--lesson`, and its model comes from the environment.** After a produced (non-Failed) verdict, `--lesson` replaces the Tutor's prose leg with one lesson turn: the shell maps the verdict to `ScreenGrounding` (Found → description, resolved box, `Captures[0]` JPEG; honest no-match → no grounding, so every screen mark is refused) and calls `HeyGanesh.LessonSession.LessonTurn.RunAsync` (plan → open cards → play → close) with Voice's `SpeakAsync` as the speaker through `DelegateLessonSpeaker`. `CreateLessonPlanner()` builds `VisualPlanner.FromRegistry` over DeepSeek (`deepseek-flash`, OpenAI-compatible adapter, `DEEPSEEK_API_KEY` read per request by a read-only `EnvironmentSecretStore`) when the key is present and returns null otherwise, in which case the leg prints an honest skip. Exit codes reuse the shell alphabet: 0 played/skip, 1 no usable lesson (Rejected), 12 key, 3 provider/speech, 13 cancelled, 4 shell or card defect.
+
+**Accompanying choices.**
+- **New assembly `src/Experience/HeyGanesh.LessonSession/`** (refs LessonPlanner + LessonSurface + VisualLessonEngine): the turn logic lives where a verification host can reach it, because the shell carries no fakes (DEC-012). It references neither Voice nor ContextOrchestrator (LT-1), so DEC-015/016 hold: the shell is still the only verdict→teaching mapper and Voice still knows only text.
+- **Cards open only after a plan exists** (`ILessonCanvasHost`): a rejected plan or a provider fault costs no window and no WebView2 start-up; the cards are closed on every path once opened.
+- **Provider faults and cancellation become outcomes; everything else propagates** (speaker faults are mapped by the shell, card timeouts are a defect). The report's error string is `ProviderException.ToString()`, which carries no message body.
+- **The App gains a transitive NuGet package** (WebView2, through LessonSession → LessonSurface — the exception DEC-020/025 already accepted). The App csproj still has no direct `PackageReference` (SH-2) and carries the same `DropWebView2Wpf` target.
+- **`--no-speak` with `--lesson`** keeps speech as the clock without the voice: each sentence holds its beat for ~60 ms per character (0.6–8 s).
+
+**Reasoning.** The owner asked that the first real lesson work the moment a key is added, with no code change: that rules out the Tutor's deliberately-untaken flip (DEC-017) for this leg. DeepSeek is the provider the repo already commits to (DEC-017); it is text-only, so the planner sends no image and says so (DEC-024), and a Vision provider is one registry assignment away.
+
+**Rejected.** A `--fake-lesson` flag on the App (breaks DEC-012: product code would ship a test double). Putting the turn directly in the App (no host can reach it — the whole turn would stay untested until a key exists, the SH-15/17 gap). Letting the Tutor call the planner (breaks DEC-015). Mapping `GuidanceResult` inside LessonSession (breaks DEC-016 and needs a ContextOrchestrator reference). Returning null like `CreateTutorClient` (safer on paper, but needs another code change before the first demo — the owner chose the env path).
+
+**Consequences.** The App now builds only where `src/Providers` and `src/Foundation` exist — both still untracked (HANDOVER open item). The full lesson turn is offline-verified by LT-1..LT-6 (fake model; fake and real cards); the shell side is verified up to the key gates (SH-18). SH-19 (a real chord → verdict → drawn, spoken lesson) needs TYPESAFE_API_KEY, DEEPSEEK_API_KEY, a Gateway, Fish and a human.
+
 ## DEC-026 — 2026-10-28 — claude-opus-5-5
 
 **Decision — lessons are planned by `HeyGanesh.LessonPlanner.VisualPlanner`.** `PlanAsync(PlanRequest)` sends one request through the `ILlmClient` it was given (by the caller or `FromRegistry` → role Tutor; DEC-021/DEC-024), validates the answer with `ValidationContext { RequireGroundedMarks = true, GroundedTarget = screen box }`, and — if the answer is not Valid — makes exactly one repair call carrying the original question, the first answer and the issue list. The better of the two outcomes is returned (Valid > PartiallyDegraded > TextFallback > Rejected; ties go to the repair). The prompt contract (schema, op shapes, limits, glyph vocabulary, plot grammar) is interpolated from the same code the validator uses. The screen image is attached only when the client advertises `ProviderCapability.Vision` and the JPEG is within `MaxImageBytes`; otherwise the prompt says it is not attached and `PlanResult.ImageNote` records why.

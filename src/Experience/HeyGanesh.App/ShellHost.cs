@@ -1,5 +1,6 @@
 using HeyGanesh.ContextOrchestrator;
 using HeyGanesh.ElementSelection;
+using HeyGanesh.LessonPlanner;
 using HeyGanesh.ScreenCapture;
 using HeyGanesh.ScreenOverlay;
 using HeyGanesh.TutorEngine;
@@ -128,6 +129,13 @@ internal static partial class ShellHost
         using ITutorClient? tutorClient = CreateTutorClient();
         var tutor = tutorClient is null ? null : new TutorService(tutorClient);
 
+        // The lesson seam (DEC-027), composed only when --lesson asks for it. Unlike the Tutor's, its
+        // client is built from the environment: no key -> no planner -> the leg reports its skip. The
+        // planner owns the client it resolved, and this using disposes it. The overlay is handed in for
+        // screen marks: by the time a lesson plays, the verdict's highlight has already left the screen.
+        using VisualPlanner? lessonPlanner = options.Lesson ? CreateLessonPlanner() : null;
+        var lesson = options.Lesson ? new LessonLeg(lessonPlanner, overlay) : null;
+
         // The speech seam, composed with the default real legs (Qwen Gateway in, Fish/WAV out). The
         // constructor opens no devices: the microphone is taken per listen and released when the listen
         // ends, so sitting idle here costs nothing. Declaration order still sets teardown order — voice
@@ -149,7 +157,7 @@ internal static partial class ShellHost
                 // chord's voice turn feeds, one question source swapped for the other.
                 Console.WriteLine("resolving once at startup (the hook is never installed)...");
                 Console.WriteLine();
-                return await RunSessionAsync(orchestrator, overlay, voice, tutor, options, lifetime.Token).ConfigureAwait(false);
+                return await RunSessionAsync(orchestrator, overlay, voice, tutor, lesson, options, lifetime.Token).ConfigureAwait(false);
             }
 
             // --once without a question: one live listen instead of one canned text — the scripted
@@ -158,11 +166,11 @@ internal static partial class ShellHost
                               "microphone is the question source)...");
             Console.WriteLine("speak now — the turn ends on its own at the silence timeout; Ctrl+C cancels.");
             Console.WriteLine();
-            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, options, lifetime.Token);
+            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, options, lifetime.Token);
             return await oncePump.RunDirectAsync().ConfigureAwait(false);
         }
 
-        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, options, lifetime).ConfigureAwait(false);
+        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, options, lifetime).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -181,10 +189,11 @@ internal static partial class ShellHost
         ScreenOverlayService overlay,
         VoiceService voice,
         TutorService? tutor,
+        LessonLeg? lesson,
         ShellOptions options,
         CancellationTokenSource lifetime)
     {
-        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, options, lifetime.Token);
+        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, options, lifetime.Token);
 
         // Press starts the utterance; release ends it. Both handlers only flip state under the pump's
         // gate and hand work to the pool — the hook callback and the monitor's worker thread are never

@@ -1,0 +1,202 @@
+using HeyGanesh.Abstractions;
+using HeyGanesh.LessonPlanner;
+using HeyGanesh.LessonSession;
+using HeyGanesh.Providers.Core;
+using HeyGanesh.Providers.OpenAiCompat;
+using HeyGanesh.ScreenOverlay;
+using HeyGanesh.TutorEngine;
+using HeyGanesh.VisualLessonEngine.Runtime;
+using HeyGanesh.Voice;
+
+namespace HeyGanesh.App;
+
+// The lesson leg (FEATURE-007 Phase 4.5, DEC-027): with --lesson, a produced verdict is taught as a
+// drawn, spoken lesson instead of the Tutor's prose. Same seat in the turn as the Tutor leg: it runs
+// only on non-Failed verdicts, after the overlay has reported, and it re-decides nothing.
+//
+// The shell keeps the two jobs DEC-015/016 give it and nothing more: it maps the verdict to plain
+// grounding data (GuidanceResult never leaves this file), and it hands Voice's SpeakAsync in as the
+// lesson's speaker. Planning, cards and playback are HeyGanesh.LessonSession's LessonTurn, which
+// tools/LessonTurnSmoke drives with a fake model — this assembly carries no fakes (DEC-012).
+
+internal static partial class ShellHost
+{
+    /// <summary>The composed lesson seam. Present whenever --lesson is on; <see cref="Planner"/> is null without a key.</summary>
+    private sealed record LessonLeg(VisualPlanner? Planner, ScreenOverlayService Marks);
+
+    private const string LessonKeyEnvVar = "DEEPSEEK_API_KEY";
+
+    /// <summary>
+    /// DEC-027: the lesson planner is built from the environment, not held behind a code flip like the
+    /// Tutor's (DEC-017). With no key the leg reports an honest skip; with one, the first lesson works
+    /// with no code change. DeepSeek through the OpenAI-compatible adapter is the provider the repo
+    /// already commits to (DEC-017: deepseek-flash, DEEPSEEK_API_KEY). It has no Vision, so the planner
+    /// sends no image and says so in the prompt (DEC-024) — a Vision-capable provider is a registry
+    /// assignment away, not a planner change.
+    /// </summary>
+    /// <remarks>
+    /// Ownership: the planner owns the client it resolves from the registry (one per process, not per
+    /// question) and RunAsync's using disposes it. The key is read only by EnvironmentSecretStore, per
+    /// request, and never printed — the header reports presence only.
+    /// </remarks>
+    private static VisualPlanner? CreateLessonPlanner()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(LessonKeyEnvVar)))
+        {
+            return null;
+        }
+
+        var registry = new ProviderRegistry();
+        registry.RegisterLlmFactory("deepseek", model => new OpenAiCompatLlmClient(new OpenAiCompatOptions
+        {
+            ProviderId = "deepseek",
+            BaseUrl = "https://api.deepseek.com",
+            ModelId = model,
+            Capabilities = ProviderCapability.Text,
+            SecretStore = new EnvironmentSecretStore(LessonKeyEnvVar),
+            CredentialProviderId = "deepseek",
+        }));
+        registry.Assign(new ProviderAssignment { Role = ProviderRole.Tutor, ProviderId = "deepseek", ModelId = "deepseek-flash" });
+        return VisualPlanner.FromRegistry(registry);
+    }
+
+    /// <summary>The one dispatch between the two teaching legs, so both call sites stay a single line.</summary>
+    private static Task<int> TeachAsync(
+        TutorService? tutor,
+        LessonLeg? lesson,
+        VoiceService voice,
+        ShellOptions options,
+        GuidanceResult guidance,
+        CancellationToken ct) =>
+        lesson is null
+            ? TeachAndSpeakAsync(tutor, voice, options, guidance, ct)
+            : TeachWithLessonAsync(lesson, voice, options, guidance, ct);
+
+    /// <summary>
+    /// The verdict as planner grounding — the lesson-side twin of MapGuidanceToContext. Found: the
+    /// description, the resolved box (the only place a lesson may mark, LS-12) and the frame the verdict
+    /// was resolved against, as already-encoded bytes. Honest no-match: description and box absent, so
+    /// every screen mark is refused and the question stands alone. Precondition: !Failed (call sites).
+    /// </summary>
+    private static ScreenGrounding? MapGuidanceToGrounding(GuidanceResult guidance)
+    {
+        if (!guidance.Found)
+        {
+            return null;
+        }
+
+        var frame = guidance.Captures.Count > 0 ? guidance.Captures[0] : null;
+        return new ScreenGrounding(
+            guidance.Description,
+            guidance.BoxOnScreen,
+            frame?.Jpeg,
+            frame?.OutputWidth ?? 0,
+            frame?.OutputHeight ?? 0);
+    }
+
+    /// <summary>
+    /// Plans, draws and speaks one lesson. Never throws — the TeachAndSpeakAsync contract, the same
+    /// exit-code alphabet: 0 played (or the honest no-key skip), 1 nothing usable came back (no lesson
+    /// was produced, like "no transcript was produced"), 12 key error, 3 provider/speech fault,
+    /// 13 cancelled, 4 a shell or card defect.
+    /// </summary>
+    private static async Task<int> TeachWithLessonAsync(
+        LessonLeg lesson,
+        VoiceService voice,
+        ShellOptions options,
+        GuidanceResult guidance,
+        CancellationToken ct)
+    {
+        if (lesson.Planner is null)
+        {
+            Console.WriteLine($"lesson      : skipped — --lesson is on but no lesson model is configured ({LessonKeyEnvVar}");
+            Console.WriteLine("                MISSING, DEC-027). The verdict above stands as-is.");
+            return 0;
+        }
+
+        // Speech is the lesson's clock. --no-speak keeps the clock but not the voice: each sentence
+        // holds its beat for roughly the time it would take to say, so the cards still pace.
+        ILessonSpeaker speaker = options.NoSpeak
+            ? new DelegateLessonSpeaker((text, token) => Task.Delay(Math.Clamp(text.Length * 60, 600, 8000), token))
+            : new DelegateLessonSpeaker((text, token) => voice.SpeakAsync(new SpeakRequest { Text = text }, token));
+
+        try
+        {
+            var report = await LessonTurn.RunAsync(
+                lesson.Planner,
+                new CardSurfaceHost(marks: lesson.Marks),
+                speaker,
+                new PlanRequest
+                {
+                    Question = options.Question,
+                    Screen = MapGuidanceToGrounding(guidance),
+                    VirtualDesktop = NativeFns.VirtualDesktop(),
+                },
+                ct).ConfigureAwait(false);
+
+            PrintLesson(report, options.NoSpeak);
+            return report.Outcome switch
+            {
+                LessonTurnOutcome.Played or LessonTurnOutcome.PlayedFallback or LessonTurnOutcome.Stopped => 0,
+                LessonTurnOutcome.Rejected => 1,
+                LessonTurnOutcome.AuthError => 12,
+                LessonTurnOutcome.ProviderError => 3,
+                LessonTurnOutcome.Cancelled => 13,
+                _ => 4,
+            };
+        }
+        catch (VoiceAuthenticationException ex)
+        {
+            Console.WriteLine($"KEY ERROR (speech): {ex.Message}");
+            return 12;
+        }
+        catch (VoiceClientException ex)
+        {
+            Console.WriteLine($"SPEECH ERROR (propagated not swallowed): {ex.Message}");
+            return 3;
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("CANCELLED: the token aborted the lesson; the verdict above was already reported.");
+            return 13;
+        }
+        catch (TimeoutException ex)
+        {
+            // A card that never acknowledged a beat or a layout (LSU-2's budget). A surface defect, not a verdict.
+            Console.WriteLine($"LESSON SURFACE FAULT: {ex.Message}");
+            return 4;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FAULT in the lesson leg: {ex.GetType().Name}: {ex.Message}");
+            return 4;
+        }
+    }
+
+    private static void PrintLesson(LessonTurnReport report, bool silent)
+    {
+        Console.WriteLine($"lesson      : {report.Outcome}{(silent ? " (--no-speak: paced, not voiced)" : string.Empty)}");
+        if (report.Plan is { } plan)
+        {
+            Console.WriteLine($"  plan        : {plan.Lesson.Outcome}  attempts={plan.Attempts}  model={plan.ModelId}  " +
+                              $"tokens={plan.InputTokens}/{plan.OutputTokens}  latency={plan.Latency.TotalMilliseconds:F0} ms");
+            Console.WriteLine($"  image       : {(plan.UsedImage ? "sent" : $"not sent ({plan.ImageNote ?? "none in the grounding"})")}");
+            if (plan.RepairError is { } repair)
+            {
+                Console.WriteLine($"  repair      : failed, first answer kept ({repair})");
+            }
+        }
+
+        if (report.Playback is { } playback)
+        {
+            Console.WriteLine($"  playback    : {playback.Status}  beats={playback.Beats.Count}  degraded={playback.Beats.Count(b => b.Degraded)}  " +
+                              $"fallback={playback.SpokeFallback}");
+        }
+
+        if (report.Error is { } error)
+        {
+            // ProviderException.ToString — the provider layer's own secret-free form.
+            Console.WriteLine($"  error       : {error}");
+        }
+    }
+}

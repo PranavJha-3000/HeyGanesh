@@ -223,7 +223,7 @@ Caller cancellation propagates as OperationCanceledException; speaker/canvas fau
 
 `ILessonCanvas` is implemented by `CardSurface` (Phase 3, DEC-025): ResetAsync lays out one card per surface; ApplyBeatAsync groups the beat's ops per card (a highlight goes to the card holding its element), computes plot points in C# (`PlotExpression.Sample`), posts one message per card and awaits each page's `done` (timeout → `TimeoutException`); `ScreenMarkOp` → `ScreenOverlayService.ShowAsync` fire-and-forget after hiding any previous mark. Still to come: `ILessonSpeaker` = App Shell adapter over Voice TTS. The planner that produces the model text is Phase 4 (DEC-021/DEC-024).
 
-## Lesson planning path (Lesson Planner — built offline, NOT yet wired into the App Shell; FEATURE-007 Phase 4)
+## Lesson planning path (Lesson Planner — built offline; wired into the App Shell by `--lesson`, see Lesson leg; FEATURE-007 Phase 4)
 
 ```
 PlanRequest { Question, Screen?: { Description, TargetBox, Jpeg }, VirtualDesktop, PreviousPlan?, Mode }
@@ -234,6 +234,26 @@ PlanRequest { Question, Screen?: { Description, TargetBox, Jpeg }, VirtualDeskto
       ILlmClient.GenerateAsync → VisualPlanParser.Parse → VisualPlanValidator.Validate(ctx: RequireGroundedMarks, GroundedTarget)
       not Valid → +assistant(first answer) +user(PlannerPrompt.Repair(issues)) → one more call → keep the better outcome
   → PlanResult { Lesson (validated), Attempts, UsedImage, ImageNote, ModelId, tokens, Latency, FirstAttemptIssues }
-  → LessonPlayer.PlayAsync(result.Lesson) over CardSurface (Phase 3) — the shell wiring that joins these is still to come
+  → LessonPlayer.PlayAsync(result.Lesson) over CardSurface (Phase 3) — joined by LessonTurn (see Lesson leg)
 ```
 ProviderException / OperationCanceledException propagate unchanged.
+
+## Lesson leg (App Shell `--lesson` — built and offline-verified, live run key-gated; FEATURE-007 Phase 4.5, DEC-027)
+
+```
+RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, nothing taught]
+  → TeachAsync(tutor, lesson, …)                         ShellHost.Lesson.cs — one dispatch, both call sites
+      lesson is null (no --lesson) → TeachAndSpeakAsync   the Tutor leg, unchanged
+      lesson.Planner is null (DEEPSEEK_API_KEY missing) → "lesson : skipped", exit 0
+      else TeachWithLessonAsync
+        PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop() }
+        LessonTurn.RunAsync(planner, CardSurfaceHost(marks: overlay), DelegateLessonSpeaker(voice.SpeakAsync), request, ct)
+          VisualPlanner.PlanAsync            ProviderException → AuthError / ProviderError; OCE → Cancelled  (no card opened)
+          Lesson.Outcome == Rejected         → Rejected (no card opened, nothing said)
+          CardSurfaceHost.OpenAsync          → fresh CardSurface for this turn
+          LessonPlayer.PlayAsync             draw then speak per beat; Voice's SpeakAsync is the clock
+          finally: cards disposed            no card outlives the turn (LT-6)
+        PrintLesson → exit 0 Played/PlayedFallback/Stopped · 1 Rejected · 12 AuthError/Voice key · 3 ProviderError/Voice fault · 13 Cancelled · 4 card timeout/defect
+```
+CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
+

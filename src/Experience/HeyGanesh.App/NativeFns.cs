@@ -40,6 +40,22 @@ internal static class NativeFns
     [DllImport("user32.dll")]
     private static extern int GetAwarenessFromDpiAwarenessContext(IntPtr dpiContext);
 
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int index);
+
+    private const int SmXVirtualScreen = 76, SmYVirtualScreen = 77, SmCxVirtualScreen = 78, SmCyVirtualScreen = 79;
+
+    /// <summary>
+    /// The virtual desktop in physical pixels: the outer bound the lesson validator holds every mark to.
+    /// Physical only because this process is PerMonitorV2 (set in Program.cs); under --no-dpi the numbers
+    /// are virtualised, and the lesson's marks then go to an overlay that refuses to draw anyway.
+    /// </summary>
+    internal static HeyGanesh.Abstractions.PixelRect VirtualDesktop() => new(
+        GetSystemMetrics(SmXVirtualScreen),
+        GetSystemMetrics(SmYVirtualScreen),
+        GetSystemMetrics(SmCxVirtualScreen),
+        GetSystemMetrics(SmCyVirtualScreen));
+
     /// <summary>
     /// True when the calling thread is at least per-monitor aware. Same probe, same floor, same
     /// "say aware when the OS cannot answer" bias as <c>ScreenOverlayService.IsPerMonitorDpiAware</c>,

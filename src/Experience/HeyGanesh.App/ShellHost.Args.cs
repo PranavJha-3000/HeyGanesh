@@ -12,7 +12,7 @@ internal static partial class ShellHost
     {
         var question = "";
         var help = false; var once = false; var overlay = true; var foreground = false;
-        var retainCaptures = true; var expectDpi = true; var noSpeak = false;
+        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
 
@@ -26,6 +26,7 @@ internal static partial class ShellHost
                 case "--foreground": foreground = true; break;
                 case "--no-retain-captures": retainCaptures = false; break;
                 case "--no-speak": noSpeak = true; break;
+                case "--lesson": lesson = true; break;
                 case "--no-dpi": expectDpi = false; break;
                 case "--seconds": seconds = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -44,7 +45,7 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson);
     }
 
     private static void PrintUsage()
@@ -67,6 +68,9 @@ internal static partial class ShellHost
         Console.WriteLine("--no-speak        teach but stay silent: skip the speech-out leg. The lesson (when one is");
         Console.WriteLine("                  produced) is still reported as text — headless scripted runs and anyone");
         Console.WriteLine("                  who does not want the desk speaking should use it.");
+        Console.WriteLine("--lesson          teach with a drawn, spoken visual lesson (cards + voice) instead of the");
+        Console.WriteLine("                  Tutor's prose. Needs DEEPSEEK_API_KEY for the lesson model; without it the");
+        Console.WriteLine("                  lesson leg reports its skip (DEC-027). Combine with --no-speak to pace silently.");
         Console.WriteLine("--foreground      walk the foreground window instead of the window under the cursor.");
         Console.WriteLine("--no-retain-captures  drop the captured frames from the verdict (RetainCaptures=false).");
         Console.WriteLine("--max-dim         capture downscale cap in px (default 1280).");
@@ -84,7 +88,8 @@ internal static partial class ShellHost
         Console.WriteLine("error propagated rather than swallowed | 4 an unexpected fault | 12 a required API key");
         Console.WriteLine("is missing | 13 cancelled. The teach/speak leg after a non-Failed verdict reuses these");
         Console.WriteLine("codes: 12/3 are a key/provider error from the teaching seam or the speaker, 4 is a mapping");
-        Console.WriteLine("fault in the shell; the verdict is always reported (and drawn) before either can fire.");
+        Console.WriteLine("fault in the shell (or a lesson card fault), 1 with --lesson means no usable lesson came");
+        Console.WriteLine("back; the verdict is always reported (and drawn) before any of them can fire.");
         Console.WriteLine();
         Console.WriteLine("Live listens need HEYGANESH_QWEN_GATEWAY_URL (the qwen-audio-agent Gateway is a separate");
         Console.WriteLine("process that runs with its own provider key; no key crosses the protocol to HeyGanesh). The");
@@ -135,9 +140,16 @@ internal static partial class ShellHost
         // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
         // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
         Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
+        Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, deepseekKey)}");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
     }
+
+    /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027).</summary>
+    private static string LessonHeader(bool on, bool key) =>
+        !on ? "off (the Tutor leg teaches; --lesson draws instead)"
+        : key ? "ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed)"
+        : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
 
     private sealed record ShellOptions(
         string Question,
@@ -152,6 +164,7 @@ internal static partial class ShellHost
         int DurationMs,
         int MaxDim,
         int MaxCandidates,
-        bool NoSpeak);
+        bool NoSpeak,
+        bool Lesson);
 }
 

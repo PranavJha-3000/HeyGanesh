@@ -285,3 +285,10 @@
 - **Files to restore:** Delete `src/Providers/HeyGanesh.Providers.Gemini/`; delete `tools/GeminiSmoke/`; `git checkout HEAD -- HeyGanesh.sln .github/workflows/scan-forbidden.ps1 .github/workflows/scan-secrets.ps1 docs/ai/ARCHITECTURE.md docs/ai/HANDOVER.md docs/ai/ROLLBACK.md`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` → 0/0; `scan-forbidden.ps1` → pass; `scan-secrets.ps1` → pass; all existing smoke tests pass with original args.
 - **Dependencies:** Zero new NuGet; pure .NET 8 zero-PackageReference assembly; target `net8.0-windows10.0.22621.0`; `System.Net.Http` only.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 4.5: lesson shell wiring)
+
+- **Change:** Add `src/Experience/HeyGanesh.LessonSession/` (LessonTurn, DelegateLessonSpeaker, CardSurfaceHost) and `tools/LessonTurnSmoke/`; App Shell gains `--lesson`, `ShellHost.Lesson.cs`, an env-backed read-only secret store, and ProjectReferences to LessonSession + Providers.OpenAiCompat (WebView2 now arrives transitively, DEC-027). Docs: DEC-027, FLOW, ARCHITECTURE, TEST-CHECKLIST, AGENTS.md, FEATURE-007, HANDOVER.
+- **Rollback point:** main at `4c4be17`. All work is on `feat/lesson-shell-wiring-v1`; until it is merged, rollback = `git checkout main && git branch -D feat/lesson-shell-wiring-v1`. After a merge: `git revert` the branch's commits.
+- **Files to restore:** delete `src/Experience/HeyGanesh.LessonSession/`, `tools/LessonTurnSmoke/`, `src/Experience/HeyGanesh.App/ShellHost.Lesson.cs`, `src/Experience/HeyGanesh.App/EnvironmentSecretStore.cs`; `git checkout 4c4be17 -- HeyGanesh.sln src/Experience/HeyGanesh.App docs/ai AGENTS.md`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; `HeyGanesh.App.exe --help` has no `--lesson`; SH-4/SH-7/SH-16 exits 12/13/12; LessonSmoke/LessonSurfaceSmoke/LessonPlannerSmoke rows exit 0.

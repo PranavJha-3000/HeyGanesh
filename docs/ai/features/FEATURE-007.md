@@ -8,6 +8,9 @@
   Phase 3 (Lesson Surface, 2D cards) BUILT 2026-10-28 on `feat/lesson-surface-v1` (DEC-025): LS-11 + LSU-1..LSU-5
   green on the real desktop, LSU-6 demo runs; KaTeX/Rough.js deferred. Phase 4 (Lesson Planner) BUILT offline 2026-10-28 on
   `feat/lesson-planner-v1` (DEC-026): LS-12 + LP-1..LP-7 green; LP-8 live row, streaming and the eval harness wait for a key.
+  Phase 4.5 (App Shell wiring) BUILT 2026-10-28 on `feat/lesson-shell-wiring-v1` (DEC-027): `--lesson` runs
+  LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; LT-1..LT-6 + SH-18 green offline; SH-19 live-gated.
+  Plan: [plans/2026-10-28-lesson-shell-wiring-v1.md](../plans/2026-10-28-lesson-shell-wiring-v1.md).
   Phases 5–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.

@@ -1,4 +1,12 @@
 
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 4.5: lesson shell wiring)
+
+Did: Added `HeyGanesh.LessonSession` (LessonTurn: plan → open cards only once a plan exists → play → always close; provider faults/cancel as outcomes; DelegateLessonSpeaker; CardSurfaceHost) and `tools/LessonTurnSmoke` (LT-1..LT-7, fake model + fake/real cards). The App Shell gains `--lesson`: after a produced verdict it maps the verdict to ScreenGrounding and runs one lesson turn with Voice as the speaker. The planner is built from DEEPSEEK_API_KEY (DeepSeek via OpenAiCompat + a read-only EnvironmentSecretStore), or the leg prints its skip (DEC-027).
+Left: SH-19, the live lesson end to end, needs TYPESAFE_API_KEY + DEEPSEEK_API_KEY + Gateway + Fish + a human. The SAPI demo audio is still not heard by a person. LP-8, streaming and the eval harness still wait for a key. Branch not merged and not pushed.
+Watch: OPEN ITEM, now more pressing: the App itself references src/Providers + src/Foundation, which are still untracked, so a fresh clone cannot build the App. The App receives WebView2 transitively; every consumer of LessonSurface needs the `DropWebView2Wpf` target or MSB3277 returns. With `--lesson`, exit 1 also means "no usable lesson came back".
+Next: Owner decision: commit src/Providers + src/Foundation, so the merged main builds from a clean clone. Then merge this branch.
+Verified: sln -warnaserror 0/0; LessonTurnSmoke source 4, turn 4, degraded 4, rejected 2, errors 6, surface 6 — all exit 0, demo (timed) exit 0; all 11 LessonSmoke, 5 LessonSurfaceSmoke and 8 LessonPlannerSmoke rows exit 0; App --help 0, SH-4 12, SH-7 13, SH-16 12/12, SH-18 12/12 (dummy key never echoed), hooked --lesson 0; scan-forbidden + scan-secrets pass.
+
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 4: Lesson Planner v1, offline)
 
 Did: Built `HeyGanesh.LessonPlanner` (VisualPlanner over any ILlmClient / ProviderRegistry; prompt contract interpolated from validator code; image only to Vision models with an explicit note otherwise; one repair turn keeping the better answer) and a grounded-mark rule in the validator (`ValidationContext`, `mark.ungrounded`). `tools/LessonPlannerSmoke` LP-1..LP-7 against a recording fake. DEC-026. Branch `feat/lesson-planner-v1`.

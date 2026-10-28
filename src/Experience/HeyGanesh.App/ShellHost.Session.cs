@@ -45,6 +45,7 @@ internal static partial class ShellHost
         ScreenOverlayService overlay,
         VoiceService voice,
         TutorService? tutor,
+        LessonLeg? lesson,
         ShellOptions options,
         CancellationToken lifetime)
     {
@@ -122,7 +123,7 @@ internal static partial class ShellHost
             // into the teach/speak leg exactly as the drawn path below does.
             return guidance.Failed
                 ? 1
-                : await TeachAndSpeakAsync(tutor, voice, options, guidance, linked.Token).ConfigureAwait(false);
+                : await TeachAsync(tutor, lesson, voice, options, guidance, linked.Token).ConfigureAwait(false);
         }
 
         try
@@ -154,7 +155,7 @@ internal static partial class ShellHost
         // first sends it here, not to the Tutor.
         return guidance.Failed
             ? 1
-            : await TeachAndSpeakAsync(tutor, voice, options, guidance, linked.Token).ConfigureAwait(false);
+            : await TeachAsync(tutor, lesson, voice, options, guidance, linked.Token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -232,6 +233,7 @@ internal static partial class ShellHost
         private readonly ContextOrchestratorService _orchestrator;
         private readonly ScreenOverlayService _overlay;
         private readonly TutorService? _tutor;
+        private readonly LessonLeg? _lesson;
         private readonly ShellOptions _options;
         private readonly CancellationToken _lifetime;
 
@@ -250,6 +252,7 @@ internal static partial class ShellHost
             ContextOrchestratorService orchestrator,
             ScreenOverlayService overlay,
             TutorService? tutor,
+            LessonLeg? lesson,
             ShellOptions options,
             CancellationToken lifetime)
         {
@@ -257,6 +260,7 @@ internal static partial class ShellHost
             _orchestrator = orchestrator;
             _overlay = overlay;
             _tutor = tutor;
+            _lesson = lesson;
             _options = options;
             _lifetime = lifetime;
         }
@@ -447,6 +451,7 @@ internal static partial class ShellHost
                     _overlay,
                     _voice,
                     _tutor,
+                    _lesson,
                     _options with { Question = utter.FinalText },
                     _lifetime).ConfigureAwait(false);
             }

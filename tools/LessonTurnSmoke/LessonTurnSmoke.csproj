@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification + demo host for one lesson turn (FEATURE-007 Phase 4.5, DEC-027).
+
+    Not product code: this is where the fake model lives, because the App Shell carries no fakes
+    (DEC-012). It drives HeyGanesh.LessonSession's LessonTurn with the planner host's recording
+    FakeLlmClient (linked, not copied) and either a recording fake canvas or the REAL card surface.
+    Fixtures are linked from tools/LessonSmoke so every host tests the same golden lessons.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.LessonTurnSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.LessonTurnSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.LessonSession\HeyGanesh.LessonSession.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\LessonPlannerSmoke\FakeLlmClient.cs" Link="FakeLlmClient.cs" />
+    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -26,4 +26,13 @@ public static class LessonIssueCodes
     public const string OpUnknown = "op.unknown";
     public const string GlyphUnknown = "glyph.unknown";
     public const string ValueInvalid = "value.invalid";
+
+    // Schema 1.1 (scene3d, DEC-028).
+    public const string SurfaceUnsupported = "surface.unsupported";
+    public const string RefSurfaceKind = "ref.surface-kind";
+    public const string ModelUnknown = "model.unknown";
+    public const string PartUnknown = "part.unknown";
+    public const string AnimationUnknown = "animation.unknown";
+    public const string LimitScenes = "limit.scenes";
+    public const string LimitModels = "limit.models";
 }

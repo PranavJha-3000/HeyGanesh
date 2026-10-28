@@ -1,0 +1,65 @@
+{
+  "schema": "heyganesh.visualplan/1.1",
+  "lessonId": "engine-3d",
+  "title": "How a four-stroke engine turns fuel into motion",
+  "mode": "explain",
+  "surfaces": [
+    { "id": "scene-engine", "kind": "scene3d", "title": "a single-cylinder engine" },
+    { "id": "card-strokes", "kind": "card", "title": "the four strokes" }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "say": "Here is one cylinder of a four-stroke engine.",
+      "ops": [
+        { "op": "model", "surface": "scene-engine", "id": "engine", "model": "engine-test" },
+        { "op": "camera", "surface": "scene-engine", "focus": "engine", "view": "iso" },
+        { "op": "write", "surface": "card-strokes", "id": "w-title", "text": "intake, compression, power, exhaust", "style": "heading" }
+      ]
+    },
+    {
+      "id": "b2",
+      "say": "The piston slides up and down inside the cylinder.",
+      "ops": [
+        { "op": "label", "surface": "scene-engine", "id": "l-piston", "target": "engine.piston", "text": "piston" },
+        { "op": "highlight", "target": "engine.piston" },
+        { "op": "step", "surface": "card-strokes", "id": "s-intake", "index": 1, "text": "intake: the piston moves down and draws in fuel and air" }
+      ]
+    },
+    {
+      "id": "b3",
+      "say": "The connecting rod links the piston to the crankshaft.",
+      "ops": [
+        { "op": "label", "surface": "scene-engine", "id": "l-rod", "target": "engine.connecting-rod", "text": "connecting rod" },
+        { "op": "highlight", "target": "engine.connecting-rod" },
+        { "op": "step", "surface": "card-strokes", "id": "s-compress", "index": 2, "text": "compression: the piston moves up and squeezes the mixture" }
+      ]
+    },
+    {
+      "id": "b4",
+      "say": "Watch the four strokes run one after another.",
+      "ops": [
+        { "op": "animate", "target": "engine", "animation": "stroke-cycle" },
+        { "op": "step", "surface": "card-strokes", "id": "s-power", "index": 3, "text": "power: the spark burns the mixture and pushes the piston down" }
+      ]
+    },
+    {
+      "id": "b5",
+      "say": "Pulled apart, you can see how the rod turns the crankshaft.",
+      "ops": [
+        { "op": "explode", "target": "engine", "amount": 0.6 },
+        { "op": "camera", "surface": "scene-engine", "focus": "engine.crankshaft", "view": "side" },
+        { "op": "step", "surface": "card-strokes", "id": "s-exhaust", "index": 4, "text": "exhaust: the piston moves up and pushes the burnt gas out" }
+      ]
+    },
+    {
+      "id": "b6",
+      "say": "So the rod is what turns the up-and-down push into spinning.",
+      "ops": [
+        { "op": "explode", "target": "engine", "amount": 0 },
+        { "op": "highlight", "target": "l-rod" },
+        { "op": "write", "surface": "card-strokes", "id": "w-key", "text": "up-and-down -> rotation", "style": "note" }
+      ]
+    }
+  ]
+}

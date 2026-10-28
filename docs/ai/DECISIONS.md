@@ -9,6 +9,8 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-028](#dec-028--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D as VisualPlan 1.1: one `scene3d` surface, ops model/label/explode/animate/camera + part refs, names bound to a caller-supplied `ModelCatalog`; off unless the canvas passes a catalogue (`ValidationContext.Scene3d`) | accepted |
+| [DEC-027](#dec-027--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | App Shell lesson leg: `--lesson` runs one LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; planner built from `DEEPSEEK_API_KEY` (DeepSeek via OpenAiCompat) or the leg reports its skip; WebView2 reaches the App transitively | accepted |
 | [DEC-026](#dec-026--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Planner v1: `VisualPlanner` in its own assembly over any `ILlmClient`; prompt contract interpolated from validator code; image only to Vision models; grounded marks; one repair turn keeping the better answer; no structured output and no streaming yet | accepted |
 | [DEC-025](#dec-025--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Surface v1: `CardSurface` (WebView2 cards on their own STA thread, text-only page, acked beats with timeout), seam `ClearAsync`→`ResetAsync(surfaces)`, plots computed by C# `PlotExpression` and refused by the validator when unparsable, TeX-lite + in-page strokes until KaTeX/Rough.js are vendored, marks as overlay box+pointer | accepted |
 | [DEC-024](#dec-024--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner is provider-agnostic and multimodal: resolved through ProviderRegistry (no hard-wired provider), sends the question + one bounded screen crop as an image part when the model has Vision, otherwise an explicit text-only grounding path; refines DEC-021 | accepted |
@@ -37,6 +39,20 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-028 — 2026-10-29 — claude-opus-5-5
+
+**Decision — 3D arrives as VisualPlan 1.1: one `scene3d` surface, five ops, names bound to a caller-supplied `ModelCatalog`, and off by default.** Schema `heyganesh.visualplan/1.1` is v1 plus `SurfaceKind.Scene3d` (at most one per plan) and the ops `model` (place catalogue model → instance), `label` (sticky note on an instance or part), `explode` (0..1), `animate` (a catalogue animation of that model) and `camera` (`front`/`side`/`top`/`iso`). `highlight` also takes a part reference `"<instance>.<part>"`. The validator accepts `/1` and `/1.1`; a scene under `/1` is `schema.unsupported`. 3D is accepted only when `ValidationContext.Scene3d` carries a catalogue. With none (every caller today), a scene is plan-level `surface.unsupported` and the lesson is spoken. New codes: `surface.unsupported`, `ref.surface-kind`, `model.unknown`, `part.unknown`, `animation.unknown`, `limit.scenes`, `limit.models` (`MaxModelsPerScene = 3`).
+
+**Reasoning.**
+- DEC-023 already said 3D comes as a schema minor and that ops grow by contract, not by renderer. Nothing in v1 changes meaning, so every v1 fixture and the planner prompt stay valid untouched (all 106 existing LessonSmoke PASS lines unchanged).
+- FEATURE-007 §3.2 "bind to vetted content": a scene can only name models, parts and animations a catalogue lists, so a model cannot invent a part. `part.unknown` is a separate code from `ref.target` so evals can tell "made up a part" from "referred to it too early".
+- The gate is needed now: `CardSurface` lays out one 2D card per declared surface whatever its kind and silently skips op types it doesn't know, so a scene that passed validation would show as an empty card. The catalogue doubles as the capability flag. A host passes one only when its canvas draws 3D (Phase 5 step 4).
+- One scene per plan: spike 0b measured ~360–500 MB of WebView2 memory per 3D page.
+
+**Rejected.** A separate scene document beside the beats (loses beat-by-beat sync with speech, needs a second validator); a static global model list like `LessonVocabulary.Glyphs` (couples contract to content, and cannot say "this host has no 3D"); schema `/2`; parameters on `model` (deferred until a library model or eval needs them).
+
+**Consequences.** Step 3's part library produces a `ModelCatalog` plus geometry; step 4's renderer is the first canvas to pass one; step 6 teaches the planner the 1.1 ops and makes `VisualPlanner` pass the catalogue. Until then live lessons are exactly as before. The `ModelCatalog` constructor throws on malformed ids or duplicates, since it is built by code, never from model output. Plan: [plans/2026-10-29-scene3d-contract-v1.md](plans/2026-10-29-scene3d-contract-v1.md). Rows: LS-13.
+
 ## DEC-027 — 2026-10-28 — claude-opus-5-5
 
 **Decision — the lesson leg is wired into the App Shell behind `--lesson`, and its model comes from the environment.** After a produced (non-Failed) verdict, `--lesson` replaces the Tutor's prose leg with one lesson turn: the shell maps the verdict to `ScreenGrounding` (Found → description, resolved box, `Captures[0]` JPEG; honest no-match → no grounding, so every screen mark is refused) and calls `HeyGanesh.LessonSession.LessonTurn.RunAsync` (plan → open cards → play → close) with Voice's `SpeakAsync` as the speaker through `DelegateLessonSpeaker`. `CreateLessonPlanner()` builds `VisualPlanner.FromRegistry` over DeepSeek (`deepseek-flash`, OpenAI-compatible adapter, `DEEPSEEK_API_KEY` read per request by a read-only `EnvironmentSecretStore`) when the key is present and returns null otherwise, in which case the leg prints an honest skip. Exit codes reuse the shell alphabet: 0 played/skip, 1 no usable lesson (Rejected), 12 key, 3 provider/speech, 13 cancelled, 4 shell or card defect.

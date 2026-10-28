@@ -313,3 +313,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `cbdf116`.
 - **Files to restore:** `git checkout cbdf116 -- docs/ai/CI.md docs/ai/HANDOVER.md tools/TutorSmoke/TutorSmokeHost.Source.cs`; `git rm -r --cached .github` (the original untracked ci.yml was overwritten before it was backed up; a reconstruction from its printed text is in the session scratchpad `cleanup-backup/.github/workflows/ci.yml.reconstructed` (temporary), and the scan scripts were unchanged).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; `HeyGanesh.Tools.TutorSmoke.exe --assert-source` goes back to `FAIL could not locate`, exit 1.
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 2: scene3d contract, VisualPlan 1.1)
+
+- **Change:** VisualLessonEngine gains `SurfaceKind.Scene3d`, ops `model`/`label`/`explode`/`animate`/`camera`, `ModelCatalog.cs`, limits `MaxScenes`/`MaxModelsPerScene`, seven issue codes, schema `heyganesh.visualplan/1.1`, and `ValidationContext.Scene3d` (null = 3D off, the default for every existing caller). LessonSmoke gains `--assert-scene3d` and `fixtures/engine-3d.json`. Docs: DEC-028, LS-13, FLOW, FEATURE-007, CI (G-13), HANDOVER. Plan: docs/ai/plans/2026-10-29-scene3d-contract-v1.md.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `15f838d` (the commit before this step).
+- **Files to restore:** `git checkout 15f838d -- src/Intelligence/HeyGanesh.VisualLessonEngine tools/LessonSmoke .github/workflows/ci.yml docs/ai`; delete `src/Intelligence/HeyGanesh.VisualLessonEngine/ModelCatalog.cs`, `tools/LessonSmoke/LessonSmokeHost.Scene3d.cs`, `tools/LessonSmoke/fixtures/engine-3d.json`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; every LessonSmoke mode with its old PASS count (106 across the 11 modes); LessonPlannerSmoke and LessonTurnSmoke offline modes exit 0.

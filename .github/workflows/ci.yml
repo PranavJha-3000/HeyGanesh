@@ -75,7 +75,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\LessonSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSmoke.exe'
           foreach ($mode in @('--assert-source', '--assert-parse', '--assert-limits', '--assert-refs', '--assert-degrade', '--assert-fixtures',
-                              '--assert-play', '--assert-play-degraded', '--assert-controls', '--assert-plot', '--assert-grounded')) {
+                              '--assert-play', '--assert-play-degraded', '--assert-controls', '--assert-plot', '--assert-grounded', '--assert-scene3d')) {
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

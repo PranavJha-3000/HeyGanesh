@@ -15,6 +15,12 @@ public sealed record LessonLimits
     public int MaxSayChars { get; init; } = 400;
     public int MaxTextChars { get; init; } = 280;
 
+    /// <summary>3D scenes per plan. One: spike 0b measured ~360–500 MB of WebView2 memory per scene page.</summary>
+    public int MaxScenes { get; init; } = 1;
+
+    /// <summary>Model instances live in a scene at once — a teaching scene, not a showroom.</summary>
+    public int MaxModelsPerScene { get; init; } = 3;
+
     /// <summary>At or above this share of degraded beats the plan becomes plain spoken text.</summary>
     public double FallbackDegradedRatio { get; init; } = 0.5;
 

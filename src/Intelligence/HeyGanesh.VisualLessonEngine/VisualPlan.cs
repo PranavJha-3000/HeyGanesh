@@ -8,10 +8,14 @@ public enum LessonMode
     WorkedExample = 2,
 }
 
-/// <summary>What a surface is. v1 has paper cards only; the 3D scene surface is Phase 5.</summary>
+/// <summary>
+/// What a surface is. Cards are v1. <see cref="Scene3d"/> (schema 1.1, DEC-028) is a 3D scene built from
+/// catalogue models; it is only accepted when the caller's canvas can draw it (ValidationContext.Scene3d).
+/// </summary>
 public enum SurfaceKind
 {
     Card = 0,
+    Scene3d = 1,
 }
 
 /// <summary>

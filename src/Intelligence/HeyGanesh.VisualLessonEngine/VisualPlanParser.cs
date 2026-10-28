@@ -71,7 +71,12 @@ public static class VisualPlanParser
         var surfaces = Items(root, "surfaces")
             .Select(s => new LessonSurface(
                 Str(s, "id"),
-                Str(s, "kind") == "card" ? SurfaceKind.Card : Invalid(SurfaceKind.Card, issues, null, $"surface kind '{Str(s, "kind")}'"),
+                Str(s, "kind") switch
+                {
+                    "card" => SurfaceKind.Card,
+                    "scene3d" => SurfaceKind.Scene3d,
+                    var other => Invalid(SurfaceKind.Card, issues, null, $"surface kind '{other}'"),
+                },
                 Str(s, "title")))
             .ToList();
 
@@ -102,9 +107,23 @@ public static class VisualPlanParser
                 Shape(o, beatId, issues),
                 new PixelRect(ReqInt(o, "x", beatId, issues), ReqInt(o, "y", beatId, issues), ReqInt(o, "width", beatId, issues), ReqInt(o, "height", beatId, issues))),
             "clear" => new ClearOp(Str(o, "surface")),
+            "model" => new ModelOp(Str(o, "surface"), Str(o, "id"), Str(o, "model")),
+            "label" => new LabelOp(Str(o, "surface"), Str(o, "id"), Str(o, "target"), Str(o, "text")),
+            "explode" => new ExplodeOp(Str(o, "target"), ReqDbl(o, "amount", beatId, issues)),
+            "animate" => new AnimateOp(Str(o, "target"), Str(o, "animation")),
+            "camera" => new CameraOp(Str(o, "surface"), Str(o, "focus"), View(o, beatId, issues)),
             _ => new UnknownOp(name),
         };
     }
+
+    private static CameraView View(JsonElement o, string beatId, List<LessonIssue> issues) => Str(o, "view") switch
+    {
+        "front" => CameraView.Front,
+        "side" => CameraView.Side,
+        "top" => CameraView.Top,
+        "iso" => CameraView.Iso,
+        var other => Invalid(CameraView.Iso, issues, beatId, $"camera view '{other}'"),
+    };
 
     private static TextStyle Style(JsonElement o, string beatId, List<LessonIssue> issues) => OptStr(o, "style") switch
     {

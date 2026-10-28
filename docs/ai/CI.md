@@ -18,7 +18,7 @@
 | **G-10 Forbidden-API scan** | `pwsh -File .github/workflows/scan-forbidden.ps1` | `forbiddenApiScan=pass` (clean) or `forbiddenApiScan=FAIL` | exit 0 clean / non-zero on violation |
 | **G-11 Secret scan** | `pwsh -File .github/workflows/scan-secrets.ps1` | `secretScan=pass` (clean) or `secretScan=FAIL` | exit 0 clean / non-zero on credible finding |
 | **G-12 Security offline** | `dotnet run --project tools\SecretSmoke -c Debug` | `secretSmoke=pass` | exit 0 |
-| **G-13 Visual Lesson Engine offline** | build `tools\LessonSmoke`, then the EXE with each of `--assert-source` `--assert-parse` `--assert-limits` `--assert-refs` `--assert-degrade` `--assert-fixtures` `--assert-play` `--assert-play-degraded` `--assert-controls` `--assert-plot` `--assert-grounded` | `lessonEngine=pass` | exit 0 for every mode |
+| **G-13 Visual Lesson Engine offline** | build `tools\LessonSmoke`, then the EXE with each of `--assert-source` `--assert-parse` `--assert-limits` `--assert-refs` `--assert-degrade` `--assert-fixtures` `--assert-play` `--assert-play-degraded` `--assert-controls` `--assert-plot` `--assert-grounded` `--assert-scene3d` | `lessonEngine=pass` | exit 0 for every mode |
 | **G-14 Lesson Planner offline** | build `tools\LessonPlannerSmoke`, then the EXE with each of `--assert-source` `--assert-prompt` `--assert-multimodal` `--assert-plan` `--assert-repair` `--assert-errors` `--assert-followup` `--assert-hardening` | `lessonPlanner=pass` | exit 0 for every mode |
 | **G-15 Lesson Turn offline** | build `tools\LessonTurnSmoke`, then the EXE with each of `--assert-source` `--assert-turn` `--assert-turn-degraded` `--assert-turn-rejected` `--assert-turn-errors` | `lessonTurn=pass` | exit 0 for every mode |
 

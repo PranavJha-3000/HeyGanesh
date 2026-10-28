@@ -11,7 +11,9 @@
   Phase 4.5 (App Shell wiring) BUILT 2026-10-28 on `feat/lesson-shell-wiring-v1` (DEC-027): `--lesson` runs
   LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; LT-1..LT-6 + SH-18 green offline; SH-19 live-gated.
   Plan: [plans/2026-10-28-lesson-shell-wiring-v1.md](../plans/2026-10-28-lesson-shell-wiring-v1.md).
-  Phase 5: spike 0b run 2026-10-29 — GO with three conditions (Phase 0 results below); build steps not started.
+  Phase 5: spike 0b run 2026-10-29 — GO with three conditions (Phase 0 results below). Step 2 (scene3d contract,
+  VisualPlan 1.1, DEC-028) BUILT 2026-10-29 · claude-opus-5-5 offline: LS-13 green, 3D off by default
+  ([plan](../plans/2026-10-29-scene3d-contract-v1.md)). Steps 3–6 (part library, renderer, click-to-ask, planner) not started.
   Phases 6–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.

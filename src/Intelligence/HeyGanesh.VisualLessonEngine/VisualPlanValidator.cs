@@ -42,6 +42,13 @@ public sealed record ValidationContext(PixelRect VirtualDesktop)
     public PixelRect? GroundedTarget { get; init; }
 
     public int GroundedMarginPx { get; init; } = 24;
+
+    /// <summary>
+    /// The 3D vocabulary, and the caller's statement that its canvas can draw a scene3d surface
+    /// (DEC-028). Null — the default — means no 3D: a plan declaring a scene loses its drawing and is
+    /// spoken. Kept off until a renderer exists, because CardSurface would lay a scene out as a card.
+    /// </summary>
+    public ModelCatalog? Scene3d { get; init; }
 }
 
 /// <summary>
@@ -52,6 +59,9 @@ public sealed record ValidationContext(PixelRect VirtualDesktop)
 public sealed class VisualPlanValidator
 {
     public const string SupportedSchema = "heyganesh.visualplan/1";
+
+    /// <summary>The 1.1 minor (DEC-028): v1 plus the scene3d surface and its ops. Both ids are accepted.</summary>
+    public const string Schema11 = "heyganesh.visualplan/1.1";
 
     private static readonly Regex IdPattern = new(@"^[a-z][a-z0-9-]{0,31}\z", RegexOptions.CultureInvariant);
 
@@ -78,16 +88,38 @@ public sealed class VisualPlanValidator
         }
 
         var plan = parsed.Plan;
-        CheckPlan(plan, issues);
+        CheckPlan(plan, issues, context);
         var degraded = CheckBeats(plan, issues, context);
         return Decide(plan, issues, degraded);
     }
 
-    private void CheckPlan(VisualPlan plan, List<LessonIssue> issues)
+    private void CheckPlan(VisualPlan plan, List<LessonIssue> issues, ValidationContext context)
     {
-        if (!string.Equals(plan.Schema, SupportedSchema, StringComparison.Ordinal))
+        var is11 = string.Equals(plan.Schema, Schema11, StringComparison.Ordinal);
+        if (!is11 && !string.Equals(plan.Schema, SupportedSchema, StringComparison.Ordinal))
         {
-            issues.Add(Plan(LessonIssueCodes.SchemaUnsupported, $"schema '{plan.Schema}' is not {SupportedSchema}"));
+            issues.Add(Plan(LessonIssueCodes.SchemaUnsupported, $"schema '{plan.Schema}' is not {SupportedSchema} or {Schema11}"));
+        }
+
+        // Scene rules are plan-level, like every surface rule: a scene the host cannot draw, or one the
+        // schema does not allow, costs the whole drawing and the lesson is spoken instead.
+        var scenes = plan.Surfaces.Count(s => s.Kind == SurfaceKind.Scene3d);
+        if (scenes > 0)
+        {
+            if (!is11)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchemaUnsupported, $"a scene3d surface needs schema {Schema11}"));
+            }
+
+            if (context.Scene3d is null)
+            {
+                issues.Add(Plan(LessonIssueCodes.SurfaceUnsupported, "scene3d is not available on this canvas"));
+            }
+
+            if (scenes > _limits.MaxScenes)
+            {
+                issues.Add(Plan(LessonIssueCodes.LimitScenes, $"{scenes} scene3d surfaces (max {_limits.MaxScenes})"));
+            }
         }
 
         CheckText(plan.Title, _limits.MaxTitleChars, "title", null, issues);
@@ -122,6 +154,17 @@ public sealed class VisualPlanValidator
         public required ValidationContext Context { get; init; }
         public HashSet<string> EverUsed { get; } = new(StringComparer.Ordinal);
         public Dictionary<string, string> Live { get; set; } = new(StringComparer.Ordinal);
+
+        /// <summary>Declared kind per surface id (first declaration wins; duplicates are already reported).</summary>
+        public Dictionary<string, SurfaceKind> Kinds { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Model id per instance id, plan-wide. Not rolled back: an instance is usable only while it is
+        /// also in <see cref="Live"/>, which is — so a degraded model beat's instance never becomes usable.
+        /// </summary>
+        public Dictionary<string, string> Instances { get; } = new(StringComparer.Ordinal);
+
+        public ModelCatalog Catalog => Context.Scene3d ?? ModelCatalog.Empty;
     }
 
     /// <summary>Walks the beats in order and returns the indices of beats that lose their drawing.</summary>
@@ -131,6 +174,11 @@ public sealed class VisualPlanValidator
         var parserFlagged = issues.Where(i => i.BeatId is not null).Select(i => i.BeatId!).ToHashSet(StringComparer.Ordinal);
         var beatIds = new HashSet<string>(StringComparer.Ordinal);
         var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Context = context };
+        foreach (var surface in plan.Surfaces)
+        {
+            board.Kinds.TryAdd(surface.Id, surface.Kind);
+        }
+
         for (var index = 0; index < plan.Beats.Count; index++)
         {
             var beat = plan.Beats[index];
@@ -203,13 +251,51 @@ public sealed class VisualPlanValidator
 
                 break;
             case ArrowOp a:
-                CheckSurface(a.Surface, beatId, board, issues);
+                CheckSurface(a.Surface, beatId, board, issues, SurfaceKind.Card);
                 CheckOptionalText(a.Label, _limits.MaxTextChars, "arrow label", beatId, issues);
                 CheckTarget(a.From, beatId, board, issues, a.Surface);
                 CheckTarget(a.To, beatId, board, issues, a.Surface);
                 break;
             case HighlightOp h:
-                CheckTarget(h.Target, beatId, board, issues);
+                if (IsPartRef(h.Target))
+                {
+                    CheckPartRef(h.Target, beatId, board, issues);
+                }
+                else
+                {
+                    CheckTarget(h.Target, beatId, board, issues);
+                }
+
+                break;
+            case ModelOp mo:
+                CheckModel(mo, beatId, board, issues);
+                break;
+            case LabelOp l:
+                // The target is checked before the label exists, so a label can never point at itself.
+                CheckSurface(l.Surface, beatId, board, issues, SurfaceKind.Scene3d);
+                CheckSceneTarget(l.Target, l.Surface, beatId, board, issues);
+                CheckText(l.Text, _limits.MaxTextChars, "label text", beatId, issues);
+                CheckId(l.Id, "element", beatId, board.EverUsed, issues);
+                board.Live[l.Id] = l.Surface;
+                break;
+            case ExplodeOp e:
+                CheckInstance(e.Target, beatId, board, issues);
+                if (!(double.IsFinite(e.Amount) && e.Amount >= 0 && e.Amount <= 1))
+                {
+                    issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"explode amount {e.Amount} (0..1)"));
+                }
+
+                break;
+            case AnimateOp an:
+                if (CheckInstance(an.Target, beatId, board, issues) is { } animated && !animated.Animations.Contains(an.Animation))
+                {
+                    issues.Add(new LessonIssue(LessonIssueCodes.AnimationUnknown, beatId, $"model '{animated.Id}' has no animation '{an.Animation}'"));
+                }
+
+                break;
+            case CameraOp cam:
+                CheckSurface(cam.Surface, beatId, board, issues, SurfaceKind.Scene3d);
+                CheckSceneTarget(cam.Focus, cam.Surface, beatId, board, issues);
                 break;
             case ClearOp c:
                 CheckSurface(c.Surface, beatId, board, issues);
@@ -223,23 +309,99 @@ public sealed class VisualPlanValidator
                 CheckMark(m.Region, beatId, board.Context, issues);
                 break;
             case UnknownOp u:
-                issues.Add(new LessonIssue(LessonIssueCodes.OpUnknown, beatId, $"op '{u.Name}' is not in v1"));
+                issues.Add(new LessonIssue(LessonIssueCodes.OpUnknown, beatId, $"op '{u.Name}' is not in the contract"));
                 break;
         }
     }
 
     private static void Create(string surface, string id, string beatId, Board board, List<LessonIssue> issues)
     {
-        CheckSurface(surface, beatId, board, issues);
+        CheckSurface(surface, beatId, board, issues, SurfaceKind.Card);
         CheckId(id, "element", beatId, board.EverUsed, issues);
         board.Live[id] = surface;
     }
 
-    private static void CheckSurface(string surface, string beatId, Board board, List<LessonIssue> issues)
+    /// <summary>
+    /// The surface must be declared and, when <paramref name="kind"/> is given, be of that kind — card
+    /// ops draw on cards, scene ops on the scene. <c>clear</c> passes no kind: it works on both.
+    /// </summary>
+    private static void CheckSurface(string surface, string beatId, Board board, List<LessonIssue> issues, SurfaceKind? kind = null)
     {
         if (!board.Surfaces.Contains(surface))
         {
             issues.Add(new LessonIssue(LessonIssueCodes.RefSurface, beatId, $"surface '{surface}' is not declared"));
+        }
+        else if (kind is { } wanted && board.Kinds[surface] != wanted)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.RefSurfaceKind, beatId, $"surface '{surface}' is a {board.Kinds[surface]}, this op needs a {wanted}"));
+        }
+    }
+
+    private void CheckModel(ModelOp op, string beatId, Board board, List<LessonIssue> issues)
+    {
+        CheckSurface(op.Surface, beatId, board, issues, SurfaceKind.Scene3d);
+        if (!board.Catalog.TryGet(op.Model, out _))
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.ModelUnknown, beatId, $"model '{op.Model}' is not in the catalogue"));
+        }
+
+        var live = board.Live.Count(kv => kv.Value == op.Surface && board.Instances.ContainsKey(kv.Key));
+        if (live >= _limits.MaxModelsPerScene)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.LimitModels, beatId, $"model '{op.Id}' would be instance {live + 1} on '{op.Surface}' (max {_limits.MaxModelsPerScene})"));
+        }
+
+        CheckId(op.Id, "element", beatId, board.EverUsed, issues);
+        board.Instances[op.Id] = op.Model;
+        board.Live[op.Id] = op.Surface;
+    }
+
+    /// <summary>A live model instance, returned with its catalogue entry; null (and an issue) otherwise.</summary>
+    private static CatalogModel? CheckInstance(string target, string beatId, Board board, List<LessonIssue> issues)
+    {
+        if (board.Live.ContainsKey(target) && board.Instances.TryGetValue(target, out var modelId) && board.Catalog.TryGet(modelId, out var model))
+        {
+            return model;
+        }
+
+        issues.Add(new LessonIssue(LessonIssueCodes.RefTarget, beatId, $"'{target}' is not a model instance at this beat"));
+        return null;
+    }
+
+    private static bool IsPartRef(string target) => target.Contains('.', StringComparison.Ordinal);
+
+    /// <summary>
+    /// "instance.part": the instance must be live and its catalogue model must have the part. An
+    /// invented part is <c>part.unknown</c>, not <c>ref.target</c>, so evals can tell "made up a part"
+    /// from "referred to something too early".
+    /// </summary>
+    private static string? CheckPartRef(string target, string beatId, Board board, List<LessonIssue> issues)
+    {
+        var dot = target.IndexOf('.', StringComparison.Ordinal);
+        var instance = target[..dot];
+        var part = target[(dot + 1)..];
+        if (CheckInstance(instance, beatId, board, issues) is not { } model)
+        {
+            return null;
+        }
+
+        if (!model.Parts.Contains(part))
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.PartUnknown, beatId, $"model '{model.Id}' has no part '{part}'"));
+        }
+
+        return instance;
+    }
+
+    /// <summary>A label or camera target: a live instance, or a part of one, on the same scene.</summary>
+    private static void CheckSceneTarget(string target, string surface, string beatId, Board board, List<LessonIssue> issues)
+    {
+        var instance = IsPartRef(target)
+            ? CheckPartRef(target, beatId, board, issues)
+            : CheckInstance(target, beatId, board, issues) is null ? null : target;
+        if (instance is not null && board.Live[instance] != surface)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.RefTarget, beatId, $"'{target}' is on '{board.Live[instance]}', not '{surface}'"));
         }
     }
 

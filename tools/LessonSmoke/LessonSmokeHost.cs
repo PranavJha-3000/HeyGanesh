@@ -11,6 +11,7 @@ internal static partial class LessonSmokeHost
     {
         Help,
         AssertSource,
+        AssertParse,
     }
 
     public static Task<int> RunAsync(string[] args)
@@ -34,6 +35,7 @@ internal static partial class LessonSmokeHost
             return Task.FromResult(mode switch
             {
                 Mode.AssertSource => RunAssertSource(),
+                Mode.AssertParse => RunAssertParse(),
                 _ => PrintUsage(),
             });
         }
@@ -54,6 +56,7 @@ internal static partial class LessonSmokeHost
             switch (arg)
             {
                 case "--assert-source": mode = Mode.AssertSource; break;
+                case "--assert-parse": mode = Mode.AssertParse; break;
                 case "--help": case "-h": case "/?": mode = Mode.Help; break;
                 default:
                     Console.WriteLine($"unknown argument '{arg}' (exit 2)");
@@ -72,6 +75,7 @@ internal static partial class LessonSmokeHost
         Console.WriteLine("Offline rows (no provider, no renderer, no network):");
         Console.WriteLine("  --assert-source               zero NuGet, Abstractions-only reference, no P/Invoke,");
         Console.WriteLine("                                no network/file/registry access, exit 0");
+        Console.WriteLine("  --assert-parse                fixture parse, json fence, malformed/oversize/deep input, exit 0");
         return 0;
     }
 

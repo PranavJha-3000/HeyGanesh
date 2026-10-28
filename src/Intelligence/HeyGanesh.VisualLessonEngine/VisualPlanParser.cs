@@ -1,0 +1,148 @@
+using System.Text;
+using System.Text.Json;
+using HeyGanesh.Abstractions;
+
+namespace HeyGanesh.VisualLessonEngine;
+
+/// <summary>A parse attempt: the plan when the text was a JSON object, plus everything noticed on the way.</summary>
+public sealed record ParseResult(VisualPlan? Plan, IReadOnlyList<LessonIssue> Issues);
+
+/// <summary>
+/// Turns model text into a <see cref="VisualPlan"/> without ever throwing on it. Shape problems that
+/// still leave a usable object (a missing string, an unknown enum value, an invented op) are kept
+/// in the plan and reported, so the validator can degrade one beat rather than lose the lesson;
+/// only text that is not a JSON object at all yields no plan.
+/// </summary>
+public static class VisualPlanParser
+{
+    public static ParseResult Parse(string json, LessonLimits? limits = null)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        limits ??= LessonLimits.Default;
+
+        if (Encoding.UTF8.GetByteCount(json) > limits.MaxJsonBytes)
+        {
+            return Fail(LessonIssueCodes.JsonTooLarge, $"payload exceeds {limits.MaxJsonBytes} bytes");
+        }
+
+        // Models often wrap the object in prose or a ```json fence. Taking the outermost braces once
+        // recovers that common case; anything stranger stays malformed rather than being "repaired".
+        var start = json.IndexOf('{');
+        var end = json.LastIndexOf('}');
+        if (start < 0 || end < start)
+        {
+            return Fail(LessonIssueCodes.JsonMalformed, "no JSON object found");
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json[start..(end + 1)], new JsonDocumentOptions { MaxDepth = limits.MaxDepth });
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return Fail(LessonIssueCodes.JsonMalformed, "root is not an object");
+            }
+
+            var issues = new List<LessonIssue>();
+            var plan = ReadPlan(doc.RootElement, issues);
+            return new ParseResult(plan, issues);
+        }
+        catch (JsonException ex)
+        {
+            return Fail(LessonIssueCodes.JsonMalformed, ex.Message);
+        }
+    }
+
+    private static ParseResult Fail(string code, string message) =>
+        new(null, new[] { new LessonIssue(code, null, message) });
+
+    private static VisualPlan ReadPlan(JsonElement root, List<LessonIssue> issues)
+    {
+        var mode = Str(root, "mode") switch
+        {
+            "explain" => LessonMode.Explain,
+            "socratic" => LessonMode.Socratic,
+            "worked-example" => LessonMode.WorkedExample,
+            var other => Invalid(LessonMode.Explain, issues, null, $"mode '{other}'"),
+        };
+
+        var surfaces = Items(root, "surfaces")
+            .Select(s => new LessonSurface(
+                Str(s, "id"),
+                Str(s, "kind") == "card" ? SurfaceKind.Card : Invalid(SurfaceKind.Card, issues, null, $"surface kind '{Str(s, "kind")}'"),
+                Str(s, "title")))
+            .ToList();
+
+        var beats = Items(root, "beats")
+            .Select(b =>
+            {
+                var beatId = Str(b, "id");
+                var ops = Items(b, "ops").Select(o => ReadOp(o, beatId, issues)).ToList();
+                return new LessonBeat(beatId, Str(b, "say"), ops);
+            })
+            .ToList();
+
+        return new VisualPlan(Str(root, "schema"), Str(root, "lessonId"), Str(root, "title"), mode, surfaces, beats);
+    }
+
+    private static LessonOp ReadOp(JsonElement o, string beatId, List<LessonIssue> issues)
+    {
+        var name = Str(o, "op");
+        return name switch
+        {
+            "write" => new WriteOp(Str(o, "surface"), Str(o, "id"), Str(o, "text"), Style(o, beatId, issues), OptStr(o, "math")),
+            "step" => new StepOp(Str(o, "surface"), Str(o, "id"), Int(o, "index"), Str(o, "text")),
+            "arrow" => new ArrowOp(Str(o, "surface"), Str(o, "from"), Str(o, "to"), OptStr(o, "label")),
+            "icon" => new IconOp(Str(o, "surface"), Str(o, "id"), Str(o, "glyph")),
+            "plot" => new PlotOp(Str(o, "surface"), Str(o, "id"), Str(o, "expr"), Dbl(o, "xMin"), Dbl(o, "xMax")),
+            "highlight" => new HighlightOp(Str(o, "target")),
+            "mark" => new ScreenMarkOp(Shape(o, beatId, issues), new PixelRect(Int(o, "x"), Int(o, "y"), Int(o, "width"), Int(o, "height"))),
+            "clear" => new ClearOp(Str(o, "surface")),
+            _ => new UnknownOp(name),
+        };
+    }
+
+    private static TextStyle Style(JsonElement o, string beatId, List<LessonIssue> issues) => OptStr(o, "style") switch
+    {
+        null or "body" => TextStyle.Body,
+        "heading" => TextStyle.Heading,
+        "note" => TextStyle.Note,
+        var other => Invalid(TextStyle.Body, issues, beatId, $"text style '{other}'"),
+    };
+
+    private static MarkShape Shape(JsonElement o, string beatId, List<LessonIssue> issues) => Str(o, "shape") switch
+    {
+        "circle" => MarkShape.Circle,
+        "underline" => MarkShape.Underline,
+        "arrow" => MarkShape.Arrow,
+        var other => Invalid(MarkShape.Circle, issues, beatId, $"mark shape '{other}'"),
+    };
+
+    private static T Invalid<T>(T fallback, List<LessonIssue> issues, string? beatId, string what)
+    {
+        issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"unknown {what}"));
+        return fallback;
+    }
+
+    // Missing or wrongly-typed fields read as empty/zero; the validator reports them with context.
+    private static string Str(JsonElement e, string name) => OptStr(e, name) ?? string.Empty;
+
+    private static string? OptStr(JsonElement e, string name) =>
+        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String
+            ? v.GetString()
+            : null;
+
+    private static int Int(JsonElement e, string name) =>
+        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i)
+            ? i
+            : 0;
+
+    private static double Dbl(JsonElement e, string name) =>
+        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var d)
+            ? d
+            : 0;
+
+    private static IEnumerable<JsonElement> Items(JsonElement e, string name) =>
+        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array
+            ? v.EnumerateArray().ToList()
+            : Enumerable.Empty<JsonElement>();
+}

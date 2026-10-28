@@ -16,14 +16,14 @@ Subsystems, and the seams between them are load-bearing:
 |---|---|---|
 | App Shell | `src/Experience/HeyGanesh.App/` | The process host: owns PerMonitorV2 DPI awareness, the service graph, and the `GlobalHotkeyMonitor.Pressed` → `VoiceService.ListenOnceAsync` → `HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync` → teaching-leg (`GuidanceResult`→`TutorContext`→`TutorService.ExplainAsync`→`SpeakAsync`, DEC-016) wiring (DEC-012/DEC-014/DEC-016). |
 | Context Orchestrator | `src/Intelligence/HeyGanesh.ContextOrchestrator/` | Top-level state machine driving session lifecycle and module coordination. |
-| Global Hotkey Monitor | `src/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only push-to-talk modifier chord monitor (Ctrl+Alt). |
-| Screen Capture | `src/HeyGanesh.ScreenCapture/` | On-demand multi-monitor frame acquisition via `Windows.Graphics.Capture` and `CaptureExclusion` contract. |
-| Element Selection (PRIMARY) | `src/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
-| Vision / Coordinate Detection (FALLBACK) | `src/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
+| Global Hotkey Monitor | `src/Platform/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only push-to-talk modifier chord monitor (Ctrl+Alt). |
+| Screen Capture | `src/Platform/HeyGanesh.ScreenCapture/` | On-demand multi-monitor frame acquisition via `Windows.Graphics.Capture` and `CaptureExclusion` contract. |
+| Element Selection (PRIMARY) | `src/Perception/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
+| Vision / Coordinate Detection (FALLBACK) | `src/Perception/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
 | **Jev choice model** | **Integrated within `ElementSelection`** | **The Jev choice model routes Element Selection's ranked UIA candidates (`c001..`) to a selection; implemented via `IJevClient` / `TypeSafeJevClient` with `ModelId "jev-1.13.0"`; not a separate assembly. |
-| Tutor Engine | `src/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
+| Tutor Engine | `src/Intelligence/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
 | Visual Lesson Engine | `src/Intelligence/HeyGanesh.VisualLessonEngine/` + `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.LessonSurface/` + `src/Experience/HeyGanesh.LessonSession/` | VisualPlan v1 contract (parse/validate/degrade, DEC-023), `PlotExpression`, `LessonPlayer` runtime, the WebView2 card surface (DEC-020/DEC-025), the `VisualPlanner` (DEC-026) and `LessonTurn` (plan → cards → play, DEC-027). Wired into the App Shell behind `--lesson`; the lesson model is built from `DEEPSEEK_API_KEY` or the leg reports its skip (FEATURE-007). |
-| Screen Overlay | `src/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
+| Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
 | Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
 | API key security proxy | PLANNED — no assembly yet | Isolates LLM API keys from the rest of the application; no `src/HeyGanesh.SecurityProxy/` assembly exists today (PLATFORM.md §95). |
@@ -34,10 +34,10 @@ Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: 
 
 ```bash
 # Build core modules (.NET 8 Windows SDK)
-dotnet build src/HeyGanesh.GlobalHotkeyMonitor -c Debug
-dotnet build src/HeyGanesh.ScreenCapture -c Debug
-dotnet build src/HeyGanesh.ElementSelection -c Debug
-dotnet build src/HeyGanesh.Vision -c Debug
+dotnet build src/Platform/HeyGanesh.GlobalHotkeyMonitor -c Debug
+dotnet build src/Platform/HeyGanesh.ScreenCapture -c Debug
+dotnet build src/Perception/HeyGanesh.ElementSelection -c Debug
+dotnet build src/Perception/HeyGanesh.Vision -c Debug
 
 # Verification hosts / smoke tools
 dotnet run --project tools/HotkeySmoke -c Debug -- --seconds 4
@@ -56,7 +56,7 @@ dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "Save" -
 # --no-match / --failed: honest no-match / synthetic failure must create no window.
 # --assert-clickthrough: styles + WM_NCHITTEST -> HTTRANSPARENT + capture exclusion + no activation.
 # --burst: a second ShowAsync while one is active is refused. --repeats: GDI/handle leak soak.
-dotnet build src/HeyGanesh.ScreenOverlay -c Debug
+dotnet build src/Platform/HeyGanesh.ScreenOverlay -c Debug
 dotnet run --project tools/OverlaySmoke -c Debug -- --found --duration-ms 1500
 dotnet run --project tools/OverlaySmoke -c Debug -- --no-match
 dotnet run --project tools/OverlaySmoke -c Debug -- --assert-clickthrough
@@ -65,7 +65,7 @@ dotnet run --project tools/OverlaySmoke -c Debug -- --assert-clickthrough
 # --fake: primary leg answers. --fake-none: honest no-match, Vision must NOT be called.
 # --fake-unmapped: primary leg fails (Jev chose an id never offered) -> exactly one Vision fallback.
 # --burst: two overlapping triggers, second refused. --cancel-ms / --fake-error: propagation paths.
-dotnet build src/HeyGanesh.ContextOrchestrator -c Debug
+dotnet build src/Intelligence/HeyGanesh.ContextOrchestrator -c Debug
 dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake
 dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake-none
 dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake-unmapped
@@ -73,25 +73,25 @@ dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save
 # App Shell — the process host (DEC-012/DEC-014). Real legs only: no --fake flags, so with no keys set the
 # offline rows stop at the key gate. Run the built EXE, not `dotnet run`: the wrapper hides exit codes.
 # --question is LEGACY: the product path speaks (press Ctrl+Alt to listen, release to end the utterance).
-dotnet build src/HeyGanesh.App -c Debug
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --help
+dotnet build src/Experience/HeyGanesh.App -c Debug
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --help
 #   -> usage + exit-code contract (incl. "1 = ... or no transcript was produced"), exit 0
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --question "where is the Save button"
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --question "where is the Save button"
 #   keys unset -> header, real capture, KEY ERROR (Element Selection), exit 12  (legacy scripted path)
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --seconds 4
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --seconds 4
 #   -> no flag needed now: hook live: IsRunning=True; auto-stops, health block, exit 0
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --question "x" --seconds 4
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --question "x" --seconds 4
 #   -> "--question is legacy and is IGNORED in hooked mode", hook live, exit 0
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once
 #   -> one LIVE listen (mic as question source). No HEYGANESH_QWEN_GATEWAY_URL -> VOICE FAILURE, exit 1
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --cancel-ms 60 --question "x"
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --cancel-ms 60 --question "x"
 #   -> CANCELLED, phase Idle, exit 13
 # --no-speak skips the speech-out leg only. The teach/speak leg (DEC-016) runs only AFTER a produced
 # non-Failed verdict, so the offline key gates are unchanged. A live ITutorClient EXISTS since
 # DEC-017 (TutorClientFactory.CreateDeepSeek), but the shell's CreateTutorClient() still returns
 # null -- the one-line flip is deliberately not taken -- so the leg reports its skip after every
 # verdict and teach-and-speak end to end is still gated on that flip (SH-17).
-src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-speak --question "x"
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-speak --question "x"
 #   -> flag accepted; keys unset -> same KEY ERROR (Element Selection), exit 12
 #   Gateway running + keys + mic: hold Ctrl+Alt, speak, release -> utterance line, verdict, highlight
 #   (SH-9/SH-13). Release early -> "released before the transcript committed", exit 0, no capture.
@@ -103,7 +103,7 @@ src/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once 
 # --assert-gcp-events / --assert-tutor-authority / --assert-no-backend / --assert-fish-format:
 #   recorded-frame contract checks -- message allowlist, assistant-output neutralised (DEC-013 L-1),
 #   task.* abort guard, wav/44100 + WAV parser. Live paths (real Gateway, mic, Fish) are human-gated.
-dotnet build src/HeyGanesh.Voice -c Debug
+dotnet build src/Experience/HeyGanesh.Voice -c Debug
 dotnet run --project tools/VoiceSmoke -c Debug -- --fake-transcript "where is the Save button"
 dotnet run --project tools/VoiceSmoke -c Debug -- --assert-tutor-authority
 dotnet run --project tools/VoiceSmoke -c Debug -- --speak-fake --text "Found the Save button"
@@ -113,7 +113,7 @@ dotnet run --project tools/VoiceSmoke -c Debug -- --speak-fake --text "Found the
 # TU-1..TU-11; DEC-017 commits deepseek-flash + DEEPSEEK_API_KEY for the live rows only).
 # Read exit codes from the built EXE: --assert-auth-error exits 12 and --cancel-ms <n> exits 13 BY DESIGN.
 # Build library and host SEQUENTIALLY (shared obj DLL, the CS2012 trap).
-dotnet build src/HeyGanesh.TutorEngine -c Debug
+dotnet build src/Intelligence/HeyGanesh.TutorEngine -c Debug
 dotnet run --project tools/TutorSmoke -c Debug -- --fake-explain "what does git rebase actually do"
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-prompt
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-grounding

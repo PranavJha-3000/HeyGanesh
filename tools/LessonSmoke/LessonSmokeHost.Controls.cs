@@ -222,7 +222,7 @@ internal static partial class LessonSmokeHost
 
         public Task ShowNoticeAsync(string notice, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task ClearAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ResetAsync(IReadOnlyList<LessonSurface> surfaces, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     /// <summary>Speaks for 30 ms and ignores its token entirely.</summary>
@@ -257,7 +257,7 @@ internal static partial class LessonSmokeHost
 
         public Task ShowNoticeAsync(string notice, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task ClearAsync(CancellationToken cancellationToken)
+        public Task ResetAsync(IReadOnlyList<LessonSurface> surfaces, CancellationToken cancellationToken)
         {
             _log.Add("clear");
             return Task.CompletedTask;

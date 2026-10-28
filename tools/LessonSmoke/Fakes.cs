@@ -39,7 +39,7 @@ internal sealed class RecordingCanvas : ILessonCanvas
         return Task.CompletedTask;
     }
 
-    public Task ClearAsync(CancellationToken cancellationToken)
+    public Task ResetAsync(IReadOnlyList<LessonSurface> surfaces, CancellationToken cancellationToken)
     {
         _log.Add("clear");
         return Task.CompletedTask;

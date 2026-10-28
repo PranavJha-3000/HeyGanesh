@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification + demo host for the Lesson Surface (FEATURE-007 Phase 3, DEC-020).
+
+    Not product code. It drives the REAL card surface — real WebView2 windows on the real desktop —
+    with the golden fixtures and fake or Windows-SAPI speech, so it needs an interactive desktop
+    session but no API key, no network and no microphone. The fixtures are linked from
+    tools/LessonSmoke so both hosts test the same lessons.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>HeyGanesh.Tools.LessonSurfaceSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.LessonSurfaceSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.LessonSurface\HeyGanesh.LessonSurface.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    The WebView2 package references its WPF control assembly unconditionally for .NET 5+, which
+    conflicts with the in-box WindowsBase (MSB3277). Cards are WinForms-hosted, so that one
+    reference is removed rather than the warning silenced.
+  -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

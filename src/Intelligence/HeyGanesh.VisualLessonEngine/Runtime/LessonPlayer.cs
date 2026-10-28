@@ -79,7 +79,7 @@ public sealed class LessonPlayer
 
             var plan = lesson.Plan;
             token.ThrowIfCancellationRequested();
-            await _canvas.ClearAsync(token);
+            await _canvas.ResetAsync(plan.Surfaces, token);
             for (var index = 0; index < plan.Beats.Count; index++)
             {
                 await WaitWhilePausedAsync(token);

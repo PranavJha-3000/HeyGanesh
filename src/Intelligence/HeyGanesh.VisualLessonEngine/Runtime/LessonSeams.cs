@@ -13,8 +13,11 @@ public interface ILessonCanvas
     /// <summary>Shows a short notice instead of a drawing (the text-fallback path).</summary>
     Task ShowNoticeAsync(string notice, CancellationToken cancellationToken);
 
-    /// <summary>Wipes the cards so a play or replay starts blank.</summary>
-    Task ClearAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Wipes the cards and lays out one per declared surface (id + title), so a play or replay starts
+    /// blank. Called once before the first beat; a beat alone does not carry its card's title.
+    /// </summary>
+    Task ResetAsync(IReadOnlyList<LessonSurface> surfaces, CancellationToken cancellationToken);
 }
 
 /// <summary>

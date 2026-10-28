@@ -2,7 +2,8 @@
 
 - **Date:** 2026-10-28 · claude-opus-5-5
 - **Status:** in-progress — Phase 1 (VisualPlan contract v1) BUILT 2026-10-28 · claude-opus-5-5 on branch
-  `feat/visualplan-contract-v1`, LS-1..LS-7 green offline (DEC-023). Phases 0, 2–8 not started. Phase 1 plan:
+  `feat/visualplan-contract-v1` (merged to main), LS-1..LS-7 green offline (DEC-023). Phase 0 DONE 2026-10-28
+  (DEC-020/021/022; spike 0a GO, 0b deferred, 0c blocked on a key). Phases 2–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.
 - **Decisions this document asks the owner for:** DEC-020 (rendering stack), DEC-021 (planner
@@ -229,6 +230,19 @@ verification host rows, and docs. "Demo" = what the owner can see at the end.
 **Fast path to the first visible win:** Phases 1 → 2 → 3 need no live model and no 3D; with Phase 0a
 done they put a fixture lesson on screen. Phase 4 makes it live.
 
+
+## Phase 0 results (2026-10-28 · claude-opus-5-5)
+
+Decisions DEC-020/021/022 taken by delegation ("quicker to build and demo, cheaper, efficient").
+
+| Spike | Result | Numbers | Verdict |
+|---|---|---|---|
+| 0a — WebView2 card window | Reshaped by DEC-020 to an **opaque** card (not a transparent full-screen surface): borderless, top-most, no-activate, capture-excluded | env 384–495 ms; first paint 761–872 ms; warm update 2.3–2.5 ms; 143 MB / 6 processes; focus never stolen; capture hidden after affinity — 3/3 runs | **GO** |
+| 0b — Babylon.js on integrated GPU / software | Deferred to Phase 5 — the 2D demo needs no 3D, so measuring it now buys nothing | — | deferred |
+| 0c — planner time-to-first-beat | Blocked: no provider key on this machine (`DEEPSEEK_API_KEY` absent) | — | runs before Phase 4 is called done |
+
+Effect on §2.3 (window model): cards are opaque windows; only screen marks are click-through, and they stay on the existing native ScreenOverlay. The transparent selective-click-through surface is no longer on the demo path.
+
 ## Risks
 
 | Risk | Signal | Mitigation |
@@ -240,8 +254,8 @@ done they put a fixture lesson on screen. Phase 4 makes it live.
 | NuGet refused | DEC-020 = no | option D (hand-declared COM), +2–3 weeks |
 
 ## Acceptance criteria
-- [ ] Owner has decided DEC-020, DEC-021, DEC-022.
-- [ ] Phase 0 spikes recorded with measured numbers.
+- [x] DEC-020, DEC-021, DEC-022 decided (by owner delegation, 2026-10-28).
+- [x] Phase 0 spikes recorded with measured numbers (0a GO; 0b deferred; 0c blocked on a key).
 - [x] Phase 1 rows LS-1..LS-7 green offline (2026-10-28).
 - [ ] (later phases: each phase's exit row in TEST-CHECKLIST.md)
 

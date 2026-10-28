@@ -9,6 +9,9 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-022](#dec-022--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Tutor session state: in-memory only — last validated plan + last 6 turns, cleared on idle/exit; no persistence until Notes (M8) | accepted |
+| [DEC-021](#dec-021--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner calls models through Providers.Core `ILlmClient` (structured output + streaming already built), default DeepSeek `deepseek-flash` via OpenAiCompat; Tutor's DeepSeek client untouched | accepted |
+| [DEC-020](#dec-020--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson rendering: WebView2 (`Microsoft.Web.WebView2` 1.0.4314.35, one NuGet in one new Experience assembly) as OPAQUE borderless no-activate capture-excluded card windows; screen marks stay on the native ScreenOverlay; SVG + vendored KaTeX/Rough.js; Babylon.js deferred to Phase 5; transparent full-screen surface rejected for now | accepted |
 | [DEC-023](#dec-023--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | VisualPlan v1 contract: closed op set, hard limits, plan-wide ids with time-ordered references, never-throw parser; degrade bad beats to speech, ≥50% degraded or any plan-level issue to text; `HeyGanesh.VisualLessonEngine` references Abstractions only; LS-1..LS-7 | accepted |
 | [DEC-017](#dec-017--2026-10-01--cline-agent-pixel-canary) | 2026-10-01 | Cline agent (Pixel Canary) | First live teaching provider: internal DeepSeekTutorClient (deepseek-flash, direct Chat Completions, DEEPSEEK_API_KEY at call time per DEC-007, fixed thinking:disabled) exposed only through TutorClientFactory.CreateDeepSeek → ITutorClient; verified offline through the exact public construction path via a loopback BaseUrl stub (no InternalsVisibleTo, no handler seam); TU-11/TU-12 | accepted |
 | [DEC-016](#dec-016--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Teaching leg wired into the shell: non-Failed verdict maps to a TutorContext snapshot at the call edge (Failed short-circuits; no-match → Empty; Found carries the whole retained frame as a DownscaledFrame visual), the explanation is spoken verbatim behind a new `--no-speak`; seam composed by `CreateTutorClient()` which returns null — DEC-015's provider decision stays unmade | accepted |
@@ -31,6 +34,43 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-022 — 2026-10-28 — claude-opus-5-5
+
+**Decision — tutor session state is in memory only.** The session keeps the last validated `VisualPlan` and the last 6 question/answer turns so follow-ups ("simpler", "just the combustion part", a clicked part) have context. Cleared after 10 minutes idle and on exit. Nothing is written to disk. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").
+
+**Reasoning.** Follow-ups are the core of HeyClicky's teaching loop and need only the current conversation; persistence, a learner model and cross-day memory are M8 work with their own privacy questions. In-memory state costs nothing to build or secure now and can be replaced behind the same seam.
+
+**Rejected.** SQLite persistence now (D3 is undecided, adds a store before there is anything worth keeping); fully stateless follow-ups (re-describing the whole lesson each turn costs tokens and loses the drawing context).
+
+**Consequences.** Screen-derived text lives only in process memory, never on disk. Restarting the app forgets the conversation — acceptable for the demo, revisited with Notes (M8).
+
+## DEC-021 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the lesson planner calls models through `HeyGanesh.Providers.Core`'s `ILlmClient`**, using its existing structured-output (`JsonSchema`) and streaming paths; default provider DeepSeek `deepseek-flash` through `Providers.OpenAiCompat`, key `DEEPSEEK_API_KEY` (already in use by Vision and Tutor, DEC-007/DEC-017). The Tutor Engine's own `DeepSeekTutorClient` stays as is for plain explanations. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").
+
+**Reasoning.** The provider layer is already built and smoke-verified (ProvidersSmoke/OpenAiCompatSmoke) with streaming, retries and a circuit breaker; reusing it is the cheapest path and lets the planner switch to a stronger model later by configuration, not code. DeepSeek flash is the cheapest model the project already holds a key for.
+
+**Rejected.** Extending `DeepSeekTutorClient` (no streaming, no structured output, and DEC-017 pinned its payload); a new provider (cost and a new key for no demo gain).
+
+**Consequences.** The planner assembly takes a ProjectReference on Providers.Core. Phase 0c (first-beat latency) could not be measured: no provider key is set on this machine — it runs the first time a key is present, before Phase 4 is called done.
+
+## DEC-020 — 2026-10-28 — claude-opus-5-5
+
+**Decision — lessons render in WebView2, as opaque card windows.** One new Experience assembly, `HeyGanesh.LessonSurface`, is the only assembly allowed the `Microsoft.Web.WebView2` package (pinned 1.0.4314.35; the Evergreen runtime ships with Windows 11 — 155.0 here). Each card is a borderless, top-most, `WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW` window with `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)`, PerMonitorV2, positioned in physical pixels. Screen marks (circle/underline/arrow on the student's own screen) stay on the existing native, click-through `ScreenOverlay`. 2D drawing is SVG with vendored KaTeX (math) and Rough.js (hand-drawn strokes); Babylon.js is added only at Phase 5. One WebView2 environment is created hidden at startup and reused. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").
+
+**Reasoning — Phase 0a spike (throwaway WinForms host, never committed), 3 runs:**
+- No focus steal: `GetForegroundWindow` never became the card — True on every run.
+- Capture exclusion covers WebView2's out-of-process content: a screen sample saw the cream card before `WDA_EXCLUDEFROMCAPTURE` and did not after — True on every run.
+- Cold start: environment + controller 384–495 ms; first paint 761–872 ms (incl. a 300 ms settle). Warm text update 2.3–2.5 ms.
+- Cost: 6 msedgewebview2 processes, 143 MB private for the first card; host 12 MB.
+- So: pre-warm one environment at startup and the first beat draws in milliseconds instead of ~0.8 s.
+
+Opaque cards are also what HeyClicky shows (paper sheets), they keep WebView2 in its simplest, best-supported hosting mode, and they remove FEATURE-007's top risk (transparent, selectively click-through composition hosting) from the demo path entirely.
+
+**Rejected.** Transparent full-screen WebView2 via composition hosting (the riskiest, slowest path — revisit at Phase 5 if 3D must float over the screen); native GDI/Direct2D cards (no NuGet, but no math typesetting and 3D would need a second renderer later); WPF `WebView2CompositionControl` in a layered window (software-composited full-screen layer, worse for 3D); hand-declared WebView2 COM without the NuGet (+2–3 weeks).
+
+**Consequences.** The zero-NuGet invariant keeps holding for every core module; `HeyGanesh.LessonSurface` is the one documented exception (Experience layer), and its source audit must pin that exactly one PackageReference exists. Memory budget ~150 MB while lessons are available. The page loads only vendored files through a virtual host mapping, blocks navigation, and receives only validated plans (DEC-023).
+
 ## DEC-023 — 2026-10-28 — claude-opus-5-5
 
 **Decision — model-authored lessons cross one validated, versioned contract before anything is spoken or drawn.** Schema `heyganesh.visualplan/1`: declared surfaces (cards), then beats of one `say` sentence plus up to 12 ops from a closed set (`write`, `step`, `arrow`, `icon`, `plot`, `highlight`, `mark`, `clear`). `VisualPlanParser` never throws on model text (only a null argument does) and recovers the outermost `{…}` once, so a prose-or-fence wrapper is not fatal. `VisualPlanValidator` enforces the `LessonLimits.Default` bounds, a fixed glyph vocabulary, the id pattern `^[a-z][a-z0-9-]{0,31}$`, plan-wide unique element ids, references only to elements live at that beat (no forward references, `clear` removes), and screen marks inside the caller's virtual desktop in physical pixels. Outcome policy: a beat with any issue keeps its `say` and loses its ops, and what it would have written never exists (dependants cascade); any plan-level issue, or ≥50% degraded beats, gives `TextFallback` with every `say` joined; nothing to say gives `Rejected`. Numbering note: DEC-020..022 are reserved for the owner's rendering-stack, planner-provider and session-state decisions named in FEATURE-007.

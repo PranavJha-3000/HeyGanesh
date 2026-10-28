@@ -1,4 +1,12 @@
 
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 0: decisions + spikes)
+
+Did: Merged Phase 1 to main (fast-forward, branch deleted). Took DEC-020 (WebView2 opaque card windows, one NuGet in a new HeyGanesh.LessonSurface; marks stay native; Babylon at Phase 5), DEC-021 (planner via Providers.Core ILlmClient, deepseek-flash), DEC-022 (in-memory session, 6 turns) by owner delegation. Ran spike 0a (throwaway, scratchpad, not committed): GO.
+Left: Spike 0c needs DEEPSEEK_API_KEY (absent here); 0b deferred to Phase 5. Phase 2 (Lesson Runtime) is next and needs no key. main is 9 commits ahead of origin, not pushed.
+Watch: WebView2's 143 MB / 6 processes per environment — create ONE hidden at startup and reuse it. LessonSurface will be the only assembly with a PackageReference; its audit must pin exactly one. src/Foundation is still untracked, so a fresh clone does not build.
+Next: Write and run the Phase 2 plan (Lesson Runtime: beat clock, speech-duration sync with fake TTS, replay log).
+Verified: Spike 0a 3/3 runs — no focus steal, capture hidden after WDA_EXCLUDEFROMCAPTURE, env 384–495 ms, first paint 761–872 ms, warm update 2.3–2.5 ms, 143 MB delta. Docs-only change on main; no product code touched.
+
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 1: VisualPlan contract v1)
 
 Did: Wrote FEATURE-007 (visual-lesson strategy/roadmap) and its Phase 1 plan; built `HeyGanesh.VisualLessonEngine` (VisualPlan v1 records, never-throw parser, validator with limits/vocabulary/time-ordered refs/mark bounds, degrade-to-speech and text-fallback policy) + `tools/LessonSmoke` with 3 golden fixtures; DEC-023; LS-1..LS-7. Branch `feat/visualplan-contract-v1`, not merged.

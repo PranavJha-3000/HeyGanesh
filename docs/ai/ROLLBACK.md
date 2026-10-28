@@ -306,3 +306,10 @@
 - **Rollback point:** never tracked, so git cannot restore them. A byte-for-byte copy was taken first, in the session scratchpad `cleanup-backup/` folder (temporary, outside the repo).
 - **Files to restore:** copy `cleanup-backup/{config,docs/architecture,docs/product,eval,prompts,tests}` back to the repo root, keeping paths.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0 (unchanged either way).
+
+## 2026-10-29 · claude-opus-5-5 (repo cleanup step 4: CI workflow tracked + fixed)
+
+- **Change:** Track `.github/workflows/ci.yml`, `scan-forbidden.ps1`, `scan-secrets.ps1` (never committed before). ci.yml rewritten to CI.md's gate order: G-2 now runs the real `-ZeroNuGet` XML check, G-3 is build-only, G-4/G-5 and G-6's window-drawing modes moved local-only, G-12..G-15 added (SecretSmoke + the three offline lesson hosts). CI.md updated to match. Separate commit: `tools/TutorSmoke/TutorSmokeHost.Source.cs` looked for the pre-restructure `src/HeyGanesh.TutorEngine`, so `--assert-source` (TU row) always failed; now `src/Intelligence/HeyGanesh.TutorEngine`. (This entry was written after the edits but before either commit.)
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `cbdf116`.
+- **Files to restore:** `git checkout cbdf116 -- docs/ai/CI.md docs/ai/HANDOVER.md tools/TutorSmoke/TutorSmokeHost.Source.cs`; `git rm -r --cached .github` (the original untracked ci.yml was overwritten before it was backed up; a reconstruction from its printed text is in the session scratchpad `cleanup-backup/.github/workflows/ci.yml.reconstructed` (temporary), and the scan scripts were unchanged).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; `HeyGanesh.Tools.TutorSmoke.exe --assert-source` goes back to `FAIL could not locate`, exit 1.

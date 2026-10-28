@@ -1,0 +1,104 @@
+﻿name: HeyGanesh CI
+
+# Runs the gates in docs/ai/CI.md, in that file's order; keep the two in step.
+# Every gate is offline and key-free. Gates that need a live desktop (G-4, G-5, part of G-6, G-8, G-9) are local-only and not run here.
+# A pwsh `run:` step only fails on the LAST command's exit code, so every multi-command step
+# checks $LASTEXITCODE itself after each command.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-verify:
+    name: Build + offline verification on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK (pinned by global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: G-1 Build solution (zero warnings, zero errors)
+        shell: pwsh
+        run: dotnet build -c Debug -warnaserror
+
+      - name: G-2 Zero-NuGet guard over the core projects
+        shell: pwsh
+        run: pwsh -File .github/workflows/scan-secrets.ps1 -ZeroNuGet
+
+      # Build only: running ScreenCaptureSmoke takes real captures, which needs a live desktop (SC rows are local-only).
+      - name: G-3 Screen Capture smoke host builds clean
+        shell: pwsh
+        run: dotnet build tools\ScreenCaptureSmoke -c Debug -warnaserror
+
+      # G-4/G-5 are local-only: their fake Jev still chooses from the REAL foreground window's UIA tree, so the
+      # verdict depends on what is on screen. G-6 runs only --no-match here: --found / --assert-clickthrough draw windows.
+      - name: G-6 Screen Overlay no-match path (creates no window)
+        shell: pwsh
+        run: dotnet run --project tools\OverlaySmoke -c Debug -- --no-match
+
+      - name: G-7 Tutor Engine offline
+        shell: pwsh
+        run: |
+          dotnet run --project tools\TutorSmoke -c Debug -- --fake-explain "what does git rebase actually do"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($mode in @('--assert-prompt', '--assert-grounding', '--assert-parity', '--assert-source', '--assert-client-error')) {
+            dotnet run --project tools\TutorSmoke -c Debug -- $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-10 Forbidden-API scan
+        shell: pwsh
+        run: pwsh -File .github/workflows/scan-forbidden.ps1
+
+      - name: G-11 Secret scan
+        shell: pwsh
+        run: pwsh -File .github/workflows/scan-secrets.ps1
+
+      - name: G-12 Security offline
+        shell: pwsh
+        run: dotnet run --project tools\SecretSmoke -c Debug
+
+      # G-13..G-15: the lesson hosts are read from the built EXE, as TEST-CHECKLIST does. All three use
+      # fake canvases / fake models; LessonSurfaceSmoke and LT-6/LT-7 draw real cards and stay local-only.
+      - name: G-13 Visual Lesson Engine offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-parse', '--assert-limits', '--assert-refs', '--assert-degrade', '--assert-fixtures',
+                              '--assert-play', '--assert-play-degraded', '--assert-controls', '--assert-plot', '--assert-grounded')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-14 Lesson Planner offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonPlannerSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonPlannerSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonPlannerSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-prompt', '--assert-multimodal', '--assert-plan', '--assert-repair',
+                              '--assert-errors', '--assert-followup', '--assert-hardening')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-15 Lesson Turn offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonTurnSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonTurnSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonTurnSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-turn', '--assert-turn-degraded', '--assert-turn-rejected', '--assert-turn-errors')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }

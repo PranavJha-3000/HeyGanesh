@@ -15,7 +15,9 @@
   VisualPlan 1.1, DEC-028) BUILT 2026-10-29 · claude-opus-5-5 offline: LS-13 green, 3D off by default
   ([plan](../plans/2026-10-29-scene3d-contract-v1.md)). Step 3 (part library v1, DEC-029) BUILT 2026-10-29 · claude-opus-5-5 offline: PL-1..PL-4 green,
   three models (engine, DNA, schematic Na+/K+ pump), none Reviewed yet ([plan](../plans/2026-10-29-part-library-v1.md)).
-  Steps 4–6 (renderer, click-to-ask, planner) not started.
+  Step 4 (3D renderer, DEC-030) BUILT 2026-10-29 · claude-opus-5-5: scene window with vendored Babylon.js 9.30.0,
+  LSU-7..LSU-12 green (cold start ~2 s, warm model beat ~115 ms, orientation pixel-checked, no-WebGL speaks on)
+  ([plan](../plans/2026-10-29-scene-renderer-v1.md)). Steps 5–6 (click-to-ask, planner) not started.
   Phases 6–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.

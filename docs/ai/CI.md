@@ -22,6 +22,7 @@
 | **G-14 Lesson Planner offline** | build `tools\LessonPlannerSmoke`, then the EXE with each of `--assert-source` `--assert-prompt` `--assert-multimodal` `--assert-plan` `--assert-repair` `--assert-errors` `--assert-followup` `--assert-hardening` | `lessonPlanner=pass` | exit 0 for every mode |
 | **G-15 Lesson Turn offline** | build `tools\LessonTurnSmoke`, then the EXE with each of `--assert-source` `--assert-turn` `--assert-turn-degraded` `--assert-turn-rejected` `--assert-turn-errors` | `lessonTurn=pass` | exit 0 for every mode |
 | **G-16 Part Library offline** | build `tools\PartLibrarySmoke`, then the EXE with each of `--assert-source` `--assert-library` `--assert-physics` `--assert-catalog` (`--dump` is the manual PL-5 row, not a gate) | `partLibrary=pass` | exit 0 for every mode |
+| **G-17 Lesson Surface offline** | build `tools\LessonSurfaceSmoke`, then the EXE with `--assert-source` (LSU-1 + LSU-7: one NuGet, references, CSPs, no sinks, vendored Babylon hashes, licence, `.gitattributes`) and `--assert-scene-math` (LSU-8) | `lessonSurface=pass` | exit 0 for every mode (the window rows LSU-2..LSU-6 and LSU-9..LSU-14 are local-only) |
 
 ## Local-Only Notes
 

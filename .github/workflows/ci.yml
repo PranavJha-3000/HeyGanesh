@@ -113,3 +113,16 @@ jobs:
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+
+      # G-17: the Lesson Surface rows that need no desktop. The scene/window rows (LSU-2..LSU-6, LSU-9..LSU-14) create
+      # real windows and stay local-only.
+      - name: G-17 Lesson Surface offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonSurfaceSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonSurfaceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSurfaceSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-scene-math')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }

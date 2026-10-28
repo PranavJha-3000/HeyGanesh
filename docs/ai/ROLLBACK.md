@@ -327,3 +327,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `eab7904` (the commit before this step).
 - **Files to restore:** delete `src/Intelligence/HeyGanesh.PartLibrary/` and `tools/PartLibrarySmoke/`; `git checkout eab7904 -- HeyGanesh.sln .github/workflows/ci.yml AGENTS.md docs/ai`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSmoke 12 modes (128 PASS), LessonPlannerSmoke (39), LessonTurnSmoke (20) exit 0.
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 4: 3D scene renderer)
+
+- **Change:** LessonSurface gains the scene window (CardWindow page parameter, SceneMessages.cs, CardSurface scene routing, DescribeSceneAsync, CheckOrientationAsync, Scene3dCatalog), the scene page (Page/scene.html|css|js), vendored Babylon.js 9.30.0 (Page/vendor/babylonjs-9.30.0/, ~9.3 MB, pinned in Page/vendor/VENDOR.md), a ProjectReference to PartLibrary; `.gitattributes` marks the vendor folder `-text`. LessonSurfaceSmoke gains the scene rows. Docs: DEC-030, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST LSU-7..LSU-14, CI G-17, FEATURE-007, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `0265b8d` (the commit before this step).
+- **Files to restore:** `git checkout 0265b8d -- src/Experience/HeyGanesh.LessonSurface tools/LessonSurfaceSmoke .gitattributes .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.LessonSurface/SceneMessages.cs`, `src/Experience/HeyGanesh.LessonSurface/Page/scene.*`, `src/Experience/HeyGanesh.LessonSurface/Page/vendor/`, `tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Scene.cs`. The vendored files stay in git history after a revert (~9.3 MB); removing them from history would need a rewrite the owner must approve.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSurfaceSmoke --assert-source/-window/-render/-security/-marks and LessonTurnSmoke --assert-turn-surface with their old PASS counts.

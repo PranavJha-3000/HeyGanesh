@@ -27,6 +27,13 @@ internal static partial class LessonSurfaceSmokeHost
                 "--assert-render" => await RunAssertRenderAsync(),
                 "--assert-security" => await RunAssertSecurityAsync(),
                 "--assert-marks" => await RunAssertMarksAsync(),
+                "--assert-scene-math" => RunAssertSceneMath(),
+                "--assert-scene" => await RunAssertSceneAsync(),
+                "--assert-scene-idle" => await RunAssertSceneIdleAsync(),
+                "--assert-orientation" => await RunAssertOrientationAsync(),
+                "--assert-scene-nowebgl" => await RunAssertSceneNoWebGlAsync(),
+                "--snapshot-3d" => await RunSnapshot3dAsync(args.Skip(1).ToArray()),
+                "--demo-3d" => await RunDemo3dAsync(args.Skip(1).ToArray()),
                 "--demo" => await RunDemoAsync(args.Skip(1).ToArray()),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
@@ -55,6 +62,14 @@ internal static partial class LessonSurfaceSmokeHost
         Console.WriteLine("  --assert-marks      screen marks reach the native overlay; back-to-back marks, exit 0");
         Console.WriteLine("  --demo [chain-rule|tensor-2d|photosynthesis|all] [--voice sapi|timed]");
         Console.WriteLine("                      plays lessons on screen for a human to watch (manual row)");
+        Console.WriteLine("3D scene rows (DEC-030):");
+        Console.WriteLine("  --assert-scene-math     quaternions = Geometry.Rotate, key densification, model messages (offline), exit 0");
+        Console.WriteLine("  --assert-scene          the engine lesson on the real scene window: every op reflected, window hygiene, exit 0");
+        Console.WriteLine("  --assert-scene-idle     frames only while something moves (render on demand), exit 0");
+        Console.WriteLine("  --assert-orientation    +X right, +Y up, Z turn from real pixels, exit 0");
+        Console.WriteLine("  --assert-scene-nowebgl  without WebGL the lesson still completes in speech, exit 0");
+        Console.WriteLine("  --snapshot-3d <dir>     PNG of every library model, rest and exploded (manual row)");
+        Console.WriteLine("  --demo-3d [--voice sapi|timed]  the engine lesson drawn and spoken (manual row)");
         return 0;
     }
 

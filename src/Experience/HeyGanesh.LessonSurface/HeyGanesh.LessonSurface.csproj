@@ -13,6 +13,10 @@
     modules stay zero-NuGet; LSU-1 (tools/LessonSurfaceSmoke - -assert-source) pins this to exactly
     one package at this version. The page ships as content files (Page/ -> LessonPage/ in the output)
     served from a virtual host with a CSP that blocks the network; nothing is fetched from a CDN.
+
+    3D (FEATURE-007 Phase 5 step 4, DEC-030): one more window of the same kind hosts Page/scene.html,
+    which builds Part Library models (PartLibrary reference) with Babylon.js 9.30.0 vendored under
+    Page/vendor/ and pinned by SHA-256 in Page/vendor/VENDOR.md (LSU-7 re-hashes them).
   -->
 
   <PropertyGroup>
@@ -31,6 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.VisualLessonEngine\HeyGanesh.VisualLessonEngine.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
     <ProjectReference Include="..\..\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
     <ProjectReference Include="..\..\Platform\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />

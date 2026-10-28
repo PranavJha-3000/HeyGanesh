@@ -35,8 +35,8 @@ internal static partial class LessonSurfaceSmokeHost
             failures);
         var refs = Regex.Matches(csproj, "<ProjectReference Include=\"[^\"]*\\\\([^\\\\\"]+)\\.csproj\"").Select(m => m.Groups[1].Value).OrderBy(n => n, StringComparer.Ordinal).ToArray();
         failures = Check(
-            refs.SequenceEqual(new[] { "HeyGanesh.Abstractions", "HeyGanesh.ScreenCapture", "HeyGanesh.ScreenOverlay", "HeyGanesh.VisualLessonEngine" }),
-            $"project references are Abstractions, ScreenCapture, ScreenOverlay, VisualLessonEngine only ({string.Join(", ", refs)})",
+            refs.SequenceEqual(new[] { "HeyGanesh.Abstractions", "HeyGanesh.PartLibrary", "HeyGanesh.ScreenCapture", "HeyGanesh.ScreenOverlay", "HeyGanesh.VisualLessonEngine" }),
+            $"project references are Abstractions, PartLibrary, ScreenCapture, ScreenOverlay, VisualLessonEngine only ({string.Join(", ", refs)})",
             failures);
         failures = Check(
             html.Contains("Content-Security-Policy", StringComparison.Ordinal) && html.Contains("default-src 'self'", StringComparison.Ordinal) && html.Contains("connect-src 'none'", StringComparison.Ordinal),
@@ -45,6 +45,7 @@ internal static partial class LessonSurfaceSmokeHost
         string[] sinks = { "innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "setTimeout(\"", "setInterval(\"" };
         var found = sinks.Where(s => js.Contains(s, StringComparison.Ordinal)).ToArray();
         failures = Check(found.Length == 0, $"lesson.js has no HTML/code sinks ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
+        failures = CheckSceneSource(root, dir, failures);
         return Summarize(failures, "SOURCE AUDIT OK");
     }
 }

@@ -14,7 +14,10 @@ namespace HeyGanesh.LessonSurface;
 internal sealed class CardWindow : Form
 {
     public const string PageOrigin = "https://lesson.heyganesh.invalid";
-    private const string PageUrl = PageOrigin + "/lesson.html";
+    public const string CardPage = "lesson.html";
+
+    /// <summary>The 3D scene page (DEC-030): same origin, same isolation, its own renderer.</summary>
+    public const string ScenePage = "scene.html";
 
     private readonly WebView2 _web;
     private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> _pending = new();
@@ -37,6 +40,9 @@ internal sealed class CardWindow : Form
     public bool TookFocus { get; private set; }
 
     public int BlockedNavigations => Volatile.Read(ref _blockedNavigations);
+
+    /// <summary>The page's "ready" message — the scene page reports there whether WebGL started.</summary>
+    public JsonElement ReadyInfo { get; private set; }
 
     /// <summary>Raised (UI thread) when the student presses the card's close button.</summary>
     public event EventHandler? CloseRequested;
@@ -64,7 +70,7 @@ internal sealed class CardWindow : Form
     /// Creates the HWND, excludes it from capture (a hard gate — the capture module must never
     /// photograph our own lesson), and loads the page from the virtual host.
     /// </summary>
-    public async Task InitializeAsync(CoreWebView2Environment environment, string pageFolder)
+    public async Task InitializeAsync(CoreWebView2Environment environment, string pageFolder, string page = CardPage)
     {
         CreateControl();
         if (!CaptureExclusion.TryExcludeFromCapture(Handle, out var error))
@@ -104,7 +110,7 @@ internal sealed class CardWindow : Form
         core.WebMessageReceived += OnMessage;
 
         _ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        core.Navigate(PageUrl);
+        core.Navigate(PageOrigin + "/" + page);
         await _ready.Task.WaitAsync(TimeSpan.FromSeconds(15));
     }
 
@@ -178,6 +184,7 @@ internal sealed class CardWindow : Form
         switch (kind)
         {
             case "ready":
+                ReadyInfo = message;
                 _ready?.TrySetResult();
                 break;
             case "done" or "probe" when message.TryGetProperty("seq", out var s) && s.TryGetInt32(out var seq):

@@ -223,6 +223,22 @@ Caller cancellation propagates as OperationCanceledException; speaker/canvas fau
 
 `ILessonCanvas` is implemented by `CardSurface` (Phase 3, DEC-025): ResetAsync lays out one card per surface; ApplyBeatAsync groups the beat's ops per card (a highlight goes to the card holding its element), computes plot points in C# (`PlotExpression.Sample`), posts one message per card and awaits each page's `done` (timeout → `TimeoutException`); `ScreenMarkOp` → `ScreenOverlayService.ShowAsync` fire-and-forget after hiding any previous mark. Still to come: `ILessonSpeaker` = App Shell adapter over Voice TTS. The planner that produces the model text is Phase 4 (DEC-021/DEC-024).
 
+**3D scene (DEC-030).** ResetAsync splits surfaces by kind:
+- Card surfaces get cards, as above.
+- A `scene3d` surface gets the scene window (`CardWindow` on `scene.html`). It's created by `EnsureSceneAsync` on first use: environment page, Babylon parse, then a `warmup` message that compiles the shaders. It's then laid out left of the card column.
+
+ApplyBeatAsync routes scene ops through `SceneMessages`:
+- `model` sends the `ModelLibrary` geometry, with quaternions;
+- `label`, `explode` and `camera` go through as they are;
+- `animate` sends the library animation, with rotation keys densified to ≤ 45°;
+- `clear` on the scene and a `highlight` of a scene id or `instance.part` ref also go to the scene window.
+
+All of a beat's scene ops travel as one `beat` message, awaited alongside the cards' messages. The page acks after the scene is ready and one frame is drawn, then draws further frames only while something moves. Without WebGL it acks every scene op as `skipped`.
+
+`LessonPlayer` speaks while a beat draws, so a snapshot taken at the start of speech can predate that beat's ack. LSU-9 reads timings after the lesson for that reason.
+
+No caller passes `ValidationContext.Scene3d` yet, so only LessonSurfaceSmoke drives this path.
+
 **3D gate (schema 1.1, DEC-028).** `VisualPlanValidator.Validate` accepts a `scene3d` surface only when `ValidationContext.Scene3d` carries a `ModelCatalog`; every model/part/animation name in `model`/`label`/`highlight`/`explode`/`animate`/`camera` is checked against it in beat order. No caller passes one yet (`VisualPlanner`, LessonTurn, the App), so a plan that declares a scene is `surface.unsupported` → TextFallback and is spoken, never laid out by `CardSurface` (which would draw it as an empty card). The first caller to pass a catalogue is the 3D renderer (FEATURE-007 Phase 5 step 4).
 
 ## Lesson planning path (Lesson Planner — built offline; wired into the App Shell by `--lesson`, see Lesson leg; FEATURE-007 Phase 4)

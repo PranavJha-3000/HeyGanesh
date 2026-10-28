@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Same isolation as the card page (DEC-020/DEC-030): only its own files, no network, no eval, no inline code or style. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>heyganesh 3d lesson</title>
+  <link rel="stylesheet" href="scene.css">
+</head>
+<body>
+  <div id="frame">
+    <header id="tab">
+      <span id="title"></span>
+      <span id="tags"></span>
+      <button id="close" type="button" aria-label="Close lesson">×</button>
+    </header>
+    <canvas id="view" aria-label="3D lesson view"></canvas>
+    <div id="notice" hidden></div>
+  </div>
+  <script src="vendor/babylonjs-9.30.0/babylon.js"></script>
+  <script src="vendor/babylonjs-9.30.0/babylon.gui.min.js"></script>
+  <script src="scene.js"></script>
+</body>
+</html>

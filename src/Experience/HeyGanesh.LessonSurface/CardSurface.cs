@@ -27,6 +27,13 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     // UI-thread state.
     private readonly List<CardWindow> _cards = new();
     private readonly Dictionary<string, string> _owner = new(StringComparer.Ordinal);
+
+    // The 3D scene window (DEC-030): created on the first lesson that declares a scene, kept for this
+    // surface's lifetime, hidden when a lesson has none. Ids it owns (instances, labels) route ops to it.
+    private CardWindow? _scene;
+    private string? _sceneSurfaceId;
+    private readonly HashSet<string> _sceneOwned = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _sceneInstances = new(StringComparer.Ordinal);
     private CoreWebView2Environment? _environment;
     private string _pageFolder = string.Empty;
     private int _seq;
@@ -60,10 +67,19 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         {
             lock (_cardsLock)
             {
-                return _cards.Any(c => c.TookFocus);
+                return _cards.Any(c => c.TookFocus) || (_scene?.TookFocus ?? false);
             }
         }
     }
+
+    /// <summary>
+    /// The 3D vocabulary this canvas can draw: pass it as <c>ValidationContext.Scene3d</c> when planning
+    /// for this surface (DEC-028). Every model, part and animation in it is in the Part Library.
+    /// </summary>
+    public static ModelCatalog Scene3dCatalog => PartLibrary.ModelLibrary.ToCatalog();
+
+    /// <summary>Diagnostics: how long the last scene window took to start (environment page + Babylon parse + shader warm-up).</summary>
+    public TimeSpan LastSceneStartup { get; private set; }
 
     /// <summary>Marks the overlay could not show, as short reasons (no screen text, no coordinates).</summary>
     public IReadOnlyList<string> MarkFaults => _markFaults.ToArray();
@@ -87,7 +103,12 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(surfaces);
         _owner.Clear();
-        while (CardCount() < surfaces.Count)
+        _sceneOwned.Clear();
+        _sceneInstances.Clear();
+        var cardSurfaces = surfaces.Where(s => s.Kind == SurfaceKind.Card).ToList();
+        var sceneSurface = surfaces.FirstOrDefault(s => s.Kind == SurfaceKind.Scene3d);
+        _sceneSurfaceId = sceneSurface?.Id;
+        while (CardCount() < cardSurfaces.Count)
         {
             await NewCardAsync();
         }
@@ -95,12 +116,24 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         var cards = Snapshot();
         for (var i = 0; i < cards.Length; i++)
         {
-            cards[i].SurfaceId = i < surfaces.Count ? surfaces[i].Id : string.Empty;
+            cards[i].SurfaceId = i < cardSurfaces.Count ? cardSurfaces[i].Id : string.Empty;
         }
 
-        await Task.WhenAll(surfaces.Select((s, i) => SendAsync(cards[i], "reset", seq => new { kind = "reset", seq, title = s.Title }, cancellationToken)));
-        Arrange(cards.Take(surfaces.Count).ToArray());
-        foreach (var hidden in cards.Skip(surfaces.Count))
+        await Task.WhenAll(cardSurfaces.Select((s, i) => SendAsync(cards[i], "reset", seq => new { kind = "reset", seq, title = s.Title }, cancellationToken)));
+        CardWindow? scene = null;
+        if (sceneSurface is not null)
+        {
+            scene = await EnsureSceneAsync(cancellationToken);
+            scene.SurfaceId = sceneSurface.Id;
+            await SendAsync(scene, "reset", seq => new { kind = "reset", seq, title = sceneSurface.Title }, cancellationToken);
+        }
+        else
+        {
+            _scene?.Hide();
+        }
+
+        Arrange(cards.Take(cardSurfaces.Count).ToArray(), scene);
+        foreach (var hidden in cards.Skip(cardSurfaces.Count))
         {
             hidden.Hide();
         }
@@ -110,6 +143,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(beat);
         var perCard = new Dictionary<string, List<object>>(StringComparer.Ordinal);
+        var sceneOps = new List<object>();
         void Add(string surface, object op)
         {
             if (!perCard.TryGetValue(surface, out var list))
@@ -149,6 +183,32 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
                     // The highlight goes to whichever card holds the element, not the beat's card.
                     Add(holder, new { op = "highlight", target = h.Target });
                     break;
+                case HighlightOp sh when IsSceneTarget(sh.Target):
+                    sceneOps.Add(SceneMessages.Highlight(sh));
+                    break;
+                case ModelOp model:
+                    _sceneOwned.Add(model.Id);
+                    _sceneInstances[model.Id] = model.Model;
+                    sceneOps.Add(SceneMessages.Model(model));
+                    break;
+                case LabelOp label:
+                    _sceneOwned.Add(label.Id);
+                    sceneOps.Add(SceneMessages.Label(label));
+                    break;
+                case ExplodeOp explode:
+                    sceneOps.Add(SceneMessages.Explode(explode));
+                    break;
+                case AnimateOp animate:
+                    sceneOps.Add(SceneMessages.Animation(animate, _sceneInstances[animate.Target]));
+                    break;
+                case CameraOp camera:
+                    sceneOps.Add(SceneMessages.Camera(camera));
+                    break;
+                case ClearOp sc when sc.Surface == _sceneSurfaceId:
+                    _sceneOwned.Clear();
+                    _sceneInstances.Clear();
+                    sceneOps.Add(SceneMessages.Clear());
+                    break;
                 case ClearOp c:
                     foreach (var gone in _owner.Where(kv => kv.Value == c.Surface).Select(kv => kv.Key).ToList())
                     {
@@ -169,9 +229,17 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
             var card = cards.FirstOrDefault(c => c.SurfaceId == kv.Key)
                 ?? throw new InvalidOperationException($"beat '{beat.Id}' draws on surface '{kv.Key}', which was not laid out by ResetAsync");
             return SendAsync(card, "beat", seq => new { kind = "beat", seq, ops = kv.Value }, cancellationToken);
-        });
+        }).ToList();
+        if (sceneOps.Count > 0)
+        {
+            var scene = _scene is not null && _sceneSurfaceId is not null
+                ? _scene
+                : throw new InvalidOperationException($"beat '{beat.Id}' draws on a 3D scene, which was not laid out by ResetAsync");
+            sends.Add(SendAsync(scene, "beat", seq => new { kind = "beat", seq, ops = sceneOps }, cancellationToken));
+        }
+
         await Task.WhenAll(sends);
-        NoteFocus(cards);
+        NoteFocus(AllWindows());
     });
 
     public Task ShowNoticeAsync(string notice, CancellationToken cancellationToken) => OnUi(async () =>
@@ -186,6 +254,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         cards[0].SurfaceId = "notice";
         await SendAsync(cards[0], "reset", seq => new { kind = "reset", seq, title = "heyganesh" }, cancellationToken);
         await SendAsync(cards[0], "notice", seq => new { kind = "notice", seq, text = notice }, cancellationToken);
+        _scene?.Hide();
         Arrange(new[] { cards[0] });
         foreach (var hidden in cards.Skip(1))
         {
@@ -198,7 +267,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     {
         await OnUi(() =>
         {
-            foreach (var card in Snapshot())
+            foreach (var card in AllWindows())
             {
                 card.Hide();
             }
@@ -245,9 +314,97 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     /// <summary>Writes one card's page as PNG to <paramref name="destination"/> (review / lesson history).</summary>
     public Task CapturePageAsync(string surfaceId, Stream destination) => OnUi(async () =>
     {
-        var card = Snapshot().FirstOrDefault(c => c.SurfaceId == surfaceId)
+        var card = AllWindows().FirstOrDefault(c => c.SurfaceId == surfaceId)
             ?? throw new ArgumentException($"no card is laid out for surface '{surfaceId}'", nameof(surfaceId));
         await card.CapturePageAsync(destination);
+    });
+
+    /// <summary>Read-only description of the 3D scene window and its page (DEC-030), for verification rows.</summary>
+    public Task<SceneSnapshot> DescribeSceneAsync() => OnUi(async () =>
+    {
+        var scene = _scene ?? throw new InvalidOperationException("no scene window has been created");
+        var raw = await scene.RunHostScriptAsync("JSON.stringify(window.__describe())");
+        using var outer = JsonDocument.Parse(raw);
+        using var doc = JsonDocument.Parse(outer.RootElement.GetString()!);
+        var d = doc.RootElement;
+        CardNative.GetWindowDisplayAffinity(scene.Handle, out var affinity);
+        var b = scene.Bounds;
+        static List<string> Strings(JsonElement e) => e.EnumerateArray().Select(x => x.GetString()!).ToList();
+        return new SceneSnapshot(
+            scene.SurfaceId,
+            scene.Visible,
+            CardNative.GetWindowLong(scene.Handle, CardNative.GwlExStyle),
+            affinity,
+            new PixelRect(b.X, b.Y, b.Width, b.Height),
+            d.GetProperty("webgl").GetInt32(),
+            d.GetProperty("title").GetString() ?? string.Empty,
+            Strings(d.GetProperty("tags")),
+            d.GetProperty("notice").GetString() ?? string.Empty,
+            d.GetProperty("instances").EnumerateArray()
+                .Select(i => new SceneInstance(i.GetProperty("id").GetString()!, i.GetProperty("model").GetString()!, i.GetProperty("parts").GetInt32(), i.GetProperty("meshes").GetInt32()))
+                .ToList(),
+            d.GetProperty("labels").EnumerateArray()
+                .Select(l => new SceneLabel(l.GetProperty("id").GetString()!, l.GetProperty("target").GetString()!, l.GetProperty("text").GetString()!))
+                .ToList(),
+            Strings(d.GetProperty("highlights")),
+            d.GetProperty("explode").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetDouble(), StringComparer.Ordinal),
+            d.GetProperty("offsets").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.EnumerateArray().Select(x => x.GetDouble()).ToArray(), StringComparer.Ordinal),
+            Strings(d.GetProperty("playing")),
+            d.GetProperty("cameraView").GetString() ?? string.Empty,
+            d.GetProperty("cameraFocus").GetString() ?? string.Empty,
+            d.GetProperty("frames").GetInt32(),
+            d.GetProperty("csp").GetInt32(),
+            d.GetProperty("lastBuildMs").GetDouble(),
+            d.GetProperty("script").GetInt32());
+    });
+
+    /// <summary>
+    /// Orientation self-test (DEC-029 asked for it, DEC-030 automates it): the scene page draws a red
+    /// marker at +X, a green one at +Y, and a blue one on a parent turned 90° about Z by a quaternion
+    /// computed here — so it must land at −X. The page is then captured and the markers are found by
+    /// colour in its own pixels. Usable as a startup health check; it leaves the scene cleared.
+    /// </summary>
+    public Task<OrientationProbe> CheckOrientationAsync() => OnUi(async () =>
+    {
+        var scene = await EnsureSceneAsync(CancellationToken.None);
+        var wasVisible = scene.Visible;
+        if (!wasVisible)
+        {
+            Arrange(Array.Empty<CardWindow>(), scene);
+        }
+
+        try
+        {
+            var reply = await SendAsync(scene, "orient", seq => new { kind = "orient", seq, turn = SceneMessages.OrientationTurn }, CancellationToken.None, _options.ControlTimeout);
+            if (reply.TryGetProperty("skipped", out _))
+            {
+                return new OrientationProbe(false, false, false, "no WebGL: nothing was drawn");
+            }
+
+            using var png = new MemoryStream();
+            await scene.CapturePageAsync(png);
+            png.Position = 0;
+            using var bitmap = new Bitmap(png);
+            var red = Centroid(bitmap, (r, g, b) => r > 200 && g < 90 && b < 90);
+            var green = Centroid(bitmap, (r, g, b) => g > 180 && r < 90 && b < 90);
+            var blue = Centroid(bitmap, (r, g, b) => b > 200 && r < 90 && g < 120);
+            double cx = bitmap.Width / 2.0, cy = bitmap.Height / 2.0;
+            var tol = bitmap.Width * 0.05;
+            var detail = $"image {bitmap.Width}x{bitmap.Height}; red {Show(red)}, green {Show(green)}, blue {Show(blue)}";
+            return new OrientationProbe(
+                red is { } rp && rp.X > cx + tol && Math.Abs(rp.Y - cy) < tol,
+                green is { } gp && gp.Y < cy - tol && Math.Abs(gp.X - cx) < tol,
+                blue is { } bp && bp.X < cx - tol && Math.Abs(bp.Y - cy) < tol,
+                detail);
+        }
+        finally
+        {
+            await SendAsync(scene, "reset", seq => new { kind = "reset", seq, title = string.Empty }, CancellationToken.None);
+            if (!wasVisible)
+            {
+                scene.Hide();
+            }
+        }
     });
 
     /// <summary>
@@ -278,7 +435,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         {
             await _ui.InvokeAsync(() =>
             {
-                foreach (var card in Snapshot())
+                foreach (var card in AllWindows())
                 {
                     card.FailPending(new ObjectDisposedException(nameof(CardSurface)));
                     card.Close();
@@ -288,6 +445,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
                 lock (_cardsLock)
                 {
                     _cards.Clear();
+                    _scene = null;
                 }
 
                 return Task.CompletedTask;
@@ -313,9 +471,79 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         var dataRoot = Environment.GetEnvironmentVariable("HEYGANESH_DATA_DIR");
         var userData = _options.UserDataFolder
             ?? Path.Combine(string.IsNullOrEmpty(dataRoot) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HeyGanesh") : dataRoot, "webview2");
-        _environment = await CoreWebView2Environment.CreateAsync(null, userData);
+        var environmentOptions = string.IsNullOrWhiteSpace(_options.AdditionalBrowserArguments)
+            ? null
+            : new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = _options.AdditionalBrowserArguments };
+        _environment = await CoreWebView2Environment.CreateAsync(null, userData, environmentOptions);
         await NewCardAsync();
     }
+
+    /// <summary>
+    /// The scene window, created on first use (DEC-030: the 360–500 MB a 3D page costs is paid only by
+    /// lessons that show one). Creation includes parsing the vendored Babylon.js and a shader warm-up —
+    /// one hidden mesh per shape × finish, rendered once — so the lesson's real model builds warm.
+    /// </summary>
+    private async Task<CardWindow> EnsureSceneAsync(CancellationToken cancellationToken)
+    {
+        if (_scene is not null)
+        {
+            return _scene;
+        }
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var scene = new CardWindow();
+        scene.CloseRequested += (_, _) =>
+        {
+            foreach (var c in AllWindows())
+            {
+                c.Hide();
+            }
+
+            DismissedByUser?.Invoke(this, EventArgs.Empty);
+        };
+        await scene.InitializeAsync(_environment!, _pageFolder, CardWindow.ScenePage);
+        lock (_cardsLock)
+        {
+            _scene = scene;
+        }
+
+        await SendAsync(scene, "warmup", seq => new { kind = "warmup", seq }, cancellationToken);
+        LastSceneStartup = clock.Elapsed;
+        return scene;
+    }
+
+    private bool IsSceneTarget(string target) => target.Contains('.', StringComparison.Ordinal) || _sceneOwned.Contains(target);
+
+    private CardWindow[] AllWindows()
+    {
+        lock (_cardsLock)
+        {
+            return _scene is null ? _cards.ToArray() : _cards.Append(_scene).ToArray();
+        }
+    }
+
+    private static PointF? Centroid(Bitmap bitmap, Func<int, int, int, bool> match)
+    {
+        double sx = 0, sy = 0;
+        var n = 0;
+        for (var y = 0; y < bitmap.Height; y += 2)
+        {
+            for (var x = 0; x < bitmap.Width; x += 2)
+            {
+                var c = bitmap.GetPixel(x, y);
+                if (match(c.R, c.G, c.B))
+                {
+                    sx += x;
+                    sy += y;
+                    n++;
+                }
+            }
+        }
+
+        return n < 20 ? null : new PointF((float)(sx / n), (float)(sy / n));
+    }
+
+    private static string Show(PointF? p) => p is { } v ? $"({v.X:F0},{v.Y:F0})" : "not found";
 
     private async Task<CardWindow> NewCardAsync()
     {
@@ -346,16 +574,25 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         return card.SendAsync(seq, kind, build(seq), budget, cancellationToken);
     }
 
-    /// <summary>Top-right of the monitor under the cursor, in a grid that fits its working area.</summary>
-    private void Arrange(CardWindow[] cards)
+    /// <summary>
+    /// Top-right of the monitor under the cursor, in a grid that fits its working area. A scene window
+    /// goes to the left of the card column (narrowed to fit, never below 320 DIP wide).
+    /// </summary>
+    private void Arrange(CardWindow[] cards, CardWindow? scene = null)
     {
-        if (cards.Length == 0)
+        if (cards.Length == 0 && scene is null)
         {
             return;
         }
 
         var area = Screen.FromPoint(Cursor.Position).WorkingArea;
-        var scale = cards[0].DeviceDpi / 96.0;
+        var scale = (cards.Length > 0 ? cards[0] : scene!).DeviceDpi / 96.0;
+        if (cards.Length == 0)
+        {
+            PlaceScene(scene!, area.Right - (int)Math.Round(_options.MarginDip * scale) + (int)Math.Round(_options.GapDip * scale), area, scale);
+            NoteFocus(new[] { scene! });
+            return;
+        }
         int S(int dip) => (int)Math.Round(dip * scale);
         int w = S(_options.CardWidthDip), h = S(_options.CardHeightDip), gap = S(_options.GapDip), m = S(_options.MarginDip);
         var cols = Math.Clamp((area.Width - 2 * m + gap) / (w + gap), 1, cards.Length);
@@ -375,7 +612,27 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
             }
         }
 
+        if (scene is not null)
+        {
+            PlaceScene(scene, cards.Min(c => c.Bounds.Left), area, scale);
+            NoteFocus(new[] { scene });
+        }
+
         NoteFocus(cards);
+    }
+
+    /// <summary>The scene window, just left of <paramref name="columnLeft"/>, top-aligned with the cards.</summary>
+    private void PlaceScene(CardWindow scene, int columnLeft, Rectangle area, double scale)
+    {
+        int D(int dip) => (int)Math.Round(dip * scale);
+        var room = columnLeft - D(_options.GapDip) - (area.Left + D(_options.MarginDip));
+        var width = Math.Max(D(320), Math.Min(D(_options.SceneWidthDip), room));
+        var height = Math.Min(D(_options.SceneHeightDip), area.Height - 2 * D(_options.MarginDip));
+        scene.Bounds = new Rectangle(columnLeft - D(_options.GapDip) - width, area.Top + D(_options.MarginDip), width, height);
+        if (!scene.Visible)
+        {
+            scene.Show();
+        }
     }
 
     private void NoteFocus(IEnumerable<CardWindow> cards)

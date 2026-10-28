@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-030](#dec-030--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D renderer: a scene window in CardSurface (same isolation as cards) running vendored, SHA-pinned Babylon.js 9.30.0; rotations sent as C#-computed quaternions + an orientation self-test from real pixels; created on the first 3D lesson with a shader warm-up; render on demand; no-WebGL → speech | accepted |
 | [DEC-029](#dec-029--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Part library v1 as C# code in a new `HeyGanesh.PartLibrary`: closed primitive kit, computed geometry/motion where physics defines it, `Schematic` and `Reviewed` (false) flags, budgets 16 parts / 64 primitives / ±2 box; produces the scene3d `ModelCatalog` | accepted |
 | [DEC-028](#dec-028--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D as VisualPlan 1.1: one `scene3d` surface, ops model/label/explode/animate/camera + part refs, names bound to a caller-supplied `ModelCatalog`; off unless the canvas passes a catalogue (`ValidationContext.Scene3d`) | accepted |
 | [DEC-027](#dec-027--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | App Shell lesson leg: `--lesson` runs one LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; planner built from `DEEPSEEK_API_KEY` (DeepSeek via OpenAiCompat) or the leg reports its skip; WebView2 reaches the App transitively | accepted |
@@ -40,6 +41,57 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-030 — 2026-10-29 — claude-opus-5-5
+
+**Decision — 3D lessons render in one more CardSurface window, built from Part Library data by vendored Babylon.js, with the rotation convention fixed in C# and proven from pixels.**
+
+- **The window.** `CardSurface` (the real `ILessonCanvas`, DEC-025) gets a scene window for a lesson's `scene3d` surface (DEC-028). It's the same `CardWindow`: borderless, NOACTIVATE + TOOLWINDOW + TOPMOST, `WDA_EXCLUDEFROMCAPTURE`, same virtual host, navigation and new-window blocking, no dev tools or accelerator keys. It hosts `Page/scene.html`, whose CSP is identical to `lesson.html`'s (no `unsafe-eval`, no `unsafe-inline`, no network).
+- **The renderer.** `scene.js` builds each model from `SceneMessages`, which resolves geometry from `ModelLibrary` (DEC-029):
+  - per part, an explode node, then a pose node, then the meshes;
+  - labels are Babylon GUI notes on leader lines, with text drawn on a canvas, never as markup;
+  - `HighlightLayer` for highlights, and `AnimationGroup`s from the library's keys.
+- **Rotations.** They leave C# as quaternions computed with `Geometry.Rotate`'s convention: q = qY·qX·qZ, with rotation keys densified to ≤ 45°. The page never interprets Euler angles. `CardSurface.CheckOrientationAsync()` draws markers at +X, at +Y, and on a parent turned 90° about Z, then finds them by colour in the captured page.
+- **Vendored files.** Babylon.js 9.30.0 and babylon.gui 9.30.0 plus the Apache-2.0 licence live under `Page/vendor/`, SHA-256-pinned in `VENDOR.md` (all equal to jsdelivr's published hashes). The folder is `-text` in `.gitattributes`.
+- **Created on demand.** The scene window is created on the first lesson that declares a scene, with a shader warm-up (one hidden mesh per shape × finish), and lives as long as its surface.
+- **Render on demand.** Frames are drawn only while a tween, an animation or a pending op is active.
+- **No WebGL.** The page says so and acknowledges every scene op as skipped; the lesson completes in speech.
+- **Catalogue.** `CardSurface.Scene3dCatalog` is the catalogue a caller passes as `ValidationContext.Scene3d`. No caller passes it yet (step 6).
+
+**Measured (this machine, RTX 3060 Laptop + WARP-capable; LSU-9..LSU-12).**
+
+| Measure | Result |
+|---|---|
+| Scene window cold start (environment page + Babylon parse + warm-up) | 1.95–2.14 s across 5 runs |
+| Warm model beat (engine: meshes + shaders ready + first frame) | 114–120 ms, inside the 300 ms budget |
+| Frames while `stroke-cycle` loops | 168 in 1 s |
+| Frames idle after the non-looping `pump-cycle` | 0 in 2 s |
+| Orientation (+X right, +Y up, Z-turn maps +Y → −X) | correct from real pixels |
+| CSP violations on the scene page | 0 |
+| `--disable-webgl` | the six-beat lesson completes, every sentence spoken |
+
+Memory was not re-measured in this step. Spike 0b's 357–506 MB WebView2 private memory for a 3D page stands.
+
+**Reasoning.**
+- Euler order and handedness are where a renderer silently disagrees with the library while every C# check passes. Quaternions from C# plus a pixel check remove that class of bug. DEC-029 asked for exactly this confirmation.
+- Creating the scene window only for a 3D lesson keeps 2D lessons at their ~143 MB, and keeps every run from paying 360–500 MB for a lesson type the planner can't produce yet. The cost is about 2 s of `ResetAsync` before a 3D lesson's first beat, paid per 3D turn while `CardSurfaceHost` makes a fresh surface each turn.
+
+**Rejected.**
+- Sending Euler angles to Babylon.
+- A transparent full-screen 3D layer (DEC-020 again).
+- 3D inside the card page: every card would carry 8.6 MB of Babylon and GPU memory.
+- Pre-warming at app start: deferred, see Consequences.
+- A tree-shaken ES-module build: it needs npm and a bundler, ruled out by FEATURE-007 §1.5.
+
+**Consequences.**
+- About 9.3 MB of vendored JavaScript is now in the repo and its history.
+- `babylonjs@9.30.0`'s 46-byte `NOTICE.md` is **not yet vendored**. It wasn't in the approved download, and Apache-2.0 §4(d) asks redistributions to include it, so it must be added before this branch is pushed or shared.
+- `explode` moves parts but does not re-frame the camera. A lesson that wants the whole exploded view adds a `camera` op.
+- Making a 3D lesson's first beat fast is a later change: keep one `CardSurface` across turns, or pre-warm at app start.
+- Step 5 (click a part to ask) adds input to this window.
+- Step 6 makes `VisualPlanner` pass `Scene3dCatalog`, which is when live lessons can first contain 3D.
+
+Plan: [plans/2026-10-29-scene-renderer-v1.md](plans/2026-10-29-scene-renderer-v1.md). Rows: LSU-7..LSU-14.
+
 ## DEC-029 — 2026-10-29 — claude-opus-5-5
 
 **Decision — 3D teaching models are C# code in their own assembly, computed wherever physics defines the shape or motion, and honestly flagged.** New Intelligence assembly `HeyGanesh.PartLibrary` (only reference: VisualLessonEngine). A model is named parts built from a closed primitive kit (box, cylinder, sphere, torus, capsule) with a closed set of finishes, a one-line description per part, an explode offset, and keyframed position/rotation tracks. `ModelLibrary.V1` ships three: `four-stroke-engine` (slider-crank kinematics computed at 49 keys), `dna-helix` (B-DNA: 10.5 bp/turn, 0.34 nm rise, 2.0 nm diameter), and `na-k-pump` (`Schematic = true`; only the 3 Na⁺ out / 2 K⁺ in stoichiometry is a fact). Every model is `Reviewed = false` until the owner reads `PartLibrarySmoke --dump` and records it here. `LibraryCheck` holds each model to 16 parts, 64 primitives (three per scene stay under spike 0b's 200), a ±2 box, and ordered, rest-matching, loop-consistent tracks. `ModelLibrary.ToCatalog()` is the `ModelCatalog` the scene3d contract validates against (DEC-028). One rotation convention (`Geometry.Rotate`: Z, then X, then Y, fixed axes, right-hand rule) is used by the models and the checks alike.

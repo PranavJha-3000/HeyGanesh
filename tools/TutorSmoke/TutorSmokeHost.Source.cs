@@ -17,7 +17,7 @@ internal static partial class TutorSmokeHost
         var dir = FindModuleDir();
         if (dir is null)
         {
-            Console.WriteLine("FAIL  could not locate src/HeyGanesh.TutorEngine from cwd or base dir (exit 1)");
+            Console.WriteLine("FAIL  could not locate src/Intelligence/HeyGanesh.TutorEngine from cwd or base dir (exit 1)");
             return 1;
         }
         Console.WriteLine($"auditing {dir}");
@@ -112,7 +112,7 @@ internal static partial class TutorSmokeHost
         {
             for (var dir = new DirectoryInfo(start); dir is not null; dir = dir.Parent)
             {
-                var candidate = Path.Combine(dir.FullName, "src", "HeyGanesh.TutorEngine");
+                var candidate = Path.Combine(dir.FullName, "src", "Intelligence", "HeyGanesh.TutorEngine");
                 if (Directory.Exists(candidate))
                 {
                     return candidate;

@@ -30,6 +30,21 @@ public sealed record LessonValidationResult(
     IReadOnlyList<LessonIssue> Issues);
 
 /// <summary>
+/// Where a plan will be shown, and what it may point at. <see cref="VirtualDesktop"/> bounds every
+/// mark. With <see cref="RequireGroundedMarks"/>, a mark must also sit inside the grounded target
+/// box (inflated by <see cref="GroundedMarginPx"/>) — a model-planned lesson may only mark what
+/// Element Selection / Vision actually found; with no box, every mark is refused.
+/// </summary>
+public sealed record ValidationContext(PixelRect VirtualDesktop)
+{
+    public bool RequireGroundedMarks { get; init; }
+
+    public PixelRect? GroundedTarget { get; init; }
+
+    public int GroundedMarginPx { get; init; } = 24;
+}
+
+/// <summary>
 /// Holds a parsed plan to the v1 contract. Issues are emitted in plan order — surfaces, then beats,
 /// then each beat's ops — so two runs over the same input report the same sequence (LS-6).
 /// Never throws on plan content; only a null argument (a caller bug) throws.
@@ -47,9 +62,14 @@ public sealed class VisualPlanValidator
         _limits = limits ?? LessonLimits.Default;
     }
 
-    public LessonValidationResult Validate(ParseResult parsed, PixelRect virtualDesktop)
+    /// <summary>Validates with marks allowed anywhere on the desktop (fixtures, hand-authored lessons).</summary>
+    public LessonValidationResult Validate(ParseResult parsed, PixelRect virtualDesktop) =>
+        Validate(parsed, new ValidationContext(virtualDesktop));
+
+    public LessonValidationResult Validate(ParseResult parsed, ValidationContext context)
     {
         ArgumentNullException.ThrowIfNull(parsed);
+        ArgumentNullException.ThrowIfNull(context);
 
         var issues = new List<LessonIssue>(parsed.Issues);
         if (parsed.Plan is null)
@@ -59,7 +79,7 @@ public sealed class VisualPlanValidator
 
         var plan = parsed.Plan;
         CheckPlan(plan, issues);
-        var degraded = CheckBeats(plan, issues, virtualDesktop);
+        var degraded = CheckBeats(plan, issues, context);
         return Decide(plan, issues, degraded);
     }
 
@@ -99,18 +119,18 @@ public sealed class VisualPlanValidator
     private sealed class Board
     {
         public required HashSet<string> Surfaces { get; init; }
-        public required PixelRect Desktop { get; init; }
+        public required ValidationContext Context { get; init; }
         public HashSet<string> EverUsed { get; } = new(StringComparer.Ordinal);
         public Dictionary<string, string> Live { get; set; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>Walks the beats in order and returns the indices of beats that lose their drawing.</summary>
-    private HashSet<int> CheckBeats(VisualPlan plan, List<LessonIssue> issues, PixelRect desktop)
+    private HashSet<int> CheckBeats(VisualPlan plan, List<LessonIssue> issues, ValidationContext context)
     {
         var degraded = new HashSet<int>();
         var parserFlagged = issues.Where(i => i.BeatId is not null).Select(i => i.BeatId!).ToHashSet(StringComparer.Ordinal);
         var beatIds = new HashSet<string>(StringComparer.Ordinal);
-        var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Desktop = desktop };
+        var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Context = context };
         for (var index = 0; index < plan.Beats.Count; index++)
         {
             var beat = plan.Beats[index];
@@ -200,7 +220,7 @@ public sealed class VisualPlanValidator
 
                 break;
             case ScreenMarkOp m:
-                CheckMark(m.Region, beatId, board.Desktop, issues);
+                CheckMark(m.Region, beatId, board.Context, issues);
                 break;
             case UnknownOp u:
                 issues.Add(new LessonIssue(LessonIssueCodes.OpUnknown, beatId, $"op '{u.Name}' is not in v1"));
@@ -239,8 +259,9 @@ public sealed class VisualPlanValidator
         }
     }
 
-    private static void CheckMark(PixelRect r, string beatId, PixelRect d, List<LessonIssue> issues)
+    private static void CheckMark(PixelRect r, string beatId, ValidationContext context, List<LessonIssue> issues)
     {
+        var d = context.VirtualDesktop;
         if (r.Width <= 0 || r.Height <= 0)
         {
             issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"mark {r} has no area"));
@@ -249,6 +270,11 @@ public sealed class VisualPlanValidator
         else if (r.X < d.X || r.Y < d.Y || (long)r.X + r.Width > (long)d.X + d.Width || (long)r.Y + r.Height > (long)d.Y + d.Height)
         {
             issues.Add(new LessonIssue(LessonIssueCodes.MarkOutOfBounds, beatId, $"mark {r} is outside the desktop {d}"));
+        }
+        else if (context.RequireGroundedMarks && !InsideGrounded(r, context))
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.MarkUngrounded, beatId,
+                context.GroundedTarget is null ? "no grounded target: marks are not allowed" : $"mark {r} is not on the grounded target {context.GroundedTarget}"));
         }
     }
 
@@ -262,6 +288,19 @@ public sealed class VisualPlanValidator
         {
             issues.Add(new LessonIssue(LessonIssueCodes.FieldTooLong, beatId, $"{what} is {value.Length} chars (max {max})"));
         }
+    }
+
+    private static bool InsideGrounded(PixelRect r, ValidationContext context)
+    {
+        if (context.GroundedTarget is not { } g)
+        {
+            return false;
+        }
+
+        long m = context.GroundedMarginPx;
+        return r.X >= g.X - m && r.Y >= g.Y - m
+            && (long)r.X + r.Width <= (long)g.X + g.Width + m
+            && (long)r.Y + r.Height <= (long)g.Y + g.Height + m;
     }
 
     private static void CheckOptionalText(string? value, int max, string what, string beatId, List<LessonIssue> issues)

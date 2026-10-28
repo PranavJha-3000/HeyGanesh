@@ -22,6 +22,7 @@ public static class LessonIssueCodes
     public const string RefSurface = "ref.surface";
     public const string RefTarget = "ref.target";
     public const string MarkOutOfBounds = "mark.out-of-bounds";
+    public const string MarkUngrounded = "mark.ungrounded";
     public const string OpUnknown = "op.unknown";
     public const string GlyphUnknown = "glyph.unknown";
     public const string ValueInvalid = "value.invalid";

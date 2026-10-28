@@ -202,3 +202,23 @@ on-screen claims to what the context or image actually supports; coordinates nev
 prose; empty completions and over-cap answers are provider failures, never lessons; the Tutor never
 captures, decodes, clicks, types, opens a window or makes a sound — its assembly carries no
 actuation surface at all (TU-8), so "click Save" here can only ever be prose.
+
+## Lesson playback path (Visual Lesson Engine Runtime — built, NOT yet wired into the App Shell; FEATURE-007 Phase 2)
+
+```
+model text ─► VisualPlanParser.Parse ─► ParseResult ─► VisualPlanValidator.Validate(…, virtual desktop) ─► LessonValidationResult
+                                                                                                              │
+LessonPlayer.PlayAsync(result, ct) ◄─────────────────────────────────────────────────────────────────────────┘
+  Rejected      → return Status=Rejected (no seam called)
+  busy          → return Status=Refused (never queued)
+  TextFallback  → ILessonCanvas.ShowNoticeAsync(FallbackNotice) → ILessonSpeaker.SpeakAsync(FallbackText)
+  Valid/Partial → ILessonCanvas.ClearAsync, then per beat:
+                    [wait at boundary while paused]
+                    ILessonCanvas.ApplyBeatAsync(beat)   (skipped when the beat has no ops)
+                    ILessonSpeaker.SpeakAsync(beat.Say)  — beat ends when both finish (speech is the clock)
+  → PlaybackReport (Completed | Stopped) = the replay log
+Controls from other threads: Pause (next boundary) · Resume · SkipBeat (cancels the current beat) · Stop (ends, also from pause)
+Caller cancellation propagates as OperationCanceledException; speaker/canvas faults propagate; state returns to Idle.
+```
+
+Implementers to come: `ILessonCanvas` = Phase 3 WebView2 cards + native ScreenOverlay marks (DEC-020); `ILessonSpeaker` = App Shell adapter over Voice TTS. The planner that produces the model text is Phase 4 (DEC-021/DEC-024).

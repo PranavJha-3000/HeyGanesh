@@ -1,4 +1,12 @@
 
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 2: Lesson Runtime v1)
+
+Did: Built `Runtime/` in HeyGanesh.VisualLessonEngine — ILessonCanvas/ILessonSpeaker seams, LessonPlayer (draw-then-speak per beat, speech is the clock, degraded/fallback/rejected branches, pause/resume/skip/stop, burst refusal, cancel + fault propagation) and PlaybackReport (replay log); LessonSmoke rows LS-8..LS-10 with gated fake speaker. DEC-024: planner multimodal (screen crop as image part when the model has Vision, explicit text-only otherwise) and multi-model (ProviderRegistry, no hard-wired provider). Branch `feat/lesson-runtime-v1`.
+Left: Not wired into the App Shell — no real canvas (Phase 3) or speaker adapter yet. No provider key needed until Phase 4's live rows.
+Watch: Pause only takes effect at a beat boundary (never cuts a sentence). Stop vs. caller cancel are distinct: Stop returns Stopped, the shell's token throws OCE. Do not name Runtime members with audit needles (e.g. `Process…`) — LS-1 scans all subfolders.
+Next: Phase 3 — HeyGanesh.LessonSurface (WebView2 opaque cards per DEC-020) implementing ILessonCanvas, with an offline demo host playing the golden fixtures on screen.
+Verified: LessonSmoke --assert-play 5/5, --assert-play-degraded 5/5, --assert-controls 8/8 (3 runs), plus all Phase 1 rows; library + host 0 warnings.
+
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 0: decisions + spikes)
 
 Did: Merged Phase 1 to main (fast-forward, branch deleted). Took DEC-020 (WebView2 opaque card windows, one NuGet in a new HeyGanesh.LessonSurface; marks stay native; Babylon at Phase 5), DEC-021 (planner via Providers.Core ILlmClient, deepseek-flash), DEC-022 (in-memory session, 6 turns) by owner delegation. Ran spike 0a (throwaway, scratchpad, not committed): GO.

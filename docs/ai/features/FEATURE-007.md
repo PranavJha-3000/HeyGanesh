@@ -3,7 +3,9 @@
 - **Date:** 2026-10-28 · claude-opus-5-5
 - **Status:** in-progress — Phase 1 (VisualPlan contract v1) BUILT 2026-10-28 · claude-opus-5-5 on branch
   `feat/visualplan-contract-v1` (merged to main), LS-1..LS-7 green offline (DEC-023). Phase 0 DONE 2026-10-28
-  (DEC-020/021/022; spike 0a GO, 0b deferred, 0c blocked on a key). Phases 2–8 not started. Phase 1 plan:
+  (DEC-020/021/022; spike 0a GO, 0b deferred, 0c blocked on a key). Phase 2 (Lesson Runtime) BUILT 2026-10-28
+  on `feat/lesson-runtime-v1`, LS-8..LS-10 green offline; DEC-024 keeps the planner multimodal and multi-model.
+  Phases 3–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.
 - **Decisions this document asks the owner for:** DEC-020 (rendering stack), DEC-021 (planner

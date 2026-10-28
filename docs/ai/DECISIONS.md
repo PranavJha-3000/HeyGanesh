@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-024](#dec-024--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner is provider-agnostic and multimodal: resolved through ProviderRegistry (no hard-wired provider), sends the question + one bounded screen crop as an image part when the model has Vision, otherwise an explicit text-only grounding path; refines DEC-021 | accepted |
 | [DEC-022](#dec-022--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Tutor session state: in-memory only — last validated plan + last 6 turns, cleared on idle/exit; no persistence until Notes (M8) | accepted |
 | [DEC-021](#dec-021--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner calls models through Providers.Core `ILlmClient` (structured output + streaming already built), default DeepSeek `deepseek-flash` via OpenAiCompat; Tutor's DeepSeek client untouched | accepted |
 | [DEC-020](#dec-020--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson rendering: WebView2 (`Microsoft.Web.WebView2` 1.0.4314.35, one NuGet in one new Experience assembly) as OPAQUE borderless no-activate capture-excluded card windows; screen marks stay on the native ScreenOverlay; SVG + vendored KaTeX/Rough.js; Babylon.js deferred to Phase 5; transparent full-screen surface rejected for now | accepted |
@@ -34,6 +35,16 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-024 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the lesson planner stays multimodal and multi-model.** Refines DEC-021 (owner, 2026-10-28: "I want to keep it multimodal"). (1) *Multi-model:* the planner gets its `ILlmClient` from `ProviderRegistry` by role, never by naming a provider in code; DeepSeek `deepseek-flash` is only the default assignment, and any adapter already in `src/Providers` (OpenAI-compatible family, Anthropic, Gemini once finished) can be assigned by configuration. (2) *Multimodal input:* each planning request carries the question text plus, when the screen was grounded, one bounded screen crop as an `LlmImagePart` (same JPEG caps and untrusted-data labelling as the Tutor, DEC-015). If the assigned model lacks `ProviderCapability.Vision`, the planner takes an explicit text-only path (UIA/element description only) and records that it did — never a silent downgrade, matching Providers.Core's capability rule. (3) *Multimodal output* is already the design: speech + 2D cards + screen marks now, 3D at Phase 5.
+
+**Reasoning.** Providers.Core already models images, a Vision capability flag and role-based mix-and-match assignment, so this costs no new code before Phase 4 — only a constraint on how Phase 4 is written. Keys can be added later without touching the planner.
+
+**Rejected.** Hard-wiring the planner to one provider client (locks the product to one vendor's pricing and quality); text-only planning (loses the screen, which is the point of a screen-aware tutor).
+
+**Consequences.** Phase 4 tests must cover both the image path and the no-Vision text path against fakes, offline. No provider key is needed for any work before Phase 4's live rows.
+
 ## DEC-022 — 2026-10-28 — claude-opus-5-5
 
 **Decision — tutor session state is in memory only.** The session keeps the last validated `VisualPlan` and the last 6 question/answer turns so follow-ups ("simpler", "just the combustion part", a clicked part) have context. Cleared after 10 minutes idle and on exit. Nothing is written to disk. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").

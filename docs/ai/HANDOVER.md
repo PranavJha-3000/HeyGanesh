@@ -5,7 +5,7 @@ Did: Built `Runtime/` in HeyGanesh.VisualLessonEngine — ILessonCanvas/ILessonS
 Left: Not wired into the App Shell — no real canvas (Phase 3) or speaker adapter yet. No provider key needed until Phase 4's live rows.
 Watch: Pause only takes effect at a beat boundary (never cuts a sentence). Stop vs. caller cancel are distinct: Stop returns Stopped, the shell's token throws OCE. Do not name Runtime members with audit needles (e.g. `Process…`) — LS-1 scans all subfolders.
 Next: Phase 3 — HeyGanesh.LessonSurface (WebView2 opaque cards per DEC-020) implementing ILessonCanvas, with an offline demo host playing the golden fixtures on screen.
-Verified: LessonSmoke --assert-play 5/5, --assert-play-degraded 5/5, --assert-controls 8/8 (3 runs), plus all Phase 1 rows; library + host 0 warnings.
+Verified: LessonSmoke --assert-play 5/5, --assert-play-degraded 5/5, --assert-controls 11/11 (3 runs, after the final-review fix pass), plus all Phase 1 rows; library + host + sln 0 warnings; scans pass.
 
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 0: decisions + spikes)
 

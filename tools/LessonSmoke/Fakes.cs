@@ -79,9 +79,22 @@ internal sealed class RecordingSpeaker : ILessonSpeaker
 
         if (_gated)
         {
-            await _gate.WaitAsync(cancellationToken);
+            try
+            {
+                await _gate.WaitAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                Interlocked.Increment(ref _cancelled);
+                throw;
+            }
         }
     }
+
+    private int _cancelled;
+
+    /// <summary>How many sentences were cut short through their token (proves a skip reached the speaker).</summary>
+    public int CancelledCalls => Volatile.Read(ref _cancelled);
 
     /// <summary>Waits (bounded) until the next sentence has started playing.</summary>
     public Task<bool> WaitStartedAsync() => _started.WaitAsync(TimeSpan.FromSeconds(5));

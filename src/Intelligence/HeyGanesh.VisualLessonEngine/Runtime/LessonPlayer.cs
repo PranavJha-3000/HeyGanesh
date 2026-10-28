@@ -64,20 +64,27 @@ public sealed class LessonPlayer
         var records = new List<BeatRecord>();
         try
         {
+            // The token is checked before every seam call, not left to the seams: a canvas or speaker
+            // that ignores its token must still not be driven after Stop or a caller cancel.
+            var token = playCts.Token;
             if (lesson.Outcome == LessonOutcome.TextFallback || lesson.Plan is null)
             {
                 // Too broken to draw: say so once on the canvas, then teach by voice alone (M7 S7.1).
-                await _canvas.ShowNoticeAsync(FallbackNotice, playCts.Token);
-                await _speaker.SpeakAsync(lesson.FallbackText, playCts.Token);
+                token.ThrowIfCancellationRequested();
+                await _canvas.ShowNoticeAsync(FallbackNotice, token);
+                token.ThrowIfCancellationRequested();
+                await _speaker.SpeakAsync(lesson.FallbackText, token);
                 return new PlaybackReport(PlaybackStatus.Completed, lesson.Outcome, none, SpokeFallback: true);
             }
 
             var plan = lesson.Plan;
-            await _canvas.ClearAsync(playCts.Token);
+            token.ThrowIfCancellationRequested();
+            await _canvas.ClearAsync(token);
             for (var index = 0; index < plan.Beats.Count; index++)
             {
-                await WaitWhilePausedAsync(playCts.Token);
-                records.Add(await PlayBeatAsync(plan.Beats[index], index, playCts.Token));
+                await WaitWhilePausedAsync(token);
+                token.ThrowIfCancellationRequested();
+                records.Add(await PlayBeatAsync(plan.Beats[index], index, token));
             }
 
             return new PlaybackReport(PlaybackStatus.Completed, lesson.Outcome, records, SpokeFallback: false);
@@ -125,22 +132,51 @@ public sealed class LessonPlayer
     /// <summary>Cuts the current beat's drawing and speech short; the lesson carries on with the next beat.</summary>
     public void SkipBeat()
     {
+        CancellationTokenSource? beat;
         lock (_lock)
         {
-            _beatCts?.Cancel();
+            beat = _beatCts;
         }
+
+        CancelWithoutRunningHere(beat);
     }
 
     /// <summary>Ends the lesson (also from a pause). <see cref="PlayAsync"/> returns <see cref="PlaybackStatus.Stopped"/>.</summary>
     public void Stop()
     {
+        CancellationTokenSource? play;
         lock (_lock)
         {
-            if (_playCts is not null)
+            play = _playCts;
+            if (play is not null)
             {
                 _stopRequested = true;
-                _playCts.Cancel();
             }
+        }
+
+        CancelWithoutRunningHere(play);
+    }
+
+    /// <summary>
+    /// Controls arrive on the shell's threads — the hotkey worker has a ~300 ms budget. A plain
+    /// Cancel() runs token callbacks, and through them the rest of the lesson (the next draw and
+    /// sentence), on the calling thread. CancelAsync hands the callbacks to the thread pool, and
+    /// doing it outside the lock means no seam ever runs while a control holds the lock.
+    /// </summary>
+    private static void CancelWithoutRunningHere(CancellationTokenSource? cts)
+    {
+        if (cts is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _ = cts.CancelAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The beat or play finished between taking the reference and cancelling: nothing to stop.
         }
     }
 

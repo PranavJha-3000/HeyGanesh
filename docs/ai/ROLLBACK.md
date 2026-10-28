@@ -299,3 +299,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `d562fb3`. `4` comes back with `git checkout d562fb3 -- 4`. Everything else was never tracked: a byte-for-byte copy was taken before deletion, in the session scratchpad `cleanup-backup/` folder (temporary, not in the repo), so after that folder is gone the untracked files are unrecoverable.
 - **Files to restore:** `git checkout d562fb3 -- 4`; copy `cleanup-backup/*` back to the repo root, keeping paths.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0 (Gemini was never in the sln, so the build is unchanged either way).
+
+## 2026-10-29 · claude-opus-5-5 (repo cleanup step 3: placeholder folders)
+
+- **Change:** Delete the six untracked README-only placeholder folders `config/`, `docs/architecture/`, `docs/product/`, `eval/`, `prompts/`, `tests/` (created by BUILD-PLAYBOOK step R2; each README describes files that do not exist, some with invented figures such as prompt versions and latency budgets). No source, project or build file references them.
+- **Rollback point:** never tracked, so git cannot restore them. A byte-for-byte copy was taken first, in the session scratchpad `cleanup-backup/` folder (temporary, outside the repo).
+- **Files to restore:** copy `cleanup-backup/{config,docs/architecture,docs/product,eval,prompts,tests}` back to the repo root, keeping paths.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0 (unchanged either way).

@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Abstractions", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Security", "src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj", "{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.VisualLessonEngine", "src\Intelligence\HeyGanesh.VisualLessonEngine\HeyGanesh.VisualLessonEngine.csproj", "{AA175A5A-3544-4DB8-9811-F2C311D7DE59}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,6 +102,10 @@ Global
 		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA175A5A-3544-4DB8-9811-F2C311D7DE59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA175A5A-3544-4DB8-9811-F2C311D7DE59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA175A5A-3544-4DB8-9811-F2C311D7DE59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA175A5A-3544-4DB8-9811-F2C311D7DE59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DFBAECAF-5A5C-47F5-A01E-42E723179401} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
@@ -114,5 +120,6 @@ Global
 		{A34CBBDD-4704-4422-9911-852ED51A4AF1} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
 		{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF} = {A34CBBDD-4704-4422-9911-852ED51A4AF1}
 		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40} = {A34CBBDD-4704-4422-9911-852ED51A4AF1}
+		{AA175A5A-3544-4DB8-9811-F2C311D7DE59} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
 	EndGlobalSection
 EndGlobal

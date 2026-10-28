@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Visual Lesson Engine — VisualPlan contract (see docs/ai/features/FEATURE-007.md, Phase 1).
+
+    A lesson planner model will author lessons as VisualPlan JSON: a short list of surfaces (cards)
+    and a timeline of beats, each one spoken sentence plus the drawing operations that go with it.
+    This assembly is the gate that JSON must pass before anything is spoken or drawn: it parses the
+    text, holds it to the v1 limits and closed vocabularies, checks that every label, arrow and
+    highlight points at something that exists at that moment, and degrades what fails — a bad beat
+    keeps its speech and loses its drawing; a plan too broken to draw becomes plain spoken text.
+
+    Model output is untrusted by construction (it may echo screen text, which may read like
+    instructions — the same stance as the Tutor Engine's prompt labelling), so the parser and the
+    validator never throw on it. Only a null argument, a caller bug, throws.
+
+    What this module must never do: render, speak, call a provider, read files, or touch the screen.
+    It is pure data in, data out. Its only ProjectReference is HeyGanesh.Abstractions, for PixelRect —
+    screen marks are physical pixels like every other box in HeyGanesh. Zero PackageReference:
+    System.Text.Json is in the BCL. LS-1 (tools/LessonSmoke - -assert-source) enforces all of this.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.VisualLessonEngine</RootNamespace>
+    <AssemblyName>HeyGanesh.VisualLessonEngine</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

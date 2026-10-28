@@ -19,6 +19,7 @@ internal static partial class LessonSmokeHost
         AssertPlay,
         AssertPlayDegraded,
         AssertControls,
+        AssertPlot,
     }
 
     public static async Task<int> RunAsync(string[] args)
@@ -47,6 +48,7 @@ internal static partial class LessonSmokeHost
                 Mode.AssertRefs => RunAssertRefs(),
                 Mode.AssertDegrade => RunAssertDegrade(),
                 Mode.AssertFixtures => RunAssertFixtures(),
+                Mode.AssertPlot => RunAssertPlot(),
                 Mode.AssertPlay => await RunAssertPlayAsync(),
                 Mode.AssertPlayDegraded => await RunAssertPlayDegradedAsync(),
                 Mode.AssertControls => await RunAssertControlsAsync(),
@@ -75,6 +77,7 @@ internal static partial class LessonSmokeHost
                 case "--assert-refs": mode = Mode.AssertRefs; break;
                 case "--assert-degrade": mode = Mode.AssertDegrade; break;
                 case "--assert-fixtures": mode = Mode.AssertFixtures; break;
+                case "--assert-plot": mode = Mode.AssertPlot; break;
                 case "--assert-play": mode = Mode.AssertPlay; break;
                 case "--assert-play-degraded": mode = Mode.AssertPlayDegraded; break;
                 case "--assert-controls": mode = Mode.AssertControls; break;
@@ -101,6 +104,7 @@ internal static partial class LessonSmokeHost
         Console.WriteLine("  --assert-refs                 reference integrity over time + physical-pixel mark bounds, exit 0");
         Console.WriteLine("  --assert-degrade              bad beat -> speech only; mostly bad -> text; silent -> rejected, exit 0");
         Console.WriteLine("  --assert-fixtures             golden lessons validate clean + deterministic, exit 0");
+        Console.WriteLine("  --assert-plot                 closed-grammar plot expressions, app-computed samples, exit 0");
         Console.WriteLine();
         Console.WriteLine("Playback rows (fake canvas + fake speaker, no renderer, no TTS):");
         Console.WriteLine("  --assert-play                 draw-then-speak per beat, speech is the clock, report, exit 0");

@@ -169,6 +169,13 @@ public sealed class VisualPlanValidator
             case PlotOp p:
                 Create(p.Surface, p.Id, beatId, board, issues);
                 CheckText(p.Expr, _limits.MaxTextChars, "plot expr", beatId, issues);
+                // The app computes the curve (PlotExpression), so an expression it cannot parse is
+                // refused here — the beat degrades before a renderer ever sees it.
+                if (!string.IsNullOrWhiteSpace(p.Expr) && p.Expr.Length <= _limits.MaxTextChars && !PlotExpression.TryParse(p.Expr, out _, out var exprError))
+                {
+                    issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"plot expr: {exprError}"));
+                }
+
                 if (!(double.IsFinite(p.XMin) && double.IsFinite(p.XMax) && p.XMin < p.XMax))
                 {
                     issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"plot range [{p.XMin}, {p.XMax}]"));

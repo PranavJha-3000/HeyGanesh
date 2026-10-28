@@ -1,8 +1,9 @@
-using HeyGanesh.ScreenCapture;
+﻿using HeyGanesh.ScreenCapture;
 using HeyGanesh.Vision;
 using Windows.Graphics.Imaging;
 using Windows.Security.Cryptography;
 using Windows.Storage.Streams;
+using HeyGanesh.Abstractions;
 
 namespace HeyGanesh.Tools.VisionSmoke;
 

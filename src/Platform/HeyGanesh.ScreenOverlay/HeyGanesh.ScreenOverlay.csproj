@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Screen Overlay (see docs/ai/ARCHITECTURE.md) — the temporary, click-through pointer/highlight that
@@ -30,7 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
-    <ProjectReference Include="..\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Verification host for the Screen Overlay (see docs/ai/ARCHITECTURE.md).
@@ -26,7 +26,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
-  </ItemGroup>
+    <ProjectReference Include="..\..\src\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
+      <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+</ItemGroup>
 
 </Project>

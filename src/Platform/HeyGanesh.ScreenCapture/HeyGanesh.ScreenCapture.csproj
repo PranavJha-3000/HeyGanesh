@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Screen Capture (see docs/ai/ARCHITECTURE.md).
@@ -18,4 +18,7 @@
     <AssemblyName>HeyGanesh.ScreenCapture</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+  </ItemGroup>
 </Project>

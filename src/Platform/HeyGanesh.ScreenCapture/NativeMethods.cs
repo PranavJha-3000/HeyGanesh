@@ -1,3 +1,4 @@
+﻿using HeyGanesh.Abstractions;
 using System.Runtime.InteropServices;
 
 namespace HeyGanesh.ScreenCapture;

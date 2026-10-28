@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using HeyGanesh.Abstractions;
 using HeyGanesh.ScreenCapture;
 
 namespace HeyGanesh.ScreenOverlay;

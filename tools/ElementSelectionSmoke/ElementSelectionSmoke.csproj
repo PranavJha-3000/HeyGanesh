@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Verification host for the Element Selection module (see docs/ai/ARCHITECTURE.md).
@@ -21,7 +21,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj" />
-  </ItemGroup>
+    <ProjectReference Include="..\..\src\Perception\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj" />
+      <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+</ItemGroup>
 
 </Project>

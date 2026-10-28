@@ -14,8 +14,8 @@ Subsystems, and the seams between them are load-bearing:
 
 | Subsystem | Assembly / Package | Role |
 |---|---|---|
-| App Shell | `src/HeyGanesh.App/` | The process host: owns PerMonitorV2 DPI awareness, the service graph, and the `GlobalHotkeyMonitor.Pressed` → `VoiceService.ListenOnceAsync` → `HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync` → teaching-leg (`GuidanceResult`→`TutorContext`→`TutorService.ExplainAsync`→`SpeakAsync`, DEC-016) wiring (DEC-012/DEC-014/DEC-016). |
-| Context Orchestrator | `src/HeyGanesh.ContextOrchestrator/` | Top-level state machine driving session lifecycle and module coordination. |
+| App Shell | `src/Experience/HeyGanesh.App/` | The process host: owns PerMonitorV2 DPI awareness, the service graph, and the `GlobalHotkeyMonitor.Pressed` → `VoiceService.ListenOnceAsync` → `HandleHotkeyPressedAsync` → `ScreenOverlayService.ShowAsync` → teaching-leg (`GuidanceResult`→`TutorContext`→`TutorService.ExplainAsync`→`SpeakAsync`, DEC-016) wiring (DEC-012/DEC-014/DEC-016). |
+| Context Orchestrator | `src/Intelligence/HeyGanesh.ContextOrchestrator/` | Top-level state machine driving session lifecycle and module coordination. |
 | Global Hotkey Monitor | `src/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only push-to-talk modifier chord monitor (Ctrl+Alt). |
 | Screen Capture | `src/HeyGanesh.ScreenCapture/` | On-demand multi-monitor frame acquisition via `Windows.Graphics.Capture` and `CaptureExclusion` contract. |
 | Element Selection (PRIMARY) | `src/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
@@ -24,7 +24,7 @@ Subsystems, and the seams between them are load-bearing:
 | Tutor Engine | `src/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
 | Visual Lesson Engine | PLANNED — no assembly yet | Structured visual diagram and explanation rendering; no `src/HeyGanesh.VisualLessonEngine/` assembly exists today (PLATFORM.md §95). |
 | Screen Overlay | `src/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
-| Voice Pipeline | `src/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
+| Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
 | Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
 | API key security proxy | PLANNED — no assembly yet | Isolates LLM API keys from the rest of the application; no `src/HeyGanesh.SecurityProxy/` assembly exists today (PLATFORM.md §95). |
 

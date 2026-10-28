@@ -1,4 +1,4 @@
-# DECISIONS — Architecture & Design Log
+﻿# DECISIONS — Architecture & Design Log
 
 > Dated, **model-versioned** decision entries. One decision per entry, **newest first**.
 > Use the DECISIONS entry template in [TEMPLATES.md](./TEMPLATES.md) §2.
@@ -548,3 +548,20 @@ exists; the failure/cancel/refusal mappings above are exercised offline.
 - Each monitor owns two background threads and a channel; events are raised on a non-UI thread, so UI subscribers must marshal.
 - A slow subscriber delays *subsequent events* but can never delay system input — this separation is the reason for the split, and it is why the hook proc must never raise events itself.
 - Anything added to `HookProc` risks the OS's ~300 ms callback budget; `MaxCallbackLatency` exists to police that.
+
+## DEC-018
+
+- **Status:** accepted
+- **Decision:** ScreenOverlay to ContextOrchestrator dependency conflict resolved through shared HeyGanesh.Abstractions abstraction. Both modules now depend on the zero-NuGet shared contract rather than each other. This supersedes earlier Platform-to-Intelligence dependency conflict identification.
+- **Supersedes:** earlier Platform-to-Intelligence dependency conflict (pre-R7)
+- **Date:** 2026-10-24
+- **Model version:** Cline agent (M1/R7+)
+
+
+## DEC-019 — 2026-10-24 — Cline agent (M1/R7+ completion)
+
+- **Status:** accepted
+- **Decision:** Complete the ScreenOverlay→ContextOrchestrator abstraction migration. Moved `GuidanceResult`, `GuidanceSource`, `GuidanceConfidence`, `GuidancePoint`, `PixelRect`, `MonitorInfo`, and `MonitorCapture` from their original assemblies (ContextOrchestrator and ScreenCapture) into `HeyGanesh.Abstractions` as the single shared contract. ScreenOverlay, ContextOrchestrator, ElementSelection, Vision, ScreenCapture, and App Shell now all depend on Foundation for these types. ScreenOverlay no longer references ContextOrchestrator (Intelligence). Dependency direction: Platform→Foundation, Intelligence→Foundation+permitted lower layers. Zero new NuGet dependencies. Guide-only safety preserved — abstraction contains only data types and interfaces, no implementation or actuation.
+- **Supersedes:** DEC-018 (initial abstraction creation — now completed with full type migration)
+- **Date:** 2026-10-24
+- **Model version:** Cline agent (M1/R7+ completion)

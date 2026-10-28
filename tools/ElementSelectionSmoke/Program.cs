@@ -1,4 +1,5 @@
-using HeyGanesh.Tools.ElementSelectionSmoke;
+﻿using HeyGanesh.Tools.ElementSelectionSmoke;
+using HeyGanesh.Abstractions;
 
 // DPI awareness is a process-global property owned by the host; set it first so GetCursorPos /
 // GetWindowRect return physical pixels that line up with UIA's BoundingRectangle and the capture

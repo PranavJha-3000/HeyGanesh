@@ -1,4 +1,5 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using HeyGanesh.Abstractions;
 using Windows.Graphics.Capture;
 
 namespace HeyGanesh.ScreenCapture;
@@ -75,16 +76,7 @@ public sealed class ScreenCaptureOptions
 /// </param>
 /// <param name="FramesObserved">How many frames the capture session delivered before one was used.</param>
 /// <param name="Duration">Wall-clock time for this monitor's capture and encode.</param>
-public sealed record MonitorCapture(
-    MonitorInfo Monitor,
-    int SourceWidth,
-    int SourceHeight,
-    int OutputWidth,
-    int OutputHeight,
-    byte[] Jpeg,
-    double NonBlackPixelRatio,
-    int FramesObserved,
-    TimeSpan Duration);
+
 
 /// <summary>
 /// Screen Capture — on-demand still frames of every connected monitor, via

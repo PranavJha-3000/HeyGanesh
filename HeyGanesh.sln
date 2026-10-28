@@ -5,23 +5,35 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4453BD60-341D-402A-BC24-74E62DDB2C7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.App", "src\HeyGanesh.App\HeyGanesh.App.csproj", "{DFBAECAF-5A5C-47F5-A01E-42E723179401}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.App", "src\Experience\HeyGanesh.App\HeyGanesh.App.csproj", "{DFBAECAF-5A5C-47F5-A01E-42E723179401}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ContextOrchestrator", "src\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj", "{820FA599-B7A6-40E2-A48F-5905A26DA218}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ContextOrchestrator", "src\Intelligence\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj", "{820FA599-B7A6-40E2-A48F-5905A26DA218}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.GlobalHotkeyMonitor", "src\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj", "{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.GlobalHotkeyMonitor", "src\Platform\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj", "{FF8738A7-9220-46C6-9D8E-7884F4BC8AD6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ScreenCapture", "src\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj", "{19BA7471-E91F-45DC-8B87-4395B07B1025}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ScreenCapture", "src\Platform\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj", "{19BA7471-E91F-45DC-8B87-4395B07B1025}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ElementSelection", "src\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj", "{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ElementSelection", "src\Perception\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj", "{7A2E9B3B-B472-42B2-A4F6-70400B5EABF1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Vision", "src\HeyGanesh.Vision\HeyGanesh.Vision.csproj", "{1A0CF669-84E3-4779-9308-E50853166374}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Vision", "src\Perception\HeyGanesh.Vision\HeyGanesh.Vision.csproj", "{1A0CF669-84E3-4779-9308-E50853166374}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.TutorEngine", "src\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj", "{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.TutorEngine", "src\Intelligence\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj", "{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Voice", "src\HeyGanesh.Voice\HeyGanesh.Voice.csproj", "{A26B694A-53E4-404C-9733-FD21163F9613}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Voice", "src\Experience\HeyGanesh.Voice\HeyGanesh.Voice.csproj", "{A26B694A-53E4-404C-9733-FD21163F9613}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ScreenOverlay", "src\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj", "{3C49876F-456E-453C-828A-932914002FD2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.ScreenOverlay", "src\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj", "{3C49876F-456E-453C-828A-932914002FD2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Providers.Core", "src\Providers\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Providers.OpenAiCompat", "src\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Providers.Anthropic", "src\Providers\HeyGanesh.Providers.Anthropic\HeyGanesh.Providers.Anthropic.csproj", "{C3D4E5F6-A7B8-9012-CDEF-123456789012}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Foundation", "Foundation", "{A34CBBDD-4704-4422-9911-852ED51A4AF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Abstractions", "src\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj", "{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeyGanesh.Security", "src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj", "{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +80,26 @@ Global
 		{3C49876F-456E-453C-828A-932914002FD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C49876F-456E-453C-828A-932914002FD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C49876F-456E-453C-828A-932914002FD2}.Release|Any CPU.Build.0 = Release|Any CPU
+	{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+	{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+	{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+	{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|Any CPU.Build.0 = Release|Any CPU
+	{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+	{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	{C3D4E5F6-A7B8-9012-CDEF-123456789012}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DFBAECAF-5A5C-47F5-A01E-42E723179401} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
@@ -79,5 +111,8 @@ Global
 		{BD88DF88-CB27-43FE-8ECE-1D9F760E27A3} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
 		{A26B694A-53E4-404C-9733-FD21163F9613} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
 		{3C49876F-456E-453C-828A-932914002FD2} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{A34CBBDD-4704-4422-9911-852ED51A4AF1} = {4453BD60-341D-402A-BC24-74E62DDB2C7F}
+		{C56BB267-EF15-422B-A1C2-C19ACCCEA0AF} = {A34CBBDD-4704-4422-9911-852ED51A4AF1}
+		{2004E1EB-D8FF-49AD-B37E-6914F1CE3C40} = {A34CBBDD-4704-4422-9911-852ED51A4AF1}
 	EndGlobalSection
 EndGlobal

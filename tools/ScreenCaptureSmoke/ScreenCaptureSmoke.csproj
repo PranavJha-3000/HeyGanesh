@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Verification host for the Screen Capture module.
@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+    <ProjectReference Include="..\..\src\Platform\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
   </ItemGroup>
 
 </Project>

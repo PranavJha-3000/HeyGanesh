@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Verification host for the Voice pipeline (see docs/ai/ARCHITECTURE.md).
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HeyGanesh.Voice\HeyGanesh.Voice.csproj" />
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.Voice\HeyGanesh.Voice.csproj" />
   </ItemGroup>
 
 </Project>

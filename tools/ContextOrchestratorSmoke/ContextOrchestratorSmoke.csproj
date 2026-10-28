@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Verification host for the Context Orchestrator (see docs/ai/ARCHITECTURE.md).
@@ -25,7 +25,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
-  </ItemGroup>
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
+      <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+</ItemGroup>
 
 </Project>

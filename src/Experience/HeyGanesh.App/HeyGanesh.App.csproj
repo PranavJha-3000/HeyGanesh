@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     App Shell (see docs/ai/ARCHITECTURE.md) — the process that owns the desktop assistant's lifetime.
@@ -49,11 +49,12 @@
       documented as enough. The Tutor reference is direct and deliberate: the shell is the ONLY
       mapper between a verdict and a teaching request, and the Tutor itself references nothing.
     -->
-    <ProjectReference Include="..\Platform\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj" />
+    <ProjectReference Include="..\..\Platform\HeyGanesh.GlobalHotkeyMonitor\HeyGanesh.GlobalHotkeyMonitor.csproj" />
     <ProjectReference Include="..\HeyGanesh.Voice\HeyGanesh.Voice.csproj" />
-    <ProjectReference Include="..\Intelligence\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
-    <ProjectReference Include="..\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
-    <ProjectReference Include="..\Intelligence\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.ContextOrchestrator\HeyGanesh.ContextOrchestrator.csproj" />
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,37 +1,8 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using HeyGanesh.Abstractions;
 
 namespace HeyGanesh.ScreenCapture;
-
-/// <summary>A rectangle in physical screen pixels.</summary>
-/// <remarks>
-/// Physical pixels, not DPI-virtualised ones: WGC delivers frames at the monitor's true
-/// resolution, so every coordinate this module reports is in that same space. A host that is not
-/// per-monitor-DPI-aware will see <c>GetCursorPos</c>/<c>MonitorFromPoint</c> disagree with these
-/// bounds — see the DPI note on <see cref="ScreenCaptureService"/>.
-/// </remarks>
-public readonly record struct PixelRect(int X, int Y, int Width, int Height)
-{
-    /// <summary>Right edge, exclusive.</summary>
-    public int Right => X + Width;
-
-    /// <summary>Bottom edge, exclusive.</summary>
-    public int Bottom => Y + Height;
-
-    public override string ToString() => $"{Width}x{Height}+{X}+{Y}";
-}
-
-/// <summary>One connected display.</summary>
-/// <param name="Handle">The <c>HMONITOR</c>. Stable while the display topology is unchanged.</param>
-/// <param name="DeviceName">The GDI device name, e.g. <c>\\.\DISPLAY1</c>.</param>
-/// <param name="Bounds">The full monitor rectangle, in physical pixels.</param>
-/// <param name="IsPrimary">Whether Windows considers this the primary display.</param>
-public sealed record MonitorInfo(IntPtr Handle, string DeviceName, PixelRect Bounds, bool IsPrimary)
-{
-    /// <summary>Human-readable form used by diagnostics and the verification host.</summary>
-    public override string ToString()
-        => $"{DeviceName} {Bounds}{(IsPrimary ? " [primary]" : string.Empty)}";
-}
 
 /// <summary>Monitor enumeration, cursor lookup and capture ordering.</summary>
 internal static class Monitors

@@ -1,4 +1,18 @@
+## 2026-10-24 · Cline agent (M1/R2: Repository Structure)
+
+- **Change:** create six new directories (`config/`, `prompts/`, `eval/`, `tests/`, `docs/product/`, `docs/architecture/`) each with a purpose README.md; no source changes, no project moves, no dependencies.
+- **Rollback point:** delete the six directories and their README.md files; revert this ROLLBACK.md entry if needed.
+- **Files to remove:** `config/README.md`, `prompts/README.md`, `eval/README.md`, `tests/README.md`, `docs/product/README.md`, `docs/architecture/README.md`
+- **Re-check after revert:** `Get-ChildItem -Directory` should show no new directories at repo root; `git status` should be clean aside from this rollback entry.
+- **Verified:** directory listing confirms six new directories created; no existing files modified.
 ## 2026-10-23 · Cline agent (S0.4: CI and Safety Gates)
+## 2026-10-24 · Cline agent (M1/R3: Platform Layer Relocation)
+
+- **Change:** move three platform-layer projects to nested paths under `src/Platform/`: `GlobalHotkeyMonitor`, `ScreenCapture`, `ScreenOverlay` via `git mv`. All project files, namespaces, assemblies, APIs, and source contents preserved intact. Solution file and `Directory.Build.props` references updated to new paths.
+- **Rollback point:** delete the three relocated directories under `src/Platform/`, revert `src/HeyGanesh.sln` and `Directory.Build.props` to original paths, restore original directory layout.
+- **Files to restore:** `git mv src/Platform/HeyGanesh.GlobalHotkeyMonitor/ src/HeyGanesh.GlobalHotkeyMonitor/`, `git mv src/Platform/HeyGanesh.ScreenCapture/ src/HeyGanesh.ScreenCapture/`, `git mv src/Platform/HeyGanesh.ScreenOverlay/ src/HeyGanesh.ScreenOverlay/`, then restore `HeyGanesh.sln` and `Directory.Build.props` to reference original `src/HeyGanesh.*` paths (no wildcards, explicit project references).
+- **Re-check after revert:** `dotnet build -c Debug src\\HeyGanesh.GlobalHotkeyMonitor\\HeyGanesh.GlobalHotkeyMonitor.csproj` plus all 8 remaining original-project builds; `dotnet build -c Debug` (no solution) should behave as pre-R3. All original verification hosts (ES smoke, Vision smoke, Tutor smoke, etc.) must pass with original arguments.
+- **Dependencies:** No new NuGet, no target-framework changes, no source modifications. Pure relocation.
 
 - **Change:** add .github/workflows/ci.yml, docs/ai/CI.md, .github/workflows/scan-forbidden.ps1, .github/workflows/scan-secrets.ps1, and add six new standing rows (S-10..S-13, S-15..S-16) + local-only note to docs/ai/TEST-CHECKLIST.md. No source code, no project changes, no new dependencies, no live provider calls, no target-framework changes, no restructuring. docs/ai/HANDOVER.md is NOT modified as part of S0.4 (missing R1 closeout is reported separately).
 - **Rollback point:** remove the 6 files listed above; restore docs/ai/TEST-CHECKLIST.md to its pre-S0.4 state; leave docs/ai/ROLLBACK.md unchanged except for this entry.
@@ -9,6 +23,13 @@
 
 ---
 # ROLLBACK — Rollback Points & Procedures
+## 2026-10-24 · Cline agent (M1/R4: Perception Layer Relocation)
+
+- **Change:** move two perception-layer projects to nested paths under `src/Perception/`: `ElementSelection`, `Vision` via `git mv`. All project files, namespaces, assemblies, APIs, and source contents preserved intact. Solution file references updated to new paths. ElementSelection and Vision remain independent siblings — the orchestration layer may compose both, but one does not depend on the other.
+- **Rollback point:** delete the two relocated directories under `src/Perception/`, revert `src/HeyGanesh.sln` and `Directory.Build.props` to original paths, restore original directory layout.
+- **Files to restore:** `git mv src/Perception/HeyGanesh.ElementSelection/ src/HeyGanesh.ElementSelection/`, `git mv src/Perception/HeyGanesh.Vision/ src/HeyGanesh.Vision/`, then restore `HeyGanesh.sln` to reference original `src/HeyGanesh.*` paths for ElementSelection and Vision (explicit project references, no wildcards).
+- **Re-check after revert:** `dotnet build -c Debug src\\HeyGanesh.ElementSelection\\HeyGanesh.ElementSelection.csproj` plus all remaining original-project builds; all existing verification hosts (ES smoke, Vision smoke, Tutor smoke, ContextOrchestrator smoke) pass with original arguments.
+- **Dependencies:** No new NuGet, no target-framework changes, no source modifications. Pure relocation.
 ## 2026-10-23 · Cline agent (R1: Solution and Build Hygiene)
 
 - **Change:** add `HeyGanesh.sln`, `global.json`, `Directory.Build.props`, `.editorconfig` at repository root for solution-wide build hygiene; no source changes, no dependency additions, no target-framework changes, no restructuring. All 9 existing projects remain at their current paths.
@@ -183,4 +204,84 @@
 
 - **Change:** `docs/ai/DECISIONS.md` restored to a clean 9-entry log (DEC-001–009), LF-only, no BOM, no gamma.
 - **Rollback point:** the clean 7-entry recovery file `C:\Users\prana\AppData\Local\Temp\dec_7ent.md` (in the shared `.kilo\worktrees\rainbow-gourd` workspace). `git checkout HEAD -- docs/ai/DECISIONS.md` returns to the committed version at `94a8af1e`; restore `dec_7ent.md` to `docs/ai/DECISIONS.md`, then re-insert the DEC-009/DEC-008 entries before the `## DEC-007 — 2026-09-22 — Laguna S 2.1` header and the DEC-009/008 rows after the index separator to reproduce this exact state.
-- **Verified:** `git diff --no-index --stat dec_7ent.md docs/ai/DECISIONS.md` → 48 insertions, 0 deletions; byte probe `bytes=29323, first=35 (no BOM), cr=0 (LF), emdash=106, gamma=0`; DEC-001..009 each once; 9 index rows; all anchors resolve.
+- **Verified:** `git diff --no-index --stat dec_7ent.md docs/ai/DECISIONS.md` → 48 insertions, 0 deletions; byte probe `bytes=29323, first=35 (no BOM), cr=0 (LF), emdash=106, gamma=0`; DEC-001..009 each once; 9 index rows; all anchors resolve.E C H O   i s   o n .  
+ 
+## 2026-10-24 · Cline agent (M1/R5: Intelligence Layer Relocation)
+
+- **Change:** move two intelligence-layer projects to nested paths under `src/Intelligence/`: `ContextOrchestrator`, `TutorEngine` via `git mv`. All project files, namespaces, assemblies, APIs, and source contents preserved intact. Solution file references updated to new paths.
+
+- **Rollback point:** delete the two relocated directories under `src/Intelligence/`, revert `src/HeyGanesh.sln` to original paths, restore original directory layout.
+
+- **Files to restore:** `git mv src/Intelligence/HeyGanesh.ContextOrchestrator/ src/HeyGanesh.ContextOrchestrator/`, `git mv src/Intelligence/HeyGanesh.TutorEngine/ src/HeyGanesh.TutorEngine/`, then restore `HeyGanesh.sln` to reference original `src/HeyGanesh.*` paths (no wildcards, explicit project references).
+
+- **Re-check after revert:** `dotnet build -c Debug src\\HeyGanesh.ContextOrchestrator\\HeyGanesh.ContextOrchestrator.csproj` plus all remaining original-project builds; `dotnet build -c Debug` (no solution) should behave as pre-R5. All original verification hosts (CO smoke, ES smoke, Vision smoke, Tutor smoke, etc.) must pass with original arguments.
+
+## 2026-10-24 ┬╖ Cline agent (M1/R6: Experience Layer Relocation)
+
+- **Change:** move two experience-layer projects to nested paths under `src/Experience/`: `HeyGanesh.App`, `HeyGanesh.Voice` via `git mv`. All project files, namespaces, assemblies, APIs, and source contents preserved intact. Solution file and all affected `ProjectReference` paths updated to new locations.
+
+- **Rollback point:** delete the two relocated directories under `src/Experience/`, revert `src/HeyGanesh.sln` and all affected `.csproj` ProjectReference paths to original `src/HeyGanesh.*` paths, restore original directory layout.
+
+- **Files to restore:** `git mv src/Experience/HeyGanesh.App/ src/HeyGanesh.App/`, `git mv src/Experience/HeyGanesh.Voice/ src/HeyGanesh.Voice/`, then restore `HeyGanesh.sln` to reference original `src/HeyGanesh.App/` and `src/HeyGanesh.Voice/` paths, and restore all modified `.csproj` ProjectReference paths to original locations (ContextOrchestrator `..\\HeyGanesh.ContextOrchestrator\\`, Voice `..\\HeyGanesh.Voice\\`, etc.).
+
+- **Re-check after revert:** `dotnet build -c Debug src\\HeyGanesh.App\\HeyGanesh.App.csproj` plus `dotnet build -c Debug src\\HeyGanesh.Voice\\HeyGanesh.Voice.csproj` plus all remaining original-project builds; `dotnet build -c Debug` (no solution) should behave as pre-R6. All original verification hosts must pass with original arguments.
+
+- **Dependencies:** No new NuGet, no target-framework changes, no source modifications. Pure relocation.## 2026-10-24 ┬╖ Cline agent (M1/R7: Solution Reference Correction)
+
+- **Change:** correct stale ProjectReference paths across all .csproj files and HeyGanesh.sln to reflect actual project directory locations after M1/R6 relocations. Key fixes: HeyGanesh.App references updated from single-dot to double-dot relative paths (..\\..\\Platform\\.., ..\\..\\Intelligence\\..); HeyGanesh.ElementSelection inner and HeyGanesh.Vision inner references corrected from ..\\HeyGanesh.ScreenCapture\\.. to ..\\..\\Platform\\HeyGanesh.ScreenCapture\\..; HeyGanesh.sln project entries verified for relocated Experience projects. All namespaces, assemblies, and public APIs preserved.
+
+- **Rollback point:** restore all .csproj ProjectReference paths to pre-R7 state (single-dot paths for HeyGanesh.App; ..\\HeyGanesh.ScreenCapture\\.. for ElementSelection inner and Vision inner); restore HeyGanesh.sln project entries to pre-R7 paths; revert HeyGanesh.App from src/Experience/HeyGanesh.App/ back to src/HeyGanesh.App/ if needed. Delete src/Experience/ directories and restore original layout.
+
+- **Files to restore:** 
+  - `git mv src/Experience/HeyGanesh.App/ src/HeyGanesh.App/` (if reversing R6 relocation)
+  - `git mv src/Experience/HeyGanesh.Voice/ src/HeyGanesh.Voice/` (if reversing R6 relocation)
+  - Restore HeyGanesh.App/HeyGanesh.App.csproj ProjectReference paths: `..\\Platform\\...` → `..\\..\\Platform\\...`, `..\\Intelligence\\...` → `..\\..\\Intelligence\\...`, `..\\Experience\\HeyGanesh.Voice\\...` → `..\\HeyGanesh.Voice\\...`
+  - Restore HeyGanesh.ElementSelection/HeyGanesh.ElementSelection.csproj: `..\\HeyGanesh.ScreenCapture\\...` → `..\\..\\Platform\\HeyGanesh.ScreenCapture\\...`
+  - Restore HeyGanesh.Vision/HeyGanesh.Vision.csproj: `..\\HeyGanesh.ScreenCapture\\...` → `..\\..\\Platform\\HeyGanesh.ScreenCapture\\...`
+  - Restore HeyGanesh.sln project entries to original `src\\HeyGanesh.*` paths
+  - Run `git checkout HEAD -- docs/ai/ROLLBACK.md` to remove this R7 entry if rollback is partial.
+
+- **Re-check after revert:** `dotnet build -c Debug src\\HeyGanesh.App\\HeyGanesh.App.csproj` plus `dotnet build -c Debug src\\HeyGanesh.ElementSelection\\HeyGanesh.ElementSelection.csproj` plus `dotnet build -c Debug src\\HeyGanesh.Vision\\HeyGanesh.Vision.csproj`; verify all original verification hosts (ES smoke, Vision smoke, Tutor smoke, etc.) pass with original arguments. `dotnet build -c Debug` (solution) should behave as pre-R7.
+
+- **Dependencies:** No new NuGet, no target-framework changes, no source modifications other than ProjectReference path corrections. Pure path fixes.
+
+## 2026-10-24 · Cline agent (S2.1: HeyGanesh.Security foundation)
+
+- **Change:** Create `src/Foundation/HeyGanesh.Security/` with `ISecretStore` over Windows Credential Manager (advapi32 P/Invoke), `SecretHandle` (zeroing byte[] wrapper), `SecretTag` attribute, `SecretLogger` (redacting logger), plus `NativeMethods.cs` for advapi32 declarations. Add smoke host `tools/SecretSmoke/`. Add project to `HeyGanesh.sln` under `Foundation` solution folder. Update `scan-forbidden.ps1`, `scan-secrets.ps1`, `ci.yml` scope/build lists.
+- **Rollback point:** Remove `src/Foundation/HeyGanesh.Security/` directory; remove `tools/SecretSmoke/` directory; restore `HeyGanesh.sln` to pre-S2.1 state (remove HeyGanesh.Security project entry and its GUID from NestedProjects under Foundation); restore `scan-forbidden.ps1`, `scan-secrets.ps1`, `ci.yml` to pre-S2.1 content.
+- **Files to restore:** Delete `src/Foundation/HeyGanesh.Security/`; delete `tools/SecretSmoke/`; `git checkout HEAD -- HeyGanesh.sln .github/workflows/scan-forbidden.ps1 .github/workflows/scan-secrets.ps1 .github/workflows/ci.yml docs/ai/HANDOVER.md docs/ai/ROLLBACK.md`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` → 0/0; `scan-forbidden.ps1` → pass; `scan-secrets.ps1` → pass; `scan-secrets.ps1 -ZeroNuGet` → pass; all existing smoke tests pass with original args.
+- **Dependencies:** Zero new NuGet; pure .NET 8 zero-PackageReference assembly; target `net8.0-windows10.0.22621.0`; P/Invoke only to `advapi32.dll`.
+
+## 2026-10-24 ┬╖ Cline agent (LEAD-AUTH M1/R7+: ScreenOverlay→ContextOrchestrator Abstraction)
+
+- **Change:** resolve ScreenOverlay→ContextOrchestrator dependency conflict by introducing `src/Foundation/HeyGanesh.Abstractions/` shared contract. ScreenOverlay (Platform module) previously referenced ContextOrchestrator (Intelligence module) violating Platform dependency rule. Solution: extract smallest shared contract into standalone zero-NuGet project, update both modules to depend on abstraction instead of each other. All namespaces, assemblies, and public APIs preserved where feasible. Guide-only safety: abstraction contains only data types and interfaces, no implementation, no actuation. Rollback: remove `src/Foundation/HeyGanesh.Abstractions/` project, restore ScreenOverlay→ContextOrchestrator direct reference, remove HeyGanesh.Abstractions from both modules' ProjectReferences and any using directives. Delete project from HeyGanesh.sln. Restore original conflict state.
+
+- **Rollback point:** restore ScreenOverlay→ContextOrchestrator direct ProjectReference; remove HeyGanesh.Abstractions ProjectReference from both modules; remove HeyGanesh.Abstractions from HeyGanesh.sln project entries; restore any using directives referencing old direct dependency; `git checkout HEAD -- docs/ai/ROLLBACK.md` to remove this entry if rollback is partial.
+
+- **Files to restore:** 
+  - `git mv src/Foundation/HeyGanesh.Abstractions/ ...` (reverse creation)
+  - Remove HeyGanesh.Abstractions ProjectReference from ScreenOverlay.csproj and ContextOrchestrator.csproj
+  - Remove HeyGanesh.Abstractions ProjectReference from HeyGanesh.sln 
+  - Restore original ScreenOverlay→ContextOrchestrator direct dependency
+  - Run `git checkout HEAD -- docs/ai/ROLLBACK.md` to remove this R7+ entry if rollback is partial.
+
+- **Re-check after revert:** Verify ScreenOverlay.csproj and ContextOrchestrator.csproj no longer reference HeyGanesh.Abstractions; verify direct ScreenOverlay→ContextOrchestrator reference is restored; verify HeyGanesh.sln project entries restored; `dotnet build -c Debug` (solution) behaves as pre-R7+. `HANDOVER.md` Open Items section restored to pre-R7+ state with Platform-to-Intelligence conflict.
+
+- **Dependencies:** Zero new NuGet; HeyGanesh.Abstractions is pure .NET 8 zero-PackageReference assembly with physical-pixel `PixelRect` types and `ConfidenceLevel` enum; no external packages; build target `net8.0-windows10.0.22621.0`.
+
+- **Safety guide-only:** Abstraction contains only shared data types, enums, and interface signatures needed by both ScreenOverlay and ContextOrchestrator. No implementation, no P/Invoke, no window handles, no audio, no input. Both modules remain independently buildable and testable. The abstraction is a contract-seam only.
+
+## 2026-10-27 · Cline agent (S2.4 follow-up: provider HTTP error classification fix)
+
+- **Change:** Added `InvalidRequest` error kind to `ProviderErrorKind` (non-retryable by default). Updated both adapters: HTTP 400 / `invalid_request_error` → `InvalidRequest` instead of `ContentBlocked`; image validation errors → `InvalidRequest`. Updated smoke tests across ProvidersSmoke (29/29), OpenAiCompatSmoke (8/8), AnthropicSmoke (14/14). All scans pass, full solution build 0/0.
+- **Rollback point:** Revert `ProviderError.cs`, `OpenAiCompatLlmClient.cs`, `AnthropicLlmClient.cs` smoke test changes; restore test expectations to pre-S2.4-follow-up state; `dotnet build HeyGanesh.sln -c Debug -warnaserror` → 0/0.
+- **Files to restore:** `git checkout HEAD -- src/Providers/HeyGanesh.Providers.Core/ProviderError.cs src/Providers/HeyGanesh.Providers.OpenAiCompat/OpenAiCompatLlmClient.cs src/Providers/HeyGanesh.Providers.Anthropic/AnthropicLlmClient.cs tools/ProvidersSmoke/ProvidersSmokeHost.cs tools/OpenAiCompatSmoke/OpenAiCompatSmokeHost.cs tools/AnthropicSmoke/AnthropicSmokeHost.cs`.
+
+## 2026-10-27 · Cline agent (S2.5: Gemini Provider)
+
+- **Change:** Create `src/Providers/HeyGanesh.Providers.Gemini/` zero-NuGet project implementing `ILlmClient` against the Gemini REST API (generateContent). Add `tools/GeminiSmoke/` verification host with loopback stub server. Update `HeyGanesh.sln` to include Gemini project entry. Update `.github/workflows/scan-forbidden.ps1` and `scan-secrets.ps1` to include Gemini module. Update `docs/ai/ARCHITECTURE.md` to describe Gemini module. No live provider calls, no new NuGet dependencies, zero-PackageReference assembly.
+- **Rollback point:** Remove `src/Providers/HeyGanesh.Providers.Gemini/` directory; remove `tools/GeminiSmoke/` directory; restore `HeyGanesh.sln` to pre-S2.5 state (remove HeyGanesh.Gemini project entry and GUID from NestedProjects under Providers); restore `scan-forbidden.ps1`, `scan-secrets.ps1` to pre-S2.5 content; restore `docs/ai/ARCHITECTURE.md` and `docs/ai/HANDOVER.md` to pre-S2.5 state.
+- **Files to restore:** Delete `src/Providers/HeyGanesh.Providers.Gemini/`; delete `tools/GeminiSmoke/`; `git checkout HEAD -- HeyGanesh.sln .github/workflows/scan-forbidden.ps1 .github/workflows/scan-secrets.ps1 docs/ai/ARCHITECTURE.md docs/ai/HANDOVER.md docs/ai/ROLLBACK.md`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` → 0/0; `scan-forbidden.ps1` → pass; `scan-secrets.ps1` → pass; all existing smoke tests pass with original args.
+- **Dependencies:** Zero new NuGet; pure .NET 8 zero-PackageReference assembly; target `net8.0-windows10.0.22621.0`; `System.Net.Http` only.

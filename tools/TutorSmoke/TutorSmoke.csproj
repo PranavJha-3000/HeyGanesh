@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Verification host for the Tutor Engine (see docs/ai/ARCHITECTURE.md).
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj" />
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj" />
   </ItemGroup>
 
 </Project>

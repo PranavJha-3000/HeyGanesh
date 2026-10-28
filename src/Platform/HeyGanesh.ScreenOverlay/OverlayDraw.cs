@@ -1,3 +1,5 @@
+﻿using HeyGanesh.Abstractions;
+
 namespace HeyGanesh.ScreenOverlay;
 
 /// <summary>
@@ -23,6 +25,6 @@ namespace HeyGanesh.ScreenOverlay;
 /// exposed outside the assembly.
 /// </remarks>
 internal sealed record OverlayDraw(
-    ScreenCapture.PixelRect MonitorBounds,
-    ScreenCapture.PixelRect? OutlineLocal,
-    ScreenCapture.PixelRect? CenterLocal);
+    PixelRect MonitorBounds,
+    PixelRect? OutlineLocal,
+    PixelRect? CenterLocal);

@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using HeyGanesh.ContextOrchestrator;
+using HeyGanesh.Abstractions;
 using HeyGanesh.ScreenCapture;
 
 namespace HeyGanesh.ScreenOverlay;

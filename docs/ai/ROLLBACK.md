@@ -292,3 +292,10 @@
 - **Rollback point:** main at `4c4be17`. All work is on `feat/lesson-shell-wiring-v1`; until it is merged, rollback = `git checkout main && git branch -D feat/lesson-shell-wiring-v1`. After a merge: `git revert` the branch's commits.
 - **Files to restore:** delete `src/Experience/HeyGanesh.LessonSession/`, `tools/LessonTurnSmoke/`, `src/Experience/HeyGanesh.App/ShellHost.Lesson.cs`, `src/Experience/HeyGanesh.App/EnvironmentSecretStore.cs`; `git checkout 4c4be17 -- HeyGanesh.sln src/Experience/HeyGanesh.App docs/ai AGENTS.md`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; `HeyGanesh.App.exe --help` has no `--lesson`; SH-4/SH-7/SH-16 exits 12/13/12; LessonSmoke/LessonSurfaceSmoke/LessonPlannerSmoke rows exit 0.
+
+## 2026-10-29 · claude-opus-5-5 (repo cleanup steps 1-2: stray files + Gemini provider)
+
+- **Change:** Delete the stray files `%PYFILE%`, `.editorconfigmp`, `.editorconfigmpix.py` (untracked UTF-16 script fragments), the tracked root file `4` (a HotkeySmoke log written to the repo root), and the whole untracked `src/Providers/HeyGanesh.Providers.Gemini/` (does not compile, not in the sln, unreferenced, contains a stray `test.txt`) plus `tools/GeminiSmoke/` (a 36-byte broken csproj stub).
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `d562fb3`. `4` comes back with `git checkout d562fb3 -- 4`. Everything else was never tracked: a byte-for-byte copy was taken before deletion, in the session scratchpad `cleanup-backup/` folder (temporary, not in the repo), so after that folder is gone the untracked files are unrecoverable.
+- **Files to restore:** `git checkout d562fb3 -- 4`; copy `cleanup-backup/*` back to the repo root, keeping paths.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0 (Gemini was never in the sln, so the build is unchanged either way).

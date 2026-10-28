@@ -15,24 +15,44 @@ namespace HeyGanesh.LessonPlanner;
 /// cancellation propagate unchanged for the shell to map. The client is caller-owned; this class
 /// never disposes it.
 /// </remarks>
-public sealed class VisualPlanner
+public sealed class VisualPlanner : IDisposable
 {
     private readonly ILlmClient _client;
+    private readonly bool _ownsClient;
     private readonly LessonPlannerOptions _options;
     private readonly VisualPlanValidator _validator = new();
 
+    /// <summary>A planner over a caller-owned client: <see cref="Dispose"/> never touches it.</summary>
     public VisualPlanner(ILlmClient client, LessonPlannerOptions? options = null)
+        : this(client, options, ownsClient: false)
+    {
+    }
+
+    private VisualPlanner(ILlmClient client, LessonPlannerOptions? options, bool ownsClient)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _options = options ?? LessonPlannerOptions.Default;
+        _ownsClient = ownsClient;
     }
 
-    /// <summary>A planner over whatever provider is assigned to the Tutor role (no provider named here).</summary>
+    /// <summary>
+    /// A planner over whatever provider is assigned to the Tutor role (no provider named here). The
+    /// registry builds a fresh client (and its HTTP stack) on every Resolve, so this planner owns that
+    /// client and disposes it — create one per session, not one per question.
+    /// </summary>
     public static VisualPlanner FromRegistry(IProviderRegistry registry, LessonPlannerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
         var resolved = registry.Resolve(ProviderRole.Tutor);
-        return new VisualPlanner(resolved.LlmClient ?? throw new InvalidOperationException($"the Tutor role ({resolved.ProviderId}) has no LLM client"), options);
+        return new VisualPlanner(resolved.LlmClient ?? throw new InvalidOperationException($"the Tutor role ({resolved.ProviderId}) has no LLM client"), options, ownsClient: true);
+    }
+
+    public void Dispose()
+    {
+        if (_ownsClient)
+        {
+            _client.Dispose();
+        }
     }
 
     public async Task<PlanResult> PlanAsync(PlanRequest request, CancellationToken cancellationToken = default)
@@ -65,17 +85,29 @@ public sealed class VisualPlanner
         int attempts = 0, input = 0, output = 0;
         var latency = TimeSpan.Zero;
         var modelId = _client.ModelId;
+        string? repairError = null;
 
         while (attempts < Math.Max(1, _options.MaxAttempts))
         {
             attempts++;
-            var response = await _client.GenerateAsync(new LlmRequest
+            LlmResponse response;
+            try
             {
-                SystemPrompt = system,
-                Messages = messages.ToArray(),
-                MaxOutputTokens = _options.MaxOutputTokens,
-                Temperature = _options.Temperature,
-            }, cancellationToken);
+                response = await _client.GenerateAsync(new LlmRequest
+                {
+                    SystemPrompt = system,
+                    Messages = messages.ToArray(),
+                    MaxOutputTokens = _options.MaxOutputTokens,
+                    Temperature = _options.Temperature,
+                }, cancellationToken);
+            }
+            catch (ProviderException ex) when (best is not null)
+            {
+                // The repair call failed (timeout, rate limit, 5xx) but a usable lesson is already in
+                // hand: teach with it rather than throw it away. The first call's faults still propagate.
+                repairError = $"{ex.Kind}: repair call failed; kept the first answer";
+                break;
+            }
 
             input += response.InputTokens;
             output += response.OutputTokens;
@@ -106,7 +138,7 @@ public sealed class VisualPlanner
             messages.Add(new LlmMessage { Role = "user", Text = PlannerPrompt.Repair(lesson.Issues) });
         }
 
-        return new PlanResult(best!, attempts, image is not null, imageNote, modelId, input, output, latency, firstIssues);
+        return new PlanResult(best!, attempts, image is not null, imageNote, modelId, input, output, latency, firstIssues, repairError);
     }
 
     private (LlmImagePart? Image, string? Note) ChooseImage(ScreenGrounding? screen)

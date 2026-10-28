@@ -47,6 +47,8 @@
 
 **Rejected.** Structured output (`LlmResponseFormat.JsonSchema`): the Providers adapters disagree on its shape (OpenAI-compatible wraps it as `{name, schema}`, Anthropic sends it raw) and DeepSeek may not support it — fixing the adapters is its own change. Streaming beats: the first-beat latency target cannot be measured without a key (spike 0c), so it waits for one. Putting the planner inside VisualLessonEngine: that module's audit pins Abstractions as its only reference, and the planner needs Providers.Core.
 
+**Final-review fixes (same day).** Untrusted text (screen description, previous lesson, and model-authored values echoed in the repair turn) is flattened to one line, stripped of fence markers and bounded, and sits between `<<<BEGIN …>>>` / `<<<END …>>>` lines — it can no longer forge a `QUESTION` or `GROUNDED TARGET BOX` line. A repair call that fails with `ProviderException` keeps the usable first lesson (`PlanResult.RepairError`). `FromRegistry` planners own and dispose the client the registry built (`VisualPlanner : IDisposable`). Prompt examples are valid as written (non-zero mark) and state truthfully that an unknown op costs the whole beat's drawing.
+
 **Consequences.** Every model the registry can assign is usable unchanged. Repair doubles worst-case cost per lesson (2 calls). Until the adapter mismatch is fixed, JSON adherence rests on the prompt + tolerant parser + repair. Live quality is unmeasured until a key exists (LP-8, eval harness).
 
 ## DEC-025 — 2026-10-28 — claude-opus-5-5

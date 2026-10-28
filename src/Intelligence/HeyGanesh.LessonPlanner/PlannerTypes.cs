@@ -40,7 +40,8 @@ public sealed record PlanResult(
     int InputTokens,
     int OutputTokens,
     TimeSpan Latency,
-    IReadOnlyList<LessonIssue> FirstAttemptIssues);
+    IReadOnlyList<LessonIssue> FirstAttemptIssues,
+    string? RepairError = null);
 
 public sealed class LessonPlannerOptions
 {

@@ -32,6 +32,7 @@ internal static partial class LessonPlannerSmokeHost
                 "--assert-repair" => await RunAssertRepairAsync(),
                 "--assert-errors" => await RunAssertErrorsAsync(),
                 "--assert-followup" => await RunAssertFollowupAsync(),
+                "--assert-hardening" => await RunAssertHardeningAsync(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -59,6 +60,7 @@ internal static partial class LessonPlannerSmokeHost
         Console.WriteLine("  --assert-repair      one repair call with the issues; best answer kept, exit 0");
         Console.WriteLine("  --assert-errors      provider faults and cancellation pass through, exit 0");
         Console.WriteLine("  --assert-followup    previous lesson carried as labelled context, exit 0");
+        Console.WriteLine("  --assert-hardening   fenced untrusted text, safe repair echo, failed repair keeps the lesson, disposal, exit 0");
         return 0;
     }
 

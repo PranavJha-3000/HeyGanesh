@@ -3,9 +3,9 @@
 
 Did: Built `HeyGanesh.LessonPlanner` (VisualPlanner over any ILlmClient / ProviderRegistry; prompt contract interpolated from validator code; image only to Vision models with an explicit note otherwise; one repair turn keeping the better answer) and a grounded-mark rule in the validator (`ValidationContext`, `mark.ungrounded`). `tools/LessonPlannerSmoke` LP-1..LP-7 against a recording fake. DEC-026. Branch `feat/lesson-planner-v1`.
 Left: LP-8 (live plan + first-beat latency, spike 0c), streaming beats, the eval harness and the App Shell wiring (hotkey → grounding → planner → player over CardSurface + a speech adapter) — all but the wiring need a provider key.
-Watch: OPEN ITEM — Providers adapters disagree on `LlmResponseFormat.JsonSchema` (OpenAiCompat expects `{name, schema}`, Anthropic the raw schema); the planner avoids structured output until that is fixed. Repair means up to 2 model calls per lesson. Marks from a model require a grounded box.
+Watch: OPEN ITEM — src/Providers (as well as src/Foundation) is untracked, and HeyGanesh.LessonPlanner references Providers.Core: a fresh clone cannot build the planner until the owner commits those folders. OPEN ITEM — Providers adapters disagree on `LlmResponseFormat.JsonSchema` (OpenAiCompat expects `{name, schema}`, Anthropic the raw schema); the planner avoids structured output until that is fixed. Repair means up to 2 model calls per lesson. Marks from a model require a grounded box.
 Next: App Shell wiring of the lesson path behind a flag, verified offline with a fake ILlmClient (no key), so a real hotkey press can draw a planned lesson the moment a key is added.
-Verified: LessonSmoke --assert-grounded 6/6 + all 10 earlier rows; LessonPlannerSmoke source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2 — all exit 0; sln -warnaserror 0/0.
+Verified: LessonSmoke --assert-grounded 6/6 + all 10 earlier rows; LessonPlannerSmoke source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2, hardening 7 — all exit 0 (after the final-review fix pass); sln -warnaserror 0/0.
 
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 3: Lesson Surface v1)
 

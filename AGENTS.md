@@ -149,7 +149,7 @@ tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Intelligence/HeyGanesh.LessonPlanner -c Debug
 dotnet build tools/LessonPlannerSmoke -c Debug
 tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonPlannerSmoke.exe --assert-prompt
-#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 3, --assert-repair 6, --assert-errors 3, --assert-followup 2)
+#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 3, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7)
 ```
 
 Models: **DeepSeek V4.1 Flash** is used for visual grounding and coordinate detection. Live runs require `DEEPSEEK_API_KEY` set in the environment or passed via the Security Proxy module. Element Selection uses the Jev choice model over a ranked UIA manifest via TypeSafe (`ModelId` `jev-1.13.0`); live Element Selection runs require `TYPESAFE_API_KEY`, reported as presence/length only and never as a value — the same temporary direct-key arrangement as Vision's, pending the Security Proxy. Voice's TTS is **Fish Audio** (`format=wav`, `sample_rate=44100`; key `FISH_AUDIO_API_KEY`, same presence/length-only rule), and its speech-in frontend is an externally-run **qwen-audio-agent Gateway** (Gateway Client Protocol wire 7.0; `AGENT_PROTOCOL=none` required, its provider key never crosses the protocol; endpoint via `HEYGANESH_QWEN_GATEWAY_URL` — no default URL on purpose). Both are external runtimes behind `ITtsClient`/`IVoiceListener`, never C# dependencies.

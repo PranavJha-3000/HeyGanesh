@@ -28,13 +28,18 @@ internal sealed class FakeLlmClient : ILlmClient
     /// <summary>When set, GenerateAsync throws this instead of answering.</summary>
     public Exception? Throw { get; init; }
 
+    /// <summary>Zero-based call index at which <see cref="Throw"/> fires; -1 = every call.</summary>
+    public int ThrowOnCall { get; init; } = -1;
+
+    public bool Disposed { get; private set; }
+
     /// <summary>When true, GenerateAsync never answers until cancelled.</summary>
     public bool Hang { get; init; }
 
     public async Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct = default)
     {
         Recorded.Add(request);
-        if (Throw is not null)
+        if (Throw is not null && (ThrowOnCall < 0 || ThrowOnCall == Recorded.Count - 1))
         {
             throw Throw;
         }
@@ -63,7 +68,5 @@ internal sealed class FakeLlmClient : ILlmClient
 #pragma warning restore CS0162
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() => Disposed = true;
 }

@@ -11,7 +11,8 @@
   Phase 4.5 (App Shell wiring) BUILT 2026-10-28 on `feat/lesson-shell-wiring-v1` (DEC-027): `--lesson` runs
   LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; LT-1..LT-6 + SH-18 green offline; SH-19 live-gated.
   Plan: [plans/2026-10-28-lesson-shell-wiring-v1.md](../plans/2026-10-28-lesson-shell-wiring-v1.md).
-  Phases 5–8 not started. Phase 1 plan:
+  Phase 5: spike 0b run 2026-10-29 — GO with three conditions (Phase 0 results below); build steps not started.
+  Phases 6–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.
 - **Decisions this document asks the owner for:** DEC-020 (rendering stack), DEC-021 (planner
@@ -246,8 +247,15 @@ Decisions DEC-020/021/022 taken by delegation ("quicker to build and demo, cheap
 | Spike | Result | Numbers | Verdict |
 |---|---|---|---|
 | 0a — WebView2 card window | Reshaped by DEC-020 to an **opaque** card (not a transparent full-screen surface): borderless, top-most, no-activate, capture-excluded | env 384–495 ms; first paint 761–872 ms; warm update 2.3–2.5 ms; 143 MB / 6 processes; focus never stolen; capture hidden after affinity — 3/3 runs | **GO** |
-| 0b — Babylon.js on integrated GPU / software | Deferred to Phase 5 — the 2D demo needs no 3D, so measuring it now buys nothing | — | deferred |
+| 0b — Babylon.js on integrated GPU / software | Run 2026-10-29 · claude-opus-5-5 (see below): throwaway WinForms host (WebView2 1.0.4314.35, runtime 155.0) + vendored Babylon.js 9.30.0 / babylon.gui 9.30.0, sha256-verified; 200 primitives (box/cylinder/sphere/torus, 10 materials) + 10 sticky-note labels on leader lines (`linkWithMesh`) + `HighlightLayer` on 5 meshes, auto-rotating; 900×650 opaque no-activate card, native resolution (canvas 900×651 at 150 %), 3 runs per variant | GPU (RTX 3060 Laptop, D3D11): **164–165 fps**, p95 6.8 ms. Software, `--disable-gpu` → WARP: **38–39 fps**, p95 ~31 ms (56–61 fps at CSS resolution). SwiftShader (forced): **16–21 fps**. Scene build cold **361–425 ms** (budget 300), **warm rebuild 192–206 ms**. Script parse 355–460 ms per page load. WebView2 private memory 357–506 MB (2D card: 143 MB) | **GO**, with three conditions for Phase 5 |
 | 0c — planner time-to-first-beat | Blocked: no provider key on this machine (`DEEPSEEK_API_KEY` absent) | — | runs before Phase 4 is called done |
+
+**Spike 0b conditions (2026-10-29 · claude-opus-5-5)** — what Phase 5 must build in, because the numbers above say so:
+1. **Pre-warm the 3D page and its shaders at startup**, like the 2D card pre-warm (DEC-025): build one hidden warm-up scene with the kit's material set, dispose it, keep the engine. Cold build misses the 300 ms budget by 20–40 %; warm builds are ~200 ms. The 8.6 MB `babylon.js` parse (~0.4 s) is paid in the same pre-warm, never on a question.
+2. **Render on demand, not every frame.** Lesson scenes are still between beats; render on camera input, beat ops and animations only. That makes software rendering a non-issue for still frames: WARP (the fallback WebView2 takes when the GPU is blocklisted) holds 38 fps at native resolution even while rotating; only a forced SwiftShader (16–21 fps) falls below 30, and it is not the default fallback.
+3. **Memory: ~360–500 MB of WebView2 private memory with a 3D scene** vs. DEC-020's ~150 MB budget for cards. Phase 5 records this as a DEC (one shared environment for 2D + 3D, 3D page created on first 3D lesson or at pre-warm — owner's call).
+
+Not measured: an **integrated GPU** — this laptop exposes only the RTX 3060 (`Win32_VideoController` lists one adapter; `--force_low_power_gpu` still chose it). WARP stands in as the worst realistic case. Spike sources (host, page, runner, raw `results*.jsonl`) stayed in the session scratchpad and were not committed, as for 0a.
 
 Effect on §2.3 (window model): cards are opaque windows; only screen marks are click-through, and they stay on the existing native ScreenOverlay. The transparent selective-click-through surface is no longer on the demo path.
 

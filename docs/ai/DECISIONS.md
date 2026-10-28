@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-026](#dec-026--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Planner v1: `VisualPlanner` in its own assembly over any `ILlmClient`; prompt contract interpolated from validator code; image only to Vision models; grounded marks; one repair turn keeping the better answer; no structured output and no streaming yet | accepted |
 | [DEC-025](#dec-025--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Surface v1: `CardSurface` (WebView2 cards on their own STA thread, text-only page, acked beats with timeout), seam `ClearAsync`→`ResetAsync(surfaces)`, plots computed by C# `PlotExpression` and refused by the validator when unparsable, TeX-lite + in-page strokes until KaTeX/Rough.js are vendored, marks as overlay box+pointer | accepted |
 | [DEC-024](#dec-024--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner is provider-agnostic and multimodal: resolved through ProviderRegistry (no hard-wired provider), sends the question + one bounded screen crop as an image part when the model has Vision, otherwise an explicit text-only grounding path; refines DEC-021 | accepted |
 | [DEC-022](#dec-022--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Tutor session state: in-memory only — last validated plan + last 6 turns, cleared on idle/exit; no persistence until Notes (M8) | accepted |
@@ -36,6 +37,18 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-026 — 2026-10-28 — claude-opus-5-5
+
+**Decision — lessons are planned by `HeyGanesh.LessonPlanner.VisualPlanner`.** `PlanAsync(PlanRequest)` sends one request through the `ILlmClient` it was given (by the caller or `FromRegistry` → role Tutor; DEC-021/DEC-024), validates the answer with `ValidationContext { RequireGroundedMarks = true, GroundedTarget = screen box }`, and — if the answer is not Valid — makes exactly one repair call carrying the original question, the first answer and the issue list. The better of the two outcomes is returned (Valid > PartiallyDegraded > TextFallback > Rejected; ties go to the repair). The prompt contract (schema, op shapes, limits, glyph vocabulary, plot grammar) is interpolated from the same code the validator uses. The screen image is attached only when the client advertises `ProviderCapability.Vision` and the JPEG is within `MaxImageBytes`; otherwise the prompt says it is not attached and `PlanResult.ImageNote` records why.
+
+**Grounded marks (new validator rule).** `ValidationContext` lets a caller require that every mark sits inside the grounded target box (+24 px); with no box, marks are refused (`mark.ungrounded`). A model therefore cannot invent coordinates on the student's real screen — it can only point where Element Selection / Vision already found something. The desktop-only `Validate` overload keeps its behaviour for fixtures.
+
+**Reasoning.** Interpolating the contract from code removes a whole class of drift bugs (prompt promises one vocabulary, validator enforces another). One repair turn recovers the common "nearly right" answer for one extra call; a second would double cost for diminishing returns. Grounded marks are the cheapest strong anti-hallucination rule available for screen pointing.
+
+**Rejected.** Structured output (`LlmResponseFormat.JsonSchema`): the Providers adapters disagree on its shape (OpenAI-compatible wraps it as `{name, schema}`, Anthropic sends it raw) and DeepSeek may not support it — fixing the adapters is its own change. Streaming beats: the first-beat latency target cannot be measured without a key (spike 0c), so it waits for one. Putting the planner inside VisualLessonEngine: that module's audit pins Abstractions as its only reference, and the planner needs Providers.Core.
+
+**Consequences.** Every model the registry can assign is usable unchanged. Repair doubles worst-case cost per lesson (2 calls). Until the adapter mismatch is fixed, JSON adherence rests on the prompt + tolerant parser + repair. Live quality is unmeasured until a key exists (LP-8, eval harness).
+
 ## DEC-025 — 2026-10-28 — claude-opus-5-5
 
 **Decision — the first real lesson canvas.** `HeyGanesh.LessonSurface.CardSurface` implements `ILessonCanvas` (DEC-020): one STA UI thread with a WinForms loop; one shared WebView2 environment (profile under `%LOCALAPPDATA%/HeyGanesh/webview2` or `$HEYGANESH_DATA_DIR/webview2`) with one card pre-warmed; one card window per declared surface, laid out top-right on the monitor under the cursor, each capture-excluded before first show (hard error otherwise). The page (`LessonPage/lesson.html|css|js`, virtual host `lesson.heyganesh.invalid`, CSP `default-src 'self'; connect-src 'none'`) builds DOM/SVG from beat messages through `textContent` only and acknowledges each one; an unacknowledged beat fails after `ApplyTimeout` (3 s). Navigation off the virtual host is cancelled and new windows refused. Accompanying choices:

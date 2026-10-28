@@ -222,3 +222,18 @@ Caller cancellation propagates as OperationCanceledException; speaker/canvas fau
 ```
 
 `ILessonCanvas` is implemented by `CardSurface` (Phase 3, DEC-025): ResetAsync lays out one card per surface; ApplyBeatAsync groups the beat's ops per card (a highlight goes to the card holding its element), computes plot points in C# (`PlotExpression.Sample`), posts one message per card and awaits each page's `done` (timeout → `TimeoutException`); `ScreenMarkOp` → `ScreenOverlayService.ShowAsync` fire-and-forget after hiding any previous mark. Still to come: `ILessonSpeaker` = App Shell adapter over Voice TTS. The planner that produces the model text is Phase 4 (DEC-021/DEC-024).
+
+## Lesson planning path (Lesson Planner — built offline, NOT yet wired into the App Shell; FEATURE-007 Phase 4)
+
+```
+PlanRequest { Question, Screen?: { Description, TargetBox, Jpeg }, VirtualDesktop, PreviousPlan?, Mode }
+  → VisualPlanner.PlanAsync
+      image = Jpeg if client.Capabilities has Vision and size ≤ MaxImageBytes, else none + ImageNote
+      system = PlannerPrompt.System(LessonLimits.Default)   — schema, ops, glyphs, limits, rules from code
+      user   = QUESTION → MODE → SCREEN CONTEXT (UNTRUSTED) → GROUNDED TARGET BOX | NO GROUNDED TARGET → SCREEN IMAGE attached/not → PREVIOUS LESSON (UNTRUSTED)
+      ILlmClient.GenerateAsync → VisualPlanParser.Parse → VisualPlanValidator.Validate(ctx: RequireGroundedMarks, GroundedTarget)
+      not Valid → +assistant(first answer) +user(PlannerPrompt.Repair(issues)) → one more call → keep the better outcome
+  → PlanResult { Lesson (validated), Attempts, UsedImage, ImageNote, ModelId, tokens, Latency, FirstAttemptIssues }
+  → LessonPlayer.PlayAsync(result.Lesson) over CardSurface (Phase 3) — the shell wiring that joins these is still to come
+```
+ProviderException / OperationCanceledException propagate unchanged.

@@ -6,7 +6,9 @@
   (DEC-020/021/022; spike 0a GO, 0b deferred, 0c blocked on a key). Phase 2 (Lesson Runtime) BUILT 2026-10-28
   on `feat/lesson-runtime-v1`, LS-8..LS-10 green offline; DEC-024 keeps the planner multimodal and multi-model.
   Phase 3 (Lesson Surface, 2D cards) BUILT 2026-10-28 on `feat/lesson-surface-v1` (DEC-025): LS-11 + LSU-1..LSU-5
-  green on the real desktop, LSU-6 demo runs; KaTeX/Rough.js deferred. Phases 4–8 not started. Phase 1 plan:
+  green on the real desktop, LSU-6 demo runs; KaTeX/Rough.js deferred. Phase 4 (Lesson Planner) BUILT offline 2026-10-28 on
+  `feat/lesson-planner-v1` (DEC-026): LS-12 + LP-1..LP-7 green; LP-8 live row, streaming and the eval harness wait for a key.
+  Phases 5–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.
 - **Decisions this document asks the owner for:** DEC-020 (rendering stack), DEC-021 (planner

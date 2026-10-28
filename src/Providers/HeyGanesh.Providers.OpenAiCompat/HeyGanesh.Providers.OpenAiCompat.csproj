@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    HeyGanesh.Providers.OpenAiCompat — OpenAI-compatible HTTP adapter implementing ILlmClient.
+    Covers OpenAI, Azure OpenAI, DeepSeek, Mistral, xAI, Groq, Together, OpenRouter, Ollama, LM Studio.
+    Zero NuGet dependencies. Uses System.Net.Http (built into .NET 8).
+    References HeyGanesh.Providers.Core and HeyGanesh.Security.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Providers.OpenAiCompat</RootNamespace>
+    <AssemblyName>HeyGanesh.Providers.OpenAiCompat</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj" />
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+  </ItemGroup>
+
+</Project>

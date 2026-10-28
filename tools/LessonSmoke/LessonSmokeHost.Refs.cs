@@ -11,6 +11,16 @@ namespace HeyGanesh.Tools.LessonSmoke;
 /// </summary>
 internal static partial class LessonSmokeHost
 {
+    private static string MarkPlan(string markFields) =>
+        "{\"schema\":\"heyganesh.visualplan/1\",\"lessonId\":\"m\",\"title\":\"t\",\"mode\":\"explain\"," +
+        "\"surfaces\":[],\"beats\":[{\"id\":\"b1\",\"say\":\"look here\",\"ops\":[{\"op\":\"mark\",\"shape\":\"circle\"," + markFields + "}]}]}";
+
+    private static bool MarkIssue(string markFields, string code)
+    {
+        var parsed = VisualPlanParser.Parse(MarkPlan(markFields));
+        return new VisualPlanValidator().Validate(parsed, DesktopLeftMonitor).Issues.Any(i => i.Code == code && i.BeatId == "b1");
+    }
+
     private static readonly PixelRect DesktopLeftMonitor = new(-1920, 0, 3840, 1080);
 
     private static int RunAssertRefs()
@@ -52,6 +62,27 @@ internal static partial class LessonSmokeHost
         failures = Check(
             Has(V(AppendOp(tensor, 0, new ScreenMarkOp(MarkShape.Underline, new PixelRect(10, 10, 0, 20)))), LessonIssueCodes.ValueInvalid, "b1"),
             "mark width 0 -> value.invalid",
+            failures);
+
+        // Final review I-2/I-3: mark coordinates are required integers and the bounds check cannot wrap.
+        failures = Check(MarkIssue("\"y\": 5, \"width\": 10, \"height\": 10", LessonIssueCodes.ValueInvalid), "mark with no x -> value.invalid (never coerced to 0)", failures);
+        failures = Check(MarkIssue("\"x\": \"300\", \"y\": 5, \"width\": 10, \"height\": 10", LessonIssueCodes.ValueInvalid), "mark x as a string -> value.invalid", failures);
+        failures = Check(MarkIssue("\"x\": 99999999999, \"y\": 5, \"width\": 10, \"height\": 10", LessonIssueCodes.ValueInvalid), "mark x beyond int range -> value.invalid", failures);
+        var integral = Validate(VisualPlanParser.Parse(MarkPlan("\"x\": 512.0, \"y\": 5, \"width\": 10, \"height\": 10")).Plan!, DesktopLeftMonitor);
+        failures = Check(
+            integral.Outcome == LessonOutcome.Valid && integral.Plan!.Beats[0].Ops.OfType<ScreenMarkOp>().Single().Region == new PixelRect(512, 5, 10, 10),
+            "mark x 512.0 (integral number) -> accepted as 512",
+            failures);
+        failures = Check(
+            Has(V(AppendOp(tensor, 0, new ScreenMarkOp(MarkShape.Circle, new PixelRect(2000000000, 2000000000, 2000000000, 2000000000)))), LessonIssueCodes.MarkOutOfBounds, "b1"),
+            "mark whose X+Width overflows int -> mark.out-of-bounds (no wrap)",
+            failures);
+
+        // Final review M-7 (re-graded): an arrow lives on one card, so both ends must be on that card.
+        var twoCards = tensor with { Surfaces = tensor.Surfaces.Append(new LessonSurface("card-two", SurfaceKind.Card, "two")).ToList() };
+        failures = Check(
+            Has(V(AppendOp(twoCards, 1, new ArrowOp("card-two", "w-row", "w-col", null))), LessonIssueCodes.RefTarget, "b2"),
+            "arrow on card-two between elements on card-tensor -> ref.target",
             failures);
 
         return Summarize(failures, "REFS OK");

@@ -5,7 +5,7 @@ Did: Wrote FEATURE-007 (visual-lesson strategy/roadmap) and its Phase 1 plan; bu
 Left: Owner decisions DEC-020 (rendering stack / WebView2 NuGet), DEC-021 (planner via Providers seam), DEC-022 (tutor session state) are open; Phase 0 spikes and Phases 2–8 not started. Nothing renders or speaks a plan yet.
 Watch: src/Foundation (Abstractions, the module's one reference) is still untracked on main — the branch builds only in this checkout. Build library then host sequentially (CS2012). A degraded beat's elements never exist, so one bad early beat can cascade the plan into TextFallback (LS-5, by design). Any issue without a beat id (incl. an unknown `mode`) forces TextFallback.
 Next: Owner decides DEC-020/021/022; then Phase 0a spike (transparent, capture-excluded, region-click-through WebView2 window).
-Verified: `dotnet build` library + host `-warnaserror` → 0/0; LessonSmoke --assert-source 4/4, --assert-parse 7/7, --assert-limits 15/15, --assert-refs 9/9, --assert-degrade 6/6, --assert-fixtures 6/6, all exit 0.
+Verified: `dotnet build` library + host `-warnaserror` → 0/0; LessonSmoke --assert-source 6/6, --assert-parse 9/9, --assert-limits 20/20, --assert-refs 15/15, --assert-degrade 7/7, --assert-fixtures 6/6, all exit 0 (after the final-review fix pass); `dotnet build HeyGanesh.sln -warnaserror` 0/0; scan-forbidden / scan-secrets / zero-nuget pass.
 
 ## 2026-10-28 · Cline agent (S2.5 Gemini provider - Phase 1)
 

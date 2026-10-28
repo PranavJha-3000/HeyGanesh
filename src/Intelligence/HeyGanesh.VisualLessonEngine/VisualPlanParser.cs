@@ -46,8 +46,11 @@ public static class VisualPlanParser
             var plan = ReadPlan(doc.RootElement, issues);
             return new ParseResult(plan, issues);
         }
-        catch (JsonException ex)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or ArgumentException)
         {
+            // JsonException: bad syntax or depth. ArgumentException: the text itself is invalid UTF-16
+            // (a lone surrogate echoed from screen text). InvalidOperationException: a JSON-escaped lone
+            // surrogate, which only fails when the string is read. All three are malformed model output.
             return Fail(LessonIssueCodes.JsonMalformed, ex.Message);
         }
     }
@@ -90,12 +93,14 @@ public static class VisualPlanParser
         return name switch
         {
             "write" => new WriteOp(Str(o, "surface"), Str(o, "id"), Str(o, "text"), Style(o, beatId, issues), OptStr(o, "math")),
-            "step" => new StepOp(Str(o, "surface"), Str(o, "id"), Int(o, "index"), Str(o, "text")),
+            "step" => new StepOp(Str(o, "surface"), Str(o, "id"), ReqInt(o, "index", beatId, issues), Str(o, "text")),
             "arrow" => new ArrowOp(Str(o, "surface"), Str(o, "from"), Str(o, "to"), OptStr(o, "label")),
             "icon" => new IconOp(Str(o, "surface"), Str(o, "id"), Str(o, "glyph")),
-            "plot" => new PlotOp(Str(o, "surface"), Str(o, "id"), Str(o, "expr"), Dbl(o, "xMin"), Dbl(o, "xMax")),
+            "plot" => new PlotOp(Str(o, "surface"), Str(o, "id"), Str(o, "expr"), ReqDbl(o, "xMin", beatId, issues), ReqDbl(o, "xMax", beatId, issues)),
             "highlight" => new HighlightOp(Str(o, "target")),
-            "mark" => new ScreenMarkOp(Shape(o, beatId, issues), new PixelRect(Int(o, "x"), Int(o, "y"), Int(o, "width"), Int(o, "height"))),
+            "mark" => new ScreenMarkOp(
+                Shape(o, beatId, issues),
+                new PixelRect(ReqInt(o, "x", beatId, issues), ReqInt(o, "y", beatId, issues), ReqInt(o, "width", beatId, issues), ReqInt(o, "height", beatId, issues))),
             "clear" => new ClearOp(Str(o, "surface")),
             _ => new UnknownOp(name),
         };
@@ -131,15 +136,32 @@ public static class VisualPlanParser
             ? v.GetString()
             : null;
 
-    private static int Int(JsonElement e, string name) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i)
-            ? i
-            : 0;
+    // Numbers are where a silent default does harm: a mark coerced to 0 is a circle drawn at the
+    // primary monitor's corner, pointing at the wrong thing with no issue raised. So a number that is
+    // missing, not a number, fractional or out of int range is reported on its beat. Integral
+    // decimals (512.0) are accepted — models emit them for whole numbers.
+    private static int ReqInt(JsonElement e, string name, string beatId, List<LessonIssue> issues)
+    {
+        if (e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number)
+        {
+            if (v.TryGetInt32(out var i))
+            {
+                return i;
+            }
 
-    private static double Dbl(JsonElement e, string name) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var d)
+            if (v.TryGetDouble(out var d) && d == Math.Floor(d) && d >= int.MinValue && d <= int.MaxValue)
+            {
+                return (int)d;
+            }
+        }
+
+        return Invalid(0, issues, beatId, $"or missing integer '{name}'");
+    }
+
+    private static double ReqDbl(JsonElement e, string name, string beatId, List<LessonIssue> issues) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var d)
             ? d
-            : 0;
+            : Invalid(0d, issues, beatId, $"or missing number '{name}'");
 
     private static IEnumerable<JsonElement> Items(JsonElement e, string name) =>
         e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array

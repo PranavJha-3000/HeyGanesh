@@ -49,6 +49,19 @@ internal static partial class LessonSmokeHost
         failures = Check(Has(Validate(AppendOp(basePlan, 0, new IconOp("card-main", "i1", "rocket"))), LessonIssueCodes.GlyphUnknown, "b1"), "glyph 'rocket' -> glyph.unknown", failures);
         failures = Check(Has(Validate(AppendOp(basePlan, 0, new UnknownOp("teleport"))), LessonIssueCodes.OpUnknown, "b1"), "UnknownOp -> op.unknown", failures);
 
+        // Final review I-4: every free-text field is bounded, not only text/say/title.
+        failures = Check(Has(Validate(AppendOp(basePlan, 0, new WriteOp("card-main", "w9", "x", TextStyle.Body, new string('m', 281)))), LessonIssueCodes.FieldTooLong, "b1"), "281-char math -> field.too-long", failures);
+        failures = Check(Has(Validate(AppendOp(basePlan, 0, new ArrowOp("card-main", "w1", "w1", new string('l', 281)))), LessonIssueCodes.FieldTooLong, "b1"), "281-char arrow label -> field.too-long", failures);
+        var untitled = Validate(basePlan with { Surfaces = new[] { new LessonSurface("card-main", SurfaceKind.Card, "") } });
+        failures = Check(Has(untitled, LessonIssueCodes.FieldMissing) && untitled.Outcome == LessonOutcome.TextFallback, "empty surface title -> field.missing (plan-level)", failures);
+
+        // Final review M-8 (re-graded): the id pattern is anchored at the true end of the string.
+        failures = Check(Has(Validate(WithBeat(basePlan, 0, b => b with { Id = "b1\n" })), LessonIssueCodes.IdInvalid), "beat id 'b1' + trailing newline -> id.invalid", failures);
+
+        // Final review M-11 (folded into I-2): a missing plot bound is reported, not read as 0.
+        var noMin = Fixture("chain-rule.json").Replace("\"xMin\": 1, ", "", StringComparison.Ordinal);
+        failures = Check(Has(new VisualPlanValidator().Validate(VisualPlanParser.Parse(noMin), Desktop1440), LessonIssueCodes.ValueInvalid, "b5"), "plot with no xMin -> value.invalid", failures);
+
         return Summarize(failures, "LIMITS OK");
     }
 

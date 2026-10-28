@@ -53,6 +53,16 @@ internal static partial class LessonSmokeHost
             "unparseable text -> Rejected, carrying json.malformed",
             failures);
 
+        // Final review I-5: the say limit bounds what is SPOKEN too — an over-long say is not speech.
+        var monologue = Validate(WithBeat(basePlan, 4, b => b with { Say = new string('a', 5000) }));
+        failures = Check(
+            monologue.Outcome == LessonOutcome.PartiallyDegraded
+                && monologue.Plan!.Beats.Count == 4
+                && monologue.Plan.Beats.All(b => b.Say.Length <= 400)
+                && !monologue.FallbackText.Contains(new string('a', 401), StringComparison.Ordinal),
+            "5000-char say -> that beat is dropped, never spoken; fallback excludes it",
+            failures);
+
         return Summarize(failures, "DEGRADE OK");
     }
 }

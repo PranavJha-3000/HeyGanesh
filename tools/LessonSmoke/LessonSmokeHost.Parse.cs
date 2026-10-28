@@ -54,6 +54,12 @@ internal static partial class LessonSmokeHost
             "unknown mode 'lecture' -> defaults to Explain and is reported as value.invalid",
             failures);
 
+        // Final review C-1: invalid UTF-16 must be an issue, not an exception escaping into the lesson path.
+        var escapedSurrogate = MinimalPlanWithTeleport.Replace("\"say\":\"hi\"", "\"say\":\"hi \\ud83d\"", StringComparison.Ordinal);
+        failures = Check(OnlyIssue(VisualPlanParser.Parse(escapedSurrogate), LessonIssueCodes.JsonMalformed), "JSON-escaped lone surrogate in a string -> no plan, json.malformed (no throw)", failures);
+        var rawSurrogate = MinimalPlanWithTeleport.Replace("\"say\":\"hi\"", "\"say\":\"hi \ud83d\"", StringComparison.Ordinal);
+        failures = Check(OnlyIssue(VisualPlanParser.Parse(rawSurrogate), LessonIssueCodes.JsonMalformed), "raw lone surrogate char in the text -> no plan, json.malformed (no throw)", failures);
+
         return Summarize(failures, "PARSE OK");
     }
 

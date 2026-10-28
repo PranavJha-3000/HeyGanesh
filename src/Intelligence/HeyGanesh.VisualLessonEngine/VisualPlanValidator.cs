@@ -38,7 +38,7 @@ public sealed class VisualPlanValidator
 {
     public const string SupportedSchema = "heyganesh.visualplan/1";
 
-    private static readonly Regex IdPattern = new("^[a-z][a-z0-9-]{0,31}$", RegexOptions.CultureInvariant);
+    private static readonly Regex IdPattern = new(@"^[a-z][a-z0-9-]{0,31}\z", RegexOptions.CultureInvariant);
 
     private readonly LessonLimits _limits;
 
@@ -86,6 +86,7 @@ public sealed class VisualPlanValidator
         foreach (var surface in plan.Surfaces)
         {
             CheckId(surface.Id, "surface", null, seen, issues);
+            CheckText(surface.Title, _limits.MaxTitleChars, "surface title", null, issues);
         }
     }
 
@@ -146,6 +147,7 @@ public sealed class VisualPlanValidator
             case WriteOp w:
                 Create(w.Surface, w.Id, beatId, board, issues);
                 CheckText(w.Text, _limits.MaxTextChars, "write text", beatId, issues);
+                CheckOptionalText(w.Math, _limits.MaxTextChars, "math", beatId, issues);
                 break;
             case StepOp s:
                 Create(s.Surface, s.Id, beatId, board, issues);
@@ -175,8 +177,9 @@ public sealed class VisualPlanValidator
                 break;
             case ArrowOp a:
                 CheckSurface(a.Surface, beatId, board, issues);
-                CheckTarget(a.From, beatId, board, issues);
-                CheckTarget(a.To, beatId, board, issues);
+                CheckOptionalText(a.Label, _limits.MaxTextChars, "arrow label", beatId, issues);
+                CheckTarget(a.From, beatId, board, issues, a.Surface);
+                CheckTarget(a.To, beatId, board, issues, a.Surface);
                 break;
             case HighlightOp h:
                 CheckTarget(h.Target, beatId, board, issues);
@@ -213,11 +216,19 @@ public sealed class VisualPlanValidator
         }
     }
 
-    private static void CheckTarget(string target, string beatId, Board board, List<LessonIssue> issues)
+    /// <summary>
+    /// The target must be live now; when <paramref name="onSurface"/> is given (an arrow), it must also
+    /// be on that card — an arrow is drawn inside one card and cannot reach into another.
+    /// </summary>
+    private static void CheckTarget(string target, string beatId, Board board, List<LessonIssue> issues, string? onSurface = null)
     {
-        if (!board.Live.ContainsKey(target))
+        if (!board.Live.TryGetValue(target, out var surface))
         {
             issues.Add(new LessonIssue(LessonIssueCodes.RefTarget, beatId, $"element '{target}' does not exist at this beat"));
+        }
+        else if (onSurface is not null && surface != onSurface)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.RefTarget, beatId, $"element '{target}' is on '{surface}', not '{onSurface}'"));
         }
     }
 
@@ -227,7 +238,8 @@ public sealed class VisualPlanValidator
         {
             issues.Add(new LessonIssue(LessonIssueCodes.ValueInvalid, beatId, $"mark {r} has no area"));
         }
-        else if (r.X < d.X || r.Y < d.Y || r.Right > d.Right || r.Bottom > d.Bottom)
+        // In long: PixelRect.Right/Bottom are unchecked int sums and wrap negative for huge input.
+        else if (r.X < d.X || r.Y < d.Y || (long)r.X + r.Width > (long)d.X + d.Width || (long)r.Y + r.Height > (long)d.Y + d.Height)
         {
             issues.Add(new LessonIssue(LessonIssueCodes.MarkOutOfBounds, beatId, $"mark {r} is outside the desktop {d}"));
         }
@@ -240,6 +252,14 @@ public sealed class VisualPlanValidator
             issues.Add(new LessonIssue(LessonIssueCodes.FieldMissing, beatId, $"{what} is empty"));
         }
         else if (value.Length > max)
+        {
+            issues.Add(new LessonIssue(LessonIssueCodes.FieldTooLong, beatId, $"{what} is {value.Length} chars (max {max})"));
+        }
+    }
+
+    private static void CheckOptionalText(string? value, int max, string what, string beatId, List<LessonIssue> issues)
+    {
+        if (value is not null && value.Length > max)
         {
             issues.Add(new LessonIssue(LessonIssueCodes.FieldTooLong, beatId, $"{what} is {value.Length} chars (max {max})"));
         }
@@ -266,7 +286,10 @@ public sealed class VisualPlanValidator
     /// </summary>
     private LessonValidationResult Decide(VisualPlan plan, List<LessonIssue> issues, HashSet<int> degraded)
     {
-        var fallback = string.Join(" ", plan.Beats.Select(b => b.Say).Where(s => !string.IsNullOrWhiteSpace(s)));
+        // The say limit bounds what is spoken, not only what is drawn: an over-long say is treated as
+        // having no usable speech (never truncated — cutting a sentence can change what it teaches).
+        bool Speakable(string say) => !string.IsNullOrWhiteSpace(say) && say.Length <= _limits.MaxSayChars;
+        var fallback = string.Join(" ", plan.Beats.Select(b => b.Say).Where(Speakable));
         if (fallback.Length == 0)
         {
             return new LessonValidationResult(LessonOutcome.Rejected, null, string.Empty, issues);
@@ -286,7 +309,7 @@ public sealed class VisualPlanValidator
         // to say has nothing left at all and is dropped.
         var beats = plan.Beats
             .Select((b, i) => degraded.Contains(i) ? b with { Ops = Array.Empty<LessonOp>(), Degraded = true } : b)
-            .Where(b => !(b.Degraded && string.IsNullOrWhiteSpace(b.Say)))
+            .Where(b => !(b.Degraded && !Speakable(b.Say)))
             .ToList();
         return new LessonValidationResult(LessonOutcome.PartiallyDegraded, plan with { Beats = beats }, fallback, issues);
     }

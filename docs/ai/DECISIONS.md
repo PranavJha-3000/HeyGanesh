@@ -43,7 +43,7 @@
 
 **Rejected.** JSON Schema validation library (a NuGet for less than the reference rules need); throwing on bad model output (loses the spoken lesson and dresses model faults as caller bugs); per-code plan-level severity (one rule — an issue without a beat id is plan-level — is auditable); repairing malformed JSON beyond outer-brace extraction (guessing at model intent).
 
-**Consequences.** Every later phase builds on this: the planner must emit it, the runtime plays it, the surface renders only `Valid`/`PartiallyDegraded` plans. New ops or the 3D `scene3d` surface arrive as a schema minor driven by eval failures. An off-contract `mode` string alone forces `TextFallback` — strict by design, revisit if evals show it costs good lessons.
+**Consequences.** Every later phase builds on this: the planner must emit it, the runtime plays it, the surface renders only `Valid`/`PartiallyDegraded` plans. New ops or the 3D `scene3d` surface arrive as a schema minor driven by eval failures. An off-contract `mode` string alone forces `TextFallback` — strict by design, revisit if evals show it costs good lessons. Numbers are never silently defaulted: a mark coordinate or plot bound that is missing, non-numeric, fractional or out of int range is `value.invalid` on its beat (integral decimals like 512.0 are accepted). The 400-char `say` limit bounds what is spoken, not only what is drawn: an over-long say is treated as no usable speech — its beat is dropped and it is excluded from `FallbackText` — rather than truncated, because cutting a sentence can change what it teaches.
 
 ## DEC-017 — 2026-10-01 — Cline agent (Pixel Canary)
 

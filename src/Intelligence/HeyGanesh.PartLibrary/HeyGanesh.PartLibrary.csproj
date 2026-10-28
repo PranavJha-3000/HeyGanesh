@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Part Library — the vetted 3D teaching models a lesson scene may use (FEATURE-007 Phase 5 step 3,
+    DEC-029). Each model is C# code: named parts built from a closed primitive kit, a one-line
+    description per part, explode offsets, and keyframed animations. Wherever geometry or motion
+    follows from physics or a standard measurement (slider-crank kinematics, B-DNA parameters) it is
+    computed here, never hand-placed, so tools/PartLibrarySmoke can check the numbers.
+
+    The library produces the ModelCatalog the scene3d contract validates against (DEC-028): the
+    contract knows names only, this assembly owns the content. Nothing calls it yet — the 3D renderer
+    (Phase 5 step 4) is its first consumer.
+
+    What this module must never do: render, speak, call a provider, read files, or touch the screen.
+    Pure data. Its only ProjectReference is HeyGanesh.VisualLessonEngine (for ModelCatalog). Zero
+    PackageReference. PL-1 (tools/PartLibrarySmoke - -assert-source) enforces all of this.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.PartLibrary</RootNamespace>
+    <AssemblyName>HeyGanesh.PartLibrary</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.VisualLessonEngine\HeyGanesh.VisualLessonEngine.csproj" />
+  </ItemGroup>
+
+</Project>

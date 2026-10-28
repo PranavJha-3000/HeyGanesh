@@ -320,3 +320,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `15f838d` (the commit before this step).
 - **Files to restore:** `git checkout 15f838d -- src/Intelligence/HeyGanesh.VisualLessonEngine tools/LessonSmoke .github/workflows/ci.yml docs/ai`; delete `src/Intelligence/HeyGanesh.VisualLessonEngine/ModelCatalog.cs`, `tools/LessonSmoke/LessonSmokeHost.Scene3d.cs`, `tools/LessonSmoke/fixtures/engine-3d.json`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; every LessonSmoke mode with its old PASS count (106 across the 11 modes); LessonPlannerSmoke and LessonTurnSmoke offline modes exit 0.
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 3: part library v1)
+
+- **Change:** New assembly `src/Intelligence/HeyGanesh.PartLibrary/` (three models: four-stroke-engine, dna-helix, na-k-pump; LibraryCheck; ToCatalog) and host `tools/PartLibrarySmoke/`; `HeyGanesh.sln` gains the library under `src`. Docs: DEC-029, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST PL-1..PL-5, CI G-16, FEATURE-007, HANDOVER, plan. No existing code path changes: nothing calls the library yet.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `eab7904` (the commit before this step).
+- **Files to restore:** delete `src/Intelligence/HeyGanesh.PartLibrary/` and `tools/PartLibrarySmoke/`; `git checkout eab7904 -- HeyGanesh.sln .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSmoke 12 modes (128 PASS), LessonPlannerSmoke (39), LessonTurnSmoke (20) exit 0.

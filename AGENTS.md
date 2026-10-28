@@ -22,7 +22,7 @@ Subsystems, and the seams between them are load-bearing:
 | Vision / Coordinate Detection (FALLBACK) | `src/Perception/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
 | **Jev choice model** | **Integrated within `ElementSelection`** | **The Jev choice model routes Element Selection's ranked UIA candidates (`c001..`) to a selection; implemented via `IJevClient` / `TypeSafeJevClient` with `ModelId "jev-1.13.0"`; not a separate assembly. |
 | Tutor Engine | `src/Intelligence/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
-| Visual Lesson Engine | `src/Intelligence/HeyGanesh.VisualLessonEngine/` + `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.LessonSurface/` + `src/Experience/HeyGanesh.LessonSession/` | VisualPlan v1 contract (parse/validate/degrade, DEC-023), `PlotExpression`, `LessonPlayer` runtime, the WebView2 card surface (DEC-020/DEC-025), the `VisualPlanner` (DEC-026) and `LessonTurn` (plan → cards → play, DEC-027). Wired into the App Shell behind `--lesson`; the lesson model is built from `DEEPSEEK_API_KEY` or the leg reports its skip (FEATURE-007). |
+| Visual Lesson Engine | `src/Intelligence/HeyGanesh.VisualLessonEngine/` + `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.LessonSurface/` + `src/Experience/HeyGanesh.LessonSession/` + `src/Intelligence/HeyGanesh.PartLibrary/` | VisualPlan v1 contract (parse/validate/degrade, DEC-023), `PlotExpression`, `LessonPlayer` runtime, the WebView2 card surface (DEC-020/DEC-025), the `VisualPlanner` (DEC-026) and `LessonTurn` (plan → cards → play, DEC-027); the 3D scene contract (VisualPlan 1.1, DEC-028) and the Part Library of computed 3D teaching models (DEC-029), not yet drawn. Wired into the App Shell behind `--lesson`; the lesson model is built from `DEEPSEEK_API_KEY` or the leg reports its skip (FEATURE-007). |
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
 | Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
@@ -159,6 +159,14 @@ tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Lesso
 #   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6)
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --demo-turn --voice sapi
 #   -> the whole turn drawn and spoken on screen (manual row LT-7)
+
+# Part Library host (3D teaching models, DEC-029 -- offline, no key, no renderer). Build library then host SEQUENTIALLY (CS2012).
+dotnet build src/Intelligence/HeyGanesh.PartLibrary -c Debug
+dotnet build tools/PartLibrarySmoke -c Debug
+tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --assert-physics
+#   -> 19 PASS, exit 0   (also: --assert-source 5, --assert-library 20, --assert-catalog 6)
+tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --dump all
+#   -> plain-text review of every model's parts and descriptions (manual row PL-5; no model is Reviewed yet)
 
 # App Shell lesson leg (DEC-027): --lesson teaches with drawn, spoken cards instead of the Tutor's prose.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --lesson --question "x"

@@ -21,6 +21,7 @@
 | **G-13 Visual Lesson Engine offline** | build `tools\LessonSmoke`, then the EXE with each of `--assert-source` `--assert-parse` `--assert-limits` `--assert-refs` `--assert-degrade` `--assert-fixtures` `--assert-play` `--assert-play-degraded` `--assert-controls` `--assert-plot` `--assert-grounded` `--assert-scene3d` | `lessonEngine=pass` | exit 0 for every mode |
 | **G-14 Lesson Planner offline** | build `tools\LessonPlannerSmoke`, then the EXE with each of `--assert-source` `--assert-prompt` `--assert-multimodal` `--assert-plan` `--assert-repair` `--assert-errors` `--assert-followup` `--assert-hardening` | `lessonPlanner=pass` | exit 0 for every mode |
 | **G-15 Lesson Turn offline** | build `tools\LessonTurnSmoke`, then the EXE with each of `--assert-source` `--assert-turn` `--assert-turn-degraded` `--assert-turn-rejected` `--assert-turn-errors` | `lessonTurn=pass` | exit 0 for every mode |
+| **G-16 Part Library offline** | build `tools\PartLibrarySmoke`, then the EXE with each of `--assert-source` `--assert-library` `--assert-physics` `--assert-catalog` (`--dump` is the manual PL-5 row, not a gate) | `partLibrary=pass` | exit 0 for every mode |
 
 ## Local-Only Notes
 

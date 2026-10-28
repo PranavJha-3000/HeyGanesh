@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-029](#dec-029--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Part library v1 as C# code in a new `HeyGanesh.PartLibrary`: closed primitive kit, computed geometry/motion where physics defines it, `Schematic` and `Reviewed` (false) flags, budgets 16 parts / 64 primitives / ±2 box; produces the scene3d `ModelCatalog` | accepted |
 | [DEC-028](#dec-028--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D as VisualPlan 1.1: one `scene3d` surface, ops model/label/explode/animate/camera + part refs, names bound to a caller-supplied `ModelCatalog`; off unless the canvas passes a catalogue (`ValidationContext.Scene3d`) | accepted |
 | [DEC-027](#dec-027--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | App Shell lesson leg: `--lesson` runs one LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; planner built from `DEEPSEEK_API_KEY` (DeepSeek via OpenAiCompat) or the leg reports its skip; WebView2 reaches the App transitively | accepted |
 | [DEC-026](#dec-026--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Planner v1: `VisualPlanner` in its own assembly over any `ILlmClient`; prompt contract interpolated from validator code; image only to Vision models; grounded marks; one repair turn keeping the better answer; no structured output and no streaming yet | accepted |
@@ -39,6 +40,19 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-029 — 2026-10-29 — claude-opus-5-5
+
+**Decision — 3D teaching models are C# code in their own assembly, computed wherever physics defines the shape or motion, and honestly flagged.** New Intelligence assembly `HeyGanesh.PartLibrary` (only reference: VisualLessonEngine). A model is named parts built from a closed primitive kit (box, cylinder, sphere, torus, capsule) with a closed set of finishes, a one-line description per part, an explode offset, and keyframed position/rotation tracks. `ModelLibrary.V1` ships three: `four-stroke-engine` (slider-crank kinematics computed at 49 keys), `dna-helix` (B-DNA: 10.5 bp/turn, 0.34 nm rise, 2.0 nm diameter), and `na-k-pump` (`Schematic = true`; only the 3 Na⁺ out / 2 K⁺ in stoichiometry is a fact). Every model is `Reviewed = false` until the owner reads `PartLibrarySmoke --dump` and records it here. `LibraryCheck` holds each model to 16 parts, 64 primitives (three per scene stay under spike 0b's 200), a ±2 box, and ordered, rest-matching, loop-consistent tracks. `ModelLibrary.ToCatalog()` is the `ModelCatalog` the scene3d contract validates against (DEC-028). One rotation convention (`Geometry.Rotate`: Z, then X, then Y, fixed axes, right-hand rule) is used by the models and the checks alike.
+
+**Reasoning.**
+- FEATURE-007 §3.1 "compute, don't recall": the host checks the shipped tracks against the physics: the rod is exactly L long at all 49 keys, the valves only open in their strokes and never reach the crown, every DNA pair is A-T or G-C at the right rise and twist, and the ions end on the right side. A deliberate sign flip in the rod formula fails that row (worst error 0.4).
+- §3.2 "bind to vetted content": names live in one reviewable place. Saying "vetted" when no person has read them would be false, so the flag says otherwise.
+- The library depends on the contract, not the reverse (DEC-028), so content can grow without touching the validator.
+
+**Rejected.** glTF assets (binary, poorly reviewable, motion not checkable against physics; kept for organic shapes later); JSON data files (no compile-time checking, a second parser, the computed models still need code); putting the models in VisualLessonEngine; shipping ten models now.
+
+**Consequences.** Step 4's renderer must reproduce `Geometry.Rotate`'s convention and confirm it with a snapshot of each model; it is also the first caller to pass `ModelLibrary.ToCatalog()` as `ValidationContext.Scene3d`. Organic models (heart, eye) will need a different source. The DNA model draws the strands 180° apart, so no major/minor groove, and says so in its basis. The engine has no valve overlap or timing advance, also stated. Plan: [plans/2026-10-29-part-library-v1.md](plans/2026-10-29-part-library-v1.md). Rows: PL-1..PL-5.
+
 ## DEC-028 — 2026-10-29 — claude-opus-5-5
 
 **Decision — 3D arrives as VisualPlan 1.1: one `scene3d` surface, five ops, names bound to a caller-supplied `ModelCatalog`, and off by default.** Schema `heyganesh.visualplan/1.1` is v1 plus `SurfaceKind.Scene3d` (at most one per plan) and the ops `model` (place catalogue model → instance), `label` (sticky note on an instance or part), `explode` (0..1), `animate` (a catalogue animation of that model) and `camera` (`front`/`side`/`top`/`iso`). `highlight` also takes a part reference `"<instance>.<part>"`. The validator accepts `/1` and `/1.1`; a scene under `/1` is `schema.unsupported`. 3D is accepted only when `ValidationContext.Scene3d` carries a catalogue. With none (every caller today), a scene is plan-level `surface.unsupported` and the lesson is spoken. New codes: `surface.unsupported`, `ref.surface-kind`, `model.unknown`, `part.unknown`, `animation.unknown`, `limit.scenes`, `limit.models` (`MaxModelsPerScene = 3`).

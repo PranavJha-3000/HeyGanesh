@@ -224,6 +224,18 @@
 > Scope notes for the Planner rows: LP-1..LP-7 run offline against a recording fake `ILlmClient` and the golden fixtures as recorded model answers. They prove what the planner SENDS and how it treats any answer; they cannot prove a real model writes good lessons — that is LP-8 and the eval harness (FEATURE-007 §3 item 9), both waiting for a key.
 
 
+## Part Library checks
+
+Verification host: `tools/PartLibrarySmoke` (offline; reuses `tools/LessonSmoke/fixtures/engine-3d.json`). Build library then host sequentially (CS2012); read exit codes from `tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe`.
+
+| # | Check | How to verify | Status |
+|---|-------|---------------|--------|
+| PL-1 | PartLibrary has zero PackageReference, exactly one ProjectReference (VisualLessonEngine), no P/Invoke, no network/file/process/environment/registry access | `--assert-source` → 5 PASS, `SOURCE AUDIT OK`, exit **0** | ✅ automated (verified 2026-10-29, exit 0) |
+| PL-2 | Every V1 model has zero `LibraryCheck` issues (engine 10 parts/17 primitives, DNA 7/50, pump 6/11; 78 together ≤ 200); each of the 14 rules fires alone on a broken one-part model | `--assert-library` → 20 PASS, `LIBRARY OK`, exit **0** | ✅ automated (verified 2026-10-29, exit 0) |
+| PL-3 | Physics in the shipped data: engine TDC/BDC/stroke, rod ends on crank pin and piston pin at all 49 keys, two crank turns per cycle, valves open only in their strokes and clear the crown; DNA radius 1.0, rise 0.34, twist 360/10.5 per pair, strand 1 = `ATGCGTACCA` with A-T/G-C pairing, rungs along the backbone line; pump 3 Na⁺ out / 2 K⁺ in | `--assert-physics` → 19 PASS, `PHYSICS OK`, exit **0** (a sign flip in the rod formula fails it: worst 4.0E-001) | ✅ automated (verified 2026-10-29, exit 0) |
+| PL-4 | `ModelLibrary.ToCatalog()` holds exactly the V1 ids/parts/animations; `engine-3d.json` on `four-stroke-engine` → Valid against it; `engine.flux-capacitor` → `part.unknown`; `engine-test` → `model.unknown`; no model `Reviewed` | `--assert-catalog` → 6 PASS, `CATALOG OK`, exit **0** | ✅ automated (verified 2026-10-29, exit 0) |
+| PL-5 | Review dump: every model's basis, parts, descriptions, primitive counts and animations as plain text | `--dump all` (or `--dump <model>`; unknown model → exit **2**) | 🧑 manual — the owner reads it before any model is marked `Reviewed` |
+
 ## Lesson Turn checks
 
 Verification host: `tools/LessonTurnSmoke` (fake model = the planner host's `FakeLlmClient`, linked; fixtures linked from `tools/LessonSmoke`). Build `src/Experience/HeyGanesh.LessonSession` then the host, sequentially (CS2012). Read exit codes from `tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe`.

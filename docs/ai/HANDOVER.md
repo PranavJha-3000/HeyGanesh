@@ -1,4 +1,12 @@
 
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 1: VisualPlan contract v1)
+
+Did: Wrote FEATURE-007 (visual-lesson strategy/roadmap) and its Phase 1 plan; built `HeyGanesh.VisualLessonEngine` (VisualPlan v1 records, never-throw parser, validator with limits/vocabulary/time-ordered refs/mark bounds, degrade-to-speech and text-fallback policy) + `tools/LessonSmoke` with 3 golden fixtures; DEC-023; LS-1..LS-7. Branch `feat/visualplan-contract-v1`, not merged.
+Left: Owner decisions DEC-020 (rendering stack / WebView2 NuGet), DEC-021 (planner via Providers seam), DEC-022 (tutor session state) are open; Phase 0 spikes and Phases 2–8 not started. Nothing renders or speaks a plan yet.
+Watch: src/Foundation (Abstractions, the module's one reference) is still untracked on main — the branch builds only in this checkout. Build library then host sequentially (CS2012). A degraded beat's elements never exist, so one bad early beat can cascade the plan into TextFallback (LS-5, by design). Any issue without a beat id (incl. an unknown `mode`) forces TextFallback.
+Next: Owner decides DEC-020/021/022; then Phase 0a spike (transparent, capture-excluded, region-click-through WebView2 window).
+Verified: `dotnet build` library + host `-warnaserror` → 0/0; LessonSmoke --assert-source 4/4, --assert-parse 7/7, --assert-limits 15/15, --assert-refs 9/9, --assert-degrade 6/6, --assert-fixtures 6/6, all exit 0.
+
 ## 2026-10-28 · Cline agent (S2.5 Gemini provider - Phase 1)
 
 Did: Implemented text-only Gemini GenerateContent adapter skeleton with core skeleton, constructor, properties, and interface implementation. Build passes but full provider not yet complete.

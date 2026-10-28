@@ -1,7 +1,8 @@
 # FEATURE-007 — Visual Lesson Engine: real-time 2D/3D teaching visuals (strategy + roadmap)
 
 - **Date:** 2026-10-28 · claude-opus-5-5
-- **Status:** planned — strategy only. No code. Phase 1 has a task-level plan in
+- **Status:** in-progress — Phase 1 (VisualPlan contract v1) BUILT 2026-10-28 · claude-opus-5-5 on branch
+  `feat/visualplan-contract-v1`, LS-1..LS-7 green offline (DEC-023). Phases 0, 2–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.
 - **Decisions this document asks the owner for:** DEC-020 (rendering stack), DEC-021 (planner
@@ -241,7 +242,7 @@ done they put a fixture lesson on screen. Phase 4 makes it live.
 ## Acceptance criteria
 - [ ] Owner has decided DEC-020, DEC-021, DEC-022.
 - [ ] Phase 0 spikes recorded with measured numbers.
-- [ ] Phase 1 rows LS-1..LS-7 green offline.
+- [x] Phase 1 rows LS-1..LS-7 green offline (2026-10-28).
 - [ ] (later phases: each phase's exit row in TEST-CHECKLIST.md)
 
 ## Test checklist

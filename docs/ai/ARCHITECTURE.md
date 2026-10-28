@@ -20,7 +20,7 @@
 - **Vision / Coordinate Detection** — UI-element and coordinate detection (DeepSeek V4.1 Flash) — FALLBACK to Element Selection.
 - **Jev** — classification / intent-routing engine; placement TBD, sits before the Tutor Engine call.
 - **Tutor Engine** — academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding and one capped visual) in, explanation text out; the only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017).
-- **Visual Lesson Engine** — structured diagram rendering.
+- **Visual Lesson Engine** — `src/Intelligence/HeyGanesh.VisualLessonEngine/`: the VisualPlan v1 contract only (FEATURE-007 Phase 1, DEC-023) — parses model-authored lesson JSON (surfaces + beats of one spoken sentence and closed-set drawing ops), validates limits/vocabularies/reference integrity, and degrades bad beats to speech or the whole plan to text. References Abstractions only; no rendering, speaking or provider calls. Lesson runtime, planner and renderer are later phases; the rendering stack waits on DEC-020.
 - **Voice pipeline** — speech in/out seam: Qwen Gateway frontend → user transcript out, answer text in → Fish TTS (behind `ITtsClient`); never answers questions itself.
 - **Notes persistence** — SQLite-backed notes store.
 - **API key security proxy** — isolates LLM API keys from the rest of the application.

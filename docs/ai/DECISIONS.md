@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-023](#dec-023--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | VisualPlan v1 contract: closed op set, hard limits, plan-wide ids with time-ordered references, never-throw parser; degrade bad beats to speech, ≥50% degraded or any plan-level issue to text; `HeyGanesh.VisualLessonEngine` references Abstractions only; LS-1..LS-7 | accepted |
 | [DEC-017](#dec-017--2026-10-01--cline-agent-pixel-canary) | 2026-10-01 | Cline agent (Pixel Canary) | First live teaching provider: internal DeepSeekTutorClient (deepseek-flash, direct Chat Completions, DEEPSEEK_API_KEY at call time per DEC-007, fixed thinking:disabled) exposed only through TutorClientFactory.CreateDeepSeek → ITutorClient; verified offline through the exact public construction path via a loopback BaseUrl stub (no InternalsVisibleTo, no handler seam); TU-11/TU-12 | accepted |
 | [DEC-016](#dec-016--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Teaching leg wired into the shell: non-Failed verdict maps to a TutorContext snapshot at the call edge (Failed short-circuits; no-match → Empty; Found carries the whole retained frame as a DownscaledFrame visual), the explanation is spoken verbatim behind a new `--no-speak`; seam composed by `CreateTutorClient()` which returns null — DEC-015's provider decision stays unmade | accepted |
 | [DEC-015](#dec-015--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Tutor Engine as a provider-agnostic teaching layer: question-first prompt owned by the service, screen data as labelled untrusted input, opaque bounded JPEG visuals over a caller-supplied seam; no live client, no actuation, no disposal of the injected seam | accepted |
@@ -30,6 +31,20 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-023 — 2026-10-28 — claude-opus-5-5
+
+**Decision — model-authored lessons cross one validated, versioned contract before anything is spoken or drawn.** Schema `heyganesh.visualplan/1`: declared surfaces (cards), then beats of one `say` sentence plus up to 12 ops from a closed set (`write`, `step`, `arrow`, `icon`, `plot`, `highlight`, `mark`, `clear`). `VisualPlanParser` never throws on model text (only a null argument does) and recovers the outermost `{…}` once, so a prose-or-fence wrapper is not fatal. `VisualPlanValidator` enforces the `LessonLimits.Default` bounds, a fixed glyph vocabulary, the id pattern `^[a-z][a-z0-9-]{0,31}$`, plan-wide unique element ids, references only to elements live at that beat (no forward references, `clear` removes), and screen marks inside the caller's virtual desktop in physical pixels. Outcome policy: a beat with any issue keeps its `say` and loses its ops, and what it would have written never exists (dependants cascade); any plan-level issue, or ≥50% degraded beats, gives `TextFallback` with every `say` joined; nothing to say gives `Rejected`. Numbering note: DEC-020..022 are reserved for the owner's rendering-stack, planner-provider and session-state decisions named in FEATURE-007.
+
+**Reasoning.**
+- Accuracy and safety are decided above the renderer (FEATURE-007 §1.1): a closed op set means a renderer implements exactly what can be validated, and a model can only ever produce a wrong-but-valid drawing, never code.
+- Speech is the part a student cannot lose: degrading to speech instead of failing keeps the lesson when the drawing is broken — BUILD-PLAYBOOK M7 S7.1's "malformed model output degrades to plain text with a notice".
+- Time-ordered reference checks plus rollback of degraded beats let a renderer play beats strictly in sequence without ever meeting a dangling id.
+- `PlotOp` carries an expression and range, never points — the app computes curves, so a plotted curve cannot be hallucinated.
+
+**Rejected.** JSON Schema validation library (a NuGet for less than the reference rules need); throwing on bad model output (loses the spoken lesson and dresses model faults as caller bugs); per-code plan-level severity (one rule — an issue without a beat id is plan-level — is auditable); repairing malformed JSON beyond outer-brace extraction (guessing at model intent).
+
+**Consequences.** Every later phase builds on this: the planner must emit it, the runtime plays it, the surface renders only `Valid`/`PartiallyDegraded` plans. New ops or the 3D `scene3d` surface arrive as a schema minor driven by eval failures. An off-contract `mode` string alone forces `TextFallback` — strict by design, revisit if evals show it costs good lessons.
+
 ## DEC-017 — 2026-10-01 — Cline agent (Pixel Canary)
 
 **Decision — the first live teaching provider is DeepSeek `deepseek-flash`, direct, internal, and factory-fronted.** `DeepSeekTutorClient` (internal) sends one OpenAI-compatible Chat Completions request per turn — `model`, `messages` (system string; user plain string, or the verified `text`+`image_url` content-part array when a `TutorVisual` rides along, as a `data:image/jpeg;base64,` URL of the exact opaque bytes), `max_tokens` from the prompt's budget, `stream:false` — plus the fixed v1 decision `thinking: {"type": "disabled"}`. The bearer key is `DEEPSEEK_API_KEY`, read at call time only (DEC-007's temporary stopgap, extended through a second seam; the same variable Vision reads, which DEC-017 accepts as recorded coupling). `TutorService`, the shell and every other module are untouched; `TutorClientFactory.CreateDeepSeek(DeepSeekTutorOptions?) → ITutorClient` is the only new public construction API, and the shell's flip is that one call.

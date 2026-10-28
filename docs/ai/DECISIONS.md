@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-025](#dec-025--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Surface v1: `CardSurface` (WebView2 cards on their own STA thread, text-only page, acked beats with timeout), seam `ClearAsync`→`ResetAsync(surfaces)`, plots computed by C# `PlotExpression` and refused by the validator when unparsable, TeX-lite + in-page strokes until KaTeX/Rough.js are vendored, marks as overlay box+pointer | accepted |
 | [DEC-024](#dec-024--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner is provider-agnostic and multimodal: resolved through ProviderRegistry (no hard-wired provider), sends the question + one bounded screen crop as an image part when the model has Vision, otherwise an explicit text-only grounding path; refines DEC-021 | accepted |
 | [DEC-022](#dec-022--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Tutor session state: in-memory only — last validated plan + last 6 turns, cleared on idle/exit; no persistence until Notes (M8) | accepted |
 | [DEC-021](#dec-021--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner calls models through Providers.Core `ILlmClient` (structured output + streaming already built), default DeepSeek `deepseek-flash` via OpenAiCompat; Tutor's DeepSeek client untouched | accepted |
@@ -35,6 +36,21 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-025 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the first real lesson canvas.** `HeyGanesh.LessonSurface.CardSurface` implements `ILessonCanvas` (DEC-020): one STA UI thread with a WinForms loop; one shared WebView2 environment (profile under `%LOCALAPPDATA%/HeyGanesh/webview2` or `$HEYGANESH_DATA_DIR/webview2`) with one card pre-warmed; one card window per declared surface, laid out top-right on the monitor under the cursor, each capture-excluded before first show (hard error otherwise). The page (`LessonPage/lesson.html|css|js`, virtual host `lesson.heyganesh.invalid`, CSP `default-src 'self'; connect-src 'none'`) builds DOM/SVG from beat messages through `textContent` only and acknowledges each one; an unacknowledged beat fails after `ApplyTimeout` (3 s). Navigation off the virtual host is cancelled and new windows refused. Accompanying choices:
+- **Seam change:** `ILessonCanvas.ClearAsync(ct)` → `ResetAsync(IReadOnlyList<LessonSurface> surfaces, ct)`; a beat does not carry its card's id/title, and the cards must exist before beat 1. `LessonPlayer` passes `plan.Surfaces`.
+- **Plots computed by the app:** `PlotExpression` (closed grammar, implicit multiplication, depth/length caps) evaluates the model's expression in C#; the validator now refuses an unparsable expression (`value.invalid`), so the beat degrades before rendering. The page only draws host-sent points.
+- **No new downloads this phase:** math uses an in-page TeX-lite formatter (fractions, scripts, roots, matrices, arrows, Greek) and strokes are jittered in-page; KaTeX/Rough.js (DEC-020) can replace both later without touching C#. Fonts are Windows' own (Ink Free / Segoe Print).
+- **Marks:** every mark shape is shown as the existing native overlay's box + pointer; a new mark hides the previous one first (the overlay refuses overlap).
+- **Diagnostics in product code, read-only:** `DescribeCardAsync`, `ProbeIsolationAsync` (also usable as a startup health check) and `CapturePageAsync` (the page itself, not the screen).
+
+**Reasoning.** Opaque WebView2 cards were proven by spike 0a; computing plots in C# is FEATURE-007 §3.1's highest-value accuracy rule; deferring KaTeX keeps the phase free of downloads beyond the already-approved package while the visible demo works today. Reviewing page snapshots found and fixed four pedagogy-affecting layout faults (full-width rings, stub arrows between stacked items, a clipped plot, and a marker band that singled out a matrix's bottom row).
+
+**Rejected.** Letting the page evaluate expressions (moves the accuracy guarantee into JavaScript and widens the page's attack surface); `innerHTML`-based rendering (model text becomes markup); one window for all cards (couples layout and loses per-card dragging); downloading KaTeX/Rough.js now (the owner delegated "quicker and cheaper", and the TeX-lite formatter covers the fixtures).
+
+**Consequences.** `HeyGanesh.LessonSurface` is the only assembly with a PackageReference (LSU-1). Its rows need an interactive desktop. The App Shell wiring (hotkey → planner → player over CardSurface + a Voice speaker) is not done — it needs the Phase 4 planner to have lessons to play.
+
 ## DEC-024 — 2026-10-28 — claude-opus-5-5
 
 **Decision — the lesson planner stays multimodal and multi-model.** Refines DEC-021 (owner, 2026-10-28: "I want to keep it multimodal"). (1) *Multi-model:* the planner gets its `ILlmClient` from `ProviderRegistry` by role, never by naming a provider in code; DeepSeek `deepseek-flash` is only the default assignment, and any adapter already in `src/Providers` (OpenAI-compatible family, Anthropic, Gemini once finished) can be assigned by configuration. (2) *Multimodal input:* each planning request carries the question text plus, when the screen was grounded, one bounded screen crop as an `LlmImagePart` (same JPEG caps and untrusted-data labelling as the Tutor, DEC-015). If the assigned model lacks `ProviderCapability.Vision`, the planner takes an explicit text-only path (UIA/element description only) and records that it did — never a silent downgrade, matching Providers.Core's capability rule. (3) *Multimodal output* is already the design: speech + 2D cards + screen marks now, 3D at Phase 5.

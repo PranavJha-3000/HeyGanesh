@@ -221,4 +221,4 @@ Controls from other threads: Pause (next boundary) · Resume · SkipBeat (cancel
 Caller cancellation propagates as OperationCanceledException; speaker/canvas faults propagate; state returns to Idle.
 ```
 
-Implementers to come: `ILessonCanvas` = Phase 3 WebView2 cards + native ScreenOverlay marks (DEC-020); `ILessonSpeaker` = App Shell adapter over Voice TTS. The planner that produces the model text is Phase 4 (DEC-021/DEC-024).
+`ILessonCanvas` is implemented by `CardSurface` (Phase 3, DEC-025): ResetAsync lays out one card per surface; ApplyBeatAsync groups the beat's ops per card (a highlight goes to the card holding its element), computes plot points in C# (`PlotExpression.Sample`), posts one message per card and awaits each page's `done` (timeout → `TimeoutException`); `ScreenMarkOp` → `ScreenOverlayService.ShowAsync` fire-and-forget after hiding any previous mark. Still to come: `ILessonSpeaker` = App Shell adapter over Voice TTS. The planner that produces the model text is Phase 4 (DEC-021/DEC-024).

@@ -1,4 +1,12 @@
 
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 3: Lesson Surface v1)
+
+Did: Built `HeyGanesh.LessonSurface` (CardSurface: WebView2 opaque cards, text-only page, acked beats, native overlay marks, read-only diagnostics + page snapshots), `PlotExpression` (C#-computed plots; validator refuses bad expressions), seam ClearAsync→ResetAsync, and `tools/LessonSurfaceSmoke` (LSU-1..LSU-6 incl. an offline demo with the Windows SAPI voice). DEC-025. Branch `feat/lesson-surface-v1`.
+Left: Not wired into the App Shell (needs Phase 4's planner to produce lessons). KaTeX/Rough.js not vendored (TeX-lite stand-in). Mark shapes all render as the overlay's box. SAPI voice in the demo not yet heard by a human.
+Watch: LessonSurfaceSmoke rows need an interactive desktop. Cards are capture-excluded, so screenshots never show them — use `--snapshot`. WinForms `Activated` fires on cards (thread-local); the real guarantee is "never foreground" (LSU-2). The WebView2 package's WPF reference is removed by a build target (MSB3277).
+Next: Phase 4 — the lesson planner (ProviderRegistry, multimodal per DEC-024) against recorded model answers, offline; live rows wait for a key.
+Verified: LessonSmoke --assert-plot 12/12 + all 10 rows; LessonSurfaceSmoke source 4, window 7, render 17, security 4, marks 2 — all exit 0; demo + 4 page snapshots reviewed; sln -warnaserror 0/0; scans pass.
+
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 2: Lesson Runtime v1)
 
 Did: Built `Runtime/` in HeyGanesh.VisualLessonEngine — ILessonCanvas/ILessonSpeaker seams, LessonPlayer (draw-then-speak per beat, speech is the clock, degraded/fallback/rejected branches, pause/resume/skip/stop, burst refusal, cancel + fault propagation) and PlaybackReport (replay log); LessonSmoke rows LS-8..LS-10 with gated fake speaker. DEC-024: planner multimodal (screen crop as image part when the model has Vision, explicit text-only otherwise) and multi-model (ProviderRegistry, no hard-wired provider). Branch `feat/lesson-runtime-v1`.

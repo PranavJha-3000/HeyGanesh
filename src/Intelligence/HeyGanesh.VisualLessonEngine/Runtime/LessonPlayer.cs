@@ -27,10 +27,25 @@ public sealed class LessonPlayer
     public async Task<PlaybackReport> PlayAsync(LessonValidationResult lesson, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(lesson);
+        var none = Array.Empty<BeatRecord>();
+        if (lesson.Outcome == LessonOutcome.Rejected)
+        {
+            // Nothing usable, not even speech: touch neither seam.
+            return new PlaybackReport(PlaybackStatus.Rejected, lesson.Outcome, none, SpokeFallback: false);
+        }
+
         _state = (int)PlayerState.Playing;
         try
         {
-            var plan = lesson.Plan!;
+            if (lesson.Outcome == LessonOutcome.TextFallback || lesson.Plan is null)
+            {
+                // Too broken to draw: say so once on the canvas, then teach by voice alone (M7 S7.1).
+                await _canvas.ShowNoticeAsync(FallbackNotice, cancellationToken);
+                await _speaker.SpeakAsync(lesson.FallbackText, cancellationToken);
+                return new PlaybackReport(PlaybackStatus.Completed, lesson.Outcome, none, SpokeFallback: true);
+            }
+
+            var plan = lesson.Plan;
             var records = new List<BeatRecord>();
             await _canvas.ClearAsync(cancellationToken);
             for (var index = 0; index < plan.Beats.Count; index++)

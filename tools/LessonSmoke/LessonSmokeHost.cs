@@ -17,6 +17,7 @@ internal static partial class LessonSmokeHost
         AssertDegrade,
         AssertFixtures,
         AssertPlay,
+        AssertPlayDegraded,
     }
 
     public static async Task<int> RunAsync(string[] args)
@@ -46,6 +47,7 @@ internal static partial class LessonSmokeHost
                 Mode.AssertDegrade => RunAssertDegrade(),
                 Mode.AssertFixtures => RunAssertFixtures(),
                 Mode.AssertPlay => await RunAssertPlayAsync(),
+                Mode.AssertPlayDegraded => await RunAssertPlayDegradedAsync(),
                 _ => PrintUsage(),
             };
         }
@@ -72,6 +74,7 @@ internal static partial class LessonSmokeHost
                 case "--assert-degrade": mode = Mode.AssertDegrade; break;
                 case "--assert-fixtures": mode = Mode.AssertFixtures; break;
                 case "--assert-play": mode = Mode.AssertPlay; break;
+                case "--assert-play-degraded": mode = Mode.AssertPlayDegraded; break;
                 case "--help": case "-h": case "/?": mode = Mode.Help; break;
                 default:
                     Console.WriteLine($"unknown argument '{arg}' (exit 2)");
@@ -98,6 +101,7 @@ internal static partial class LessonSmokeHost
         Console.WriteLine();
         Console.WriteLine("Playback rows (fake canvas + fake speaker, no renderer, no TTS):");
         Console.WriteLine("  --assert-play                 draw-then-speak per beat, speech is the clock, report, exit 0");
+        Console.WriteLine("  --assert-play-degraded        degraded beat spoken not drawn; fallback notice; rejected silent; replay, exit 0");
         return 0;
     }
 

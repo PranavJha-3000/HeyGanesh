@@ -1,0 +1,252 @@
+# FEATURE-007 — Visual Lesson Engine: real-time 2D/3D teaching visuals (strategy + roadmap)
+
+- **Date:** 2026-10-28 · claude-opus-5-5
+- **Status:** planned — strategy only. No code. Phase 1 has a task-level plan in
+  [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
+- **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.
+- **Decisions this document asks the owner for:** DEC-020 (rendering stack), DEC-021 (planner
+  provider path), DEC-022 (tutor session state). None is taken by this document.
+
+## Description
+
+A student holds Ctrl+Alt, asks about what is on screen ("how does the chain rule give 6x/(3x²−1)?",
+"show me a sodium–potassium pump in 3D"), and HeyGanesh answers by **speaking and drawing at the same
+time**: paper-style cards fill in step by step, marks land on the student's own screen, and — when the
+subject is a physical thing — a labelled 3D figure appears that the student can rotate and click a
+part of to ask about it. It can also stop and ask the student a question, check the answer, and give
+graded hints instead of the solution.
+
+Reference product: HeyClicky v1.1.1 "real-time visuals" (2026-10-23). From their launch stream and
+screenshots: lessons are a stream of short *beats* (one spoken sentence + the drawing that goes with
+it); cards are cream graph-paper sheets with a handwritten face; 3D figures are assembled from simple
+primitives with named parts, sticky-note labels on leader lines, highlight / exploded-view / part
+animation per beat, drawn transparently over the screen; drawings are replayable from history. Their
+3D engine is in-house. HeyGanesh copies the *teaching* half only — agents, "Drive" (screen
+actuation), browser automation and routines are out of scope, and the Tutor Engine's no-actuation
+rule (FEATURE-006) stays absolute.
+
+## Out of scope
+- Any screen actuation (clicking, typing, driving apps) — Tutor Engine contract.
+- General-assistant features: agents, web shopping, email, routines.
+- Image-to-3D generative models (minutes of latency, unverifiable geometry).
+- AI-written code of any kind executing in the renderer (the model emits data, never JavaScript).
+
+---
+
+## 1. Build vs. leverage
+
+### 1.1 The point that decides it
+
+**Pedagogical accuracy is not produced by the renderer.** Whether the student sees a correct
+derivative, a correctly-labelled crankshaft or a correct DNA base pairing is decided by three layers
+*above* rasterization: the lesson contract (what can be expressed), the verification layer (what is
+checked before it is shown), and the content sources (part library, molecule geometry, computed
+plots). A from-scratch engine buys control over pixels — the one layer that does not move the accuracy
+needle — at the price of months that should go into the layers that do. So: **build everything that
+carries meaning; leverage everything that only draws.** This agrees with the earlier suggestion
+(own runtime on a mature renderer) and sharpens it: the line is *meaning vs. pixels*, not 2D vs. 3D.
+
+### 1.2 Options compared
+
+Scores 1 (poor) – 5 (best) for this product. "Accuracy" = how much the option helps or hurts showing
+correct content; "Scale" = covering new subjects/models without engine work.
+
+| Option | Control | Accuracy | Scale | Time to first 3D lesson | Dependency cost | Verdict |
+|---|---|---|---|---|---|---|
+| A. From-scratch native: D3D11 via P/Invoke, own scene graph, text, picking, AA, glTF | 5 | 3 | 2 | 3–5 months | none (zero NuGet holds) | **Rejected** — every month here is a month not spent on verification; text/label rendering and picking alone are weeks |
+| B. Native .NET 3D lib (Helix Toolkit, Silk.NET + own scene, Stride) | 3 | 3 | 3 | 6–10 weeks | NuGet + smaller ecosystem; Helix's SharpDX lineage is aging; no math typesetting | Rejected — NuGet cost of B with less capability than C |
+| C. WebView2 surface + Babylon.js (3D) + SVG (2D) + KaTeX (math), vendored | 4 | 4 | 5 | 3–4 weeks | one NuGet (`Microsoft.Web.WebView2`) in one Experience assembly; JS libs vendored as pinned static files | **Recommended** |
+| C′. Same with three.js instead of Babylon.js | 4 | 4 | 5 | 3–4 weeks | same | Close second — see 1.3 |
+| D. WebView2 without the NuGet (hand-declared COM against the runtime) | 4 | 4 | 5 | +2–3 weeks over C | none | Fallback if the owner refuses the NuGet: unsupported loading path, more interop surface to own |
+
+### 1.3 Babylon.js vs. three.js (inside option C)
+
+Babylon.js wins on the things an LLM-driven teaching scene needs out of the box: `HighlightLayer`
+(signalling a part), GUI labels that track a mesh (`linkWithMesh` — the sticky-note callouts), ray
+picking (click-a-part-to-ask), animation groups, glTF loading, WebGPU with WebGL2 fallback, a strong
+backward-compatibility policy (we pin a version and our schema maps onto a stable API), Apache-2.0,
+TypeScript-native. three.js is smaller and has the bigger ecosystem but churns its API across monthly
+releases, and labels/highlight/picking are add-ons we would assemble. Neither choice leaks past the
+renderer: the C# side speaks only our schema, so swapping is a renderer rewrite, not a product rewrite.
+
+### 1.4 What we build (owned code, where accuracy lives)
+
+- **VisualPlan contract** — versioned schema, parser, validator, degrade-to-text (Phase 1).
+- **Lesson Runtime** — beat timeline, speech sync, state, replay (Phase 2).
+- **Verification layer** — numeric spot-checks, reference integrity, vocabulary/part-library binding,
+  claim provenance (Phase 4).
+- **Primitive kit + curated part library** — parametric STEM models with vetted part names (Phase 5).
+- **Pedagogy engine** — mode selection, Socratic ask/grade/hint ladder, session state (Phase 6).
+- **Eval harness** — golden questions, rubric scoring, regression gate (Phase 7, started in Phase 4).
+
+### 1.5 What we leverage (vendored, pinned, offline)
+
+| Need | Library | Licence | Why not build |
+|---|---|---|---|
+| Host surface | WebView2 (Evergreen runtime ships with Windows 11) | MS SDK licence | Chromium-grade compositor, GPU + software fallback (HeyClicky's Windows bug "GPU can't draw 3D" is exactly what a software fallback absorbs) |
+| 3D | Babylon.js | Apache-2.0 | see 1.3 |
+| Math typesetting | KaTeX | MIT | TeX layout is a decade of work; KaTeX is fast and synchronous |
+| Hand-drawn strokes | Rough.js | MIT | the "marker on paper" look for arrows/boxes |
+| Handwritten face | an OFL font (e.g. Patrick Hand) bundled locally | OFL-1.1 | — |
+
+All JS/CSS/fonts ship inside the app as static files served through a virtual host mapping — no CDN,
+no npm at runtime, works offline, integrity-hashed in a manifest the source audit checks.
+
+---
+
+## 2. Technical architecture
+
+### 2.1 Shape
+
+```
+Voice (committed transcript) ─┐
+Screen context (ES/Vision box,├─► Tutor Session ──► Pedagogy Policy ──► Lesson Planner (LLM, streamed)
+  bounded crop, untrusted)    │   (turn state,       (mode: explain /     │  emits VisualPlan beats
+Retrieval (course docs, M8)  ─┘    learner signals)   socratic / worked)  ▼
+                                                                  Verification layer (C#, deterministic)
+                                                                  schema → refs → vocabulary → numeric
+                                                                  spot-check → claim provenance
+                                                                         │ verified beat (or degraded)
+                                                                         ▼
+                                     Lesson Runtime (C#) — timeline, clock, state, replay log
+                                       │ speak(beat.say)                     │ render(beat.ops)
+                                       ▼                                     ▼
+                                Voice TTS (Fish)                   Lesson Surface (WebView2)
+                                                                   2D: SVG cards + KaTeX + Rough.js
+                                                                   3D: Babylon scene from part library
+                                                                   screen marks over the desktop
+                                                                         │ events: part-clicked,
+                                                                         │ answer-given, dismissed
+                                                                         ▼
+                                                               back to Tutor Session (follow-up turn)
+```
+
+### 2.2 Seams (who owns what)
+
+| Component | Assembly (proposed) | Owns | Never does |
+|---|---|---|---|
+| VisualPlan contract | `src/Intelligence/HeyGanesh.VisualLessonEngine/` | schema types, parse, validate, degrade | I/O, rendering, provider calls |
+| Lesson Planner | same assembly, `Planning/` | prompt contract, streaming beat assembly, verification | rendering, speaking |
+| Lesson Runtime | same assembly, `Runtime/` | beat clock, sync, replay log | knows nothing of WebView2 |
+| Lesson Surface | `src/Experience/HeyGanesh.LessonSurface/` (only assembly with the WebView2 NuGet) | window, transparency, capture exclusion, typed message bridge, vendored assets | parses model output (it receives only *validated* plans) |
+| Tutor Session | Tutor Engine (extended) or Context Orchestrator — DEC-022 | turn history, mode, learner signals | rendering |
+
+The bridge between C# and the page carries **only validated VisualPlan fragments and typed events**,
+as JSON messages with a closed op vocabulary. The page has no network access (virtual host only,
+navigation blocked), runs no `eval`, and treats every string as text (no `innerHTML`). A compromised
+or confused model can, at worst, produce a wrong-but-schema-valid drawing — never code execution.
+
+### 2.3 Window model
+
+One per-monitor, borderless, top-most, **transparent** WebView2 surface (composition hosting,
+transparent default background), capture-excluded via `CaptureExclusion.TryExcludeFromCapture`,
+PerMonitorV2-aware, coordinates in physical pixels (`PixelRect`). Click-through everywhere except
+interactive regions: the page reports its interactive rectangles (cards, 3D canvas) to the host,
+which answers `WM_NCHITTEST` with `HTTRANSPARENT` outside them. This keeps the existing overlay
+contract (SO rows) true for every pixel the student did not ask to interact with. **This is the
+riskiest technical assumption in the plan and is spiked first (Phase 0).**
+
+### 2.4 Tutoring workflows the contract must express
+
+| Workflow | Contract feature | Grading |
+|---|---|---|
+| Step-by-step explanation | `beats[]`, each one sentence + ≤12 ops (segmenting) | — |
+| Worked example → faded example | `mode: worked-example`; later beats leave a step for the student | ask beat |
+| Socratic questioning | `ask` beat: prompt, expected answer kind (numeric ± tolerance, choice, short text), 3-level hint ladder, reveal | numeric/choice: deterministic C#; short text: rubric-graded LLM call |
+| Check for understanding | 1 `ask` beat at lesson end (retrieval practice) | as above |
+| Knowledge retrieval | beat `claims[]` carry provenance `screen` / `retrieved:<doc#chunk>` / `general` | retrieved chunks delimited as untrusted data (existing Tutor pattern) |
+| Follow-up ("simpler", "just the combustion part") | session keeps the last plan; planner gets it as context and may `refine` a surface instead of redrawing | — |
+| Click a 3D part | surface emits `part-clicked(partId)`; session turns it into a follow-up question bound to that part | — |
+
+### 2.5 Latency budget (target: first stroke ≤ 2.5 s after key release)
+
+| Stage | Budget | How |
+|---|---|---|
+| STT commit | existing | Gateway |
+| Planner first beat | ≤ 1.5 s | stream; outline + beat 1 first; small beats; structured output |
+| Verify beat | ≤ 20 ms | pure C#, no network |
+| TTS first audio | ≤ 700 ms, overlapped | speak beat *n* while planner streams *n+1* |
+| Render beat | ≤ 50 ms 2D, ≤ 300 ms 3D scene build | pre-warmed WebView2 (created hidden at startup) |
+
+---
+
+## 3. Optimization strategy: accuracy and instructional integrity
+
+Ordered by accuracy gained per unit of effort.
+
+1. **Compute, don't recall.** Anything computable is computed by C#, never trusted from the model:
+   plot points come from an expression the app evaluates; derivative/integral/identity claims are
+   **numerically spot-checked** (evaluate both sides at random points in the stated domain; disagree
+   beyond tolerance → beat flagged and re-planned or degraded). Cheap, subject-agnostic, catches the
+   most common STEM hallucination class (algebra slips).
+2. **Bind to vetted content.** 3D figures reference the curated part library by id + parameters
+   (engine, DNA helix, cell membrane pump, circuit board, heart, eye, …) with reviewed part names and
+   one-line descriptions. Molecules use real conformer geometry from a bundled set (PubChem 3D SDF),
+   never model-invented coordinates. Free-form primitive composition is allowed but rendered with a
+   visible **"schematic"** tag.
+3. **Closed vocabularies.** Glyphs, part ids, op names, styles are enumerations. The model cannot
+   reference what does not exist; the validator rejects it and the beat degrades, visibly.
+4. **Referential integrity.** Every label/arrow/highlight must target an element that exists at that
+   beat; every part named in `say` should exist in the scene (warn → planner retry once).
+5. **Claim provenance + abstention.** Each beat's factual claims carry a basis. `general` claims with
+   specific numbers/dates/names are surfaced with a hedge in speech; the prompt contract requires
+   "I'm not sure" over a guess, and the eval rubric rewards it.
+6. **Screen content is data.** Unchanged from FEATURE-006: on-screen text is untrusted, labelled, and
+   never an instruction — a slide that says "ignore your rules" teaches nothing to the planner.
+7. **Pedagogy as rules, not vibes.** The renderer enforces multimedia-learning principles: narration
+   and drawing in sync (temporal contiguity), labels adjacent to their parts (spatial contiguity),
+   highlight what is being said (signalling), one idea per beat (segmenting), no decorative clutter
+   (coherence), captions optional rather than duplicated on-card text (redundancy). Socratic mode
+   withholds the answer until two hint levels are spent unless the student asks for it.
+8. **Strongest model where it matters.** Planner on the most capable reasoning model available
+   through the Providers seam, low temperature, structured output; grading/rubric on a cheaper
+   model; the planner prompt is versioned and every change runs the eval gate.
+9. **Measure it.** Eval harness from Phase 4: ≥ 100 golden questions across math, physics,
+   chemistry, biology, CS, engineering; rubric: factual accuracy, step validity, visual–speech
+   agreement, pedagogy (asks before telling in socratic mode), abstention correctness. LLM-judge +
+   human spot-check of 10%. A prompt or model change that lowers accuracy does not merge.
+
+---
+
+## 4. Roadmap
+
+Each phase is one or more single-logical-change steps (Working Agreement), each with its own plan,
+verification host rows, and docs. "Demo" = what the owner can see at the end.
+
+| Phase | Scope | Depends on | Demo / exit |
+|---|---|---|---|
+| **0. Decide + de-risk** | DEC-020/021/022 by the owner. Throwaway spikes in `%TEMP%` (never committed): (a) transparent, capture-excluded, region-click-through WebView2 window at PerMonitorV2; (b) Babylon scene of 200 primitives + 10 labels at 60 fps on integrated GPU and under software rendering; (c) time-to-first-beat with streamed structured output on the chosen model | — | three numbers and a go/no-go per spike, logged in this file |
+| **1. VisualPlan contract v1** | schema, parser, validator, degrade-to-text, golden fixtures, `tools/LessonSmoke` | none (pure C#) | LS-1..LS-7 green offline — [plan](../plans/2026-10-28-visualplan-contract-v1.md) |
+| **2. Lesson Runtime** | beat clock, speech-duration sync against fake TTS, pause/skip/replay, replay log | 1 | a fixture lesson "plays" in the host with timestamps |
+| **3. Lesson Surface, 2D** | `HeyGanesh.LessonSurface`, bridge, vendored assets, cards (write/step/arrow/icon/plot/math), screen marks, dismiss | 0a, 1, 2 | fixture lessons draw on screen in sync with fake speech |
+| **4. Planner + verification** | prompt contract, streaming beats, numeric spot-check, ref checks, retry-once, eval harness v0 (30 questions) | 1, 3; SH-17 shell flip | a live voice question produces a drawn, spoken, verified lesson |
+| **5. 3D** | `scene3d` surface, primitive kit, part library v1 (10 models), labels, highlight, explode, animate, picking → click-to-ask | 0b, 3, 4 | "show me a 4-stroke engine in 3D", click the connecting rod |
+| **6. Socratic loop + session** | `ask` beats, deterministic + rubric grading, hint ladder, multi-turn follow-ups | 4, DEC-022 | tutor asks, student answers by voice, gets a hint, then credit |
+| **7. Quality gate** | eval set to ≥ 100, CI regression gate, accessibility (keyboard, reduced motion, high contrast), perf/leak soak | 4–6 | published eval baseline; soak clean |
+| **8. Production** | course-material retrieval (M8), notes + lesson history replay, installer/updates, crash reporting without content | 7 | M9 release checklist |
+
+**Fast path to the first visible win:** Phases 1 → 2 → 3 need no live model and no 3D; with Phase 0a
+done they put a fixture lesson on screen. Phase 4 makes it live.
+
+## Risks
+
+| Risk | Signal | Mitigation |
+|---|---|---|
+| Transparent WebView2 + selective click-through does not compose cleanly with capture exclusion | Phase 0a spike fails | fall back to two windows: native click-through overlay (marks) + opaque interactive lesson window (cards/3D) |
+| Planner too slow for "real-time" | Phase 0c > 2.5 s first beat | smaller first beat, faster model for beat 1 + strong model for the rest, prefetch outline |
+| Schema too narrow → model fights it | many degraded beats in evals | add ops by minor version, driven by eval failures, never speculatively |
+| Part library coverage | students ask for unmodelled objects | schematic primitive composition, clearly tagged; library grows from eval misses |
+| NuGet refused | DEC-020 = no | option D (hand-declared COM), +2–3 weeks |
+
+## Acceptance criteria
+- [ ] Owner has decided DEC-020, DEC-021, DEC-022.
+- [ ] Phase 0 spikes recorded with measured numbers.
+- [ ] Phase 1 rows LS-1..LS-7 green offline.
+- [ ] (later phases: each phase's exit row in TEST-CHECKLIST.md)
+
+## Test checklist
+Phase 1 rows LS-1..LS-7 are defined in the Phase 1 plan and added to TEST-CHECKLIST.md by its last task.
+
+## Rollback
+Documentation only at this stage — delete this file. Phase 1 adds one new assembly and one new host
+with no edits to existing code paths; rollback is removing both and their `.sln` entries.

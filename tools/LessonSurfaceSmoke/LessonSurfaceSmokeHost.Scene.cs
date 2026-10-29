@@ -60,7 +60,7 @@ internal static partial class LessonSurfaceSmokeHost
         var table = File.ReadAllText(Path.Combine(vendor, "VENDOR.md"));
         var pins = Regex.Matches(table, @"\|\s*`(babylonjs-[^`]+)`\s*\|[^|]*\|[^|]*\|\s*`([0-9a-f]{64})`")
             .ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value, StringComparer.Ordinal);
-        failures = Check(pins.Count == 3, $"VENDOR.md pins 3 files ({string.Join(", ", pins.Keys)})", failures);
+        failures = Check(pins.Count == 4, $"VENDOR.md pins 4 files ({string.Join(", ", pins.Keys)})", failures);
         foreach (var (file, pinned) in pins)
         {
             var path = Path.Combine(vendor, file.Replace('/', Path.DirectorySeparatorChar));
@@ -68,8 +68,10 @@ internal static partial class LessonSurfaceSmokeHost
             failures = Check(actual == pinned, $"{file}: SHA-256 matches VENDOR.md ({actual[..Math.Min(12, actual.Length)]}…)", failures);
         }
 
-        failures = Check(pins.Keys.Any(k => k.EndsWith("LICENSE.md", StringComparison.Ordinal)) && File.ReadAllText(Path.Combine(vendor, "babylonjs-9.30.0", "LICENSE.md")).Contains("Apache License", StringComparison.Ordinal),
-            "the Apache-2.0 licence ships with the vendored files", failures);
+        // Apache-2.0 §4: the licence and the project's NOTICE travel with the redistributed files.
+        failures = Check(pins.Keys.Any(k => k.EndsWith("LICENSE.md", StringComparison.Ordinal)) && File.ReadAllText(Path.Combine(vendor, "babylonjs-9.30.0", "LICENSE.md")).Contains("Apache License", StringComparison.Ordinal)
+                && pins.Keys.Any(k => k.EndsWith("NOTICE.md", StringComparison.Ordinal)) && File.ReadAllText(Path.Combine(vendor, "babylonjs-9.30.0", "NOTICE.md")).Contains("Babylon.js", StringComparison.Ordinal),
+            "the Apache-2.0 licence and Babylon's NOTICE ship with the vendored files", failures);
         var attributes = File.ReadAllText(Path.Combine(root, ".gitattributes"));
         failures = Check(attributes.Contains("src/Experience/HeyGanesh.LessonSurface/Page/vendor/** -text", StringComparison.Ordinal),
             ".gitattributes keeps git from rewriting the vendored files' line endings", failures);

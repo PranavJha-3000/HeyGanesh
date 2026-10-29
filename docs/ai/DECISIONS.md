@@ -173,7 +173,7 @@ Memory was not re-measured in this step. Spike 0b's 357–506 MB WebView2 privat
 
 **Consequences.**
 - About 9.3 MB of vendored JavaScript is now in the repo and its history.
-- `babylonjs@9.30.0`'s 46-byte `NOTICE.md` is **not yet vendored**. It wasn't in the approved download, and Apache-2.0 §4(d) asks redistributions to include it, so it must be added before this branch is pushed or shared.
+- *(2026-10-29 · claude-opus-5-5 update: `NOTICE.md` is now vendored and pinned in `VENDOR.md`; LSU-7 checks it ships.)* `babylonjs@9.30.0`'s 46-byte `NOTICE.md` is **not yet vendored**. It wasn't in the approved download, and Apache-2.0 §4(d) asks redistributions to include it, so it must be added before this branch is pushed or shared.
 - `explode` moves parts but does not re-frame the camera. A lesson that wants the whole exploded view adds a `camera` op.
 - Making a 3D lesson's first beat fast is a later change: keep one `CardSurface` across turns, or pre-warm at app start.
 - Step 5 (click a part to ask) adds input to this window.

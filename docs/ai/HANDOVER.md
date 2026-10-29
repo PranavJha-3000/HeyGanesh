@@ -1,4 +1,12 @@
 
+## 2026-10-29 · claude-opus-5-5 (Babylon NOTICE.md vendored)
+
+Did: Downloaded babylonjs@9.30.0 `NOTICE.md` (46 B, owner-approved) from cdn.jsdelivr.net; its SHA-256 `225463ef…5823` equals jsdelivr's published hash. Vendored at `Page/vendor/babylonjs-9.30.0/NOTICE.md`, pinned in `VENDOR.md`; LSU-7 now expects 4 pins and checks that the licence and NOTICE ship. The pre-push licensing item is closed.
+Left: Live 3D run (SH-20, LP-8) needs the keys and a human. Owner: PL-5 / LSU-13 reviews; merge/push decision. Branch not pushed.
+Watch: An empty `python -` heredoc in a Bash command opens a looping REPL (happened 3 times today, up to 790 MB of log); write scripts to files and run them with `< /dev/null`.
+Next: Owner decides on merging `feat/lesson-shell-wiring-v1`, or sets keys for the live 3D run.
+Verified: LessonSurfaceSmoke --assert-source 14 PASS (4 pins, licence + NOTICE), also from a fresh checkout of the commit.
+
 ## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 6b: --lesson turns 3D on)
 
 Did: The App Shell's `--lesson` leg passes `CardSurface.Scene3dCatalog` and calls `LessonTurn.RunWithFollowUpsAsync` (30 s click wait), prints each turn and each click, exits with the last turn's code (13 if cancelled while waiting); the header says `3D: 3 models, click a part to ask`; Ctrl+Alt stays refused while a lesson waits, with a hint (DEC-033). Phase 5 (3D) is code-complete.

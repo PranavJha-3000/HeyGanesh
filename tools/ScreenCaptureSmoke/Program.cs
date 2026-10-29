@@ -9,6 +9,7 @@ using Windows.Storage.Streams;
 //
 // Usage: dotnet run --project tools/ScreenCaptureSmoke -c Debug -- [--out <dir>] [--move-cursor]
 //                                                          [--no-exclude] [--repeats <n>]
+//        ... -- --assert-ocr | --read-text     the screen-text rows (DEC-038, OcrRows.cs; local-only)
 //
 // Captures every monitor, writes the JPEGs to disk, and asserts the properties the module promises:
 // cursor-first ordering, sane downscale, valid JPEGs with actual content, no leaks across repeated
@@ -76,6 +77,17 @@ Console.WriteLine($"output: {outputDirectory}");
 var dpiContext = new IntPtr(-4); // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
 var dpiAwarenessSet = NativeFns.SetProcessDpiAwarenessContext(dpiContext);
 Console.WriteLine($"per-monitor-v2 DPI awareness: {dpiAwarenessSet}");
+
+// The screen-text rows run alone, after DPI awareness (their boxes are physical pixels).
+if (args.Length > 0 && args[0] == "--assert-ocr")
+{
+    return await OcrRows.AssertOcrAsync();
+}
+
+if (args.Length > 0 && args[0] == "--read-text")
+{
+    return await OcrRows.ReadTextAsync();
+}
 
 var consoleWindow = NativeFns.GetConsoleWindow();
 Console.WriteLine($"console window: 0x{consoleWindow:X}");

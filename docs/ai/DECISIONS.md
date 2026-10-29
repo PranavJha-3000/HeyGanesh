@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-038](#dec-038--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The capture can read the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default), into `MonitorCapture.TextLines` in global physical pixels; local only; nothing consumes it yet | accepted |
 | [DEC-037](#dec-037--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A found Element Selection choice in the Low tier is checked by Vision on the same frame (on by default, `CheckLowConfidence`); Vision replaces it only when Medium+ and elsewhere; a failed or unsure check keeps the choice. Supersedes DEC-010's rejection of Option C and DEC-009's "not a gate", for Low only | accepted |
 | [DEC-036](#dec-036--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell routes each turn with the Turn Router when `TYPESAFE_API_KEY` is set: point → highlight only, explain → Tutor, lesson → 2D or one 3D model; `--lesson` and the new `--no-route` keep the old behaviour; a router fault falls back; one shared Jev client from `JevClients.CreateTypeSafe` | accepted |
 | [DEC-035](#dec-035--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A Turn Router asks Jev once per turn: intent (point / explain / lesson), 2D or 3D, and which catalogue model; below 0.5 or an unoffered id is no route, an unsure canvas is a 2D lesson; own assembly over `IJevClient`, not wired yet | accepted |
@@ -48,6 +49,29 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-038 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the Screen Capture module can read the text on the cursor's monitor with `Windows.Media.Ocr`, on the full-size frame, before it is downscaled.** Step 4a of the build sequence; step 4b offers the lines to Jev as Element Selection candidates.
+
+- **Why in the capture:** a spike on this machine (2560×1600) read 110 lines / 391 words at full size and 68 lines / 329 words at the orchestrator's 1280-px size, before JPEG loss. The full-size frame exists only inside the capture, so that is where the text is read.
+- **What:** `ScreenTextReader` (public, WinRT, no NuGet) runs the recogniser from the user's profile languages and returns each line with its box (the union of its words) in global physical pixels: frame pixels plus the monitor's top-left. `ScreenCaptureOptions.ReadText` (default **off**) turns it on; `CaptureAllMonitorsAsync` reads the first capture only (the cursor's monitor), `CaptureMonitorAsync` reads the monitor it was asked for.
+- **Shared types:** `ScreenTextLine(Text, Box)`, and `MonitorCapture` gains init-only `TextLines`, `TextNote` (why there is no text: no language, too large, a failure) and `TextDuration`. Every existing construction compiles unchanged.
+- **Never fails a capture:** no OCR language, a frame over 10,000 px, or a recogniser error becomes a note. Cancellation propagates.
+- **Local only:** nothing in this step sends the text anywhere. Step 4b will put some of it into the Jev request, with caps and a secret filter, and is planned separately.
+- **Measured:** the fixture's three lines read exactly in 20 ms; a live read found 110 lines in 141 ms.
+
+**Rejected.**
+- OCR on the 1280-px JPEG: about 40% of lines lost.
+- A second, full-size capture from Element Selection: two captures per turn, and Element Selection would depend on screen capture.
+- Handing the full-size bitmap across the shared types: a WinRT object of about 16 MB in records that hold plain data.
+- Reading every monitor: about 135 ms each for text the user is not looking at.
+
+**Consequences.**
+- Rows SC-9 and SC-10 need an OCR language and stay local-only; CI's Windows image is not known to have one.
+- Only one monitor was available here, so "other monitors are not read" was checked vacuously.
+
+Plan: [plans/2026-10-30-screen-text-v1.md](plans/2026-10-30-screen-text-v1.md). Rows: SC-9, SC-10.
+
 ## DEC-037 — 2026-10-30 — claude-opus-5-5
 
 **Decision — when Element Selection finds an element but its own score is in the Low tier, the Context Orchestrator asks Vision for a second opinion on the same frame.**

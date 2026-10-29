@@ -15,7 +15,7 @@
 - **Context Orchestrator** — top-level state machine driving session lifecycle.
 - **Screen Overlay** — per-monitor click-through overlay window.
 - **Global Hotkey Monitor** — system-wide hotkey registration and dispatch.
-- **Screen Capture** — frame acquisition via `Windows.Graphics.Capture`.
+- **Screen Capture** — frame acquisition via `Windows.Graphics.Capture`. Optionally reads the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default; `MonitorCapture.TextLines`, DEC-038).
 - **Element Selection** — PRIMARY coordinate-detection path (UIA enumeration + Jev choice); Vision is the fallback.
 - **Vision / Coordinate Detection** — UI-element and coordinate detection (DeepSeek V4.1 Flash) — FALLBACK to Element Selection.
 - **Jev** — classification / intent-routing engine; placement TBD, sits before the Tutor Engine call. Its first routing use is the Turn Router (DEC-035, below).

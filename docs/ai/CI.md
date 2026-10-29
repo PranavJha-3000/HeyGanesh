@@ -30,7 +30,7 @@
 
 The following existing TEST-CHECKLIST.md rows **cannot run in a headless/CI pipeline** because they require an interactive Windows desktop or a second monitor. They are marked `local-only` and are **not executed** in the workflow:
 
-- S-3, V-1, V-2, SC-1..SC-8, EX-1..EX-5, CO-1..CO-7, ES-1..ES-7, SO-1..SO-9, VO-1..VO-7 — all require a live Windows display.
+- S-3, V-1, V-2, SC-1..SC-10 (SC-9/SC-10 also need an OCR language), EX-1..EX-5, CO-1..CO-7, ES-1..ES-7, SO-1..SO-9, VO-1..VO-7 — all require a live Windows display.
 - G-8, G-9 — Vision and Voice smoke invocations are local-only; excluded from automated CI per safety uncertainty (per S0.4 plan §4).
 - G-4, G-5 — 2026-10-29 · claude-opus-5-5: local-only. Their fake Jev still chooses from the REAL foreground window's UIA tree, so the verdict depends on what is on screen: the same command passed and then failed on one machine with no code change.
 - G-6 `--found` / `--assert-clickthrough`, LessonSurfaceSmoke, LT-6, LT-7 — draw real windows; local-only.

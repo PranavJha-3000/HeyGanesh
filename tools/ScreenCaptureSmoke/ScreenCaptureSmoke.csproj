@@ -20,4 +20,9 @@
     <ProjectReference Include="..\..\src\Platform\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The OCR fixture for the assert-ocr row (DEC-038): three known lines drawn on white. -->
+    <None Include="fixtures\ocr-words.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

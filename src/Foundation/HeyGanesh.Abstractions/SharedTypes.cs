@@ -78,6 +78,12 @@ public sealed record MonitorInfo(IntPtr Handle, string DeviceName, PixelRect Bou
         => $"{DeviceName} {Bounds}{(IsPrimary ? " [primary]" : string.Empty)}";
 }
 
+/// <summary>
+/// One line of text read off a captured frame (DEC-038). <see cref="Box"/> is in global physical
+/// pixels, the same space as <see cref="MonitorInfo.Bounds"/> and every other box in HeyGanesh.
+/// </summary>
+public sealed record ScreenTextLine(string Text, PixelRect Box);
+
 /// <summary>One monitor's still frame, ready to upload.</summary>
 public sealed record MonitorCapture(
     MonitorInfo Monitor,
@@ -88,4 +94,18 @@ public sealed record MonitorCapture(
     byte[] Jpeg,
     double NonBlackPixelRatio,
     int FramesObserved,
-    TimeSpan Duration);
+    TimeSpan Duration)
+{
+    /// <summary>
+    /// The text read off this frame at full size when the capture was asked to read it
+    /// (<c>ScreenCaptureOptions.ReadText</c>, DEC-038); empty otherwise. Local OCR: nothing here has left
+    /// the machine.
+    /// </summary>
+    public IReadOnlyList<ScreenTextLine> TextLines { get; init; } = Array.Empty<ScreenTextLine>();
+
+    /// <summary>Why <see cref="TextLines"/> is empty when reading was asked for (no OCR language, a failure); null otherwise.</summary>
+    public string? TextNote { get; init; }
+
+    /// <summary>How long reading the text took (zero when it did not run).</summary>
+    public TimeSpan TextDuration { get; init; }
+}

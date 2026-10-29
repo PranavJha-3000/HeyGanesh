@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the capture can read screen text, build sequence step 4a, DEC-038)
+
+Did: `ScreenCaptureOptions.ReadText` (default off) reads the cursor monitor's text with Windows' built-in OCR on the full-size frame, before the JPEG, into `MonitorCapture.TextLines` (global physical pixels) with `TextNote`/`TextDuration`. New `ScreenTextReader`, `ScreenTextLine`. SC-9 `--assert-ocr` (fixture PNG) and SC-10 `--read-text`, both local-only. Nothing consumes the text yet.
+Left: Step 4b (Element Selection offers the lines to Jev, with caps and a secret filter; shell `--no-ocr`; G-20) is planned in plans/2026-10-30-screen-text-v1.md, not built. Steps 5-8 remain. Six commits are local, ahead of PR #1; not pushed.
+Watch: An XML comment in a csproj cannot contain "--" (MSB4025), so flag names are spelled out in project-file comments. A pipe into tail hides the EXE's exit code; take it from a separate run or PIPESTATUS. The default ScreenCaptureSmoke run opens a white probe window briefly; that is the existing EX row.
+Next: Build step 4b (it is already planned).
+Verified: Abstractions, ScreenCapture and ScreenCaptureSmoke build -warnaserror 0/0; SC-9 17 PASS (fixture read exactly, 20 ms); SC-10 4 PASS (110 lines, OCR 141 ms); default ScreenCaptureSmoke run all checks passed; all 15 CI gates exit 0 locally (G-1 solution build included).
+
 ## 2026-10-30 · claude-opus-5-5 (a Low-confidence choice is checked by Vision, build sequence step 3, DEC-037)
 
 Did: When Element Selection finds an element in the Low tier, the orchestrator asks Vision on the same frame (`CheckLowConfidence`, on by default, owner's call): Vision's box replaces it only when Vision is Medium+ and elsewhere; agreement, an unsure, missing, failed or erroring check keep Element Selection's choice. `GuidanceResult.ConfidenceCheck` carries the note; the shell prints `check :`. Supersedes DEC-010 Option C's rejection and DEC-009's "not a gate" for Low only; the AGENTS.md invariant sentence now says so. CO-12 `--assert-check` (CI G-19), CO-13 `--fake-low` (local).

@@ -369,3 +369,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `78cbefe` (the commit before this step).
 - **Files to restore:** `git checkout 78cbefe -- src/Intelligence/HeyGanesh.ContextOrchestrator src/Foundation/HeyGanesh.Abstractions src/Experience/HeyGanesh.App tools/ContextOrchestratorSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Intelligence/HeyGanesh.ContextOrchestrator/ContextOrchestratorService.Check.cs` and any new smoke file (`git status` lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; ContextOrchestratorSmoke `--fake`, `--fake-none`, `--fake-unmapped` as CO-3..CO-5; App `--once --question "x"` exit 12; the local CI runner reports 14 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the capture can read screen text, build sequence step 4a, DEC-038)
+
+- **Change:** Abstractions gains `ScreenTextLine` and `MonitorCapture.TextLines` / `TextNote` (init-only, empty by default). ScreenCapture gains `ScreenTextReader` (Windows.Media.Ocr over the full-size frame) and `ScreenCaptureOptions.ReadText` (default off; only the cursor's monitor in `CaptureAllMonitorsAsync`). ScreenCaptureSmoke gains `--assert-ocr` (fixture `tools/ScreenCaptureSmoke/fixtures/ocr-words.png`) and `--read-text`. Docs: DEC-038, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan. Nothing consumes the text yet (step 4b).
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `55ac840` (the commit before this step).
+- **Files to restore:** `git checkout 55ac840 -- src/Foundation/HeyGanesh.Abstractions src/Platform/HeyGanesh.ScreenCapture tools/ScreenCaptureSmoke AGENTS.md docs/ai`; delete `src/Platform/HeyGanesh.ScreenCapture/ScreenTextReader.cs`, `tools/ScreenCaptureSmoke/OcrRows.cs` and `tools/ScreenCaptureSmoke/fixtures/`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; `ScreenCaptureSmoke` default run `RESULT: all checks passed`; the local CI runner reports 15 gates, all exit 0.

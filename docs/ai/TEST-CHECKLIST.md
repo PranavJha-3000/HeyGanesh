@@ -23,6 +23,8 @@
 | SC-6 | Latency is acceptable, not ~2.5 s per monitor | run prints "all monitors in N ms" (~0.7 s at 2560x1600) | ✅ automated |
 | SC-7 | No leaks across repeated captures | `--repeats N` soak: small handle delta, flat managed heap | ✅ automated (25x: delta 1) |
 | SC-8 | A captured JPEG decodes at the expected resolution | inspect a saved `monitor-1-*.jpg` dimensions vs the monitor's physical size | ✅ manual (host prints sizes) |
+| SC-9 | OCR reads the fixture (DEC-038): an OCR language is installed; `fixtures/ocr-words.png` gives exactly "Save draft", "Open settings", "Chain rule 42", each box in its 100-px band, starting near x 40, width within 25% of drawn, all shifted by the origin given; a 10,001-px frame is refused with a note | `ScreenCaptureSmoke.exe --assert-ocr` → 17 PASS, `OCR OK`, exit **0** | ✅ verified locally 2026-10-30 (local-only: needs an OCR language) |
+| SC-10 | A real capture with `ReadText` on reads the cursor's monitor only, boxes inside that monitor, counts printed and never the text; with the default (off) no frame carries text | `ScreenCaptureSmoke.exe --read-text` → 4 PASS, `READ TEXT OK`, exit **0** (here: 110 lines, OCR 141 ms on 2560×1600) | ✅ verified locally 2026-10-30 (one monitor only, so "other monitors" was vacuous) |
 
 ## Self-exclusion checks (cross-cutting into the Overlay)
 

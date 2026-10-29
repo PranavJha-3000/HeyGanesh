@@ -78,6 +78,8 @@ Ctrl+Alt hold ─▶ GlobalHotkeyMonitor.Pressed        (--once enters below wit
         Context Orchestrator.ResolveAsync (one session per trigger; a second trigger is refused)
               │
               │  1. Screen Capture      all monitors, cursor's display first (one frame per session)
+              │                         ReadText on → OCR of the cursor's monitor at full size, before the
+              │                         JPEG: captures[0].TextLines (DEC-038; nothing reads them until 4b)
               │  2. Element Selection   PRIMARY: enumerate ─▶ rank/cap 120 ─▶ Jev select ─▶ UIA rect
               │  3. Vision              FALLBACK, only if step 2 returned a FAILED result
               │     (or) Vision check   step 2 FOUND at Low tier → LowConfidenceCheck.Decide (DEC-037):

@@ -43,6 +43,9 @@ dotnet build src/Perception/HeyGanesh.Vision -c Debug
 # Verification hosts / smoke tools
 dotnet run --project tools/HotkeySmoke -c Debug -- --seconds 4
 dotnet run --project tools/ScreenCaptureSmoke -c Debug
+# Screen text (DEC-038, local-only: needs an OCR language): --assert-ocr reads the fixture; --read-text prints counts only.
+tools/ScreenCaptureSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.ScreenCaptureSmoke.exe --assert-ocr
+#   -> 17 PASS, OCR OK, exit 0
 dotnet run --project tools/VisionSmoke -c Debug -- --question "where is the Start button" --samples 2
 
 # Element Selection verification host (offline paths -- no API key required)

@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-033](#dec-033--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | `--lesson` turns 3D on: the shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync` (30 s click wait); Ctrl+Alt stays refused while a lesson waits, with a message that says how to end it; exit code = the last turn's (13 if cancelled while waiting) | accepted |
 | [DEC-032](#dec-032--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | The planner offers 3D only when the request carries a catalogue: the same catalogue then validates the answer; schema 1.1, the 3D op shapes, limits, camera views and every model/part/animation id are interpolated from code; without one the prompt is byte-identical to v1 | accepted |
 | [DEC-031](#dec-031--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Click a 3D part to ask: picking only after a lesson has played; the page sends two ids, CardSurface checks them against what it drew and the catalogue; the question is written in C# from the Part Library; the follow-up plays on the same cards; at most 3, 60 s idle | accepted |
 | [DEC-030](#dec-030--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D renderer: a scene window in CardSurface (same isolation as cards) running vendored, SHA-pinned Babylon.js 9.30.0; rotations sent as C#-computed quaternions + an orientation self-test from real pixels; created on the first 3D lesson with a shader warm-up; render on demand; no-WebGL → speech | accepted |
@@ -43,6 +44,28 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-033 — 2026-10-29 — claude-opus-5-5
+
+**Decision — the App Shell's `--lesson` leg offers the planner the cards' 3D catalogue and runs click-to-ask follow-ups. A new Ctrl+Alt press is still refused while a finished 3D lesson waits for a click.**
+
+- `TeachWithLessonAsync` builds the `PlanRequest` with `Scene3d = CardSurface.Scene3dCatalog`, so the prompt offers 3D (DEC-032) and the validator accepts it. It calls `LessonTurn.RunWithFollowUpsAsync` with `IdleTimeout` 30 s (`LessonPickIdle`). The session default is 60 s.
+- **Output:** each turn is printed with `PrintLesson`. A follow-up is preceded by `follow-up N : the student clicked '<part>' on '<model>'`, and the leg ends with `follow-ups : N, ended <FollowUpEnd>`.
+- **Exit code:** the last turn's outcome, mapped as before. The loop stops at the first turn that didn't play to the end, so that turn is the one that ended it. The exception is `FollowUpEnd.Cancelled` (cancelled while waiting for a click), which exits 13 as a cancel mid-lesson does.
+- **Header:** with a key, the lesson line adds `3D: 3 models, click a part to ask`. The no-key line is unchanged.
+- **Ctrl+Alt during the wait (owner's choice: "Refuse (simple)"):** refused as today. The REFUSED line now adds "If a 3D lesson is waiting for a click, close it with its x button or wait up to 30 s." No new shell state.
+
+**Reasoning.** Refusing keeps the shell's one-turn-at-a-time rule (SH-9) and adds no turn phase that the shell, which carries no fakes (DEC-012), couldn't test offline. 30 s is long enough to look and click, and short enough not to block the next spoken question for long.
+
+**Rejected.**
+- A press that closes the waiting lesson and starts the new voice turn. Better for demos, but it needs a new phase in the shell's turn state machine. It's a later change if the wait gets in the way.
+- Keeping `RunAsync` for 2D-only lessons: `RunWithFollowUpsAsync` already ends at once (`NoScene`) when nothing 3D was drawn.
+
+**Consequences.**
+- `--once --lesson` with a 3D lesson keeps the process alive up to 30 s after the lesson for a click.
+- The live path needs `TYPESAFE_API_KEY`, `DEEPSEEK_API_KEY`, the Gateway, a mic and Fish (SH-20, human-gated). Offline, only the header and skip paths can be checked.
+
+Plan: [plans/2026-10-29-planner-3d-v1.md](plans/2026-10-29-planner-3d-v1.md) (6b). Rows: SH-18 (updated), SH-20.
+
 ## DEC-032 — 2026-10-29 — claude-opus-5-5
 
 **Decision — `PlannerPrompt.System(limits, scene3d)` adds a 3D section exactly when `PlanRequest.Scene3d` is set, built from the same `ModelCatalog` the validator checks the answer against.**

@@ -148,7 +148,7 @@ internal static partial class ShellHost
     /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027).</summary>
     private static string LessonHeader(bool on, bool key) =>
         !on ? "off (the Tutor leg teaches; --lesson draws instead)"
-        : key ? "ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed)"
+        : key ? $"ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 3D: {Scene3dModelCount} models, click a part to ask"
         : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
 
     private sealed record ShellOptions(

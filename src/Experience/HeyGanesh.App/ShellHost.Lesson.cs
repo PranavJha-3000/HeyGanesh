@@ -1,6 +1,7 @@
 using HeyGanesh.Abstractions;
 using HeyGanesh.LessonPlanner;
 using HeyGanesh.LessonSession;
+using HeyGanesh.LessonSurface;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Providers.OpenAiCompat;
 using HeyGanesh.ScreenOverlay;
@@ -25,6 +26,15 @@ internal static partial class ShellHost
     private sealed record LessonLeg(VisualPlanner? Planner, ScreenOverlayService Marks);
 
     private const string LessonKeyEnvVar = "DEEPSEEK_API_KEY";
+
+    /// <summary>
+    /// How long a finished 3D lesson waits for a click on a part (DEC-031/DEC-033). Shorter than the
+    /// session default because Ctrl+Alt is refused while it waits: one turn at a time.
+    /// </summary>
+    private static readonly TimeSpan LessonPickIdle = TimeSpan.FromSeconds(30);
+
+    /// <summary>For the header: how many 3D models a lesson may show (the cards' catalogue, DEC-033).</summary>
+    private static int Scene3dModelCount => CardSurface.Scene3dCatalog.Models.Count;
 
     /// <summary>
     /// DEC-027: the lesson planner is built from the environment, not held behind a code flip like the
@@ -95,10 +105,13 @@ internal static partial class ShellHost
     }
 
     /// <summary>
-    /// Plans, draws and speaks one lesson. Never throws — the TeachAndSpeakAsync contract, the same
-    /// exit-code alphabet: 0 played (or the honest no-key skip), 1 nothing usable came back (no lesson
-    /// was produced, like "no transcript was produced"), 12 key error, 3 provider/speech fault,
-    /// 13 cancelled, 4 a shell or card defect.
+    /// Plans, draws and speaks one lesson, then any click-to-ask follow-ups (DEC-033): the planner is
+    /// offered the cards' 3D catalogue, and a finished 3D lesson waits <see cref="LessonPickIdle"/> for
+    /// the student to click a part. Never throws — the TeachAndSpeakAsync contract, the same exit-code
+    /// alphabet: 0 played (or the honest no-key skip), 1 nothing usable came back (no lesson was
+    /// produced, like "no transcript was produced"), 12 key error, 3 provider/speech fault,
+    /// 13 cancelled, 4 a shell or card defect. With follow-ups the code is the LAST turn's: the loop
+    /// stops at the first turn that did not play to the end, so that turn is the one that ended it.
     /// </summary>
     private static async Task<int> TeachWithLessonAsync(
         LessonLeg lesson,
@@ -122,7 +135,7 @@ internal static partial class ShellHost
 
         try
         {
-            var report = await LessonTurn.RunAsync(
+            var conversation = await LessonTurn.RunWithFollowUpsAsync(
                 lesson.Planner,
                 new CardSurfaceHost(marks: lesson.Marks),
                 speaker,
@@ -131,10 +144,31 @@ internal static partial class ShellHost
                     Question = options.Question,
                     Screen = MapGuidanceToGrounding(guidance),
                     VirtualDesktop = NativeFns.VirtualDesktop(),
+                    Scene3d = CardSurface.Scene3dCatalog,
                 },
+                new FollowUpOptions { IdleTimeout = LessonPickIdle },
                 ct).ConfigureAwait(false);
 
-            PrintLesson(report, options.NoSpeak);
+            for (var i = 0; i < conversation.Turns.Count; i++)
+            {
+                if (i > 0)
+                {
+                    var pick = conversation.Picks[i - 1];
+                    Console.WriteLine($"follow-up {i}  : the student clicked '{pick.PartId}' on '{pick.ModelId}'");
+                }
+
+                PrintLesson(conversation.Turns[i], options.NoSpeak);
+            }
+
+            Console.WriteLine($"  follow-ups  : {conversation.Picks.Count}, ended {conversation.End}");
+            if (conversation.End == FollowUpEnd.Cancelled)
+            {
+                // Cancelled while the finished lesson waited for a click: the lesson itself played, but the
+                // run was aborted, and the exit code says so as it would mid-lesson.
+                return 13;
+            }
+
+            var report = conversation.Turns[^1];
             return report.Outcome switch
             {
                 LessonTurnOutcome.Played or LessonTurnOutcome.PlayedFallback or LessonTurnOutcome.Stopped => 0,

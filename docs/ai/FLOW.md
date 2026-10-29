@@ -237,9 +237,9 @@ All of a beat's scene ops travel as one `beat` message, awaited alongside the ca
 
 `LessonPlayer` speaks while a beat draws, so a snapshot taken at the start of speech can predate that beat's ack. LSU-9 reads timings after the lesson for that reason.
 
-No caller passes `ValidationContext.Scene3d` yet, so only LessonSurfaceSmoke drives this path.
+Since DEC-033 the App Shell's `--lesson` leg passes the catalogue, so a live lesson can reach this path; LessonSurfaceSmoke drives it offline.
 
-**Click a part to ask (DEC-031).** `LessonTurn.RunWithFollowUpsAsync` (not yet called by the App Shell; `RunAsync` is unchanged):
+**Click a part to ask (DEC-031).** `LessonTurn.RunWithFollowUpsAsync` (the App Shell's `--lesson` leg since DEC-033; `RunAsync` is unchanged):
 
 ```
 turn 1 = plan -> open lease -> play                        (PlayTurnAsync, shared with RunAsync)
@@ -258,9 +258,9 @@ loop:
 dispose the lease (every path)
 ```
 
-`PlanRequest.Scene3d` reaches `ValidationContext.Scene3d` (DEC-031), so a caller that passes `CardSurface.Scene3dCatalog` gets 3D plans validated. Only LessonTurnSmoke passes it today.
+`PlanRequest.Scene3d` reaches `ValidationContext.Scene3d` (DEC-031), so a caller that passes `CardSurface.Scene3dCatalog` gets 3D plans validated (and, DEC-032, a prompt that offers them). The App Shell passes it since DEC-033.
 
-**3D gate (schema 1.1, DEC-028).** `VisualPlanValidator.Validate` accepts a `scene3d` surface only when `ValidationContext.Scene3d` carries a `ModelCatalog`; every model/part/animation name in `model`/`label`/`highlight`/`explode`/`animate`/`camera` is checked against it in beat order. No product caller passes one yet (since DEC-031 `VisualPlanner` forwards `PlanRequest.Scene3d`, but only LessonTurnSmoke sets it; the App does not), so a plan that declares a scene is `surface.unsupported` → TextFallback and is spoken, never laid out by `CardSurface` (which would draw it as an empty card). The first caller to pass a catalogue is the 3D renderer (FEATURE-007 Phase 5 step 4).
+**3D gate (schema 1.1, DEC-028).** `VisualPlanValidator.Validate` accepts a `scene3d` surface only when `ValidationContext.Scene3d` carries a `ModelCatalog`; every model/part/animation name in `model`/`label`/`highlight`/`explode`/`animate`/`camera` is checked against it in beat order. `VisualPlanner` forwards `PlanRequest.Scene3d` (DEC-031) and the App Shell sets it to `CardSurface.Scene3dCatalog` (DEC-033). A caller that passes none gets the old behaviour: a plan that declares a scene is `surface.unsupported` → TextFallback and is spoken, never laid out by `CardSurface`.
 
 ## Lesson planning path (Lesson Planner — built offline; wired into the App Shell by `--lesson`, see Lesson leg; FEATURE-007 Phase 4)
 
@@ -286,14 +286,16 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
       lesson is null (no --lesson) → TeachAndSpeakAsync   the Tutor leg, unchanged
       lesson.Planner is null (DEEPSEEK_API_KEY missing) → "lesson : skipped", exit 0
       else TeachWithLessonAsync
-        PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop() }
-        LessonTurn.RunAsync(planner, CardSurfaceHost(marks: overlay), DelegateLessonSpeaker(voice.SpeakAsync), request, ct)
+        PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop(), Scene3d = CardSurface.Scene3dCatalog }   (DEC-033)
+        LessonTurn.RunWithFollowUpsAsync(planner, CardSurfaceHost(marks: overlay), DelegateLessonSpeaker(voice.SpeakAsync), request, { IdleTimeout = 30 s }, ct)
+          (the first turn is the path below; a finished 3D lesson then waits 30 s for a click → follow-up on the same cards, see "Click a part to ask")
           VisualPlanner.PlanAsync            ProviderException → AuthError / ProviderError; OCE → Cancelled  (no card opened)
           Lesson.Outcome == Rejected         → Rejected (no card opened, nothing said)
           CardSurfaceHost.OpenAsync          → fresh CardSurface for this turn
           LessonPlayer.PlayAsync             draw then speak per beat; Voice's SpeakAsync is the clock
           finally: cards disposed            no card outlives the turn (LT-6)
-        PrintLesson → exit 0 Played/PlayedFallback/Stopped · 1 Rejected · 12 AuthError/Voice key · 3 ProviderError/Voice fault · 13 Cancelled · 4 card timeout/defect
+        PrintLesson per turn (+ "follow-up N : the student clicked …") → exit from the LAST turn: 0 Played/PlayedFallback/Stopped · 1 Rejected · 12 AuthError/Voice key · 3 ProviderError/Voice fault · 13 Cancelled (also FollowUpEnd.Cancelled) · 4 card timeout/defect
+        Ctrl+Alt while it waits: REFUSED (one turn at a time), with the 3D hint (DEC-033)
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 

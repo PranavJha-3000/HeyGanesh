@@ -273,7 +273,8 @@ internal static partial class ShellHost
                 if (_current is { IsCompleted: false })
                 {
                     Console.WriteLine("REFUSED: a voice or guidance turn is already running (or its highlight " +
-                                      "is still on screen); one Ctrl+Alt hold maps to one turn.");
+                                      "is still on screen); one Ctrl+Alt hold maps to one turn. If a 3D lesson is " +
+                                      "waiting for a click, close it with its x button or wait up to 30 s.");
                     return;
                 }
 

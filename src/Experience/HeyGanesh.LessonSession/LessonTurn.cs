@@ -83,7 +83,7 @@ public interface ILessonCanvasHost
 /// <summary>
 /// One lesson turn: plan → open cards → play → close. The App Shell calls it after a produced verdict
 /// with <c>--lesson</c>; tools/LessonTurnSmoke calls it with a fake model. <see cref="RunWithFollowUpsAsync"/>
-/// adds click-a-part follow-ups on the same cards (DEC-031); the shell does not call it yet.
+/// adds click-a-part follow-ups on the same cards (DEC-031); the shell's --lesson leg calls it (DEC-033).
 /// </summary>
 /// <remarks>
 /// Documented faults become outcomes so the shell never needs to know a provider type: provider

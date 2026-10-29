@@ -1,4 +1,12 @@
 
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 6b: --lesson turns 3D on)
+
+Did: The App Shell's `--lesson` leg passes `CardSurface.Scene3dCatalog` and calls `LessonTurn.RunWithFollowUpsAsync` (30 s click wait), prints each turn and each click, exits with the last turn's code (13 if cancelled while waiting); the header says `3D: 3 models, click a part to ask`; Ctrl+Alt stays refused while a lesson waits, with a hint (DEC-033). Phase 5 (3D) is code-complete.
+Left: Live verification of a 3D lesson (SH-20, LP-8) needs TYPESAFE_API_KEY + DEEPSEEK_API_KEY + Gateway + Fish + a human. BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md (Apache-2.0 §4(d)). Owner: PL-5 / LSU-13 reviews; merge decision. Branch not pushed.
+Watch: `--once --lesson` with a 3D lesson keeps the process up to 30 s for a click. A bare `python -` in a Bash command opens a looping REPL; always pass a script file and `< /dev/null`.
+Next: Vendor NOTICE.md (needs the owner's OK for the download), then a live 3D run once keys are set.
+Verified: App -warnaserror 0/0; SH-3 0, SH-4 12, SH-7 13, SH-18 12/12/12 (dummy key 0 occurrences, 3D header line), `--lesson --seconds 3` 0; all 13 CI gates exit 0 locally; LT source/followup-pick rerun after the last comment edit.
+
 ## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 6a: the planner learns 3D)
 
 Did: `PlannerPrompt.System(limits, scene3d)` adds a 3D section (schema 1.1, six 3D op shapes, 3D limits, camera views, the CATALOGUE of model/part/animation ids, five 3D rules) only when `PlanRequest.Scene3d` is set; `VisualPlanner` passes the same catalogue to the prompt and the validator (DEC-032). New row LP-10 (`--assert-prompt-3d`, CI G-14).

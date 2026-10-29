@@ -180,6 +180,12 @@ internal static partial class ShellHost
             Console.WriteLine($"  primary   : {primary}");
         }
 
+        if (guidance.ConfidenceCheck is { } check)
+        {
+            // DEC-037: Element Selection was unsure, so Vision checked; say what that changed.
+            Console.WriteLine($"  check     : {check}");
+        }
+
         Console.WriteLine($"  leg       : {guidance.Source}  confidence={guidance.Confidence}  model={guidance.ModelId}");
         Console.WriteLine($"  choice    : {guidance.Choice ?? "-"}  box={guidance.BoxOnScreen?.ToString() ?? "none"}  " +
                           $"center={guidance.CenterOnScreen?.ToString() ?? "none"}");

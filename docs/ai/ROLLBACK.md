@@ -362,3 +362,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `bcd8fff` (the commit before this step).
 - **Files to restore:** `git checkout bcd8fff -- src/Experience/HeyGanesh.App src/Intelligence/HeyGanesh.TurnRouter tools/TurnRouterSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Perception/HeyGanesh.ElementSelection/JevClients.cs`, `src/Intelligence/HeyGanesh.TurnRouter/TurnLegs.cs`, `src/Experience/HeyGanesh.App/ShellHost.Route.cs`, `tools/TurnRouterSmoke/TurnRouterSmokeHost.Legs.cs`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; App `--help` exit 0, `--once --question "x"` exit 12, `--once --lesson --question "x"` exit 12; the local CI runner reports 14 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (a Low-confidence Element Selection choice is checked by Vision, build sequence step 3, DEC-037)
+
+- **Change:** ContextOrchestrator gains `CheckLowConfidence` (default on), `LowConfidenceCheck.Decide` and the check step (ContextOrchestratorService.Check.cs); `GuidanceResult` (Abstractions) gains `ConfidenceCheck`; the App Shell prints a `check :` line. ContextOrchestratorSmoke gains `--assert-check` (CO-12) and `--fake-low` (CO-13). CI gains G-19. Docs: DEC-037 (supersedes DEC-010 Option C's rejection and DEC-009's "not a gate" for the Low tier only), AGENTS.md design invariant, FLOW, ARCHITECTURE, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `78cbefe` (the commit before this step).
+- **Files to restore:** `git checkout 78cbefe -- src/Intelligence/HeyGanesh.ContextOrchestrator src/Foundation/HeyGanesh.Abstractions src/Experience/HeyGanesh.App tools/ContextOrchestratorSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Intelligence/HeyGanesh.ContextOrchestrator/ContextOrchestratorService.Check.cs` and any new smoke file (`git status` lists them).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; ContextOrchestratorSmoke `--fake`, `--fake-none`, `--fake-unmapped` as CO-3..CO-5; App `--once --question "x"` exit 12; the local CI runner reports 14 gates, all exit 0.

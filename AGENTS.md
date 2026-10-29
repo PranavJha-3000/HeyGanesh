@@ -70,6 +70,8 @@ dotnet build src/Intelligence/HeyGanesh.ContextOrchestrator -c Debug
 dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake
 dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake-none
 dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --question "Save" --fake-unmapped
+# --fake-low: a found choice in the Low tier -> exactly one Vision check (DEC-037). --assert-check: the rule alone, no window (CI G-19).
+dotnet run --project tools/ContextOrchestratorSmoke -c Debug -- --assert-check
 
 # App Shell — the process host (DEC-012/DEC-014). Real legs only: no --fake flags, so with no keys set the
 # offline rows stop at the key gate. Run the built EXE, not `dotnet run`: the wrapper hides exit codes.
@@ -202,7 +204,7 @@ Enforced by automated checks (rows in `docs/ai/TEST-CHECKLIST.md`):
 
 Design invariants — hold by review and the cited decisions; no automated check yet:
 
-- **Element Selection and Vision are siblings, not one API.** They must never reference each other: Element Selection is the PRIMARY coordinate path (`ElementSelectionService.SelectAsync`) and Vision the FALLBACK (`VisionService.LocateAsync`), each returning its own result type with a duplicated `ConfidenceLevel` and a matching 0.8/0.5 tier boundary. The ES→Vision fallback is decided by the Context Orchestrator on a *failed* Element Selection result, never by either module; the finer confidence-tier gate stays a future Jev component (DEC-008 / DEC-009 / DEC-010).
+- **Element Selection and Vision are siblings, not one API.** They must never reference each other: Element Selection is the PRIMARY coordinate path (`ElementSelectionService.SelectAsync`) and Vision the FALLBACK (`VisionService.LocateAsync`), each returning its own result type with a duplicated `ConfidenceLevel` and a matching 0.8/0.5 tier boundary. The ES→Vision fallback is decided by the Context Orchestrator on a *failed* Element Selection result, never by either module (DEC-008 / DEC-009 / DEC-010). Since DEC-037 the orchestrator also asks Vision to check a *found* choice in the Low tier, keeping Element Selection's answer unless Vision is Medium+ and points elsewhere; Medium and High are never checked.
 
 ## Environment facts
 

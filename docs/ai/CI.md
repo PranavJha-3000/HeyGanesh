@@ -24,6 +24,7 @@
 | **G-16 Part Library offline** | build `tools\PartLibrarySmoke`, then the EXE with each of `--assert-source` `--assert-library` `--assert-physics` `--assert-catalog` (`--dump` is the manual PL-5 row, not a gate) | `partLibrary=pass` | exit 0 for every mode |
 | **G-17 Lesson Surface offline** | build `tools\LessonSurfaceSmoke`, then the EXE with `--assert-source` (LSU-1 + LSU-7: one NuGet, references, CSPs, no sinks, vendored Babylon hashes, licence, `.gitattributes`) and `--assert-scene-math` (LSU-8) | `lessonSurface=pass` | exit 0 for every mode (the window rows LSU-2..LSU-6 and LSU-9..LSU-14 are local-only) |
 | **G-18 Turn Router offline** | build `tools\TurnRouterSmoke`, then the EXE with each of `--assert-source` `--assert-request` `--assert-map` `--assert-gate` `--assert-errors` `--assert-legs` (TR-1..TR-6, DEC-035/DEC-036) | `turnRouter=pass` | exit 0 for every mode |
+| **G-19 Context Orchestrator check rule** | build `tools\ContextOrchestratorSmoke`, then the EXE with `--assert-check` (CO-12, DEC-037; the other orchestrator rows walk a real window and stay local-only) | `coCheckRule=pass` | exit 0 |
 
 ## Local-Only Notes
 

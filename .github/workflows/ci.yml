@@ -138,3 +138,13 @@ jobs:
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+
+      # G-19: the Low-confidence check's rule (DEC-037) from made-up results. The other orchestrator rows walk a
+      # real window and stay local-only.
+      - name: G-19 Context Orchestrator check rule
+        shell: pwsh
+        run: |
+          dotnet build tools\ContextOrchestratorSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\ContextOrchestratorSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ContextOrchestratorSmoke.exe' --assert-check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

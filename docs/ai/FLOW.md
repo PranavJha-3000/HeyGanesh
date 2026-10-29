@@ -80,6 +80,9 @@ Ctrl+Alt hold ─▶ GlobalHotkeyMonitor.Pressed        (--once enters below wit
               │  1. Screen Capture      all monitors, cursor's display first (one frame per session)
               │  2. Element Selection   PRIMARY: enumerate ─▶ rank/cap 120 ─▶ Jev select ─▶ UIA rect
               │  3. Vision              FALLBACK, only if step 2 returned a FAILED result
+              │     (or) Vision check   step 2 FOUND at Low tier → LowConfidenceCheck.Decide (DEC-037):
+              │                         agrees / Vision Low / not found / failed / threw → keep step 2;
+              │                         Vision Medium+ elsewhere → Vision's verdict; note in ConfidenceCheck
               ▼
         GuidanceResult (Found, Description, box/center in global physical px, tier, raw signals)
               │

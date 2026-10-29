@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (a Low-confidence choice is checked by Vision, build sequence step 3, DEC-037)
+
+Did: When Element Selection finds an element in the Low tier, the orchestrator asks Vision on the same frame (`CheckLowConfidence`, on by default, owner's call): Vision's box replaces it only when Vision is Medium+ and elsewhere; agreement, an unsure, missing, failed or erroring check keep Element Selection's choice. `GuidanceResult.ConfidenceCheck` carries the note; the shell prints `check :`. Supersedes DEC-010 Option C's rejection and DEC-009's "not a gate" for Low only; the AGENTS.md invariant sentence now says so. CO-12 `--assert-check` (CI G-19), CO-13 `--fake-low` (local).
+Left: Whether the check helps real answers is unmeasured (keys + the model shoot-out). Steps 4-8 of the sequence remain. Commits bcd8fff, 78cbefe and this one are local, ahead of PR #1; not pushed.
+Watch: Vision reports a model-side not-found as a Failed result, so a check with Vision not finding it prints "Vision's check failed (…could not locate…)". The orchestrator host's expectations are per mode and checked in order; a new fake mode needs its own rows before the generic not-found rows. One run of the CO rows in a shell loop mislabelled `--fake-error`; run individually it exits 3 every time, and the rerun loop agreed.
+Next: Plan step 4 (OCR text boxes as Element Selection candidates).
+Verified: ContextOrchestrator, its host and the App build -warnaserror 0/0; CO-12 13 PASS; a box-edge mutation failed CO-12 and was reverted; CO-3..CO-11 rerun (exits 0, 0, 0, 0, 13, 3, 0, 0 with PASS expectations); CO-13 both forms PASS; App help 0, three key-gate rows 12, cancel 1/60 13; all 15 CI gates exit 0 locally (G-19 13 PASS lines).
+
 ## 2026-10-30 · claude-opus-5-5 (the App Shell uses the Turn Router, build sequence step 2, DEC-036)
 
 Did: With `TYPESAFE_API_KEY` set and no `--lesson`, the shell routes each turn after the verdict (while the highlight shows): point ends at the highlight, explain goes to the Tutor, a lesson is 2D or 3D on the one model Jev picked. `--lesson` is unchanged; new `--no-route` keeps the old Tutor leg; router faults fall back. One Jev client (`JevClients.CreateTypeSafe`, new in Element Selection) serves Element Selection and the router. `TurnLegs.Choose` holds the decision (TR-6). New header line `route :`.

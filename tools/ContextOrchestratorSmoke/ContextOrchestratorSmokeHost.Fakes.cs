@@ -21,6 +21,9 @@ internal enum FakeJevMode
 
     /// <summary>Throw a provider exception — the orchestrator must propagate it, never turn it into a verdict.</summary>
     Error,
+
+    /// <summary>Answer the top candidate but unsure (blended 0.325, the Low tier): Vision must check it once (DEC-037).</summary>
+    Low,
 }
 
 /// <summary>
@@ -62,7 +65,7 @@ internal sealed class FakeJevClient : IJevClient
         var probabilities = new Dictionary<string, double>(StringComparer.Ordinal);
         if (request.Questions.TryGetValue("target", out var target) && target.Criteria is { } criteria)
         {
-            double winnerProb = choiceId == "none" ? 0.62 : 0.91;
+            double winnerProb = choiceId == "none" ? 0.62 : _mode == FakeJevMode.Low ? 0.35 : 0.91;
             double rest = Math.Max(0.0, (1.0 - winnerProb) / Math.Max(1, criteria.Count - 1));
             foreach (var key in criteria.Keys)
             {
@@ -72,7 +75,7 @@ internal sealed class FakeJevClient : IJevClient
 
         var answers = new Dictionary<string, JevAnswer>(StringComparer.Ordinal)
         {
-            ["target"] = new JevAnswer("choice", choiceId, null, 0.88, probabilities),
+            ["target"] = new JevAnswer("choice", choiceId, null, _mode == FakeJevMode.Low ? 0.30 : 0.88, probabilities),
             ["plausible"] = new JevAnswer("noul", null, choiceId == "none" ? 0.12 : 0.96, null, null),
         };
 

@@ -26,6 +26,11 @@ internal static partial class ContextOrchestratorSmokeHost
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--assert-check")
+        {
+            return RunAssertCheck();
+        }
+
         var options = ParseArgs(args);
         if (options.Help || string.IsNullOrWhiteSpace(options.Question))
         {

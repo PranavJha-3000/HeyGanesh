@@ -47,6 +47,9 @@ public sealed record GuidanceResult
     public string? FailureReason { get; init; }
     public bool Failed => FailureReason is not null;
     public string? PrimaryFailureReason { get; init; }
+
+    /// <summary>What the Low-confidence check did (DEC-037); null when no check ran.</summary>
+    public string? ConfidenceCheck { get; init; }
     public string? Choice { get; init; }
     public double? JevConfidence { get; init; }
     public double? WinnerProbability { get; init; }

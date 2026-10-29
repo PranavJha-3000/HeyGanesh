@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-037](#dec-037--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A found Element Selection choice in the Low tier is checked by Vision on the same frame (on by default, `CheckLowConfidence`); Vision replaces it only when Medium+ and elsewhere; a failed or unsure check keeps the choice. Supersedes DEC-010's rejection of Option C and DEC-009's "not a gate", for Low only | accepted |
 | [DEC-036](#dec-036--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell routes each turn with the Turn Router when `TYPESAFE_API_KEY` is set: point → highlight only, explain → Tutor, lesson → 2D or one 3D model; `--lesson` and the new `--no-route` keep the old behaviour; a router fault falls back; one shared Jev client from `JevClients.CreateTypeSafe` | accepted |
 | [DEC-035](#dec-035--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A Turn Router asks Jev once per turn: intent (point / explain / lesson), 2D or 3D, and which catalogue model; below 0.5 or an unoffered id is no route, an unsure canvas is a 2D lesson; own assembly over `IJevClient`, not wired yet | accepted |
 | [DEC-034](#dec-034--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Without WebGL the 3D lesson is drawn as an isometric SVG with Anatomy's vendored MIT kit (models, labels, highlight, explode, focus; animation and views as stills; no click-to-ask yet); long parts cut into pieces and buried pieces painted just before their container | accepted |
@@ -47,6 +48,32 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-037 — 2026-10-30 — claude-opus-5-5
+
+**Decision — when Element Selection finds an element but its own score is in the Low tier, the Context Orchestrator asks Vision for a second opinion on the same frame.**
+
+- **Supersedes, for the Low tier only:** DEC-010's rejection of Option C ("gate on confidence too") and DEC-009's "ConfidenceLevel stays classification here, not a gate". The fallback on a *failed* result is unchanged. Medium and High are still accepted as-is, because DEC-010's point stands: nothing measured says a Medium choice is worse than a pixel model's. The owner approved this on 2026-10-30 ("Yes, on by default").
+- **When:** `ContextOrchestratorOptions.CheckLowConfidence` (default on) and `LowConfidenceCheck.Applies`: not failed, found, Low (Element Selection's blended score below 0.5). The honest no-match is never checked.
+- **The rule** is `LowConfidenceCheck.Decide`, a public pure function (CO-12):
+  - Vision's centre inside Element Selection's box → "Vision agrees", Element Selection's box kept (it is the exact control);
+  - Vision found it elsewhere at Medium or High → Vision's verdict;
+  - Vision found it elsewhere at Low, not found, failed, or threw → Element Selection's choice kept.
+- **Errors:** the check catches Vision's provider errors (`VisionClientException`, including no `DEEPSEEK_API_KEY`), because a failed second opinion must not lose the first answer. This is the one place the orchestrator does not pass a leg's error up; the fallback still does. Cancellation propagates.
+- **Visible:** `GuidanceResult.ConfidenceCheck` (Abstractions) says what happened; the App Shell prints it as `check :`, and the orchestrator's phase reads `CheckingConfidence` while it runs.
+- **Where:** the orchestrator, because it is the only module that holds both legs (DEC-008). It reads the tier Element Selection already computed; it sets no threshold of its own.
+
+**Rejected.**
+- The check inside Element Selection: the siblings never reference each other (DEC-008).
+- A Jev component or a second Jev call: it does not hold Vision, and Jev's numbers are already in the tier.
+- Checking Medium, or running Vision on every turn: far more screenshots sent to the cloud with nothing measured to justify it.
+- Blending the two legs' scores: a scale neither module defines.
+
+**Consequences.**
+- A Low turn sends one screenshot to DeepSeek and waits for one Vision call, as a fallback does. The `check :` line shows each one.
+- Whether the check improves real answers is unmeasured; it needs keys and the model shoot-out.
+
+Plan: [plans/2026-10-30-low-confidence-check-v1.md](plans/2026-10-30-low-confidence-check-v1.md). Rows: CO-12 (CI G-19), CO-13 (local).
+
 ## DEC-036 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the App Shell asks the Turn Router (DEC-035) how to teach each turn, and runs the leg it picks.**

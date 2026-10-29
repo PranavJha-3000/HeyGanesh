@@ -115,6 +115,11 @@ internal static partial class ContextOrchestratorSmokeHost
             Console.WriteLine($"  primary why : {r.PrimaryFailureReason}");
         }
 
+        if (r.ConfidenceCheck is not null)
+        {
+            Console.WriteLine($"  check       : {r.ConfidenceCheck}");
+        }
+
         if (r.FailureReason is not null)
         {
             Console.WriteLine($"  FAILURE     : {r.FailureReason}");
@@ -162,6 +167,23 @@ internal static partial class ContextOrchestratorSmokeHost
             // Checked first: a retention leak would invalidate the frames line of every other row.
             _ when !retainCaptures && r.Captures.Count != 0
                 => $"FAIL --no-retain-captures: {r.Captures.Count} frame(s) were still attached to the verdict",
+
+            // DEC-037, checked before the not-found rows: with a Low primary, Vision is a second opinion,
+            // so its not-found must KEEP Element Selection's found verdict rather than replace it.
+            FakeJevMode.Low when visionNotFound && r.Source == GuidanceSource.ElementSelection && r.Found &&
+                                 r.Confidence == GuidanceConfidence.Low && r.ConfidenceCheck is not null && visionCalls == 1
+                => "PASS Low choice checked once; Vision found nothing, so Element Selection's choice was kept",
+            FakeJevMode.Low when visionNotFound
+                => $"FAIL expected the Low choice kept after one check; got source={r.Source} found={r.Found} " +
+                   $"conf={r.Confidence} check={r.ConfidenceCheck ?? "none"} visionCalls={visionCalls}",
+            // Which way the check goes depends on where the real window's top candidate sits relative to
+            // the fake's fixed box; that the check ran once and said so is the contract here (CO-12 checks
+            // each outcome exactly).
+            FakeJevMode.Low when r.Found && r.ConfidenceCheck is not null && visionCalls == 1
+                => $"PASS Low choice checked by Vision exactly once ({r.ConfidenceCheck})",
+            FakeJevMode.Low
+                => $"FAIL expected one Vision check of the Low choice; got source={r.Source} found={r.Found} " +
+                   $"check={r.ConfidenceCheck ?? "none"} visionCalls={visionCalls}",
             // Checked first: a not-found fallback is only meaningful once the primary leg has failed.
             // Vision reports a model-side not-found as a Failed result (Reconcile sets the failure
             // reason), so the orchestrator carries that verbatim: Failed, Low, no box. Asserting

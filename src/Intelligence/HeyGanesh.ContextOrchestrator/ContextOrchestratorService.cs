@@ -30,6 +30,9 @@ public enum OrchestratorPhase
 
     /// <summary>The session produced a verdict (found, not found, or failed) and returned it.</summary>
     Resolved = 4,
+
+    /// <summary>The primary leg found an element at Low confidence; Vision is checking it on the captured frame (DEC-037).</summary>
+    CheckingConfidence = 5,
 }
 
 /// <summary>
@@ -209,6 +212,15 @@ public sealed partial class ContextOrchestratorService : IDisposable
 
             _phase = OrchestratorPhase.Selecting;
             var selection = await _selection.SelectAsync(question, _options.Target, token).ConfigureAwait(false);
+
+            if (!selection.Failed && _options.CheckLowConfidence && LowConfidenceCheck.Applies(selection))
+            {
+                // DEC-037: found, but Jev was unsure. Vision gives a second opinion on the same frame;
+                // Element Selection's answer is kept unless Vision is sure and points elsewhere.
+                var checkedVerdict = await CheckLowConfidenceAsync(question, selection, captures, started, token).ConfigureAwait(false);
+                _phase = OrchestratorPhase.Resolved;
+                return checkedVerdict;
+            }
 
             if (!selection.Failed)
             {

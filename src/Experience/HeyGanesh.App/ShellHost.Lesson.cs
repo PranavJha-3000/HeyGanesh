@@ -63,7 +63,9 @@ internal static partial class ShellHost
             ProviderId = "deepseek",
             BaseUrl = "https://api.deepseek.com",
             ModelId = model,
-            Capabilities = ProviderCapability.Text,
+            // Streaming (DEC-042): the lesson's first beat is drawn while the rest is still being written.
+            // OpenAiCompatLlmClient.StreamAsync reads the provider's server-sent events as they arrive.
+            Capabilities = ProviderCapability.Text | ProviderCapability.Streaming,
             SecretStore = new EnvironmentSecretStore(LessonKeyEnvVar),
             CredentialProviderId = "deepseek",
         }));
@@ -244,6 +246,22 @@ internal static partial class ShellHost
             {
                 Console.WriteLine($"  repair      : failed, first answer kept ({repair})");
             }
+
+            if (plan.ReleasedBeats > 0)
+            {
+                Console.WriteLine($"  streamed    : {plan.ReleasedBeats} beat(s) released while the lesson was written; first at {plan.FirstBeatLatency?.TotalMilliseconds:F0} ms");
+            }
+            else if (plan.StreamNote is { } streamNote)
+            {
+                Console.WriteLine($"  streamed    : {streamNote}");
+            }
+        }
+
+        if (report.FirstBeatShown is { } shown)
+        {
+            // DEC-042: the wait the student actually sees, from the start of the turn to the first beat on
+            // the cards. The 2.5 s target is measured against this line.
+            Console.WriteLine($"  first beat  : {shown.TotalMilliseconds:F0} ms after the lesson was asked for");
         }
 
         if (report.Playback is { } playback)

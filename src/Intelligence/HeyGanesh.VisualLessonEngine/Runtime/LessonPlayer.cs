@@ -41,16 +41,66 @@ public sealed class LessonPlayer
     public async Task<PlaybackReport> PlayAsync(LessonValidationResult lesson, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(lesson);
-        var none = Array.Empty<BeatRecord>();
         if (lesson.Outcome == LessonOutcome.Rejected)
         {
             // Nothing usable, not even speech: touch neither seam.
-            return new PlaybackReport(PlaybackStatus.Rejected, lesson.Outcome, none, SpokeFallback: false);
+            return new PlaybackReport(PlaybackStatus.Rejected, lesson.Outcome, Array.Empty<BeatRecord>(), SpokeFallback: false);
         }
 
+        return await PlayCoreAsync(lesson.Outcome, lesson.Plan is null, async (token, records) =>
+        {
+            if (lesson.Outcome == LessonOutcome.TextFallback || lesson.Plan is null)
+            {
+                // Too broken to draw: say so once on the canvas, then teach by voice alone (M7 S7.1).
+                token.ThrowIfCancellationRequested();
+                await _canvas.ShowNoticeAsync(FallbackNotice, token);
+                token.ThrowIfCancellationRequested();
+                await _speaker.SpeakAsync(lesson.FallbackText, token);
+                return true;
+            }
+
+            await PlayBeatsAsync(lesson.Plan.Surfaces, Each(lesson.Plan.Beats), records, token);
+            return false;
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Plays beats as they arrive (DEC-042): the cards are reset for <paramref name="surfaces"/>, then each
+    /// beat from <paramref name="beats"/> is drawn and spoken exactly as <see cref="PlayAsync"/> would, the
+    /// next one waiting for the sequence. Every beat must already be validated (the streaming planner
+    /// releases only validated beats). <paramref name="outcome"/> is reported as-is; the caller knows the
+    /// lesson's final outcome only once the sequence has ended.
+    /// </summary>
+    public Task<PlaybackReport> PlayStreamAsync(
+        IReadOnlyList<LessonSurface> surfaces,
+        IAsyncEnumerable<LessonBeat> beats,
+        LessonOutcome outcome,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(surfaces);
+        ArgumentNullException.ThrowIfNull(beats);
+        return PlayCoreAsync(outcome, spokenOnly: false, async (token, records) =>
+        {
+            await PlayBeatsAsync(surfaces, beats, records, token);
+            return false;
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// The one-play-at-a-time frame both entry points share: refuse a second play, own the play token
+    /// for the controls, map a student's Stop, always return to Idle. <paramref name="body"/> returns
+    /// whether it spoke the fallback text instead of drawing.
+    /// </summary>
+    private async Task<PlaybackReport> PlayCoreAsync(
+        LessonOutcome outcome,
+        bool spokenOnly,
+        Func<CancellationToken, List<BeatRecord>, Task<bool>> body,
+        CancellationToken cancellationToken)
+    {
+        var none = Array.Empty<BeatRecord>();
         if (Interlocked.CompareExchange(ref _state, (int)PlayerState.Playing, (int)PlayerState.Idle) != (int)PlayerState.Idle)
         {
-            return new PlaybackReport(PlaybackStatus.Refused, lesson.Outcome, none, SpokeFallback: false);
+            return new PlaybackReport(PlaybackStatus.Refused, outcome, none, SpokeFallback: false);
         }
 
         using var playCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -67,31 +117,14 @@ public sealed class LessonPlayer
             // The token is checked before every seam call, not left to the seams: a canvas or speaker
             // that ignores its token must still not be driven after Stop or a caller cancel.
             var token = playCts.Token;
-            if (lesson.Outcome == LessonOutcome.TextFallback || lesson.Plan is null)
-            {
-                // Too broken to draw: say so once on the canvas, then teach by voice alone (M7 S7.1).
-                token.ThrowIfCancellationRequested();
-                await _canvas.ShowNoticeAsync(FallbackNotice, token);
-                token.ThrowIfCancellationRequested();
-                await _speaker.SpeakAsync(lesson.FallbackText, token);
-                return new PlaybackReport(PlaybackStatus.Completed, lesson.Outcome, none, SpokeFallback: true);
-            }
-
-            var plan = lesson.Plan;
-            token.ThrowIfCancellationRequested();
-            await _canvas.ResetAsync(plan.Surfaces, token);
-            for (var index = 0; index < plan.Beats.Count; index++)
-            {
-                await WaitWhilePausedAsync(token);
-                token.ThrowIfCancellationRequested();
-                records.Add(await PlayBeatAsync(plan.Beats[index], index, token));
-            }
-
-            return new PlaybackReport(PlaybackStatus.Completed, lesson.Outcome, records, SpokeFallback: false);
+            var spokeFallback = await body(token, records);
+            return spokeFallback
+                ? new PlaybackReport(PlaybackStatus.Completed, outcome, none, SpokeFallback: true)
+                : new PlaybackReport(PlaybackStatus.Completed, outcome, records, SpokeFallback: false);
         }
         catch (OperationCanceledException) when (StoppedByStudent(cancellationToken))
         {
-            return new PlaybackReport(PlaybackStatus.Stopped, lesson.Outcome, records, lesson.Plan is null);
+            return new PlaybackReport(PlaybackStatus.Stopped, outcome, records, spokenOnly);
         }
         finally
         {
@@ -178,6 +211,30 @@ public sealed class LessonPlayer
         {
             // The beat or play finished between taking the reference and cancelling: nothing to stop.
         }
+    }
+
+    /// <summary>Reset the cards, then draw and speak each beat in turn — from a finished plan or a live stream.</summary>
+    private async Task PlayBeatsAsync(IReadOnlyList<LessonSurface> surfaces, IAsyncEnumerable<LessonBeat> beats, List<BeatRecord> records, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        await _canvas.ResetAsync(surfaces, token);
+        var index = 0;
+        await foreach (var beat in beats.WithCancellation(token))
+        {
+            await WaitWhilePausedAsync(token);
+            token.ThrowIfCancellationRequested();
+            records.Add(await PlayBeatAsync(beat, index++, token));
+        }
+    }
+
+    private static async IAsyncEnumerable<LessonBeat> Each(IReadOnlyList<LessonBeat> beats)
+    {
+        foreach (var beat in beats)
+        {
+            yield return beat;
+        }
+
+        await Task.CompletedTask;
     }
 
     private async Task<BeatRecord> PlayBeatAsync(LessonBeat beat, int index, CancellationToken playToken)

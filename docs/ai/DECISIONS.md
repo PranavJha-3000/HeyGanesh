@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-042](#dec-042--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A lesson turn plans through `PlanStreamingAsync`: the cards open on the first released beat and each beat plays while the rest is written; a stream that stops early ends `Stopped` with the reason; the shell's DeepSeek client advertises `Streaming` and prints `first beat :` | accepted |
 | [DEC-041](#dec-041--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner can stream: `PlanStreamingAsync` releases each beat once header + beats-so-far validate (the validator's own output), repairs only while nothing was released, and stops after the released beats on a mid-stream fault; `PlanAsync` unchanged; not wired into the shell yet | accepted |
 | [DEC-040](#dec-040--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Voice pre-roll: the microphone starts at the press and buffers until `session.ready`, then the buffer is sent in order; the socket stays per-utterance (DEC-013 Option F stands); configuration is checked before the microphone opens | accepted |
 | [DEC-039](#dec-039--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Element Selection offers up to 40 lines of screen text to Jev as "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, none that look secret); the shell turns OCR on, `--no-ocr` turns it off | accepted |
@@ -52,6 +53,28 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-042 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a lesson turn opens the cards on the first released beat and plays each beat while the rest of the lesson is still being written.** Step 6b of the build sequence (the owner: "Yes, build 6b"), on top of DEC-041.
+
+- **Player:** `LessonPlayer.PlayStreamAsync(surfaces, beats, outcome, ct)` plays an async sequence of already-validated beats. `PlayAsync` now runs through the same frame and beat loop (its play rows are unchanged: 5, 5, 11, 6, 22).
+- **Turn:** `LessonTurn` always plans through `PlanStreamingAsync`; with a model that cannot stream that is exactly `PlanAsync` and the old whole-plan path runs. When a beat is released first, `PlayStreamedTurnAsync` opens the cards (or reuses the follow-up lease), plays from a queue the planner fills, and, when planning ends, queues any beats of the finished plan that were not released before closing it.
+  - a planner `StreamNote` (dropped stream, or a finished plan that disowns a shown beat) → the turn ends `Stopped` after the shown beats, the note in `Error`;
+  - caller cancellation → `Cancelled`, the stream stopped, cards closed; a fault while playing → planning stopped, cards closed, the fault rethrown (as before);
+  - `LessonTurnReport.FirstBeatShown`: from the start of the turn to the first beat starting on the cards.
+- **App Shell:** the DeepSeek client advertises `Text | Streaming` (`OpenAiCompatLlmClient.StreamAsync` reads server-sent events as they arrive); `PrintLesson` adds `streamed :` (beats released while writing) and `first beat :` (the student's wait, the line the 2.5 s target is measured on).
+- **Measured offline (fake model, 200 ms to the first token, 2,000 characters/s):** first beat drawn at 741 ms, the lesson finished arriving at 1,972 ms. A mutation that always waits for the whole plan moves the first beat to 1,995 ms and fails LT-10.
+
+**Rejected.**
+- A separate streamed turn API: a non-streaming model already degrades to the old path inside the same call, so the shell needs no new switch.
+- Opening the cards before the first beat validates: a lesson that turns out unusable would flash an empty window.
+
+**Consequences.**
+- Live timing is still unmeasured (needs `DEEPSEEK_API_KEY`); SH-19/SH-20 will show `first beat :`.
+- Pause/Skip/Stop controls are not reachable through `LessonTurn` (it creates its player internally), so a student Stop mid-stream is handled in code but not exercised by a row.
+
+Plan: [plans/2026-10-30-lesson-streaming-v1.md](plans/2026-10-30-lesson-streaming-v1.md). Rows: LT-10 (CI G-15).
+
 ## DEC-041 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the Lesson Planner can stream a lesson and release each beat as soon as it is safe to teach.** Step 6a of the build sequence (the owner: "Yes, build 6a"); 6b plays the released beats.

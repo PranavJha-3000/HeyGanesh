@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (cards open and play as beats arrive, build sequence step 6b, DEC-042)
+
+Did: `LessonTurn` plans through `PlanStreamingAsync`; when a beat is released the cards open and `LessonPlayer.PlayStreamAsync` plays each beat while the rest is written; unreleased beats of the finished plan are queued at the end; a `StreamNote` ends the turn Stopped with the reason. `PlayAsync` shares the same loop (play rows unchanged). `LessonTurnReport.FirstBeatShown`. The shell's DeepSeek client advertises `Streaming` and prints `streamed :` and `first beat :`. LT-10 `--assert-turn-stream` (10, CI G-15).
+Left: The real time to the first beat needs `DEEPSEEK_API_KEY` (SH-19/SH-20 now print it). A student Stop mid-stream is handled but not exercised by a row (the turn's player is internal). Open: `ResilientLlmClient.StreamAsync` still buffers. Steps 7-8 remain. Eleven commits are local, ahead of PR #1; not pushed.
+Watch: In the streamed path the PlaybackReport's Outcome is replaced with the finished plan's outcome at the end. Inside the turn host, `LessonSurface` alone names the namespace, so the surface type is written fully qualified.
+Next: Plan step 7 (the planner evaluation set).
+Verified: VisualLessonEngine, LessonSession, App and LessonTurnSmoke build -warnaserror 0/0; LessonSmoke play 5, play-degraded 5, controls 11, grounded 6, scene3d 22; LT source 4, turn 4, degraded 4, rejected 2, errors 6, followup-pick 12, turn-stream 10, turn-surface 6 (real cards); the whole-plan mutation fails 3 LT-10 checks, restored; App --help 0, --once --lesson 12, --once 12, cancel 13; all 17 CI gates exit 0 locally.
+
 ## 2026-10-30 · claude-opus-5-5 (the planner streams, build sequence step 6a, DEC-041)
 
 Did: `VisualPlanner.PlanStreamingAsync` streams the lesson and releases each beat once header + beats-so-far validate (the validator's own output), through the new pure `PlanStreamScanner`. Repair only while nothing was released; a mid-stream fault keeps the released beats (`StreamNote`); no Streaming capability means exactly `PlanAsync`. `PlanAsync` now shares `Prepare` and `RunAttemptsAsync` with it, unchanged in behaviour (LP-1..LP-10 unchanged). `PlanResult` gains `ReleasedBeats`, `FirstBeatLatency`, `StreamNote`. LP-11 `--assert-stream` (12, CI G-14).

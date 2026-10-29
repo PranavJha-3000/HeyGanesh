@@ -172,7 +172,7 @@ tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Experience/HeyGanesh.LessonSession -c Debug
 dotnet build tools/LessonTurnSmoke -c Debug
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --assert-turn
-#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 12)
+#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 12, --assert-turn-stream 10)
 #   manual: --demo-pick --voice sapi   (the engine lesson, then click parts to ask about them, same window; LT-9)
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --demo-turn --voice sapi
 #   -> the whole turn drawn and spoken on screen (manual row LT-7)

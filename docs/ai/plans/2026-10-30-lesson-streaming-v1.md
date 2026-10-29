@@ -3,7 +3,8 @@
 2026-10-30 · claude-opus-5-5 · STATUS: 6a BUILT 2026-10-30 (owner: "Yes, build 6a"): LP-11 12 PASS (simulated: first beat
 2.41 s, whole lesson 6.50 s); LP-1..LP-10 unchanged. Changed from the plan while building: the prompt needed no "header
 first" sentence (its FORMAT block already lists `beats` last, and the 2D prompt stays character for character); LP-1's
-"Stream" needle was narrowed to the I/O type names. 6b is planned below and not built.
+"Stream" needle was narrowed to the I/O type names. 6b BUILT 2026-10-30 (owner: "Yes, build 6b"): LT-10 10 PASS
+(first beat drawn at 741 ms vs 1,972 ms for the whole lesson, fake model); LT-6 on real cards unchanged; DEC-042.
 
 ## Problem, restated
 
@@ -19,7 +20,7 @@ does `LessonTurn` open the cards and play. On DeepSeek V4.1 Flash's published fi
 - `tools/LessonPlannerSmoke`: the fake client streams (chunk size, simulated delays, a drop point); LP-11.
 - CI G-14 gains `--assert-stream`; docs DEC-041, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, ROLLBACK.
 
-## Step 6b: cards open and play as beats arrive (planned, not built)
+## Step 6b: cards open and play as beats arrive (built)
 
 - `LessonPlayer`: a play method fed released beats (each still drawn, then spoken).
 - `LessonTurn`: open the cards on the first released beat; a mid-stream stop ends the lesson after the shown beats with

@@ -314,7 +314,9 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
         PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop(), Scene3d = scene3d }   (DEC-033; DEC-036 for scene3d)
         LessonTurn.RunWithFollowUpsAsync(planner, CardSurfaceHost(marks: overlay), DelegateLessonSpeaker(voice.SpeakAsync), request, { IdleTimeout = 30 s }, ct)
           (the first turn is the path below; a finished 3D lesson then waits 30 s for a click → follow-up on the same cards, see "Click a part to ask")
-          VisualPlanner.PlanAsync            ProviderException → AuthError / ProviderError; OCE → Cancelled  (no card opened)
+          VisualPlanner.PlanStreamingAsync   (DEC-042; a non-streaming model = PlanAsync)  ProviderException → AuthError / ProviderError; OCE → Cancelled  (no card opened)
+            a beat released first → PlayStreamedTurnAsync: open cards → LessonPlayer.PlayStreamAsync(queue) while planning
+              continues; planning ends → unreleased beats queued, queue closed; StreamNote → Stopped (Error = note)
           Lesson.Outcome == Rejected         → Rejected (no card opened, nothing said)
           CardSurfaceHost.OpenAsync          → fresh CardSurface for this turn
           LessonPlayer.PlayAsync             draw then speak per beat; Voice's SpeakAsync is the clock

@@ -404,3 +404,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `b881a31` (the commit before this step).
 - **Files to restore:** `git checkout b881a31 -- src/Intelligence/HeyGanesh.LessonPlanner tools/LessonPlannerSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Intelligence/HeyGanesh.LessonPlanner/PlanStreamScanner.cs`, `.../VisualPlanner.Streaming.cs` and any new smoke file (`git status` lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonPlannerSmoke modes as before (G-14 49 PASS lines); the local CI runner reports 17 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (cards open and play as beats arrive, build sequence step 6b, DEC-042)
+
+- **Change:** `LessonPlayer` gains `PlayStreamAsync` (beats from an async sequence); `PlayAsync` runs through the same loop. `LessonTurn` plans through `PlanStreamingAsync`, opens the cards on the first released beat and plays beats as they come; a stream that stops early ends the turn `Stopped` with the reason; `LessonTurnReport` gains `FirstBeatShown`. The App Shell's DeepSeek client advertises `Streaming` and prints `first beat :`. LessonTurnSmoke gains `--assert-turn-stream` (CI G-15). Docs: DEC-042, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `ea61e61` (the commit before this step).
+- **Files to restore:** `git checkout ea61e61 -- src/Intelligence/HeyGanesh.VisualLessonEngine/Runtime src/Experience/HeyGanesh.LessonSession src/Experience/HeyGanesh.App tools/LessonTurnSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new smoke file (`git status` lists them).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSmoke play rows, LessonTurnSmoke offline modes with their old counts (G-15 32 PASS lines); the local CI runner reports 17 gates, all exit 0.

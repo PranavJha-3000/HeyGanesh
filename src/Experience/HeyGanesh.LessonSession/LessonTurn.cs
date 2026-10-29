@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using HeyGanesh.LessonPlanner;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.VisualLessonEngine;
@@ -35,7 +36,12 @@ public enum LessonTurnOutcome
 /// is null when nothing was played. <see cref="Error"/> is <see cref="ProviderException.ToString"/>,
 /// the provider layer's own secret-free form, never the raw message.
 /// </summary>
-public sealed record LessonTurnReport(LessonTurnOutcome Outcome, PlanResult? Plan, PlaybackReport? Playback, string? Error);
+/// <remarks>
+/// <see cref="FirstBeatShown"/> is from the start of the turn to the first beat starting on the cards
+/// (DEC-042): the time a student waits to see the lesson begin. <see cref="Error"/> also carries the
+/// planner's StreamNote when a streamed lesson stopped early.
+/// </remarks>
+public sealed record LessonTurnReport(LessonTurnOutcome Outcome, PlanResult? Plan, PlaybackReport? Playback, string? Error, TimeSpan? FirstBeatShown = null);
 
 /// <summary>Why <see cref="LessonTurn.RunWithFollowUpsAsync"/> stopped asking for follow-ups.</summary>
 public enum FollowUpEnd
@@ -220,10 +226,33 @@ public static class LessonTurn
         PlanRequest request,
         CancellationToken cancellationToken)
     {
+        // DEC-042: plan through the streaming path. With a client that cannot stream it is exactly
+        // PlanAsync and no beat is released early, so the whole-plan path below runs as before.
+        var startedAt = DateTimeOffset.UtcNow;
+        using var planCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var beats = Channel.CreateUnbounded<LessonBeat>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+        var firstReleased = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        IReadOnlyList<HeyGanesh.VisualLessonEngine.LessonSurface>? surfaces = null;
+        var released = 0;
+        var planning = planner.PlanStreamingAsync(request, beat =>
+        {
+            // Runs on the planner's reading loop: hand the beat over and return at once.
+            surfaces ??= beat.Prefix.Plan!.Surfaces;
+            released++;
+            beats.Writer.TryWrite(beat.Beat);
+            firstReleased.TrySetResult();
+        }, planCts.Token);
+
+        await Task.WhenAny(planning, firstReleased.Task).ConfigureAwait(false);
+        if (firstReleased.Task.IsCompleted)
+        {
+            return await PlayStreamedTurnAsync(planning, beats, surfaces!, () => released, planCts, canvases, lease, speaker, startedAt, cancellationToken).ConfigureAwait(false);
+        }
+
         PlanResult plan;
         try
         {
-            plan = await planner.PlanAsync(request, cancellationToken).ConfigureAwait(false);
+            plan = await planning.ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -255,7 +284,7 @@ public static class LessonTurn
                 // A fresh player cannot refuse, and Rejected was returned above: reaching here is a defect.
                 _ => throw new InvalidOperationException($"unexpected playback status {playback.Status} on a fresh player"),
             };
-            return (new LessonTurnReport(outcome, plan, playback, null), lease);
+            return (new LessonTurnReport(outcome, plan, playback, null, FirstShown(playback, startedAt)), lease);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -267,4 +296,116 @@ public static class LessonTurn
             throw;
         }
     }
+
+    /// <summary>
+    /// The streamed half of a turn (DEC-042): a beat was released, so the cards open now and play each
+    /// beat as the planner releases it, while the rest of the lesson is still being written. When planning
+    /// ends, any beats the finished plan holds beyond those released are queued too, and the queue closes.
+    /// A planner StreamNote (a dropped stream, or a finished plan that disowns a shown beat) ends the turn
+    /// Stopped after the beats already shown. A student Stop or a fault stops the planning as well.
+    /// </summary>
+    private static async Task<(LessonTurnReport Report, LessonCanvasLease? Lease)> PlayStreamedTurnAsync(
+        Task<PlanResult> planning,
+        Channel<LessonBeat> beats,
+        IReadOnlyList<HeyGanesh.VisualLessonEngine.LessonSurface> surfaces,
+        Func<int> released,
+        CancellationTokenSource planCts,
+        ILessonCanvasHost canvases,
+        LessonCanvasLease? lease,
+        ILessonSpeaker speaker,
+        DateTimeOffset startedAt,
+        CancellationToken cancellationToken)
+    {
+        var feeding = FinishFeedingAsync(planning, beats.Writer, released);
+        var openedHere = lease is null;
+        try
+        {
+            lease ??= await canvases.OpenAsync(cancellationToken).ConfigureAwait(false);
+            var playback = await new LessonPlayer(lease.Canvas, speaker)
+                .PlayStreamAsync(surfaces, beats.Reader.ReadAllAsync(cancellationToken), LessonOutcome.Valid, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (playback.Status == PlaybackStatus.Stopped && !planning.IsCompleted)
+            {
+                // The student stopped the lesson: stop writing the rest of it too.
+                planCts.Cancel();
+            }
+
+            PlanResult? plan = null;
+            try
+            {
+                plan = await planning.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Planning was cancelled by the Stop above; the beats shown are the lesson.
+            }
+
+            await feeding.ConfigureAwait(false);
+            var outcome = playback.Status switch
+            {
+                PlaybackStatus.Stopped => LessonTurnOutcome.Stopped,
+                PlaybackStatus.Completed when plan?.StreamNote is not null => LessonTurnOutcome.Stopped,
+                PlaybackStatus.Completed => LessonTurnOutcome.Played,
+                _ => throw new InvalidOperationException($"unexpected playback status {playback.Status} on a fresh player"),
+            };
+            var report = playback with { Outcome = plan?.Lesson.Outcome ?? playback.Outcome };
+            return (new LessonTurnReport(outcome, plan, report, plan?.StreamNote, FirstShown(report, startedAt)), lease);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await QuietlyAsync(planning).ConfigureAwait(false);
+            return (new LessonTurnReport(LessonTurnOutcome.Cancelled, null, null, null), lease);
+        }
+        catch
+        {
+            planCts.Cancel();
+            await QuietlyAsync(planning).ConfigureAwait(false);
+            if (openedHere && lease is not null)
+            {
+                await lease.Owner.DisposeAsync().ConfigureAwait(false);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>When planning ends, queue the finished plan's beats that were not released, then close the queue.</summary>
+    private static async Task FinishFeedingAsync(Task<PlanResult> planning, ChannelWriter<LessonBeat> writer, Func<int> released)
+    {
+        try
+        {
+            var plan = await planning.ConfigureAwait(false);
+            if (plan.StreamNote is null && plan.Lesson.Plan is { } whole)
+            {
+                for (var i = released(); i < whole.Beats.Count; i++)
+                {
+                    writer.TryWrite(whole.Beats[i]);
+                }
+            }
+        }
+        catch
+        {
+            // Planning's own outcome is read by the turn; the queue only needs to close.
+        }
+        finally
+        {
+            writer.TryComplete();
+        }
+    }
+
+    private static async Task QuietlyAsync(Task task)
+    {
+        try
+        {
+            await task.ConfigureAwait(false);
+        }
+        catch
+        {
+            // Already being reported (cancellation or the fault being rethrown).
+        }
+    }
+
+    private static TimeSpan? FirstShown(PlaybackReport playback, DateTimeOffset startedAt) =>
+        playback.Beats.Count > 0 ? playback.Beats[0].StartedAt - startedAt : null;
 }

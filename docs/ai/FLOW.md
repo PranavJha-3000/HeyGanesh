@@ -287,6 +287,15 @@ PlanRequest { Question, Screen?: { Description, TargetBox, Jpeg }, VirtualDeskto
       not Valid → +assistant(first answer) +user(PlannerPrompt.Repair(issues)) → one more call → keep the better outcome
   → PlanResult { Lesson (validated), Attempts, UsedImage, ImageNote, ModelId, tokens, Latency, FirstAttemptIssues }
   → LessonPlayer.PlayAsync(result.Lesson) over CardSurface (Phase 3) — joined by LessonTurn (see Lesson leg)
+
+  VisualPlanner.PlanStreamingAsync(request, onBeat, ct)   (DEC-041; not called by the shell until step 6b)
+      client lacks Streaming → exactly PlanAsync
+      ILlmClient.StreamAsync → PlanStreamScanner.Append(chunk) → each completed beat:
+        Validate(Parse(header + beats so far)) not Rejected and kept every beat → onBeat(StreamedBeat) for the new ones
+      end, nothing released → the text is attempt 1 of the repair loop (as PlanAsync)
+      end, beats released → Validate(whole) must contain them (fingerprints), else stop after them; no repair
+      ProviderException after a release → released beats + StreamNote; before → propagates
+  → PlanResult { …, ReleasedBeats, FirstBeatLatency, StreamNote }
 ```
 ProviderException / OperationCanceledException propagate unchanged.
 

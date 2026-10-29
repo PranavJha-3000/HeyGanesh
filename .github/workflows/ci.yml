@@ -87,7 +87,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\LessonPlannerSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonPlannerSmoke.exe'
           foreach ($mode in @('--assert-source', '--assert-prompt', '--assert-multimodal', '--assert-plan', '--assert-repair',
-                              '--assert-errors', '--assert-followup', '--assert-hardening', '--assert-prompt-3d')) {
+                              '--assert-errors', '--assert-followup', '--assert-hardening', '--assert-prompt-3d', '--assert-stream')) {
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

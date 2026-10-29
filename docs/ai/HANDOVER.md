@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the planner streams, build sequence step 6a, DEC-041)
+
+Did: `VisualPlanner.PlanStreamingAsync` streams the lesson and releases each beat once header + beats-so-far validate (the validator's own output), through the new pure `PlanStreamScanner`. Repair only while nothing was released; a mid-stream fault keeps the released beats (`StreamNote`); no Streaming capability means exactly `PlanAsync`. `PlanAsync` now shares `Prepare` and `RunAttemptsAsync` with it, unchanged in behaviour (LP-1..LP-10 unchanged). `PlanResult` gains `ReleasedBeats`, `FirstBeatLatency`, `StreamNote`. LP-11 `--assert-stream` (12, CI G-14).
+Left: Step 6b (cards open and play as beats arrive; the shell marks DeepSeek `Streaming`, calls the streaming path, prints `first beat :`) is planned in plans/2026-10-30-lesson-streaming-v1.md, not built. Open item: `ResilientLlmClient.StreamAsync` buffers the whole stream before yielding, so anything wrapped in it does not really stream (the shell does not use it). Steps 7-8 remain. Ten commits are local, ahead of PR #1; not pushed.
+Watch: My first "tricky strings" check stayed balanced even with escapes ignored, so it proved nothing until it gained an escaped quote followed by a closing brace; a mutation caught that. LP-1's I/O needle "Stream" was narrowed to the I/O type names because the planner now calls StreamAsync. The new scanner file was created a few minutes before the ROLLBACK entry was written (the entry still preceded every change to an existing file).
+Next: Build step 6b.
+Verified: LessonPlanner and its host build -warnaserror 0/0; LP-11 12 PASS (simulated first beat 2.41 s vs 6.50 s whole); ignoring escapes fails LP-11's strings check, restored; LP source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2, hardening 7, prompt-3d 10; all 17 CI gates exit 0 locally.
+
 ## 2026-10-30 · claude-opus-5-5 (BUG-001: session.ready's version field)
 
 Did: `QwenGatewayProtocol.Classify` now reads the ready payload's version from `protocol_version` (upstream's name), with the old camelCase names as fallbacks, so the wire-version check actually runs against a real Gateway. VO-6 gains the upstream-shaped frame (21); the stub sends `protocol_version` and VO-11 gains a major-8 refusal (13). Checked upstream's transcript and audio fields too: they match.

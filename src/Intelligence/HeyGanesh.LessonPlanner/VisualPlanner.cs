@@ -15,7 +15,7 @@ namespace HeyGanesh.LessonPlanner;
 /// cancellation propagate unchanged for the shell to map. The client is caller-owned; this class
 /// never disposes it.
 /// </remarks>
-public sealed class VisualPlanner : IDisposable
+public sealed partial class VisualPlanner : IDisposable
 {
     private readonly ILlmClient _client;
     private readonly bool _ownsClient;
@@ -57,6 +57,15 @@ public sealed class VisualPlanner : IDisposable
 
     public async Task<PlanResult> PlanAsync(PlanRequest request, CancellationToken cancellationToken = default)
     {
+        var prepared = Prepare(request);
+        return await RunAttemptsAsync(prepared, firstAnswer: null, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>What every planning call needs, built once: the shared half of PlanAsync and PlanStreamingAsync.</summary>
+    private sealed record Prepared(ValidationContext Context, LlmImagePart? Image, string? ImageNote, string System, LlmMessage User);
+
+    private Prepared Prepare(PlanRequest request)
+    {
         ArgumentNullException.ThrowIfNull(request);
         if (string.IsNullOrWhiteSpace(request.Question))
         {
@@ -78,9 +87,20 @@ public sealed class VisualPlanner : IDisposable
             Text = PlannerPrompt.User(request, _options, image is not null, imageNote),
             Images = image is null ? null : new[] { image },
         };
-        var messages = new List<LlmMessage> { user };
         // Prompt and validator see the same catalogue (DEC-032): 3D is offered exactly when it would be accepted.
         var system = PlannerPrompt.System(LessonLimits.Default, request.Scene3d);
+        return new Prepared(context, image, imageNote, system, user);
+    }
+
+    /// <summary>
+    /// The attempt loop: ask, validate, repair once if needed, keep the better answer. With
+    /// <paramref name="firstAnswer"/> the first attempt is that answer (a finished stream, DEC-041)
+    /// instead of a call; everything after it is unchanged.
+    /// </summary>
+    private async Task<PlanResult> RunAttemptsAsync(Prepared prepared, LlmResponse? firstAnswer, CancellationToken cancellationToken)
+    {
+        var (context, image, imageNote, system, user) = prepared;
+        var messages = new List<LlmMessage> { user };
 
         LessonValidationResult? best = null;
         IReadOnlyList<LessonIssue> firstIssues = Array.Empty<LessonIssue>();
@@ -95,13 +115,13 @@ public sealed class VisualPlanner : IDisposable
             LlmResponse response;
             try
             {
-                response = await _client.GenerateAsync(new LlmRequest
+                response = attempts == 1 && firstAnswer is not null ? firstAnswer : await _client.GenerateAsync(new LlmRequest
                 {
                     SystemPrompt = system,
                     Messages = messages.ToArray(),
                     MaxOutputTokens = _options.MaxOutputTokens,
                     Temperature = _options.Temperature,
-                }, cancellationToken);
+                }, cancellationToken).ConfigureAwait(false);
             }
             catch (ProviderException ex) when (best is not null)
             {

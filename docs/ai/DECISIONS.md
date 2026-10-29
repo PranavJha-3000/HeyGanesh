@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-041](#dec-041--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner can stream: `PlanStreamingAsync` releases each beat once header + beats-so-far validate (the validator's own output), repairs only while nothing was released, and stops after the released beats on a mid-stream fault; `PlanAsync` unchanged; not wired into the shell yet | accepted |
 | [DEC-040](#dec-040--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Voice pre-roll: the microphone starts at the press and buffers until `session.ready`, then the buffer is sent in order; the socket stays per-utterance (DEC-013 Option F stands); configuration is checked before the microphone opens | accepted |
 | [DEC-039](#dec-039--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Element Selection offers up to 40 lines of screen text to Jev as "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, none that look secret); the shell turns OCR on, `--no-ocr` turns it off | accepted |
 | [DEC-038](#dec-038--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The capture can read the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default), into `MonitorCapture.TextLines` in global physical pixels; local only; nothing consumes it yet | accepted |
@@ -51,6 +52,35 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-041 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the Lesson Planner can stream a lesson and release each beat as soon as it is safe to teach.** Step 6a of the build sequence (the owner: "Yes, build 6a"); 6b plays the released beats.
+
+- **Why:** the whole VisualPlan used to be generated, validated and only then drawn. On DeepSeek V4.1 Flash's published figures (about 1.1 s to the first token, 206 tokens/s) a 600–1,200-token lesson is roughly 4–7 s before anything appears, against a 2.5 s target.
+- **`PlanStreamScanner`** (pure): fed chunks, it tracks depth, strings and escapes, finds the header (the top-level object before the `"beats"` key) and each complete beat object. The same text split anywhere yields the same beats.
+- **`VisualPlanner.PlanStreamingAsync(request, onBeat, ct)`:** asks exactly as `PlanAsync` asks (shared `Prepare`). For each new beat, "header + beats so far" goes through the existing parser and validator; a beat is released only when that prefix is not Rejected and kept every beat. A released beat is the validator's own output — validation is never skipped, it runs beat by beat.
+  - nothing released before the header and the first beat validate;
+  - nothing released by the end → the finished text becomes the first attempt of the usual repair loop (`RunAttemptsAsync`, shared with `PlanAsync`);
+  - something released → no repair; the finished plan is validated and must contain the released beats (fingerprints compared), otherwise the lesson stops after them;
+  - a provider fault after a release returns the released beats with `StreamNote`; before one it propagates; cancellation always propagates;
+  - a client without `ProviderCapability.Streaming` gets exactly `PlanAsync`.
+- **`PlanResult`** gains `ReleasedBeats`, `FirstBeatLatency` and `StreamNote` (optional, so every existing construction compiles). `StreamedBeat` carries the beat, its index, the validated prefix and the time.
+- **The prompt is unchanged.** Its FORMAT block already puts `beats` last, and the 2D prompt is meant to stay character for character (DEC-032), so the planned "header first" sentence was not needed.
+- **LP-1's source audit** used the needle "Stream" to keep I/O out; the planner now calls `ILlmClient.StreamAsync`, so the needle names the I/O types (`System.IO`, `FileStream`, `MemoryStream`, `NetworkStream`, `StreamReader`, `StreamWriter`) instead. LP-1 still passes 3/3.
+- **Simulated, not measured:** with a fake at 1.1 s to the first token and 824 characters/s, the photosynthesis lesson's first beat was released at 2.41 s and the whole lesson arrived at 6.50 s.
+
+**Rejected.**
+- Playing beats before validating them: it skips what the validator exists for (grounded marks, vetted 3D parts).
+- A short first call then a second for the rest: two round trips and two halves that may not join up.
+- A streaming JSON library: a NuGet dependency.
+- Fixing `ResilientLlmClient.StreamAsync` (it buffers the whole stream before yielding): it is not on the shell's path; logged as an open item.
+
+**Consequences.**
+- Nothing in the App Shell changes yet; `PlanAsync` is still what it calls.
+- Once a beat is shown, a broken later beat can no longer be repaired; the validator degrades it (speech only) or the lesson stops after the shown beats.
+
+Plan: [plans/2026-10-30-lesson-streaming-v1.md](plans/2026-10-30-lesson-streaming-v1.md). Rows: LP-11 (CI G-14).
+
 ## DEC-040 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the speech-in leg pre-rolls: the microphone starts at the Ctrl+Alt press and its frames wait in the existing bounded queue until the Gateway's `session.ready`, then go out in order.** Step 5 of the build sequence, changed from "keep the connection warm" before building, because DEC-013 already rejected holding the socket open (Option F: it keeps the operator's own Gateway clients evicted).

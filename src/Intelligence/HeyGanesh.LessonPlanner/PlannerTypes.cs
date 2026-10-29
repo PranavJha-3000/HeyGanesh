@@ -48,7 +48,24 @@ public sealed record PlanResult(
     int OutputTokens,
     TimeSpan Latency,
     IReadOnlyList<LessonIssue> FirstAttemptIssues,
-    string? RepairError = null);
+    string? RepairError = null,
+    int ReleasedBeats = 0,
+    TimeSpan? FirstBeatLatency = null,
+    string? StreamNote = null);
+
+/// <summary>
+/// One beat released while the lesson was still streaming (DEC-041): <see cref="Beat"/> as the
+/// validator left it inside <see cref="Prefix"/>, the header plus every beat up to this one.
+/// </summary>
+public sealed record StreamedBeat(int Index, LessonBeat Beat, LessonValidationResult Prefix, TimeSpan Elapsed)
+{
+    /// <summary>
+    /// A beat's identity for comparing a released beat with the same beat in the finished plan: id,
+    /// speech, whether it degraded, and every op's own record text.
+    /// </summary>
+    public static string Fingerprint(LessonBeat beat) =>
+        $"{beat.Id}|{beat.Say}|{beat.Degraded}|{string.Join(";", beat.Ops.Select(o => o.ToString()))}";
+}
 
 public sealed class LessonPlannerOptions
 {

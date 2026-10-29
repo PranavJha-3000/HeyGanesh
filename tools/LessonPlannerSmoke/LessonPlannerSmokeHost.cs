@@ -34,6 +34,7 @@ internal static partial class LessonPlannerSmokeHost
                 "--assert-followup" => await RunAssertFollowupAsync(),
                 "--assert-hardening" => await RunAssertHardeningAsync(),
                 "--assert-prompt-3d" => await RunAssertPrompt3dAsync(),
+                "--assert-stream" => await RunAssertStreamAsync(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -63,6 +64,7 @@ internal static partial class LessonPlannerSmokeHost
         Console.WriteLine("  --assert-followup    previous lesson carried as labelled context, exit 0");
         Console.WriteLine("  --assert-hardening   fenced untrusted text, safe repair echo, failed repair keeps the lesson, disposal, exit 0");
         Console.WriteLine("  --assert-prompt-3d   3D offered only with a catalogue; every name and op shape from the code; repair of an invented part, exit 0");
+        Console.WriteLine("  --assert-stream      beats released as they validate, for every golden lesson at every chunk size; faults, repair, fallback, timing, exit 0");
         return 0;
     }
 

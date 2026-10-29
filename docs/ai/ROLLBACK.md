@@ -397,3 +397,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `0857ec1` (the commit before this fix).
 - **Files to restore:** `git checkout 0857ec1 -- src/Experience/HeyGanesh.Voice/QwenGatewayProtocol.Classify.cs tools/VoiceSmoke docs/ai`.
 - **Re-check after revert:** VoiceSmoke `--assert-gcp-events` and `--assert-preroll` exit 0 with their step-5 counts (20, 11).
+
+## 2026-10-30 · claude-opus-5-5 (the planner streams and releases validated beats, build sequence step 6a, DEC-041)
+
+- **Change:** LessonPlanner gains `PlanStreamScanner` (pure) and `VisualPlanner.PlanStreamingAsync` (streams when the client advertises `Streaming`, releases each beat once header + beats-so-far validate, repairs only while nothing was released); `PlanAsync`'s preparation and attempt loop are shared with it (behaviour unchanged); `PlanResult` gains `ReleasedBeats`, `FirstBeatLatency`, `StreamNote`; `StreamedBeat`. LessonPlannerSmoke: the fake client can stream; `--assert-stream` (LP-11, CI G-14). Docs: DEC-041, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan. Nothing in the App Shell changes (step 6b).
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `b881a31` (the commit before this step).
+- **Files to restore:** `git checkout b881a31 -- src/Intelligence/HeyGanesh.LessonPlanner tools/LessonPlannerSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Intelligence/HeyGanesh.LessonPlanner/PlanStreamScanner.cs`, `.../VisualPlanner.Streaming.cs` and any new smoke file (`git status` lists them).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonPlannerSmoke modes as before (G-14 49 PASS lines); the local CI runner reports 17 gates, all exit 0.

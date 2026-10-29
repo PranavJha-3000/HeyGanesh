@@ -22,7 +22,9 @@ internal static partial class LessonPlannerSmokeHost
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                 && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             .Select(File.ReadAllText).ToList();
-        string[] needles = { "DllImport", "LibraryImport", "HttpClient", "System.Net", "File.", "Directory.", "Stream", "Environment.", "Process", "Microsoft.Win32", "Socket" };
+        // "Stream" used to be one needle; since DEC-041 the planner calls ILlmClient.StreamAsync, so the
+        // I/O stream types are named instead.
+        string[] needles = { "DllImport", "LibraryImport", "HttpClient", "System.Net", "File.", "Directory.", "System.IO", "FileStream", "MemoryStream", "NetworkStream", "StreamReader", "StreamWriter", "Environment.", "Process", "Microsoft.Win32", "Socket" };
         var found = needles.Where(n => sources.Any(s => s.Contains(n, StringComparison.Ordinal))).ToArray();
         var refs = Regex.Matches(csproj, "<ProjectReference Include=\"[^\"]*\\\\([^\\\\\"]+)\\.csproj\"").Select(m => m.Groups[1].Value).OrderBy(n => n, StringComparer.Ordinal).ToArray();
 

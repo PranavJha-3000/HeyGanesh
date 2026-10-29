@@ -1,4 +1,12 @@
 
+## 2026-10-29 · claude-opus-5-5 (spike 0d: Part Library as isometric SVG)
+
+Did: Ran spike 0d in the scratchpad: Anatomy's iso-kit + lathe (MIT, 1482e846, 4 files / 92 KB, owner-approved download) drew all three Part Library models from the exact Babylon `model` messages in 9.9–16.2 ms each, poses matching the Babylon snapshots, 0 CSP violations and 0 JS errors under the scene page's CSP. GO with two conditions (FEATURE-007 "Spike 0d results"). Only docs changed in the repo.
+Left: A product step (its own plan): fix painter's order for parts that pass through others (the intake-valve stem hides behind the cylinder head), confirm `.mjs` MIME in WebView2's virtual host, vendor with VENDOR.md pins. PR #1 is green and unmerged; these docs are committed locally, not pushed.
+Watch: The axis map into kit space must reflect, (x, y, z) -> (x, z, y), or models come out mirrored. Never type `python -` in Bash (a fourth slip today hung the shell); run script files only.
+Next: Plan the product step for the no-WebGL SVG fallback, or merge PR #1 first.
+Verified: kit downloads byte-identical to the copies read earlier, SHA-256s recorded; timings, CSP and error counts read from the page; side-by-side with `--snapshot-3d` PNGs reviewed.
+
 ## 2026-10-29 · claude-opus-5-5 (Babylon NOTICE.md vendored)
 
 Did: Downloaded babylonjs@9.30.0 `NOTICE.md` (46 B, owner-approved) from cdn.jsdelivr.net; its SHA-256 `225463ef…5823` equals jsdelivr's published hash. Vendored at `Page/vendor/babylonjs-9.30.0/NOTICE.md`, pinned in `VENDOR.md`; LSU-7 now expects 4 pins and checks that the licence and NOTICE ship. The pre-push licensing item is closed.

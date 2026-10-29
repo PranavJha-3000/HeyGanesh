@@ -260,6 +260,7 @@ Decisions DEC-020/021/022 taken by delegation ("quicker to build and demo, cheap
 | 0a — WebView2 card window | Reshaped by DEC-020 to an **opaque** card (not a transparent full-screen surface): borderless, top-most, no-activate, capture-excluded | env 384–495 ms; first paint 761–872 ms; warm update 2.3–2.5 ms; 143 MB / 6 processes; focus never stolen; capture hidden after affinity — 3/3 runs | **GO** |
 | 0b — Babylon.js on integrated GPU / software | Run 2026-10-29 · claude-opus-5-5 (see below): throwaway WinForms host (WebView2 1.0.4314.35, runtime 155.0) + vendored Babylon.js 9.30.0 / babylon.gui 9.30.0, sha256-verified; 200 primitives (box/cylinder/sphere/torus, 10 materials) + 10 sticky-note labels on leader lines (`linkWithMesh`) + `HighlightLayer` on 5 meshes, auto-rotating; 900×650 opaque no-activate card, native resolution (canvas 900×651 at 150 %), 3 runs per variant | GPU (RTX 3060 Laptop, D3D11): **164–165 fps**, p95 6.8 ms. Software, `--disable-gpu` → WARP: **38–39 fps**, p95 ~31 ms (56–61 fps at CSS resolution). SwiftShader (forced): **16–21 fps**. Scene build cold **361–425 ms** (budget 300), **warm rebuild 192–206 ms**. Script parse 355–460 ms per page load. WebView2 private memory 357–506 MB (2D card: 143 MB) | **GO**, with three conditions for Phase 5 |
 | 0c — planner time-to-first-beat | Blocked: no provider key on this machine (`DEEPSEEK_API_KEY` absent) | — | runs before Phase 4 is called done |
+| 0d — Part Library as isometric SVG (Anatomy's kit) | Run 2026-10-29 · claude-opus-5-5 (see below): the exact Babylon `model` messages drawn by a throwaway adapter over Anatomy's `iso-kit.mjs` + `lathe.mjs` (MIT, commit `1482e846`), under the scene page's CSP | build 9.9–16.2 ms per model (engine 11.6, DNA 9.9, pump 16.2); SVG 80–145 KB; 0 CSP violations, 0 JS errors | **GO with two conditions** |
 
 **Spike 0b conditions (2026-10-29 · claude-opus-5-5)** — what Phase 5 must build in, because the numbers above say so:
 1. **Pre-warm the 3D page and its shaders at startup**, like the 2D card pre-warm (DEC-025): build one hidden warm-up scene with the kit's material set, dispose it, keep the engine. Cold build misses the 300 ms budget by 20–40 %; warm builds are ~200 ms. The 8.6 MB `babylon.js` parse (~0.4 s) is paid in the same pre-warm, never on a question.
@@ -267,6 +268,36 @@ Decisions DEC-020/021/022 taken by delegation ("quicker to build and demo, cheap
 3. **Memory: ~360–500 MB of WebView2 private memory with a 3D scene** vs. DEC-020's ~150 MB budget for cards. Phase 5 records this as a DEC (one shared environment for 2D + 3D, 3D page created on first 3D lesson or at pre-warm — owner's call).
 
 Not measured: an **integrated GPU** — this laptop exposes only the RTX 3060 (`Win32_VideoController` lists one adapter; `--force_low_power_gpu` still chose it). WARP stands in as the worst realistic case. Spike sources (host, page, runner, raw `results*.jsonl`) stayed in the session scratchpad and were not committed, as for 0a.
+
+**Spike 0d results (2026-10-29 · claude-opus-5-5)** — [plan](../plans/2026-10-29-iso-svg-spike.md). Everything ran in the scratchpad; nothing in `src/` changed.
+- **Downloaded (owner-approved)** from `raw.githubusercontent.com/wheresryan22/anatomy/1482e8469b0a9e0d8cc18ea2740a01423d29ae80/`:
+
+  | File | Bytes | SHA-256 |
+  |---|---|---|
+  | `kit/iso-kit.mjs` | 35,175 | `6d3ecc725d30c3b0346da309cf61dfa5a65017c23620bbd4093009d4fb104018` |
+  | `kit/lathe.mjs` | 48,028 | `a4e7e974b1a37e603ad2b76363b6f9815cc101dfff0ad277a5d4e8f1dc56fccb` |
+  | `kit/iso.css` | 7,698 | `ef19bac5a42ba9be42b56b2c1cf7fc7e21d332a8060765e9ca1d987b8ab23924` |
+  | `LICENSE` | 1,061 | `87c078ab9d90a3044f359e6b563d4e6afea7aa060897cf4f21618687b3856796` (MIT) |
+
+- **Input:** `SceneMessages.Model` for each V1 model, exported by a throwaway console project. It's the same JSON the Babylon page receives, so both renderers draw the same numbers.
+- **Shape mapping:**
+  - Box → `prismOf`;
+  - Cylinder and cone → `solidOf`;
+  - Sphere → `sphereOf`;
+  - Capsule → `solidOf` with smooth hemispherical ends;
+  - Torus → 20 short `disc` segments around the ring. `lathe` takes a half-circle meridian, but that gives only an open band, so the segments are what's drawn.
+- **Axis mapping, corrected from the plan:** the kit's projection matrix has determinant −1. Its world reads mirrored relative to a right-handed screen frame, so the map from Part Library space must also reflect: (x, y, z) → **(x, z, y)**, not the plan's (x, −z, y). With it, every model's pose matches its Babylon snapshot: the engine's valves and crank, the DNA's pair order and twist direction, the pump's ion sides. Nothing is mirrored.
+- **Pictures (reviewed by me):**
+  - all three models are recognisable and match `--snapshot-3d` in pose;
+  - the DNA's overlaps are drawn in correct depth order throughout;
+  - translucent glass and membrane read correctly through `opacity` on the finish class.
+- **Defect found:** per-primitive painter's sorting puts the intake-valve stem mostly *behind* the cylinder head it passes through. Its centre lies below the head's top. This is the predicted interpenetration risk.
+- **Found on the way:** this machine's registry maps `.js`/`.mjs` to `text/plain`, and a module script with that type is refused. It's worth checking that WebView2's virtual host serves `.mjs` as JavaScript before shipping (not verified).
+- **GO conditions for a product step:**
+  1. Fix painter's order for parts that pass through others: split long primitives into short segments for sorting, as the torus already is, or sort by the nearest point and check it with a rendering row.
+  2. Confirm module MIME under `SetVirtualHostNameToFolderMapping`, or vendor the kit under a `.js` name.
+
+  Vendoring then follows `VENDOR.md` (pinned hashes, the MIT licence shipped, LSU-7 coverage).
 
 Effect on §2.3 (window model): cards are opaque windows; only screen marks are click-through, and they stay on the existing native ScreenOverlay. The transparent selective-click-through surface is no longer on the demo path.
 

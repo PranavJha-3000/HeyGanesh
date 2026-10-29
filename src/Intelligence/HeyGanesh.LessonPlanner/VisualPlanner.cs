@@ -79,7 +79,8 @@ public sealed class VisualPlanner : IDisposable
             Images = image is null ? null : new[] { image },
         };
         var messages = new List<LlmMessage> { user };
-        var system = PlannerPrompt.System(LessonLimits.Default);
+        // Prompt and validator see the same catalogue (DEC-032): 3D is offered exactly when it would be accepted.
+        var system = PlannerPrompt.System(LessonLimits.Default, request.Scene3d);
 
         LessonValidationResult? best = null;
         IReadOnlyList<LessonIssue> firstIssues = Array.Empty<LessonIssue>();

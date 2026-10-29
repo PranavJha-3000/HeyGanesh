@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-032](#dec-032--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | The planner offers 3D only when the request carries a catalogue: the same catalogue then validates the answer; schema 1.1, the 3D op shapes, limits, camera views and every model/part/animation id are interpolated from code; without one the prompt is byte-identical to v1 | accepted |
 | [DEC-031](#dec-031--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Click a 3D part to ask: picking only after a lesson has played; the page sends two ids, CardSurface checks them against what it drew and the catalogue; the question is written in C# from the Part Library; the follow-up plays on the same cards; at most 3, 60 s idle | accepted |
 | [DEC-030](#dec-030--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D renderer: a scene window in CardSurface (same isolation as cards) running vendored, SHA-pinned Babylon.js 9.30.0; rotations sent as C#-computed quaternions + an orientation self-test from real pixels; created on the first 3D lesson with a shader warm-up; render on demand; no-WebGL → speech | accepted |
 | [DEC-029](#dec-029--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Part library v1 as C# code in a new `HeyGanesh.PartLibrary`: closed primitive kit, computed geometry/motion where physics defines it, `Schematic` and `Reviewed` (false) flags, budgets 16 parts / 64 primitives / ±2 box; produces the scene3d `ModelCatalog` | accepted |
@@ -42,6 +43,34 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-032 — 2026-10-29 — claude-opus-5-5
+
+**Decision — `PlannerPrompt.System(limits, scene3d)` adds a 3D section exactly when `PlanRequest.Scene3d` is set, built from the same `ModelCatalog` the validator checks the answer against.**
+
+- **Without a catalogue** the system prompt is the v1 prompt, byte for byte. Checked by dumping it from HEAD and from the change: 2935 bytes each, identical. A 2D-only caller is never told about schema 1.1 or the 3D ops.
+- **With a catalogue** the FORMAT names `heyganesh.visualplan/1.1`, and a section follows the screen rules. It contains:
+  - the `scene3d` surface, with `MaxScenes`;
+  - the six 3D op shapes (`model`, `label`, `highlight` on `instance.part`, `explode`, `animate`, `camera`);
+  - `MaxModelsPerScene`;
+  - the camera views from `CameraView`;
+  - a CATALOGUE block: every model id with its part and animation ids, sorted so the text is stable;
+  - five 3D rules: a scene only for a catalogue model; place before naming; words stay on cards; `explode` needs a `camera` after it; `say` still explains.
+- `VisualPlanner` passes `request.Scene3d` to both the prompt and `ValidationContext`. The repair turn already carries `model.unknown` / `part.unknown` / `animation.unknown` back to the model.
+- **Size:** +2101 characters for the 3-model V1 catalogue (2925 → 5026), only when 3D is on.
+
+**Reasoning.** The rule this file already follows: ask for exactly what will be accepted. Names come from code, so the prompt can't offer an id or op shape the validator refuses. LP-10 checks every id and parses every shown op line.
+
+**Rejected.**
+- Part titles and descriptions in the catalogue block: that changes `CatalogModel` (DEC-028 keeps it names-only) and makes the prompt about 3× longer. The ids are readable English. Revisit if a live run mislabels parts.
+- Always describing 3D, which would give a 2D-only canvas plans that all degrade.
+- A separate 3D planner: one lesson mixes a scene and cards.
+
+**Consequences.**
+- No product caller passes a catalogue yet. 6b (the App Shell) is the first.
+- Whether a real model plans good 3D lessons is unknown until a live run (LP-8 needs `DEEPSEEK_API_KEY`).
+
+Plan: [plans/2026-10-29-planner-3d-v1.md](plans/2026-10-29-planner-3d-v1.md). Row: LP-10.
+
 ## DEC-031 — 2026-10-29 — claude-opus-5-5
 
 **Decision — after a 3D lesson has played, the student can click a part; the click becomes a follow-up lesson about that part, on the same window.**

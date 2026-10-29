@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
+    <!-- LP-9 checks the 3D prompt against the real catalogue (DEC-032). The planner itself never references it. -->
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

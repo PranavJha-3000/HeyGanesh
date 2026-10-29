@@ -268,7 +268,8 @@ dispose the lease (every path)
 PlanRequest { Question, Screen?: { Description, TargetBox, Jpeg }, VirtualDesktop, PreviousPlan?, Mode }
   → VisualPlanner.PlanAsync
       image = Jpeg if client.Capabilities has Vision and size ≤ MaxImageBytes, else none + ImageNote
-      system = PlannerPrompt.System(LessonLimits.Default)   — schema, ops, glyphs, limits, rules from code
+      system = PlannerPrompt.System(LessonLimits.Default, request.Scene3d)   — schema, ops, glyphs, limits, rules from code;
+               with a catalogue also schema 1.1, the 3D ops, 3D limits, camera views and the CATALOGUE block (DEC-032)
       user   = QUESTION → MODE → SCREEN CONTEXT (UNTRUSTED) → GROUNDED TARGET BOX | NO GROUNDED TARGET → SCREEN IMAGE attached/not → PREVIOUS LESSON (UNTRUSTED)
       ILlmClient.GenerateAsync → VisualPlanParser.Parse → VisualPlanValidator.Validate(ctx: RequireGroundedMarks, GroundedTarget)
       not Valid → +assistant(first answer) +user(PlannerPrompt.Repair(issues)) → one more call → keep the better outcome

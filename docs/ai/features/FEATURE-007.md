@@ -20,7 +20,8 @@
   ([plan](../plans/2026-10-29-scene-renderer-v1.md)).
   Step 5 (click a 3D part to ask, DEC-031) BUILT 2026-10-29 · claude-opus-5-5: picking after playback, ids checked against
   what was drawn, library-written question, follow-up on the same cards; LT-8 12 PASS, LSU-15 9 PASS (real mouse)
-  ([plan](../plans/2026-10-29-part-pick-v1.md)). Step 6 (planner learns the 3D ops; shell passes the catalogue) not started.
+  ([plan](../plans/2026-10-29-part-pick-v1.md)). Step 6 split in two ([plan](../plans/2026-10-29-planner-3d-v1.md)): 6a (planner prompt learns 3D, DEC-032) BUILT 2026-10-29 · claude-opus-5-5,
+  LP-10 10 PASS, 2D prompt byte-identical; 6b (App Shell passes the catalogue + click-to-ask loop) not started.
   Phases 6–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.

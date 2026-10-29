@@ -1,4 +1,12 @@
 
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 6a: the planner learns 3D)
+
+Did: `PlannerPrompt.System(limits, scene3d)` adds a 3D section (schema 1.1, six 3D op shapes, 3D limits, camera views, the CATALOGUE of model/part/animation ids, five 3D rules) only when `PlanRequest.Scene3d` is set; `VisualPlanner` passes the same catalogue to the prompt and the validator (DEC-032). New row LP-10 (`--assert-prompt-3d`, CI G-14).
+Left: 6b, the App Shell: pass `CardSurface.Scene3dCatalog`, call `RunWithFollowUpsAsync` (30 s idle), and decide what Ctrl+Alt does while a 3D lesson waits for a click. BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md. Owner: PL-5 / LSU-13 reviews; merge decision. Branch not pushed.
+Watch: The 3D prompt is untested against a real model (LP-8 needs DEEPSEEK_API_KEY). A bare `python -` in a Bash command opens an interactive REPL that loops on an error and writes hundreds of MB of output; always pass a script file.
+Next: Build 6b after the owner picks the Ctrl+Alt behaviour.
+Verified: LessonPlannerSmoke: source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2, hardening 7, prompt-3d 10, all exit 0; no-catalogue prompt byte-identical to HEAD (2935 bytes); planner and smoke build -warnaserror 0/0; LT-8 12 unchanged; all 13 CI gates exit 0 locally (G-14 49 PASS lines).
+
 ## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 5: click a 3D part to ask)
 
 Did: After a 3D lesson has played, the student can click a part and a follow-up lesson about it plays in the same window (DEC-031). `IPartPicker`/`PartPick` (VisualLessonEngine), scene-page picking + `CardSurface` id checks (LessonSurface), `LessonTurn.RunWithFollowUpsAsync` + `PartQuestion` + `FollowUpOptions` (LessonSession), `PlanRequest.Scene3d` pass-through (LessonPlanner). New rows LT-8, LT-9, LSU-15; LSU-7/LSU-12 extended; CI G-15 gains `--assert-followup-pick`.

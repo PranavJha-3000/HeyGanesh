@@ -355,3 +355,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `3c2e7d8` (the commit before this step).
 - **Files to restore:** delete `src/Intelligence/HeyGanesh.TurnRouter/` and `tools/TurnRouterSmoke/`; `git checkout 3c2e7d8 -- HeyGanesh.sln .github/workflows/ci.yml AGENTS.md docs/ai`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; the local CI runner reports 13 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the App Shell uses the Turn Router, build sequence step 2, DEC-036)
+
+- **Change:** Element Selection gains a public factory `JevClients.CreateTypeSafe` (JevClients.cs; nothing else in the module changes). TurnRouter gains `TurnLegs.Choose` (TurnLegs.cs); TurnRouterSmoke gains TR-6. The App Shell references TurnRouter and PartLibrary, builds one Jev client for Element Selection and the router, starts the route after the verdict, and `TeachAsync` runs the chosen leg; new flag `--no-route`, new header line. CI G-18 gains one mode. Docs: DEC-036, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `bcd8fff` (the commit before this step).
+- **Files to restore:** `git checkout bcd8fff -- src/Experience/HeyGanesh.App src/Intelligence/HeyGanesh.TurnRouter tools/TurnRouterSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Perception/HeyGanesh.ElementSelection/JevClients.cs`, `src/Intelligence/HeyGanesh.TurnRouter/TurnLegs.cs`, `src/Experience/HeyGanesh.App/ShellHost.Route.cs`, `tools/TurnRouterSmoke/TurnRouterSmokeHost.Legs.cs`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; App `--help` exit 0, `--once --question "x"` exit 12, `--once --lesson --question "x"` exit 12; the local CI runner reports 14 gates, all exit 0.

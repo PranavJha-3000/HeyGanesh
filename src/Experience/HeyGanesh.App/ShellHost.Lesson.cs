@@ -5,6 +5,7 @@ using HeyGanesh.LessonSurface;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Providers.OpenAiCompat;
 using HeyGanesh.ScreenOverlay;
+using HeyGanesh.TurnRouter;
 using HeyGanesh.TutorEngine;
 using HeyGanesh.VisualLessonEngine.Runtime;
 using HeyGanesh.Voice;
@@ -70,17 +71,39 @@ internal static partial class ShellHost
         return VisualPlanner.FromRegistry(registry);
     }
 
-    /// <summary>The one dispatch between the two teaching legs, so both call sites stay a single line.</summary>
-    private static Task<int> TeachAsync(
+    /// <summary>
+    /// The one dispatch between the teaching legs, so both call sites stay a single line. The leg is
+    /// TurnLegs.Choose's answer (DEC-036): with no router it is exactly the old dispatch — the lesson
+    /// on --lesson, otherwise the Tutor — and a route can also pick point (nothing more to teach) or a
+    /// lesson on one model or in 2D.
+    /// </summary>
+    private static async Task<int> TeachAsync(
         TutorService? tutor,
         LessonLeg? lesson,
+        Task<TurnRoute?>? routing,
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
-        CancellationToken ct) =>
-        lesson is null
-            ? TeachAndSpeakAsync(tutor, voice, options, guidance, ct)
-            : TeachWithLessonAsync(lesson, voice, options, guidance, ct);
+        CancellationToken ct)
+    {
+        var leg = await ChooseLegAsync(routing, options, ct).ConfigureAwait(false);
+        if (leg is null)
+        {
+            Console.WriteLine("CANCELLED: the token aborted the turn while it was being routed; the verdict above was already reported.");
+            return 13;
+        }
+
+        switch (leg.Leg)
+        {
+            case TurnLeg.Highlight:
+                Console.WriteLine("teach       : skipped — the route says point: the highlight was the answer");
+                return 0;
+            case TurnLeg.Lesson when lesson is not null:
+                return await TeachWithLessonAsync(lesson, CatalogFor(leg), voice, options, guidance, ct).ConfigureAwait(false);
+            default:
+                return await TeachAndSpeakAsync(tutor, voice, options, guidance, ct).ConfigureAwait(false);
+        }
+    }
 
     /// <summary>
     /// The verdict as planner grounding — the lesson-side twin of MapGuidanceToContext. Found: the
@@ -106,7 +129,7 @@ internal static partial class ShellHost
 
     /// <summary>
     /// Plans, draws and speaks one lesson, then any click-to-ask follow-ups (DEC-033): the planner is
-    /// offered the cards' 3D catalogue, and a finished 3D lesson waits <see cref="LessonPickIdle"/> for
+    /// offered <paramref name="scene3d"/> (null: 2D only), and a finished 3D lesson waits <see cref="LessonPickIdle"/> for
     /// the student to click a part. Never throws — the TeachAndSpeakAsync contract, the same exit-code
     /// alphabet: 0 played (or the honest no-key skip), 1 nothing usable came back (no lesson was
     /// produced, like "no transcript was produced"), 12 key error, 3 provider/speech fault,
@@ -115,6 +138,7 @@ internal static partial class ShellHost
     /// </summary>
     private static async Task<int> TeachWithLessonAsync(
         LessonLeg lesson,
+        VisualLessonEngine.ModelCatalog? scene3d,
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
@@ -122,7 +146,7 @@ internal static partial class ShellHost
     {
         if (lesson.Planner is null)
         {
-            Console.WriteLine($"lesson      : skipped — --lesson is on but no lesson model is configured ({LessonKeyEnvVar}");
+            Console.WriteLine($"lesson      : skipped — a lesson was chosen but no lesson model is configured ({LessonKeyEnvVar}");
             Console.WriteLine("                MISSING, DEC-027). The verdict above stands as-is.");
             return 0;
         }
@@ -144,7 +168,8 @@ internal static partial class ShellHost
                     Question = options.Question,
                     Screen = MapGuidanceToGrounding(guidance),
                     VirtualDesktop = NativeFns.VirtualDesktop(),
-                    Scene3d = CardSurface.Scene3dCatalog,
+                    // The whole catalogue on --lesson, one model or none when the route chose (DEC-036).
+                    Scene3d = scene3d,
                 },
                 new FollowUpOptions { IdleTimeout = LessonPickIdle },
                 ct).ConfigureAwait(false);

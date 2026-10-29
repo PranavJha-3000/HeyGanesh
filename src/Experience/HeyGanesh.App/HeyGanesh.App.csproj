@@ -71,6 +71,15 @@
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught; PartLibrary gives it the
+      models' titles and subjects to offer. Both are pure policy/data with no NuGet.
+    -->
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.TurnRouter\HeyGanesh.TurnRouter.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+  </ItemGroup>
+
   <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>

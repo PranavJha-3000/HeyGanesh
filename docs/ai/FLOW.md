@@ -282,11 +282,15 @@ ProviderException / OperationCanceledException propagate unchanged.
 
 ```
 RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, nothing taught]
-  → TeachAsync(tutor, lesson, …)                         ShellHost.Lesson.cs — one dispatch, both call sites
-      lesson is null (no --lesson) → TeachAndSpeakAsync   the Tutor leg, unchanged
+  → TeachAsync(tutor, lesson, routing, …)                ShellHost.Lesson.cs — one dispatch, both call sites
+      ChooseLegAsync: await the route (if started) → TurnLegs.Choose(route, --lesson, --no-route)   (DEC-036)
+        cancelled while routing → CANCELLED, exit 13
+        Highlight (route: point) → "teach : skipped — … the highlight was the answer", exit 0
+        Tutor (no router / no route / --no-route / route: explain) → TeachAndSpeakAsync   the Tutor leg, unchanged
+        Lesson → TeachWithLessonAsync with Scene3d = CatalogFor(leg): full (--lesson) | one model | null (2D)
       lesson.Planner is null (DEEPSEEK_API_KEY missing) → "lesson : skipped", exit 0
       else TeachWithLessonAsync
-        PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop(), Scene3d = CardSurface.Scene3dCatalog }   (DEC-033)
+        PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop(), Scene3d = scene3d }   (DEC-033; DEC-036 for scene3d)
         LessonTurn.RunWithFollowUpsAsync(planner, CardSurfaceHost(marks: overlay), DelegateLessonSpeaker(voice.SpeakAsync), request, { IdleTimeout = 30 s }, ct)
           (the first turn is the path below; a finished 3D lesson then waits 30 s for a click → follow-up on the same cards, see "Click a part to ask")
           VisualPlanner.PlanAsync            ProviderException → AuthError / ProviderError; OCE → Cancelled  (no card opened)
@@ -299,10 +303,15 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 
-## Turn routing path (Turn Router — built offline, NOT yet wired into the App Shell; DEC-035)
+## Turn routing path (Turn Router — DEC-035; wired into the App Shell by DEC-036, live run key-gated)
 
 ```
-caller (the App Shell, from step 2) builds RouteRequest { Question, WindowTitle?, ScreenMatchFound?, Models[] }
+RunSessionAsync → PrintVerdict → StartRoute(router, options, verdict, ct)       ShellHost.Route.cs
+  router null (--lesson / --no-route / TYPESAFE_API_KEY missing) or verdict Failed → no route started
+  else RouteSafelyAsync: RouteRequest { Question, ScreenMatchFound = verdict.Found, Models = ModelLibrary.V1 (id, title, subject) }
+    JevClientException / ArgumentException → "route : FAILED (…)", null route;  OCE → null route
+  (the overlay shows meanwhile; TeachAsync awaits the task — see Lesson leg)
+
   → TurnRouter.RouteAsync(request, ct)                         TurnRouter.cs
       blank question → ArgumentException (nothing sent); a model with id "none" → ArgumentException
       BuildRequest: one JevRequest { Model = jev-1.13.0, State = computed facts,

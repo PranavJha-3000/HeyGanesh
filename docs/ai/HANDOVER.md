@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the App Shell uses the Turn Router, build sequence step 2, DEC-036)
+
+Did: With `TYPESAFE_API_KEY` set and no `--lesson`, the shell routes each turn after the verdict (while the highlight shows): point ends at the highlight, explain goes to the Tutor, a lesson is 2D or 3D on the one model Jev picked. `--lesson` is unchanged; new `--no-route` keeps the old Tutor leg; router faults fall back. One Jev client (`JevClients.CreateTypeSafe`, new in Element Selection) serves Element Selection and the router. `TurnLegs.Choose` holds the decision (TR-6). New header line `route :`.
+Left: SH-22 (a routed turn end to end) and TR-L1 need both keys and a human. The Tutor is still clientless (SH-17), so "explain" prints its skip. Steps 3-8 of the sequence remain. Commits bcd8fff and this one are local, ahead of PR #1; not pushed.
+Watch: A bash heredoc after `python -` opened the looping REPL again (stopped at once, 19-byte log); write every script with the Write tool and run it as a file. The lesson seam is now composed whenever a router exists, so the lesson header has a third state.
+Next: Plan step 3 (a low-confidence Element Selection choice falls back to Vision).
+Verified: ElementSelection, TurnRouter, TurnRouterSmoke and App build -warnaserror 0/0; TR source 3, request 14, map 13, gate 7, errors 5, legs 10; App --help exit 0, --once --question / --lesson / --no-route exit 12 with the right route line, --cancel-ms 1 and 60 exit 13, hooked --seconds 2 with a dummy key shows route ON and prints the dummy 0 times; ElementSelectionSmoke --fake runs; all 14 CI gates exit 0 locally (G-18 52 PASS lines).
+
 ## 2026-10-30 · claude-opus-5-5 (Jev turn router, build sequence step 1, DEC-035)
 
 Did: New assembly `HeyGanesh.TurnRouter`: one Jev call per turn answers intent (point / explain / lesson), 2D or 3D, and which catalogue model; an id never offered or an intent below 0.5 is "no route", an unsure canvas is a 2D lesson. Host `tools/TurnRouterSmoke` (TR-1..TR-5), CI G-18. Patterns from typesafe-computer-use; qwen-audio-agent's protocol is still 7.0.0, so the voice client needs no change.

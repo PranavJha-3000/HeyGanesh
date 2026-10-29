@@ -6,6 +6,7 @@ using HeyGanesh.ScreenOverlay;
 using HeyGanesh.TutorEngine;
 using HeyGanesh.Vision;
 using HeyGanesh.Voice;
+using Router = HeyGanesh.TurnRouter.TurnRouter;
 
 namespace HeyGanesh.App;
 
@@ -46,6 +47,7 @@ internal static partial class ShellHost
         VoiceService voice,
         TutorService? tutor,
         LessonLeg? lesson,
+        Router? router,
         ShellOptions options,
         CancellationToken lifetime)
     {
@@ -114,6 +116,10 @@ internal static partial class ShellHost
 
         PrintVerdict(guidance, orchestrator.Phase);
 
+        // DEC-036: the route starts now and runs while the highlight is on screen; TeachAsync waits for it.
+        // Null without a router or on a Failed verdict, which is never taught from.
+        var routing = StartRoute(router, options, guidance, linked.Token);
+
         if (!options.Overlay)
         {
             Console.WriteLine("overlay     : skipped (--no-overlay)");
@@ -123,7 +129,7 @@ internal static partial class ShellHost
             // into the teach/speak leg exactly as the drawn path below does.
             return guidance.Failed
                 ? 1
-                : await TeachAsync(tutor, lesson, voice, options, guidance, linked.Token).ConfigureAwait(false);
+                : await TeachAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
         }
 
         try
@@ -155,7 +161,7 @@ internal static partial class ShellHost
         // first sends it here, not to the Tutor.
         return guidance.Failed
             ? 1
-            : await TeachAsync(tutor, lesson, voice, options, guidance, linked.Token).ConfigureAwait(false);
+            : await TeachAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -234,6 +240,7 @@ internal static partial class ShellHost
         private readonly ScreenOverlayService _overlay;
         private readonly TutorService? _tutor;
         private readonly LessonLeg? _lesson;
+        private readonly Router? _router;
         private readonly ShellOptions _options;
         private readonly CancellationToken _lifetime;
 
@@ -253,6 +260,7 @@ internal static partial class ShellHost
             ScreenOverlayService overlay,
             TutorService? tutor,
             LessonLeg? lesson,
+            Router? router,
             ShellOptions options,
             CancellationToken lifetime)
         {
@@ -261,6 +269,7 @@ internal static partial class ShellHost
             _overlay = overlay;
             _tutor = tutor;
             _lesson = lesson;
+            _router = router;
             _options = options;
             _lifetime = lifetime;
         }
@@ -453,6 +462,7 @@ internal static partial class ShellHost
                     _voice,
                     _tutor,
                     _lesson,
+                    _router,
                     _options with { Question = utter.FinalText },
                     _lifetime).ConfigureAwait(false);
             }

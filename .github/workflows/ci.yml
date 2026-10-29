@@ -134,7 +134,7 @@ jobs:
           dotnet build tools\TurnRouterSmoke -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\TurnRouterSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TurnRouterSmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-request', '--assert-map', '--assert-gate', '--assert-errors')) {
+          foreach ($mode in @('--assert-source', '--assert-request', '--assert-map', '--assert-gate', '--assert-errors', '--assert-legs')) {
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

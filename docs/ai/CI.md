@@ -23,7 +23,7 @@
 | **G-15 Lesson Turn offline** | build `tools\LessonTurnSmoke`, then the EXE with each of `--assert-source` `--assert-turn` `--assert-turn-degraded` `--assert-turn-rejected` `--assert-turn-errors` `--assert-followup-pick` (LT-8, DEC-031) | `lessonTurn=pass` | exit 0 for every mode |
 | **G-16 Part Library offline** | build `tools\PartLibrarySmoke`, then the EXE with each of `--assert-source` `--assert-library` `--assert-physics` `--assert-catalog` (`--dump` is the manual PL-5 row, not a gate) | `partLibrary=pass` | exit 0 for every mode |
 | **G-17 Lesson Surface offline** | build `tools\LessonSurfaceSmoke`, then the EXE with `--assert-source` (LSU-1 + LSU-7: one NuGet, references, CSPs, no sinks, vendored Babylon hashes, licence, `.gitattributes`) and `--assert-scene-math` (LSU-8) | `lessonSurface=pass` | exit 0 for every mode (the window rows LSU-2..LSU-6 and LSU-9..LSU-14 are local-only) |
-| **G-18 Turn Router offline** | build `tools\TurnRouterSmoke`, then the EXE with each of `--assert-source` `--assert-request` `--assert-map` `--assert-gate` `--assert-errors` (TR-1..TR-5, DEC-035) | `turnRouter=pass` | exit 0 for every mode |
+| **G-18 Turn Router offline** | build `tools\TurnRouterSmoke`, then the EXE with each of `--assert-source` `--assert-request` `--assert-map` `--assert-gate` `--assert-errors` `--assert-legs` (TR-1..TR-6, DEC-035/DEC-036) | `turnRouter=pass` | exit 0 for every mode |
 
 ## Local-Only Notes
 

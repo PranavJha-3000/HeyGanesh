@@ -4,6 +4,7 @@ using HeyGanesh.LessonPlanner;
 using HeyGanesh.ScreenCapture;
 using HeyGanesh.ScreenOverlay;
 using HeyGanesh.TutorEngine;
+using HeyGanesh.TurnRouter;
 using HeyGanesh.Vision;
 using HeyGanesh.Voice;
 
@@ -12,6 +13,7 @@ using HeyGanesh.Voice;
 // fully qualified at every use (the module hosts can use the bare name only because they sit in the
 // global namespace).
 using HotkeyMonitor = HeyGanesh.GlobalHotkeyMonitor.GlobalHotkeyMonitor;
+using Router = HeyGanesh.TurnRouter.TurnRouter;
 
 namespace HeyGanesh.App;
 
@@ -101,8 +103,13 @@ internal static partial class ShellHost
         // session can start against services being torn down, and the overlay is released before the
         // capture service it borrows for monitor topology.
         using var capture = new ScreenCaptureService(new ScreenCaptureOptions { MaxDimension = options.MaxDim });
-        using var selection = new ElementSelectionService(
-            options: new SelectionOptions { MaxCandidates = options.MaxCandidates });
+
+        // One Jev client for both decisions Jev makes in a turn — which element (Element Selection) and
+        // how to teach (the router, DEC-036). The shell owns it: a service handed a client never disposes
+        // it, and declaring it before the selection service disposes it after.
+        var selectionOptions = new SelectionOptions { MaxCandidates = options.MaxCandidates };
+        using var jev = JevClients.CreateTypeSafe(selectionOptions);
+        using var selection = new ElementSelectionService(jev, selectionOptions);
         using var vision = new VisionService();
         using var orchestrator = new ContextOrchestratorService(
             capture,
@@ -133,8 +140,12 @@ internal static partial class ShellHost
         // client is built from the environment: no key -> no planner -> the leg reports its skip. The
         // planner owns the client it resolved, and this using disposes it. The overlay is handed in for
         // screen marks: by the time a lesson plays, the verdict's highlight has already left the screen.
-        using VisualPlanner? lessonPlanner = options.Lesson ? CreateLessonPlanner() : null;
-        var lesson = options.Lesson ? new LessonLeg(lessonPlanner, overlay) : null;
+        // The router (DEC-036) can choose a lesson too, so the lesson seam is also composed whenever a
+        // router exists; without --lesson it only runs on the turns the router sends to it.
+        var router = CreateRouter(options, jev);
+        var lessonWanted = options.Lesson || router is not null;
+        using VisualPlanner? lessonPlanner = lessonWanted ? CreateLessonPlanner() : null;
+        var lesson = lessonWanted ? new LessonLeg(lessonPlanner, overlay) : null;
 
         // The speech seam, composed with the default real legs (Qwen Gateway in, Fish/WAV out). The
         // constructor opens no devices: the microphone is taken per listen and released when the listen
@@ -157,7 +168,7 @@ internal static partial class ShellHost
                 // chord's voice turn feeds, one question source swapped for the other.
                 Console.WriteLine("resolving once at startup (the hook is never installed)...");
                 Console.WriteLine();
-                return await RunSessionAsync(orchestrator, overlay, voice, tutor, lesson, options, lifetime.Token).ConfigureAwait(false);
+                return await RunSessionAsync(orchestrator, overlay, voice, tutor, lesson, router, options, lifetime.Token).ConfigureAwait(false);
             }
 
             // --once without a question: one live listen instead of one canned text — the scripted
@@ -166,11 +177,11 @@ internal static partial class ShellHost
                               "microphone is the question source)...");
             Console.WriteLine("speak now — the turn ends on its own at the silence timeout; Ctrl+C cancels.");
             Console.WriteLine();
-            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, options, lifetime.Token);
+            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, router, options, lifetime.Token);
             return await oncePump.RunDirectAsync().ConfigureAwait(false);
         }
 
-        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, options, lifetime).ConfigureAwait(false);
+        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, router, options, lifetime).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -190,10 +201,11 @@ internal static partial class ShellHost
         VoiceService voice,
         TutorService? tutor,
         LessonLeg? lesson,
+        Router? router,
         ShellOptions options,
         CancellationTokenSource lifetime)
     {
-        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, options, lifetime.Token);
+        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, router, options, lifetime.Token);
 
         // Press starts the utterance; release ends it. Both handlers only flip state under the pump's
         // gate and hand work to the pool — the hook callback and the monitor's worker thread are never

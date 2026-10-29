@@ -30,6 +30,7 @@ internal static partial class TurnRouterSmokeHost
                 "--assert-map" => await RunAssertMapAsync(),
                 "--assert-gate" => await RunAssertGateAsync(),
                 "--assert-errors" => await RunAssertErrorsAsync(),
+                "--assert-legs" => RunAssertLegs(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -55,6 +56,7 @@ internal static partial class TurnRouterSmokeHost
         Console.WriteLine("  --assert-map      each answer maps to one route; an id never offered refuses the route, exit 0");
         Console.WriteLine("  --assert-gate     below 0.5 is no route (intent) or a 2D lesson (3D or model); 0.5 itself passes, exit 0");
         Console.WriteLine("  --assert-errors   auth, rate-limit, provider faults and cancellation pass through; bad requests never call, exit 0");
+        Console.WriteLine("  --assert-legs     the App Shell's leg for every flag and route: --lesson, --no-route, none, point, explain, 2D, 3D, exit 0");
         return 0;
     }
 

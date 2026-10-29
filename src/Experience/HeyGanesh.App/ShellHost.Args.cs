@@ -12,7 +12,7 @@ internal static partial class ShellHost
     {
         var question = "";
         var help = false; var once = false; var overlay = true; var foreground = false;
-        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false;
+        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
 
@@ -27,6 +27,7 @@ internal static partial class ShellHost
                 case "--no-retain-captures": retainCaptures = false; break;
                 case "--no-speak": noSpeak = true; break;
                 case "--lesson": lesson = true; break;
+                case "--no-route": noRoute = true; break;
                 case "--no-dpi": expectDpi = false; break;
                 case "--seconds": seconds = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -45,7 +46,7 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute);
     }
 
     private static void PrintUsage()
@@ -71,6 +72,9 @@ internal static partial class ShellHost
         Console.WriteLine("--lesson          teach with a drawn, spoken visual lesson (cards + voice) instead of the");
         Console.WriteLine("                  Tutor's prose. Needs DEEPSEEK_API_KEY for the lesson model; without it the");
         Console.WriteLine("                  lesson leg reports its skip (DEC-027). Combine with --no-speak to pace silently.");
+        Console.WriteLine("                  Without it, and with TYPESAFE_API_KEY set, Jev routes each turn instead: point");
+        Console.WriteLine("                  (the highlight is the answer), explain (the Tutor), or a 2D/3D lesson (DEC-036).");
+        Console.WriteLine("--no-route        never ask Jev how to teach: the Tutor leg, as before the router existed.");
         Console.WriteLine("--foreground      walk the foreground window instead of the window under the cursor.");
         Console.WriteLine("--no-retain-captures  drop the captured frames from the verdict (RetainCaptures=false).");
         Console.WriteLine("--max-dim         capture downscale cap in px (default 1280).");
@@ -140,14 +144,18 @@ internal static partial class ShellHost
         // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
         // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
         Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
-        Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, deepseekKey)}");
+        Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
+        Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), deepseekKey)}");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
     }
 
-    /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027).</summary>
-    private static string LessonHeader(bool on, bool key) =>
-        !on ? "off (the Tutor leg teaches; --lesson draws instead)"
+    /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027) and CreateRouter() (DEC-036).</summary>
+    private static string LessonHeader(bool on, bool routed, bool key) =>
+        routed ? (key
+            ? "when the route chooses one: lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 2D, or 3D on the one model Jev picked"
+            : "when the route chooses one: no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip")
+        : !on ? "off (the Tutor leg teaches; --lesson draws instead)"
         : key ? $"ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 3D: {Scene3dModelCount} models, click a part to ask"
         : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
 
@@ -165,6 +173,7 @@ internal static partial class ShellHost
         int MaxDim,
         int MaxCandidates,
         bool NoSpeak,
-        bool Lesson);
+        bool Lesson,
+        bool NoRoute);
 }
 

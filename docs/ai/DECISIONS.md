@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-036](#dec-036--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell routes each turn with the Turn Router when `TYPESAFE_API_KEY` is set: point → highlight only, explain → Tutor, lesson → 2D or one 3D model; `--lesson` and the new `--no-route` keep the old behaviour; a router fault falls back; one shared Jev client from `JevClients.CreateTypeSafe` | accepted |
 | [DEC-035](#dec-035--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A Turn Router asks Jev once per turn: intent (point / explain / lesson), 2D or 3D, and which catalogue model; below 0.5 or an unoffered id is no route, an unsure canvas is a 2D lesson; own assembly over `IJevClient`, not wired yet | accepted |
 | [DEC-034](#dec-034--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Without WebGL the 3D lesson is drawn as an isometric SVG with Anatomy's vendored MIT kit (models, labels, highlight, explode, focus; animation and views as stills; no click-to-ask yet); long parts cut into pieces and buried pieces painted just before their container | accepted |
 | [DEC-033](#dec-033--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | `--lesson` turns 3D on: the shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync` (30 s click wait); Ctrl+Alt stays refused while a lesson waits, with a message that says how to end it; exit code = the last turn's (13 if cancelled while waiting) | accepted |
@@ -46,6 +47,34 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-036 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the App Shell asks the Turn Router (DEC-035) how to teach each turn, and runs the leg it picks.**
+
+- **When:** the router is composed only with `TYPESAFE_API_KEY` set and neither `--lesson` nor `--no-route`. It starts right after the verdict is printed, so it runs while the highlight is on screen; `TeachAsync` waits for it. A Failed verdict is never routed (nothing is taught from it).
+- **The leg** is `TurnLegs.Choose(route, --lesson, --no-route)`, a pure function in the TurnRouter assembly so every case is checked offline (TR-6):
+  - `--lesson`: a lesson on the full catalogue, the router never asked (the old behaviour);
+  - `--no-route`, no router, a failed router, or "no route": the Tutor leg (the old default);
+  - point: nothing more, the highlight was the answer, exit 0;
+  - explain: the Tutor leg (still clientless until SH-17's flip, so it prints its skip);
+  - lesson: 2D (the planner is offered no 3D) or 3D on the one model Jev picked (a one-model catalogue).
+- **A router fault never fails the turn.** Auth, rate-limit, provider and bad-request errors print a `route : FAILED` line and fall back; cancellation while routing exits 13.
+- **One Jev client.** `TypeSafeJevClient` stays internal; Element Selection gains `JevClients.CreateTypeSafe(SelectionOptions?)` returning an `OwnedJevClient`. The shell builds one, gives the same instance to `ElementSelectionService` and the router, and disposes it after the service.
+- **The lesson seam** is composed whenever a router exists, since a route can choose a lesson; the lesson header says "when the route chooses one".
+- **Header:** a `route :` line states ON, or why it is off (`--lesson`, `--no-route`, key MISSING), presence only.
+
+**Rejected.**
+- Routing before the locate step: the route would lose "a match was found", and lessons need the grounding anyway.
+- Routing after the highlight ends: it would add Jev's whole wait to every turn.
+- Making `TypeSafeJevClient` public, or a second TypeSafe client in the shell.
+- Letting `--lesson` also take the router's model choice: the flag keeps exactly what SH-18..SH-20 verified.
+
+**Consequences.**
+- With keys set and no flag, a turn can now end at the highlight or become a lesson; before, it always went to the (clientless) Tutor. `--no-route` restores that.
+- The shell's application of a route is only provable live (SH-22): the shell carries no fakes (DEC-012). TR-L1 is still open.
+
+Plan: [plans/2026-10-30-turn-router-shell-v1.md](plans/2026-10-30-turn-router-shell-v1.md). Rows: TR-6, SH-21, SH-22 (live).
+
 ## DEC-035 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a Turn Router decides how each turn is taught, with one Jev call that answers up to three typed choices.**

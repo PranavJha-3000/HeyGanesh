@@ -148,3 +148,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & 'tools\ContextOrchestratorSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ContextOrchestratorSmoke.exe' --assert-check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-20: the screen-text merge rules (DEC-039) from made-up lines. The other Element Selection rows walk a
+      # real window and stay local-only.
+      - name: G-20 Element Selection text merge
+        shell: pwsh
+        run: |
+          dotnet build tools\ElementSelectionSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\ElementSelectionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ElementSelectionSmoke.exe' --assert-text-merge
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

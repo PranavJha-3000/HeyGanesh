@@ -16,7 +16,7 @@
 - **Screen Overlay** — per-monitor click-through overlay window.
 - **Global Hotkey Monitor** — system-wide hotkey registration and dispatch.
 - **Screen Capture** — frame acquisition via `Windows.Graphics.Capture`. Optionally reads the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default; `MonitorCapture.TextLines`, DEC-038).
-- **Element Selection** — PRIMARY coordinate-detection path (UIA enumeration + Jev choice); Vision is the fallback.
+- **Element Selection** — PRIMARY coordinate-detection path (UIA enumeration + Jev choice); Vision is the fallback. Since DEC-039 it also offers up to 40 filtered lines of the capture's screen text as "Text (OCR)" candidates.
 - **Vision / Coordinate Detection** — UI-element and coordinate detection (DeepSeek V4.1 Flash) — FALLBACK to Element Selection.
 - **Jev** — classification / intent-routing engine; placement TBD, sits before the Tutor Engine call. Its first routing use is the Turn Router (DEC-035, below).
 - **Tutor Engine** — academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding and one capped visual) in, explanation text out; the only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017).

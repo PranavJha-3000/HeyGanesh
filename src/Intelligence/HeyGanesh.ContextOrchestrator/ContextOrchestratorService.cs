@@ -211,7 +211,9 @@ public sealed partial class ContextOrchestratorService : IDisposable
             }
 
             _phase = OrchestratorPhase.Selecting;
-            var selection = await _selection.SelectAsync(question, _options.Target, token).ConfigureAwait(false);
+            // captures[0] is the cursor's display; its TextLines are empty unless the host turned
+            // ScreenCaptureOptions.ReadText on (DEC-038/DEC-039).
+            var selection = await _selection.SelectAsync(question, _options.Target, captures[0].TextLines, token).ConfigureAwait(false);
 
             if (!selection.Failed && _options.CheckLowConfidence && LowConfidenceCheck.Applies(selection))
             {

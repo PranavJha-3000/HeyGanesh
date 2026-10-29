@@ -18,7 +18,7 @@ Subsystems, and the seams between them are load-bearing:
 | Context Orchestrator | `src/Intelligence/HeyGanesh.ContextOrchestrator/` | Top-level state machine driving session lifecycle and module coordination. |
 | Global Hotkey Monitor | `src/Platform/HeyGanesh.GlobalHotkeyMonitor/` | System-wide listen-only push-to-talk modifier chord monitor (Ctrl+Alt). |
 | Screen Capture | `src/Platform/HeyGanesh.ScreenCapture/` | On-demand multi-monitor frame acquisition via `Windows.Graphics.Capture` and `CaptureExclusion` contract. |
-| Element Selection (PRIMARY) | `src/Perception/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
+| Element Selection (PRIMARY) | `src/Perception/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration (plus up to 40 filtered lines of OCR'd screen text, DEC-039) and a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
 | Vision / Coordinate Detection (FALLBACK) | `src/Perception/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
 | **Jev choice model** | **Integrated within `ElementSelection`** | **The Jev choice model routes Element Selection's ranked UIA candidates (`c001..`) to a selection; implemented via `IJevClient` / `TypeSafeJevClient` with `ModelId "jev-1.13.0"`; not a separate assembly. |
 | Turn Router | `src/Intelligence/HeyGanesh.TurnRouter/` | One Jev call per turn decides point / explain / lesson, 2D or 3D, and the catalogue model (DEC-035); below 0.5 or an id never offered is "no route". The App Shell routes each turn with it when `TYPESAFE_API_KEY` is set (DEC-036); `--lesson` / `--no-route` skip it. |
@@ -54,6 +54,9 @@ dotnet run --project tools/VisionSmoke -c Debug -- --question "where is the Star
 dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "x" --list-only
 dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "Save" --fake
 dotnet run --project tools/ElementSelectionSmoke -c Debug -- --question "Save" --fake --fake-none
+# Screen text as candidates (DEC-039): --assert-text-merge is the merge rules alone (no window, CI G-20);
+# --list-only --read-text OCRs the cursor monitor and merges it over the real window (counts only, local-only).
+dotnet run --project tools/ElementSelectionSmoke -c Debug -- --assert-text-merge
 
 # Screen Overlay verification host (offline verdict paths -- no API key required)
 # --found: show a canned found box for the full duration.

@@ -102,7 +102,9 @@ internal static partial class ShellHost
         // selection, capture. That ordering is load-bearing — the trigger source stops first so no new
         // session can start against services being torn down, and the overlay is released before the
         // capture service it borrows for monitor topology.
-        using var capture = new ScreenCaptureService(new ScreenCaptureOptions { MaxDimension = options.MaxDim });
+        // ReadText (DEC-038/DEC-039): the cursor monitor's text is read locally at full size, and a
+        // filtered handful of its lines is offered to Jev alongside the UIA controls. --no-ocr turns it off.
+        using var capture = new ScreenCaptureService(new ScreenCaptureOptions { MaxDimension = options.MaxDim, ReadText = !options.NoOcr });
 
         // One Jev client for both decisions Jev makes in a turn — which element (Element Selection) and
         // how to teach (the router, DEC-036). The shell owns it: a service handed a client never disposes

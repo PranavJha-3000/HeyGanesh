@@ -12,7 +12,7 @@ internal static partial class ShellHost
     {
         var question = "";
         var help = false; var once = false; var overlay = true; var foreground = false;
-        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false;
+        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false; var noOcr = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
 
@@ -28,6 +28,7 @@ internal static partial class ShellHost
                 case "--no-speak": noSpeak = true; break;
                 case "--lesson": lesson = true; break;
                 case "--no-route": noRoute = true; break;
+                case "--no-ocr": noOcr = true; break;
                 case "--no-dpi": expectDpi = false; break;
                 case "--seconds": seconds = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -46,7 +47,7 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute, noOcr);
     }
 
     private static void PrintUsage()
@@ -75,6 +76,9 @@ internal static partial class ShellHost
         Console.WriteLine("                  Without it, and with TYPESAFE_API_KEY set, Jev routes each turn instead: point");
         Console.WriteLine("                  (the highlight is the answer), explain (the Tutor), or a 2D/3D lesson (DEC-036).");
         Console.WriteLine("--no-route        never ask Jev how to teach: the Tutor leg, as before the router existed.");
+        Console.WriteLine("--no-ocr          do not read the screen's text. By default the cursor monitor's text is read");
+        Console.WriteLine("                  locally, and up to 40 short lines inside the target window (none that look");
+        Console.WriteLine("                  like a key or token) are offered to Jev with the UI controls (DEC-039).");
         Console.WriteLine("--foreground      walk the foreground window instead of the window under the cursor.");
         Console.WriteLine("--no-retain-captures  drop the captured frames from the verdict (RetainCaptures=false).");
         Console.WriteLine("--max-dim         capture downscale cap in px (default 1280).");
@@ -145,9 +149,24 @@ internal static partial class ShellHost
         // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
         Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
         Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
+        Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");
         Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), deepseekKey)}");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
+    }
+
+    /// <summary>The header's OCR line (DEC-039); keep in step with the capture options in RunAsync.</summary>
+    private static string OcrHeader(bool off)
+    {
+        if (off)
+        {
+            return "off (--no-ocr): only UI controls are offered to Jev";
+        }
+
+        var reader = new HeyGanesh.ScreenCapture.ScreenTextReader();
+        return reader.IsAvailable
+            ? $"ON ({reader.Language}): the cursor monitor's text is read locally; up to 40 short lines in the target window join the Jev request"
+            : "ON but no OCR language is installed for this user, so no text is read";
     }
 
     /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027) and CreateRouter() (DEC-036).</summary>
@@ -174,6 +193,7 @@ internal static partial class ShellHost
         int MaxCandidates,
         bool NoSpeak,
         bool Lesson,
-        bool NoRoute);
+        bool NoRoute,
+        bool NoOcr);
 }
 

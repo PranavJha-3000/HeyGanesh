@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (Element Selection offers screen text to Jev, build sequence step 4b, DEC-039)
+
+Did: `TextCandidates.FromScreenText` turns the capture's OCR lines into "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, no secret-looking lines, at most 40, reading order), ranked with the UIA controls. New `SelectAsync` overload, `SelectionResult.ScreenTextOffered`; the orchestrator passes `captures[0].TextLines`; the shell turns `ReadText` on, adds `--no-ocr` and an `ocr :` header line. ES-8 `--assert-text-merge` (CI G-20), ES-9 `--list-only --read-text` (local), SH-23.
+Left: Whether Jev picks text candidates well is unmeasured (keys). Screen text now reaches TypeSafe; the secret filter is a pattern list and can miss secrets that look like words, so `--no-ocr` is the hard stop. Steps 5-8 remain. Seven commits are local, ahead of PR #1; not pushed.
+Watch: A window with no UIA controls but readable text no longer falls back to Vision at once: it gets a Jev choice among text lines. The shell's key-gate rows now run OCR (about 150 ms) before stopping at the key gate. Test strings shaped like real keys live in ElementSelectionSmokeHost.Text.cs; the secret scan (G-11) passes with them, but a stricter scanner may need an allowlist.
+Next: Plan step 5 (keep the voice Gateway connection warm between presses).
+Verified: ElementSelection, ContextOrchestrator, App and both hosts build -warnaserror 0/0; ES-8 16 PASS, and removing the secret filter fails 6 of them; ES-9 3 PASS live (3 UIA controls, 111 lines in 150 ms, 40 offered, 43-candidate manifest); ES --fake and --fake-none exit 0; CO --fake/--fake-none/--fake-unmapped/--fake-low PASS, CO-12 exit 0; App --help lists --no-ocr, key-gate rows 12 with the right ocr line, cancel 13; all 16 CI gates exit 0 locally (G-20 16 PASS lines).
+
 ## 2026-10-30 · claude-opus-5-5 (the capture can read screen text, build sequence step 4a, DEC-038)
 
 Did: `ScreenCaptureOptions.ReadText` (default off) reads the cursor monitor's text with Windows' built-in OCR on the full-size frame, before the JPEG, into `MonitorCapture.TextLines` (global physical pixels) with `TextNote`/`TextDuration`. New `ScreenTextReader`, `ScreenTextLine`. SC-9 `--assert-ocr` (fixture PNG) and SC-10 `--read-text`, both local-only. Nothing consumes the text yet.

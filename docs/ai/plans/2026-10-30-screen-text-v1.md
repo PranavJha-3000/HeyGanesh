@@ -2,7 +2,8 @@
 
 2026-10-30 · claude-opus-5-5 · STATUS: 4a BUILT 2026-10-30 (owner: "Yes, build 4a"): SC-9 17 PASS (fixture read exactly in
 20 ms), SC-10 4 PASS (110 lines, OCR 141 ms on 2560×1600). Found while building: an XML comment in the smoke csproj
-cannot contain "--", so the row name is spelled out there. 4b is planned below and not built.
+cannot contain "--", so the row name is spelled out there. 4b BUILT 2026-10-30 (owner: "Yes, build 4b"): ES-8 16 PASS,
+ES-9 3 PASS (3 UIA controls, 111 lines read, 40 offered), SH-23; DEC-039.
 
 ## Spike (before planning, nothing changed in the repo)
 
@@ -25,7 +26,7 @@ OCR languages here: en-US, en-GB; max image 10,000 px. The current screen, count
   scratchpad script `make_ocr_fixture.ps1`: Segoe UI 32 px, lines at y 20/120/220 from x 40).
 - Docs: DEC-038, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST (SC-9, SC-10), CI.md, HANDOVER, ROLLBACK (first).
 
-## Step 4b: Element Selection offers the text to Jev (planned, not built)
+## Step 4b: Element Selection offers the text to Jev (built)
 
 - `src/Perception/HeyGanesh.ElementSelection/TextCandidates.cs` (new, pure): keep OCR lines inside the target window
   and not on a UIA control; cap 40 lines of 80 characters; drop secret-looking lines (long key-like tokens, `sk-`,

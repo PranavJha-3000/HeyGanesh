@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-039](#dec-039--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Element Selection offers up to 40 lines of screen text to Jev as "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, none that look secret); the shell turns OCR on, `--no-ocr` turns it off | accepted |
 | [DEC-038](#dec-038--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The capture can read the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default), into `MonitorCapture.TextLines` in global physical pixels; local only; nothing consumes it yet | accepted |
 | [DEC-037](#dec-037--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A found Element Selection choice in the Low tier is checked by Vision on the same frame (on by default, `CheckLowConfidence`); Vision replaces it only when Medium+ and elsewhere; a failed or unsure check keeps the choice. Supersedes DEC-010's rejection of Option C and DEC-009's "not a gate", for Low only | accepted |
 | [DEC-036](#dec-036--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell routes each turn with the Turn Router when `TYPESAFE_API_KEY` is set: point → highlight only, explain → Tutor, lesson → 2D or one 3D model; `--lesson` and the new `--no-route` keep the old behaviour; a router fault falls back; one shared Jev client from `JevClients.CreateTypeSafe` | accepted |
@@ -49,6 +50,29 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-039 — 2026-10-30 — claude-opus-5-5
+
+**Decision — Element Selection offers Jev the screen text the capture read (DEC-038) as extra candidates, next to the UIA controls.** Step 4b of the build sequence; the owner approved it as planned ("Yes, build 4b").
+
+- **The merge** is `TextCandidates.FromScreenText`, a public pure function (ES-8). A line is offered only when its centre is inside the target window and not on a UIA control already offered, it is at most 80 characters after spacing is normalised, and it does not look like a secret (`sk-`/`pk-`/`rk-`, `gh?_`, `AKIA`, `xox?-`, JWT shapes, or any 24+ character run mixing letters and digits). At most 40 lines, in reading order; the same text at the same box is offered once.
+- **Candidates:** type "Text (OCR)", id assigned after ranking like any other, box = the line's box, position hint computed as for controls (`ComputePositionHint` is now internal). They are ranked with the UIA candidates under the same `MaxCandidates` cap. When any is offered, the Jev instruction says they are read text, not controls.
+- **API:** a `SelectAsync(question, target, screenText, ct)` overload; the old signature passes none. `SelectionResult.ScreenTextOffered` counts them. The Context Orchestrator passes `captures[0].TextLines` (the cursor's monitor).
+- **Consequence for the fallback:** a window with no UIA controls but readable text now gets a Jev choice instead of an immediate Vision fallback (the "no interactive candidates" failure now also requires no usable text).
+- **The App Shell** sets `ReadText` on; `--no-ocr` turns it off. The header's `ocr :` line states it and the OCR language.
+- **Privacy:** this is the first time screen text, not just control names, goes to TypeSafe. The window rule, the 80-character limit, the 40-line cap and the secret filter bound it; `--no-ocr` removes it. OCR itself stays local.
+- **Measured here:** the window under the cursor had 3 UIA controls; OCR read 111 lines in 150 ms and 40 became candidates (ES-9).
+
+**Rejected.**
+- Offering every OCR line: paragraphs and other windows' text would crowd the cap and send far more to the cloud.
+- Redacting only the secret part of a line: the rest of the line would still describe it.
+- A separate Jev question for text: one question over one ranked list keeps a single choice and a single hallucination guard.
+
+**Consequences.**
+- The secret filter is a pattern list; it can miss secrets that look like ordinary words. `--no-ocr` is the hard stop.
+- Whether Jev chooses text candidates well is unmeasured until a live run (keys).
+
+Plan: [plans/2026-10-30-screen-text-v1.md](plans/2026-10-30-screen-text-v1.md). Rows: ES-8 (CI G-20), ES-9 (local), SH-23.
+
 ## DEC-038 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the Screen Capture module can read the text on the cursor's monitor with `Windows.Media.Ocr`, on the full-size frame, before it is downscaled.** Step 4a of the build sequence; step 4b offers the lines to Jev as Element Selection candidates.

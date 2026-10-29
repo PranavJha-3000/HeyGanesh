@@ -27,6 +27,10 @@ public sealed partial class ElementSelectionService
             Instructions =
                 $"The user is looking at the window \"{target.Title}\" and asked: \"{question}\". " +
                 "Listed below are interactive UI elements from that window, by option id. " +
+                (manifest.Any(c => c.ControlType == TextCandidates.ControlTypeName)
+                    ? $"Options of type '{TextCandidates.ControlTypeName}' are text read off the screen rather than controls; " +
+                      "choose one when that text is what the user is asking about. "
+                    : string.Empty) +
                 "Which single element best matches the user's request? Answer with exactly one option id. " +
                 (_options.IncludeNoneOption
                     ? $"If no element plausibly matches the request, answer \"{NoneOptionId}\"."

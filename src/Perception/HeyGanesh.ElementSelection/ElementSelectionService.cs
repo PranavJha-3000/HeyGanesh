@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using HeyGanesh.Abstractions;
 
 namespace HeyGanesh.ElementSelection;
 
@@ -57,11 +58,24 @@ public sealed partial class ElementSelectionService : IDisposable
     /// <see cref="SelectionResult"/> rather than an exception — they are the Vision fallback
     /// trigger, not errors; provider auth/HTTP failures throw, like Vision's do.
     /// </summary>
-    public async Task<SelectionResult> SelectAsync(
+    public Task<SelectionResult> SelectAsync(
         string question,
         SelectionTarget? target = null,
         CancellationToken ct = default)
+        => SelectAsync(question, target, Array.Empty<ScreenTextLine>(), ct);
+
+    /// <summary>
+    /// As above, also offering Jev the screen text the capture read (DEC-039): lines UI Automation
+    /// cannot see, filtered by <see cref="TextCandidates"/> (inside the window, not on a control,
+    /// short, no secrets, at most 40) and ranked with the UIA candidates under the same cap.
+    /// </summary>
+    public async Task<SelectionResult> SelectAsync(
+        string question,
+        SelectionTarget? target,
+        IReadOnlyList<ScreenTextLine> screenText,
+        CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(screenText);
         ArgumentException.ThrowIfNullOrWhiteSpace(question);
         var started = Stopwatch.GetTimestamp();
 
@@ -93,7 +107,10 @@ public sealed partial class ElementSelectionService : IDisposable
 
         // Cap before Jev: rank by cheap lexical overlap, take the top MaxCandidates. Jev never sees
         // the raw tree (state budget) and sees ids in ranked order (c001 = best lexical guess).
-        var ranked = CandidateRanker.RankAndCap(set.Candidates, question, _options.MaxCandidates);
+        var offered = screenText.Count == 0
+            ? set.Candidates
+            : set.Candidates.Concat(TextCandidates.FromScreenText(screenText, set.Candidates, set.Target.WindowRect)).ToList();
+        var ranked = CandidateRanker.RankAndCap(offered, question, _options.MaxCandidates);
         var manifest = new List<UiaCandidate>(ranked.Count);
         for (int i = 0; i < ranked.Count; i++)
         {
@@ -115,7 +132,7 @@ public sealed partial class ElementSelectionService : IDisposable
                 Latency = Stopwatch.GetElapsedTime(started),
                 FailureReason = "no interactive candidates: the UIA tree of the target window yielded " +
                                 "no named, visible, enabled interactive elements (elevated or " +
-                                "custom-rendered host?). Defer to Vision.",
+                                "custom-rendered host?) and no usable screen text. Defer to Vision.",
             };
         }
 

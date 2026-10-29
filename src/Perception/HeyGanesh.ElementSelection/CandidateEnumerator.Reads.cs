@@ -122,7 +122,7 @@ public sealed partial class CandidateEnumerator
     /// two identically named controls in one dialog stay distinguishable WITHOUT putting raw
     /// coordinates into the prompt: Jev must never be invited to reason in pixels.
     /// </summary>
-    private static string ComputePositionHint(PixelRect rect, PixelRect windowRect)
+    internal static string ComputePositionHint(PixelRect rect, PixelRect windowRect)
     {
         var row = WindowBand(rect.Y + rect.Height / 2, windowRect.Y, windowRect.Height, "top", "middle", "bottom");
         var column = WindowBand(rect.X + rect.Width / 2, windowRect.X, windowRect.Width, "left", "center", "right");

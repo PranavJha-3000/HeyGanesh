@@ -74,6 +74,9 @@ public sealed record SelectionResult
     /// <summary>Candidates that survived the interactive filter (before capping).</summary>
     public int TotalAfterFilter { get; init; }
 
+    /// <summary>How many of the offered candidates are screen text rather than UIA controls (DEC-039).</summary>
+    public int ScreenTextOffered => Candidates.Count(c => c.ControlType == TextCandidates.ControlTypeName);
+
     /// <summary>The capped, id-assigned manifest actually offered to Jev (c001..), in ranked order.</summary>
     public IReadOnlyList<UiaCandidate> Candidates { get; init; } = Array.Empty<UiaCandidate>();
 

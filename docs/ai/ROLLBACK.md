@@ -376,3 +376,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `55ac840` (the commit before this step).
 - **Files to restore:** `git checkout 55ac840 -- src/Foundation/HeyGanesh.Abstractions src/Platform/HeyGanesh.ScreenCapture tools/ScreenCaptureSmoke AGENTS.md docs/ai`; delete `src/Platform/HeyGanesh.ScreenCapture/ScreenTextReader.cs`, `tools/ScreenCaptureSmoke/OcrRows.cs` and `tools/ScreenCaptureSmoke/fixtures/`.
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; `ScreenCaptureSmoke` default run `RESULT: all checks passed`; the local CI runner reports 15 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (Element Selection offers screen text to Jev, build sequence step 4b, DEC-039)
+
+- **Change:** Element Selection gains `TextCandidates` (pure merge + secret filter), a `SelectAsync` overload taking `ScreenTextLine`s, `SelectionResult.ScreenTextOffered`, an instruction sentence when text is offered, and `ComputePositionHint` becomes internal. The Context Orchestrator passes `captures[0].TextLines`. The App Shell turns `ReadText` on, adds `--no-ocr` and an `ocr :` header line. ElementSelectionSmoke gains `--assert-text-merge` (CI G-20) and `--list-only --read-text`. Docs: DEC-039, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `85cdf5e` (the commit before this step).
+- **Files to restore:** `git checkout 85cdf5e -- src/Perception/HeyGanesh.ElementSelection src/Intelligence/HeyGanesh.ContextOrchestrator src/Experience/HeyGanesh.App tools/ElementSelectionSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Perception/HeyGanesh.ElementSelection/TextCandidates.cs` and any new smoke file (`git status` lists them).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; ElementSelectionSmoke `--question "Save" --fake`; App `--once --question "x"` exit 12; the local CI runner reports 15 gates, all exit 0.

@@ -115,6 +115,9 @@ src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.
 dotnet build src/Experience/HeyGanesh.Voice -c Debug
 dotnet run --project tools/VoiceSmoke -c Debug -- --fake-transcript "where is the Save button"
 dotnet run --project tools/VoiceSmoke -c Debug -- --assert-tutor-authority
+# --assert-preroll (VO-11, DEC-040): the real client against a loopback Gateway stub (ready after 600 ms):
+#   speech from the press reaches the Gateway, in order; a failed listen frees the microphone; no URL never opens it.
+dotnet run --project tools/VoiceSmoke -c Debug -- --assert-preroll
 dotnet run --project tools/VoiceSmoke -c Debug -- --speak-fake --text "Found the Save button"
 
 # Tutor Engine verification host (offline fakes + prompt/error/source-contract assertions +

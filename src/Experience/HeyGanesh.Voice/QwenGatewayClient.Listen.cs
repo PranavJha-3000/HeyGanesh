@@ -50,36 +50,103 @@ public sealed partial class QwenGatewayClient
         }
 
         var started = Stopwatch.GetTimestamp();
+        var pressedAt = DateTimeOffset.UtcNow;
 
-        for (var attempt = 0; attempt <= _options.MaxReconnectAttempts; attempt++)
+        // DEC-040: the configuration is checked before the microphone opens, so a missing or malformed
+        // endpoint never turns the microphone on. It is not transient: retrying it repeats the same answer.
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            _ = _gateway.ResolveGatewayUri();
+        }
+        catch (VoiceClientException ex)
+        {
+            RecordFailure();
+            return UtteranceResult.Failure(ex.Message, _gateway.FrontendId, Stopwatch.GetElapsedTime(started),
+                (int)_ledger.SuppressedAssistantEvents);
+        }
 
+        // Pre-roll (DEC-040): the microphone starts at the press and its frames wait in the bounded queue
+        // while the Gateway connects, so the first words are no longer lost to the handshake. The queue
+        // outlives reconnect attempts within this listen; nothing in it leaves the process until a
+        // session.ready arrives, and it is discarded with the microphone when the listen ends.
+        var frames = Channel.CreateBounded<byte[]>(
+            // 100 blocks × 100 ms = 10 s: a ceiling on memory if the Gateway stops draining us, not a
+            // quality choice. DropOldest rather than block: a stalled Gateway must never grow a backlog
+            // on the capture thread.
+            new BoundedChannelOptions(100)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+                SingleWriter = false,
+            });
+        EventHandler<MicrophoneFrameEventArgs> onFrame = (_, e) =>
+        {
+            if (Volatile.Read(ref _captureSuspended) == 0)
+            {
+                frames.Writer.TryWrite(e.Pcm.ToArray());
+            }
+        };
+
+        Volatile.Write(ref _captureSuspended, 0);
+        _microphone.Frame += onFrame;
+        try
+        {
             try
             {
-                var verdict = await ListenOnceCoreAsync(started, cancellationToken).ConfigureAwait(false);
-                RecordSuccess();
-                return verdict;
-            }
-            catch (OperationCanceledException)
-            {
-                // The caller's own doing: no verdict, no failure counting, and the transport is already
-                // torn down by the finally in the core loop.
-                throw;
+                _microphone.Start();
             }
             catch (VoiceClientException ex)
             {
-                if (attempt >= _options.MaxReconnectAttempts || !IsTransient(ex))
-                {
-                    RecordFailure();
-                    var suppressed = (int)_ledger.SuppressedAssistantEvents;
-                    return UtteranceResult.Failure(ex.Message, _gateway.FrontendId,
-                        Stopwatch.GetElapsedTime(started), suppressed);
-                }
+                RecordFailure();
+                return UtteranceResult.Failure(ex.Message, _gateway.FrontendId, Stopwatch.GetElapsedTime(started),
+                    (int)_ledger.SuppressedAssistantEvents);
             }
 
-            // Reconnect: brief backoff so a restarting Gateway is not retried against in a tight loop.
-            await Task.Delay(TimeSpan.FromMilliseconds(200 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
+            for (var attempt = 0; attempt <= _options.MaxReconnectAttempts; attempt++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
+                {
+                    var verdict = await ListenOnceCoreAsync(started, pressedAt, frames, cancellationToken).ConfigureAwait(false);
+                    RecordSuccess();
+                    return verdict;
+                }
+                catch (OperationCanceledException)
+                {
+                    // The caller's own doing: no verdict, no failure counting, and the transport is already
+                    // torn down by the finally in the core loop.
+                    throw;
+                }
+                catch (VoiceClientException ex)
+                {
+                    if (attempt >= _options.MaxReconnectAttempts || !IsTransient(ex))
+                    {
+                        RecordFailure();
+                        var suppressed = (int)_ledger.SuppressedAssistantEvents;
+                        return UtteranceResult.Failure(ex.Message, _gateway.FrontendId,
+                            Stopwatch.GetElapsedTime(started), suppressed);
+                    }
+                }
+
+                // Reconnect: brief backoff so a restarting Gateway is not retried against in a tight loop.
+                await Task.Delay(TimeSpan.FromMilliseconds(200 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            // Whatever the outcome, the microphone is released and any audio still queued is dropped here.
+            _microphone.Frame -= onFrame;
+            frames.Writer.TryComplete();
+            try
+            {
+                _microphone.Stop();
+            }
+            catch (VoiceClientException)
+            {
+                // A teardown failure must not mask the verdict being returned; if the device stays broken
+                // the next listen surfaces it.
+            }
         }
 
         // Unreachable in practice (the loop returns or throws), but the compiler needs the truth: the
@@ -116,13 +183,23 @@ public sealed partial class QwenGatewayClient
     /// <summary>
     /// The actual session: connect, pump audio, react to events, produce one verdict, always tear down.
     /// </summary>
-    private async Task<UtteranceResult> ListenOnceCoreAsync(long startedAt, CancellationToken cancellationToken)
+    private async Task<UtteranceResult> ListenOnceCoreAsync(
+        long startedAt,
+        DateTimeOffset pressedAt,
+        Channel<byte[]> frames,
+        CancellationToken cancellationToken)
     {
         await ConnectAsync(cancellationToken).ConfigureAwait(false);
 
+        // How long the press waited for session.ready, and how much speech was queued meanwhile: the
+        // first real measure of the handshake's cost (DEC-040).
+        var connectDuration = Stopwatch.GetElapsedTime(startedAt);
+        var buffered = frames.Reader.Count;
+
         try
         {
-            return await CaptureUntilVerdictAsync(startedAt, cancellationToken).ConfigureAwait(false);
+            var verdict = await CaptureUntilVerdictAsync(startedAt, pressedAt, frames.Reader, cancellationToken).ConfigureAwait(false);
+            return verdict with { ConnectDuration = connectDuration, BufferedFrames = buffered };
         }
         finally
         {
@@ -134,7 +211,11 @@ public sealed partial class QwenGatewayClient
     /// Runs the two pumps (microphone → Gateway, Gateway → decisions) until one exit condition fires:
     /// committed user transcript, silence, utterance cap, protocol abort, or transport death.
     /// </summary>
-    private async Task<UtteranceResult> CaptureUntilVerdictAsync(long startedAt, CancellationToken cancellationToken)
+    private async Task<UtteranceResult> CaptureUntilVerdictAsync(
+        long startedAt,
+        DateTimeOffset pressedAt,
+        ChannelReader<byte[]> frames,
+        CancellationToken cancellationToken)
     {
         if (_inbox is null)
         {
@@ -142,45 +223,20 @@ public sealed partial class QwenGatewayClient
         }
 
         var reader = _inbox.Reader;
-        var frames = Channel.CreateBounded<byte[]>(
-            // 100 blocks × 100 ms = 10 s: a ceiling on memory if the Gateway stops draining us, not a
-            // quality choice. DropOldest rather than block: a stalled Gateway must never grow a backlog
-            // on the capture thread.
-            new BoundedChannelOptions(100)
-            {
-                FullMode = BoundedChannelFullMode.DropOldest,
-                SingleReader = true,
-                SingleWriter = false,
-            });
 
         // Sending is delegated to a pump because a WebSocket send must not run on the winmm capture
-        // thread: dropping a frame costs a glitch, blocking capture costs everything after it.
-        var sendPump = SendAudioPumpAsync(frames.Reader, cancellationToken);
-        EventHandler<MicrophoneFrameEventArgs> onFrame = (_, e) =>
-        {
-            if (Volatile.Read(ref _captureSuspended) == 0)
-            {
-                frames.Writer.TryWrite(e.Pcm.ToArray());
-            }
-        };
-
-        _microphone.Frame += onFrame;
-        try
-        {
-            _microphone.Start();
-        }
-        catch
-        {
-            _microphone.Frame -= onFrame;
-            frames.Writer.TryComplete();
-            throw;
-        }
+        // thread: dropping a frame costs a glitch, blocking capture costs everything after it. The pump
+        // first drains the pre-roll queued during the connect, in order, then continues live. It is
+        // stopped (not completed) at the end of this attempt: the queue belongs to the whole listen.
+        using var pumpStop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var sendPump = SendAudioPumpAsync(frames, pumpStop.Token);
 
         // Deadlines rather than blocking waits, so the loop wakes for time even when the Gateway is silent.
+        // The utterance cap counts from the press; the silence window from session.ready, so a slow
+        // handshake is never mistaken for a silent user.
         var silenceDeadline = DateTimeOffset.UtcNow + _options.NoSpeechTimeout;
-        var utteranceDeadline = DateTimeOffset.UtcNow + _options.MaxUtterance;
+        var utteranceDeadline = pressedAt + _options.MaxUtterance;
         string? transportGone = null;
-        Volatile.Write(ref _captureSuspended, 0);
 
         try
         {
@@ -312,18 +368,7 @@ public sealed partial class QwenGatewayClient
         }
         finally
         {
-            _microphone.Frame -= onFrame;
-            frames.Writer.TryComplete();
-            try
-            {
-                _microphone.Stop();
-            }
-            catch (VoiceClientException)
-            {
-                // A teardown failure must not mask the verdict being returned; if the device stays broken
-                // the next listen surfaces it.
-            }
-
+            pumpStop.Cancel();
             await sendPump.ConfigureAwait(false);
         }
 
@@ -340,6 +385,18 @@ public sealed partial class QwenGatewayClient
     /// transport instead, and the verdict loop reports that as a failure rather than as silence.
     /// </summary>
     private async Task SendAudioPumpAsync(ChannelReader<byte[]> reader, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SendFramesAsync(reader, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // The attempt ended (verdict, failure or the caller's cancellation); the listen decides the rest.
+        }
+    }
+
+    private async Task SendFramesAsync(ChannelReader<byte[]> reader, CancellationToken cancellationToken)
     {
         await foreach (var frame in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {

@@ -435,6 +435,12 @@ internal static partial class ShellHost
                 // assistant events were suppressed on the way). The transcript is the user's speech —
                 // never a key, never a URL, never the frontend's answer.
                 Console.WriteLine($"utterance   : {utter}");
+                if (utter.ConnectDuration is { } connect)
+                {
+                    // DEC-040: the microphone ran from the press, so this wait no longer cost the user's
+                    // first words; it is printed because it is the only live measure of the handshake.
+                    Console.WriteLine($"  connect   : {connect.TotalMilliseconds:F0} ms to session.ready, {utter.BufferedFrames} frames ({utter.BufferedFrames * 100} ms) of speech pre-rolled");
+                }
 
                 if (utter.Failed)
                 {

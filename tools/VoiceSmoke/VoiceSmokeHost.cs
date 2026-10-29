@@ -23,6 +23,7 @@ internal static partial class VoiceSmokeHost
         AssertTutorAuthority,
         AssertNoBackend,
         AssertFishFormat,
+        AssertPreroll,
     }
 
     public static async Task<int> RunAsync(string[] args)
@@ -57,6 +58,7 @@ internal static partial class VoiceSmokeHost
                 Mode.AssertTutorAuthority => AssertTutorAuthority(),
                 Mode.AssertNoBackend => AssertNoBackend(),
                 Mode.AssertFishFormat => await AssertFishFormatAsync(),
+                Mode.AssertPreroll => await AssertPrerollAsync(),
                 _ => PrintUsage(),
             };
         }
@@ -106,6 +108,7 @@ internal static partial class VoiceSmokeHost
                 case "--assert-tutor-authority": mode = Mode.AssertTutorAuthority; break;
                 case "--assert-no-backend": mode = Mode.AssertNoBackend; break;
                 case "--assert-fish-format": mode = Mode.AssertFishFormat; break;
+                case "--assert-preroll": mode = Mode.AssertPreroll; break;
                 case "--help": case "-h": case "/?": mode = Mode.Help; break;
                 default: Console.WriteLine($"ignoring unknown argument '{args[i]}'"); break;
             }

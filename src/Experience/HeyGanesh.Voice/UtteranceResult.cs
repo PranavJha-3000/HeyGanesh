@@ -51,6 +51,15 @@ public sealed record UtteranceResult
     /// </summary>
     public int SuppressedAssistantEvents { get; init; }
 
+    /// <summary>
+    /// Press to <c>session.ready</c> on the attempt that produced this verdict (DEC-040); null when no
+    /// session became ready. The user could already speak during it: the microphone runs from the press.
+    /// </summary>
+    public TimeSpan? ConnectDuration { get; init; }
+
+    /// <summary>How many 100 ms microphone frames were waiting when the session became ready (the pre-roll).</summary>
+    public int BufferedFrames { get; init; }
+
     /// <summary>An utterance was recognised.</summary>
     public static UtteranceResult Spoken(string text, string frontendId, TimeSpan latency, int suppressed) => new()
     {

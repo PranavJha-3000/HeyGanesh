@@ -383,3 +383,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `85cdf5e` (the commit before this step).
 - **Files to restore:** `git checkout 85cdf5e -- src/Perception/HeyGanesh.ElementSelection src/Intelligence/HeyGanesh.ContextOrchestrator src/Experience/HeyGanesh.App tools/ElementSelectionSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Perception/HeyGanesh.ElementSelection/TextCandidates.cs` and any new smoke file (`git status` lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; ElementSelectionSmoke `--question "Save" --fake`; App `--once --question "x"` exit 12; the local CI runner reports 15 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (voice pre-roll: the microphone starts at the press, build sequence step 5, DEC-040)
+
+- **Change:** `QwenGatewayClient` checks its configuration, then starts the microphone and its frame buffer at the press, before connecting; the buffer is flushed in order once `session.ready` arrives and kept across reconnect attempts; a failed listen stops the microphone and discards it. `UtteranceResult` gains `ConnectDuration` and `BufferedFrames`; the App Shell prints them. VoiceSmoke gains a loopback Gateway stub and `--assert-preroll` (VO-11, CI G-21). Docs: DEC-040, FLOW, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `4cf33f7` (the commit before this step).
+- **Files to restore:** `git checkout 4cf33f7 -- src/Experience/HeyGanesh.Voice src/Experience/HeyGanesh.App tools/VoiceSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new VoiceSmoke file (`git status` lists them).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; VoiceSmoke `--fake-transcript "x"`, `--assert-tutor-authority`, `--assert-gcp-events` exit 0; App `--once` without a Gateway URL exit 1; the local CI runner reports 16 gates, all exit 0.

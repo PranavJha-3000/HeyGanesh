@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-040](#dec-040--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Voice pre-roll: the microphone starts at the press and buffers until `session.ready`, then the buffer is sent in order; the socket stays per-utterance (DEC-013 Option F stands); configuration is checked before the microphone opens | accepted |
 | [DEC-039](#dec-039--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Element Selection offers up to 40 lines of screen text to Jev as "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, none that look secret); the shell turns OCR on, `--no-ocr` turns it off | accepted |
 | [DEC-038](#dec-038--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The capture can read the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default), into `MonitorCapture.TextLines` in global physical pixels; local only; nothing consumes it yet | accepted |
 | [DEC-037](#dec-037--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A found Element Selection choice in the Low tier is checked by Vision on the same frame (on by default, `CheckLowConfidence`); Vision replaces it only when Medium+ and elsewhere; a failed or unsure check keeps the choice. Supersedes DEC-010's rejection of Option C and DEC-009's "not a gate", for Low only | accepted |
@@ -50,6 +51,29 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-040 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the speech-in leg pre-rolls: the microphone starts at the Ctrl+Alt press and its frames wait in the existing bounded queue until the Gateway's `session.ready`, then go out in order.** Step 5 of the build sequence, changed from "keep the connection warm" before building, because DEC-013 already rejected holding the socket open (Option F: it keeps the operator's own Gateway clients evicted).
+
+- **The bug it fixes, shown first:** VO-11 on the old client, against a stub that answers `session.ready` after 600 ms, got first frame #7. About 700 ms of speech after the press never reached the Gateway, because the microphone only started after the handshake and health check. After the change the first frame is #0, and the stub turn finished in about 1.22 s instead of 1.91 s.
+- **Order at the press:** the endpoint is resolved first (missing or malformed fails at once, not retried, and the microphone is never opened); then the microphone starts; then the connect loop runs as before. The queue (100 × 100 ms, drop-oldest) belongs to the whole listen and survives reconnect attempts; the send pump drains it per attempt and is stopped, not completed, when the attempt ends.
+- **Limits:** the utterance cap counts from the press; the silence window starts at `session.ready`, so a slow handshake is never mistaken for a silent user.
+- **Teardown:** however the listen ends, the microphone is stopped and anything still queued is dropped. Nothing leaves the process before `session.ready`.
+- **Measured:** `UtteranceResult.ConnectDuration` (press to ready) and `BufferedFrames`; the shell prints them as `connect :` under the utterance line.
+- **Unchanged:** one socket per utterance, the release rule (only what has committed is kept), every protocol message.
+
+**Rejected.**
+- A warm socket between presses: DEC-013 Option F, plus unverified idle cost of an upstream realtime session.
+- Shorter timeouts: they fail sooner, they do not connect sooner.
+- Running the health check alongside the handshake: a separate, smaller saving; recorded as an open item.
+
+**Consequences.**
+- The microphone opens slightly earlier, at the press. If connecting fails, it is stopped and the queue discarded (VO-11).
+- A real Gateway receives the pre-roll as a burst faster than real time; whether its speech detection handles that is unverified until a live run.
+- Found while building, not fixed here: the classifier reads the ready payload's version from `protocolVersion`/`protocol`, but upstream's schema names it `protocol_version`, so against a real Gateway the wire-version check may record "not stated" instead of checking it. Logged in HANDOVER.
+
+Plan: [plans/2026-10-30-voice-preroll-v1.md](plans/2026-10-30-voice-preroll-v1.md). Rows: VO-11 (CI G-21), VO-L2 (live).
+
 ## DEC-039 — 2026-10-30 — claude-opus-5-5
 
 **Decision — Element Selection offers Jev the screen text the capture read (DEC-038) as extra candidates, next to the UIA controls.** Step 4b of the build sequence; the owner approved it as planned ("Yes, build 4b").

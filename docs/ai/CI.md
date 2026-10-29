@@ -26,6 +26,7 @@
 | **G-18 Turn Router offline** | build `tools\TurnRouterSmoke`, then the EXE with each of `--assert-source` `--assert-request` `--assert-map` `--assert-gate` `--assert-errors` `--assert-legs` (TR-1..TR-6, DEC-035/DEC-036) | `turnRouter=pass` | exit 0 for every mode |
 | **G-19 Context Orchestrator check rule** | build `tools\ContextOrchestratorSmoke`, then the EXE with `--assert-check` (CO-12, DEC-037; the other orchestrator rows walk a real window and stay local-only) | `coCheckRule=pass` | exit 0 |
 | **G-20 Element Selection text merge** | build `tools\ElementSelectionSmoke`, then the EXE with `--assert-text-merge` (ES-8, DEC-039; the other Element Selection rows walk a real window and stay local-only) | `esTextMerge=pass` | exit 0 |
+| **G-21 Voice pre-roll** | build `tools\VoiceSmoke`, then the EXE with `--assert-preroll` (VO-11, DEC-040: the real client against a loopback HttpListener stub; no microphone, device or network) | `voicePreroll=pass` | exit 0 |
 
 ## Local-Only Notes
 

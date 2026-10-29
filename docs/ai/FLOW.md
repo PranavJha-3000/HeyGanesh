@@ -127,10 +127,15 @@ Speech in (VoiceService.ListenOnceAsync — one utterance per call, transport op
          the Voice API has no force-commit call — DEC-014)                 │
         │
         ▼
-  WinMmMicrophoneSource ── PCM16 16 kHz blocks ──▶ QwenGatewayClient
+  ListenOnceAsync: endpoint resolved first (missing → failure, microphone never opened) — DEC-040
+  WinMmMicrophoneSource starts AT THE PRESS ── PCM16 16 kHz blocks ──▶ bounded queue (pre-roll, 10 s cap)
+        │                                          ▼
+        │                                     QwenGatewayClient
         │                                          │  session.hello → session.ready (wire 7.0,
         │                                          │  major-version mismatch refuses the listen)
+        │                                          │  then the queue drains in order, then live:
         │                                          │  input_audio_buffer.append per block
+        │                                          │  (failed listen → microphone stopped, queue dropped)
         ▼                                          ▼
   qwen-audio-agent Gateway (EXTERNAL RUNTIME — realtime frontend, AGENT_PROTOCOL=none required)
         │

@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (voice pre-roll, build sequence step 5, DEC-040)
+
+Did: The microphone now starts at the press and buffers until the Gateway's session.ready, then the buffer goes out in order (the socket is still per utterance; "warm connection" was dropped because DEC-013 Option F rejected it). A missing Gateway URL fails before the microphone opens. `UtteranceResult.ConnectDuration`/`BufferedFrames`, printed by the shell as `connect :`. VO-11 `--assert-preroll` against a new loopback Gateway stub (CI G-21): it failed on the old client (first frame #7, ~700 ms of speech lost) and passes after.
+Left: VO-L2 (real Gateway: the first words survive, the real wait) needs the Gateway and a human. Open item, not fixed: `QwenGatewayProtocol.Classify` reads the ready payload's version from `protocolVersion`/`protocol`, but upstream's schema (gateway-client-protocol.mjs) names it `protocol_version`, so the wire-version check may never run against a real Gateway. Follow-up: run the health check alongside the handshake. Steps 6-8 remain. Eight commits are local, ahead of PR #1; not pushed.
+Watch: A missing URL is no longer retried three times (it never succeeds), so `--once` without a Gateway fails at once. The stub listens on http://localhost:<free port>/ through HttpListener; if a machine refuses that prefix, VO-11 fails saying so rather than passing.
+Next: Plan step 6 (stream the first lesson beat), or fix the protocol_version field first.
+Verified: Voice, VoiceSmoke, App build -warnaserror 0/0; VO-11 11 PASS on three runs (first frame #0, connect 687 ms, 6 frames pre-rolled, stub turn ~1.22 s vs 1.91 s before); VO-3..VO-10 offline rows exits 0/0/12/13/0 and asserts 20/7/4/8 PASS; App --once (no URL) 1, --once --question 12, --seconds 3 0, cancel 13; all 17 CI gates exit 0 locally.
+
 ## 2026-10-30 · claude-opus-5-5 (Element Selection offers screen text to Jev, build sequence step 4b, DEC-039)
 
 Did: `TextCandidates.FromScreenText` turns the capture's OCR lines into "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, no secret-looking lines, at most 40, reading order), ranked with the UIA controls. New `SelectAsync` overload, `SelectionResult.ScreenTextOffered`; the orchestrator passes `captures[0].TextLines`; the shell turns `ReadText` on, adds `--no-ocr` and an `ocr :` header line. ES-8 `--assert-text-merge` (CI G-20), ES-9 `--list-only --read-text` (local), SH-23.

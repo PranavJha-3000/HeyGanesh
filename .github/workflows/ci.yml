@@ -158,3 +158,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & 'tools\ElementSelectionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ElementSelectionSmoke.exe' --assert-text-merge
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-21: voice pre-roll (DEC-040) - the real Gateway client against a loopback stub; no microphone, device or
+      # network. The other voice rows that need a device or a Gateway stay local-only.
+      - name: G-21 Voice pre-roll
+        shell: pwsh
+        run: |
+          dotnet build tools\VoiceSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-preroll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

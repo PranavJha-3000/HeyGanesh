@@ -15,6 +15,7 @@
   var tagsEl = document.getElementById("tags");
   var noticeEl = document.getElementById("notice");
   var hintEl = document.getElementById("hint");
+  var drawingEl = document.getElementById("drawing");
   var cspViolations = 0;
   document.addEventListener("securitypolicyviolation", function () { cspViolations++; });
 
@@ -430,6 +431,69 @@
   }
   var orientMade = [];
 
+  // ---------- the drawing, when WebGL is missing (DEC-034) ----------
+  // scene-svg.js draws; this keeps what the lesson has placed so far, in the same terms as the 3D path,
+  // and redraws after every message. Ops arrive validated, so a missing target is a defect and throws.
+  var drawn = { instances: {}, labels: {}, highlights: [], explode: {}, focus: "", view: "" };
+  var drawing = function () { return !engine && !!(window.SceneSvg && window.SceneSvg.kit); };
+
+  function drawnClear() {
+    drawn = { instances: {}, labels: {}, highlights: [], explode: {}, focus: "", view: "" };
+    tags = [];
+    setTags();
+  }
+
+  function drawnApply(op) {
+    switch (op.op) {
+      case "model":
+        drawn.instances[op.id] = op;
+        if (op.schematic && tags.indexOf("schematic") < 0) tags.push("schematic");
+        if (!op.reviewed && tags.indexOf("not yet reviewed") < 0) tags.push("not yet reviewed");
+        if (!titleEl.textContent) titleEl.textContent = op.title || "";
+        drawn.focus = op.id; drawn.view = "iso";
+        break;
+      case "label": drawn.labels[op.id] = { target: op.target, text: op.text }; break;
+      case "highlight": drawn.highlights.push(op.target); break;
+      case "explode": drawn.explode[op.target] = op.amount; break;
+      case "camera": drawn.focus = op.focus; drawn.view = op.view; break;   // every view is drawn isometric (DEC-034)
+      case "animate":
+        if (tags.indexOf("animation needs 3D") < 0) tags.push("animation needs 3D");
+        break;
+      case "clear": drawnClear(); break;
+      default: throw new Error("unknown scene op");
+    }
+    setTags();
+  }
+
+  function drawnMessage(m) {
+    switch (m.kind) {
+      case "reset":
+        drawnClear();
+        titleEl.textContent = m.title || "";
+        window.SceneSvg.draw(drawn, drawingEl);
+        done(m, { drawing: true });
+        return;
+      case "warmup":
+        done(m, { drawing: true });
+        return;
+      case "orient":
+        window.SceneSvg.orient(m.turn, drawingEl);
+        done(m, { drawing: true });
+        return;
+      case "picking":
+        done(m, { skipped: true });   // no click-to-ask on the drawing yet (DEC-034)
+        return;
+      case "beat":
+        (m.ops || []).forEach(drawnApply);
+        var r = window.SceneSvg.draw(drawn, drawingEl);
+        lastBuildMs = r.ms;
+        done(m, { drawing: true, buildMs: r.ms });
+        return;
+      default:
+        return;
+    }
+  }
+
   // ---------- read-only description for the host's verification rows ----------
   window.__describe = function () {
     var inst = [], offsets = {};
@@ -440,24 +504,37 @@
     });
     var playingNow = [];
     Object.keys(playing).forEach(function (k) { if (playing[k].group.isPlaying) playingNow.push(k + ":" + playing[k].name); });
+    var lbls = Object.keys(labels).map(function (k) { return { id: k, target: labels[k].target, text: labels[k].text }; });
+    var hls = highlights.slice(), exp = explodeAmount, view = cameraView, focus = cameraFocus;
+    if (drawing()) {
+      // The drawing's own state, in the same shape, so a row reads either path the same way.
+      Object.keys(drawn.instances).forEach(function (id) {
+        var op = drawn.instances[id], prims = 0;
+        op.parts.forEach(function (p) { prims += p.primitives.length; });
+        inst.push({ id: id, model: op.model, parts: op.parts.length, meshes: prims });
+      });
+      lbls = Object.keys(drawn.labels).map(function (k) { return { id: k, target: drawn.labels[k].target, text: drawn.labels[k].text }; });
+      hls = drawn.highlights.slice(); exp = drawn.explode; view = drawn.view; focus = drawn.focus;
+    }
     return {
       webgl: webgl,
       title: titleEl.textContent,
       tags: tags.slice(),
       notice: noticeEl.hidden ? "" : noticeEl.textContent,
       instances: inst,
-      labels: Object.keys(labels).map(function (k) { return { id: k, target: labels[k].target, text: labels[k].text }; }),
-      highlights: highlights.slice(),
-      explode: explodeAmount,
+      labels: lbls,
+      highlights: hls,
+      explode: exp,
       offsets: offsets,
       playing: playingNow,
-      cameraView: cameraView,
-      cameraFocus: cameraFocus,
+      cameraView: view,
+      cameraFocus: focus,
       frames: frames,
       csp: cspViolations,
       lastBuildMs: lastBuildMs,
       picking: picking,
       pickPoints: engine ? pickPoints() : {},
+      drawing: drawing() ? window.SceneSvg.describe() : null,
       closeAt: (function () { var r = document.getElementById("close").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })(),
       script: document.querySelectorAll("script").length
     };
@@ -479,8 +556,12 @@
           function () { post({ kind: "probe", seq: m.seq, fetch: "blocked" }); });
         return;
       }
+      if (drawing()) {
+        drawnMessage(m);
+        return;
+      }
       if (!engine) {
-        // No WebGL: acknowledge everything so the beat completes and the speech plays.
+        // No WebGL and no drawing either: acknowledge everything so the beat completes and the speech plays.
         if (m.kind === "reset") titleEl.textContent = m.title || "";
         done(m, { skipped: true });
         return;
@@ -545,5 +626,18 @@
   });
   window.addEventListener("resize", function () { if (engine) { engine.resize(); kick(); } });
 
-  post({ kind: "ready", webgl: webgl });
+  // The drawing renderer (scene-svg.js, an ES module) runs after this classic script. "ready" waits for
+  // it, so a module that fails to load times the window out loudly instead of drawing nothing later.
+  function postReady() {
+    if (drawing()) {
+      // Without WebGL the lesson still gets a picture: the drawing replaces the canvas.
+      noticeEl.textContent = "3D view isn't available on this PC — showing a drawing instead.";
+      noticeEl.className = "drawing";
+      canvas.hidden = true;
+      drawingEl.hidden = false;
+    }
+    post({ kind: "ready", webgl: webgl, drawing: drawing() });
+  }
+  if (window.SceneSvg) postReady();
+  else window.addEventListener("scenesvg-ready", postReady, { once: true });
 })();

@@ -341,3 +341,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `40b7ea9` (the commit before this step).
 - **Files to restore:** `git checkout 40b7ea9 -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Experience/HeyGanesh.LessonSurface src/Experience/HeyGanesh.LessonSession tools/LessonTurnSmoke tools/LessonSurfaceSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any file this step added (`git status` after the checkout lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonTurnSmoke all modes and LessonSurfaceSmoke --assert-source / --assert-scene with their step 4 PASS counts.
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007: SVG drawing when WebGL is missing, DEC-034)
+
+- **Change:** LessonSurface vendors Anatomy's kit (`Page/vendor/anatomy-1482e846/`: iso-kit.mjs, lathe.mjs, iso.css, LICENSE; pinned in VENDOR.md) and adds `Page/scene-svg.js` + `Page/scene-svg.css`; `scene.html` loads them; `scene.js`'s no-WebGL path draws through them instead of acking `skipped`; `CardSurface` runs the orientation probe on the drawing and reads drawing fields into `SceneSnapshot`. LessonSurfaceSmoke: LSU-12 reworked, LSU-16 new, LSU-7 extended. Docs: DEC-034, FLOW, ARCHITECTURE, AGENTS, TEST-CHECKLIST, FEATURE-007, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `516d385` (the commit before this step).
+- **Files to restore:** `git checkout 516d385 -- src/Experience/HeyGanesh.LessonSurface tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.LessonSurface/Page/vendor/anatomy-1482e846/`, `Page/scene-svg.js`, `Page/scene-svg.css` and any new smoke file (`git status` lists them).
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSurfaceSmoke --assert-source 14, --assert-scene-nowebgl 5, --assert-scene 19.

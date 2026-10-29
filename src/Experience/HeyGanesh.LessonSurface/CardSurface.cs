@@ -404,6 +404,8 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
         // WebView2 docked), so screen = window origin + CSS x the window's DPI scale.
         var scale = scene.DeviceDpi / 96.0;
         Point ToScreen(JsonElement xy) => new(b.X + (int)Math.Round(xy[0].GetDouble() * scale), b.Y + (int)Math.Round(xy[1].GetDouble() * scale));
+        var drawing = d.GetProperty("drawing");
+        var drawn = drawing.ValueKind == JsonValueKind.Object;
         return new SceneSnapshot(
             scene.SurfaceId,
             scene.Visible,
@@ -432,14 +434,25 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
             d.GetProperty("script").GetInt32(),
             d.GetProperty("picking").GetBoolean(),
             d.GetProperty("pickPoints").EnumerateObject().ToDictionary(p => p.Name, p => ToScreen(p.Value), StringComparer.Ordinal),
-            ToScreen(d.GetProperty("closeAt")));
+            ToScreen(d.GetProperty("closeAt")),
+            drawn ? drawing.GetProperty("solids").GetInt32() : null,
+            drawn ? drawing.GetProperty("buildMs").GetDouble() : 0,
+            drawn
+                ? new SceneDrawing(
+                    Strings(drawing.GetProperty("order")),
+                    drawing.GetProperty("lit").GetInt32(),
+                    drawing.GetProperty("hash").GetInt64(),
+                    Strings(drawing.GetProperty("labelTexts")),
+                    drawing.GetProperty("labelForeign").GetInt32())
+                : null);
     });
 
     /// <summary>
     /// Orientation self-test (DEC-029 asked for it, DEC-030 automates it): the scene page draws a red
     /// marker at +X, a green one at +Y, and a blue one on a parent turned 90° about Z by a quaternion
     /// computed here — so it must land at −X. The page is then captured and the markers are found by
-    /// colour in its own pixels. Usable as a startup health check; it leaves the scene cleared.
+    /// colour in its own pixels. Usable as a startup health check; it leaves the scene cleared. Without
+    /// WebGL the page draws the same three markers in its SVG drawing (DEC-034), so the probe checks that path too.
     /// </summary>
     public Task<OrientationProbe> CheckOrientationAsync() => OnUi(async () =>
     {

@@ -298,6 +298,7 @@ Not measured: an **integrated GPU** — this laptop exposes only the RTX 3060 (`
   2. Confirm module MIME under `SetVirtualHostNameToFolderMapping`, or vendor the kit under a `.js` name.
 
   Vendoring then follows `VENDOR.md` (pinned hashes, the MIT licence shipped, LSU-7 coverage).
+- **Shipped 2026-10-29 · claude-opus-5-5 as DEC-034** ([plan](../plans/2026-10-29-svg-fallback-v1.md)). Both conditions are met: the `.mjs` modules load in WebView2, and painter's order is fixed by cutting long parts into pieces and painting buried pieces before their container. LSU-12 (8) and LSU-16 (8) are green.
 
 Effect on §2.3 (window model): cards are opaque windows; only screen marks are click-through, and they stay on the existing native ScreenOverlay. The transparent selective-click-through surface is no longer on the demo path.
 

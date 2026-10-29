@@ -46,6 +46,8 @@ public sealed record SceneLabel(string Id, string Target, string Text);
 /// health checks). <see cref="WebGl"/> is 0 when the page could not start WebGL and is speaking only.
 /// <see cref="PickPoints"/> maps "instance.part" to a screen point (global physical pixels) where a click
 /// lands on that part and nothing in front of it; parts hidden from the camera are absent (DEC-031).
+/// Without WebGL the page draws an SVG instead (DEC-034): <see cref="DrawingSolids"/> is how many solids
+/// the last drawing painted (null when the page is not drawing) and <see cref="DrawingBuildMs"/> how long it took.
 /// </summary>
 public sealed record SceneSnapshot(
     string SurfaceId,
@@ -71,7 +73,17 @@ public sealed record SceneSnapshot(
     int ScriptElements,
     bool Picking,
     IReadOnlyDictionary<string, Point> PickPoints,
-    Point CloseButton);
+    Point CloseButton,
+    int? DrawingSolids,
+    double DrawingBuildMs,
+    SceneDrawing? Drawing);
+
+/// <summary>
+/// What the no-WebGL drawing painted (DEC-034), for verification rows: part keys in paint order (repeats
+/// folded), how many solids were highlighted, a fingerprint of the markup, and the label texts as the DOM
+/// holds them plus the count of any other element inside a label (must be 0).
+/// </summary>
+public sealed record SceneDrawing(IReadOnlyList<string> Order, int Lit, long Hash, IReadOnlyList<string> LabelTexts, int LabelForeign);
 
 /// <summary>
 /// Result of the orientation self-test (DEC-029/DEC-030): three test markers posed from C#, located in

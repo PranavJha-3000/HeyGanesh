@@ -141,9 +141,10 @@ tools/LessonSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSmo
 dotnet build src/Experience/HeyGanesh.LessonSurface -c Debug
 dotnet build tools/LessonSurfaceSmoke -c Debug
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --assert-render
-#   -> 17 PASS, exit 0   (also: --assert-source 14, --assert-window 9, --assert-security 4, --assert-marks 2)
+#   -> 17 PASS, exit 0   (also: --assert-source 20, --assert-window 9, --assert-security 4, --assert-marks 2)
 #   3D scene window (DEC-030): --assert-scene-math 7 (offline), --assert-scene 19, --assert-scene-idle 4,
-#   --assert-orientation 3, --assert-scene-nowebgl 5; manual: --snapshot-3d <dir>, --demo-3d --voice sapi
+#   --assert-orientation 3, --assert-scene-nowebgl 8, --assert-scene-svg 8 (no-WebGL drawing, DEC-034);
+#   manual: --snapshot-3d <dir> [--no-webgl], --demo-3d --voice sapi
 #   click a part to ask (DEC-031): --assert-pick 9 -- MOVES THE REAL CURSOR; run with nobody using the mouse
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --demo all --voice sapi
 #   -> the three golden lessons drawn and spoken on screen (manual row LSU-6)

@@ -1,4 +1,12 @@
 
+## 2026-10-29 · claude-opus-5-5 (no-WebGL 3D drawing, DEC-034)
+
+Did: Without WebGL the scene page now draws the lesson's models as an isometric SVG with Anatomy's vendored MIT kit (`Page/vendor/anatomy-1482e846/`, pinned): models, labels, highlight, explode and focus; animation and views as stills; no click-to-ask on it yet. Painter's order: long cylinders and boxes are cut into pieces, and buried pieces are painted before their (nested) container. LSU-12 reworked (8), LSU-16 new (8), LSU-7 20.
+Left: Click-to-ask, real views and animation on the drawing; faint tick marks inside cut parts' shading (cosmetic). Owner: review the drawing PNGs (LSU-13) with the Babylon ones. These commits are local, ahead of PR #1; not pushed.
+Watch: `scene.css` styles `#view` with `display:block`, which overrides `hidden`, so anything hidden by attribute there needs an explicit `[hidden]` rule. `sed -i` patterns with `\r` don't match here; use the scratchpad edit scripts.
+Next: Push these commits to PR #1 (owner's call), or plan click-to-ask on the drawing.
+Verified: sln -warnaserror 0/0; LessonSurfaceSmoke source 20, window 9, render 17, security 4, marks 2, scene-math 7, scene 19, idle 4, orientation 3, nowebgl 8, scene-svg 8, pick 9; LT source 4, turn 4, turn-surface 6, followup-pick 12; piece-splitting mutation fails LSU-16 and was reverted; cold start 1.89-2.05 s; six drawing PNGs reviewed; all 13 CI gates exit 0 locally (G-17 27 PASS lines).
+
 ## 2026-10-29 · claude-opus-5-5 (spike 0d: Part Library as isometric SVG)
 
 Did: Ran spike 0d in the scratchpad: Anatomy's iso-kit + lathe (MIT, 1482e846, 4 files / 92 KB, owner-approved download) drew all three Part Library models from the exact Babylon `model` messages in 9.9–16.2 ms each, poses matching the Babylon snapshots, 0 CSP violations and 0 JS errors under the scene page's CSP. GO with two conditions (FEATURE-007 "Spike 0d results"). Only docs changed in the repo.

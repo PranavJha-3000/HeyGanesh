@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-034](#dec-034--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Without WebGL the 3D lesson is drawn as an isometric SVG with Anatomy's vendored MIT kit (models, labels, highlight, explode, focus; animation and views as stills; no click-to-ask yet); long parts cut into pieces and buried pieces painted just before their container | accepted |
 | [DEC-033](#dec-033--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | `--lesson` turns 3D on: the shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync` (30 s click wait); Ctrl+Alt stays refused while a lesson waits, with a message that says how to end it; exit code = the last turn's (13 if cancelled while waiting) | accepted |
 | [DEC-032](#dec-032--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | The planner offers 3D only when the request carries a catalogue: the same catalogue then validates the answer; schema 1.1, the 3D op shapes, limits, camera views and every model/part/animation id are interpolated from code; without one the prompt is byte-identical to v1 | accepted |
 | [DEC-031](#dec-031--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Click a 3D part to ask: picking only after a lesson has played; the page sends two ids, CardSurface checks them against what it drew and the catalogue; the question is written in C# from the Part Library; the follow-up plays on the same cards; at most 3, 60 s idle | accepted |
@@ -44,6 +45,50 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-034 — 2026-10-29 — claude-opus-5-5
+
+**Decision — when WebGL is missing, the scene page draws the lesson's 3D models as an isometric SVG with Anatomy's kit, instead of showing only a notice.**
+
+- **Vendored:** `Page/vendor/anatomy-1482e846/` holds `iso-kit.mjs`, `lathe.mjs`, `iso.css` and `LICENSE` (MIT, commit `1482e846`). They are the spike 0d downloads, byte-identical and pinned in `VENDOR.md`; LSU-7 re-hashes them and checks the licence ships.
+- **Module loading:** WebView2's virtual host serves `.mjs` as JavaScript (checked first: the page's `ready` now waits for the module, and every scene row passed), so no renaming was needed.
+- **The renderer** is `Page/scene-svg.js`, an ES module. `scene.js` keeps the drawing's state in its no-WebGL branch and redraws after every message, acking `{ drawing: true }`. The WebGL branch is untouched.
+- **Ops in the drawing:**
+  - drawn: `model`, `label`, `highlight` (orange outline), `explode` (redrawn at the amount), `clear`, and `camera` focus (re-framed);
+  - shown as stills: `animate` draws the rest pose plus an "animation needs 3D" tag, and every `camera` view is drawn isometric;
+  - `picking` stays `skipped`, so `PickAsync` returns null and there's no click-to-ask on the drawing yet.
+- **Axis map:** (x, y, z) → (x, z, y). The kit's projection reflects, so a non-reflecting map would mirror every model. The orientation probe runs on the drawing too: same three markers, front view (azimuth 90°, elevation 0°), found by colour in real pixels.
+- **Painter's order (spike 0d's condition 1)**, built in three passes over what the pictures showed:
+  1. Cylinders and boxes longer than 2.5× their width are cut into pieces about one width long. Cylinder pieces are open bands, with caps only at the true ends. Box pieces get their own outline with the cut edges dropped.
+  2. A piece whose centre lies inside another solid is painted just before that solid's own settled order. Containers nest: the pin is in the piston, which is in the glass cylinder.
+  3. Ties fall back to the item's own depth.
+
+  The first picture had stripes and a pin showing through the piston; the second hid the pin but drew the rod over the piston; the third matches Babylon.
+- **Lesson text never enters an SVG string:** labels are DOM nodes with `textContent`. LSU-7 audits that, and LSU-16 checks a `<b>` label stays literal.
+
+**Measured (this machine; LSU-12, LSU-16).**
+
+| Measure | Result |
+|---|---|
+| Engine | 74 solids, 11–14 ms |
+| DNA | 220 solids, 33–49 ms |
+| Pump | 11 solids, 16–17 ms |
+| CSP violations | 0 |
+| Scene window cold start | 1.89–2.05 s, unchanged from DEC-030's 1.95–2.14 s |
+
+**Rejected.**
+- Porting the kit to C#.
+- Using the drawing for every lesson, which would lose orbit and motion.
+- A full separating-plane sort: buried parts have no correct whole-part order anyway.
+- Pre-rendered PNGs, which can't show the lesson's labels or highlights.
+- `bandsOf`, the kit's band splitter: its one outline over a whole body would paint the buried part of a stem over the head.
+
+**Consequences.**
+- Faint tick marks remain inside the shaded faces of cut parts: the rod, the crankshaft, some DNA bases. They're cosmetic and recorded.
+- Box-against-box overlaps without containment aren't specially handled. The three V1 models show none, but a new model could.
+- Click-to-ask, real views, animation and printable notes from the drawing are each a later step.
+
+Plan: [plans/2026-10-29-svg-fallback-v1.md](plans/2026-10-29-svg-fallback-v1.md). Rows: LSU-7, LSU-12, LSU-16 (LSU-13 gains the drawing PNGs).
+
 ## DEC-033 — 2026-10-29 — claude-opus-5-5
 
 **Decision — the App Shell's `--lesson` leg offers the planner the cards' 3D catalogue and runs click-to-ask follow-ups. A new Ctrl+Alt press is still refused while a finished 3D lesson waits for a click.**

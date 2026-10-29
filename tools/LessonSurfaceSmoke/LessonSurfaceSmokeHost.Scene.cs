@@ -45,22 +45,25 @@ internal static partial class LessonSurfaceSmokeHost
     {
         var html = File.ReadAllText(Path.Combine(dir, "Page", "scene.html"));
         var js = File.ReadAllText(Path.Combine(dir, "Page", "scene.js"));
+        var svgJs = File.ReadAllText(Path.Combine(dir, "Page", "scene-svg.js"));
         failures = Check(
             html.Contains("Content-Security-Policy", StringComparison.Ordinal) && html.Contains("default-src 'self'", StringComparison.Ordinal)
                 && html.Contains("connect-src 'none'", StringComparison.Ordinal) && !html.Contains("unsafe-eval", StringComparison.Ordinal) && !html.Contains("unsafe-inline", StringComparison.Ordinal),
             "scene.html carries the same CSP: default-src 'self', connect-src 'none', no unsafe-eval / unsafe-inline", failures);
         string[] sinks = { "innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "setTimeout(\"", "setInterval(\"" };
-        var found = sinks.Where(s => js.Contains(s, StringComparison.Ordinal)).ToArray();
-        failures = Check(found.Length == 0, $"scene.js has no HTML/code sinks ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
+        var found = sinks.Where(s => js.Contains(s, StringComparison.Ordinal) || svgJs.Contains(s, StringComparison.Ordinal)).ToArray();
+        failures = Check(found.Length == 0, $"scene.js and scene-svg.js have no HTML/code sinks ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
+        failures = Check(svgJs.Contains("text.textContent = label.text;", StringComparison.Ordinal) && !Regex.IsMatch(svgJs, @"label\.text\s*[+`]|\$\{[^}]*label\.text"),
+            "scene-svg.js puts label text in the drawing only through textContent, never into an SVG string (DEC-034)", failures);
         var clicks = Regex.Matches(js, @"post\(\{\s*kind:\s*""part-clicked""([^}]*)\}\)").Select(m => m.Groups[1].Value).ToList();
         failures = Check(clicks.Count == 1 && Regex.Matches(clicks[0], @"(\w+):").Select(m => m.Groups[1].Value).SequenceEqual(new[] { "instance", "part" }),
             "scene.js posts a part click as two ids only (instance, part) -- no text the host could mistake for a question (DEC-031)", failures);
 
         var vendor = Path.Combine(dir, "Page", "vendor");
         var table = File.ReadAllText(Path.Combine(vendor, "VENDOR.md"));
-        var pins = Regex.Matches(table, @"\|\s*`(babylonjs-[^`]+)`\s*\|[^|]*\|[^|]*\|\s*`([0-9a-f]{64})`")
+        var pins = Regex.Matches(table, @"\|\s*`((?:babylonjs|anatomy)-[^`]+)`\s*\|[^|]*\|[^|]*\|\s*`([0-9a-f]{64})`")
             .ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value, StringComparer.Ordinal);
-        failures = Check(pins.Count == 4, $"VENDOR.md pins 4 files ({string.Join(", ", pins.Keys)})", failures);
+        failures = Check(pins.Count == 8, $"VENDOR.md pins 8 files ({string.Join(", ", pins.Keys)})", failures);
         foreach (var (file, pinned) in pins)
         {
             var path = Path.Combine(vendor, file.Replace('/', Path.DirectorySeparatorChar));
@@ -72,6 +75,8 @@ internal static partial class LessonSurfaceSmokeHost
         failures = Check(pins.Keys.Any(k => k.EndsWith("LICENSE.md", StringComparison.Ordinal)) && File.ReadAllText(Path.Combine(vendor, "babylonjs-9.30.0", "LICENSE.md")).Contains("Apache License", StringComparison.Ordinal)
                 && pins.Keys.Any(k => k.EndsWith("NOTICE.md", StringComparison.Ordinal)) && File.ReadAllText(Path.Combine(vendor, "babylonjs-9.30.0", "NOTICE.md")).Contains("Babylon.js", StringComparison.Ordinal),
             "the Apache-2.0 licence and Babylon's NOTICE ship with the vendored files", failures);
+        failures = Check(pins.Keys.Any(k => k == "anatomy-1482e846/LICENSE") && File.ReadAllText(Path.Combine(vendor, "anatomy-1482e846", "LICENSE")).Contains("MIT License", StringComparison.Ordinal),
+            "Anatomy's MIT licence ships with its vendored kit (DEC-034)", failures);
         var attributes = File.ReadAllText(Path.Combine(root, ".gitattributes"));
         failures = Check(attributes.Contains("src/Experience/HeyGanesh.LessonSurface/Page/vendor/** -text", StringComparison.Ordinal),
             ".gitattributes keeps git from rewriting the vendored files' line endings", failures);
@@ -186,7 +191,7 @@ internal static partial class LessonSurfaceSmokeHost
         var end = await surface.DescribeSceneAsync();
         failures = Check(end.CspViolations == 0, $"0 CSP violations on the scene page (got {end.CspViolations})", failures);
         failures = Check(end.Tags.Contains("not yet reviewed") && !end.Tags.Contains("schematic"), $"header tags: [{string.Join(", ", end.Tags)}]", failures);
-        failures = Check(end.ScriptElements == 3, $"page has exactly its 3 scripts (got {end.ScriptElements})", failures);
+        failures = Check(end.ScriptElements == 4, $"page has exactly its 4 scripts: Babylon, GUI, scene.js, scene-svg.js (got {end.ScriptElements})", failures);
         failures = Check(end.Visible && (end.ExStyle & WsExNoActivate) != 0 && (end.ExStyle & WsExToolWindow) != 0 && (end.ExStyle & WsExTopmost) != 0,
             $"scene window visible, NOACTIVATE | TOOLWINDOW | TOPMOST (0x{end.ExStyle:X})", failures);
         failures = Check(end.DisplayAffinity == WdaExcludeFromCapture, $"scene window display affinity is WDA_EXCLUDEFROMCAPTURE (0x{end.DisplayAffinity:X})", failures);
@@ -245,42 +250,29 @@ internal static partial class LessonSurfaceSmokeHost
 
     // ---- LSU-12: no WebGL, the lesson continues in speech -------------------------------------
 
-    private static async Task<int> RunAssertSceneNoWebGlAsync()
+    private static Task<int> RunAssertSceneNoWebGlAsync() => WithoutWebGlAsync("lsu12", async surface =>
     {
         var failures = 0;
-        var profile = Path.Combine(Path.GetTempPath(), "hg-lsu12-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            await using var surface = await CardSurface.CreateAsync(new CardSurfaceOptions { AdditionalBrowserArguments = "--disable-webgl", UserDataFolder = profile });
-            var spoken = new List<string>();
-            var report = await new LessonPlayer(surface, new PauseSpeaker(60, spoken.Add)).PlayAsync(EngineLesson());
-            var scene = await surface.DescribeSceneAsync();
-            failures = Check(scene.WebGl == 0, $"with --disable-webgl the page reports no WebGL (got {scene.WebGl})", failures);
-            failures = Check(scene.Notice.Contains("continues in speech", StringComparison.Ordinal), $"scene shows the unavailable notice ('{scene.Notice}')", failures);
-            failures = Check(report.Status == PlaybackStatus.Completed && spoken.Count == 6, $"every beat acknowledged and all 6 sentences spoken ({report.Status}, {spoken.Count})", failures);
-            var card = await surface.DescribeCardAsync("card-strokes");
-            failures = Check(card.ElementIds.Contains("s-exhaust"), "the 2D card beside it still drew its steps", failures);
-            var clock = System.Diagnostics.Stopwatch.StartNew();
-            var pick = await surface.PickAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
-            failures = Check(pick is null && clock.ElapsedMilliseconds < 2000, $"nothing was drawn, so a pick returns null at once ({clock.ElapsedMilliseconds} ms), DEC-031", failures);
-        }
-        finally
-        {
-            try
-            {
-                Directory.Delete(profile, recursive: true);
-            }
-            catch (IOException)
-            {
-                // WebView2 may still hold the temp profile for a moment; it is under %TEMP%.
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
-        }
-
+        var spoken = new List<string>();
+        var report = await new LessonPlayer(surface, new PauseSpeaker(60, spoken.Add)).PlayAsync(EngineLesson());
+        var scene = await surface.DescribeSceneAsync();
+        failures = Check(scene.WebGl == 0, $"with --disable-webgl the page reports no WebGL (got {scene.WebGl})", failures);
+        failures = Check(scene.Notice.Contains("showing a drawing instead", StringComparison.Ordinal), $"scene says it is showing a drawing instead ('{scene.Notice}'), DEC-034", failures);
+        failures = Check(report.Status == PlaybackStatus.Completed && spoken.Count == 6, $"every beat acknowledged and all 6 sentences spoken ({report.Status}, {spoken.Count})", failures);
+        var engine = ModelLibrary.Find(FourStrokeEngine.Id)!;
+        var instance = scene.Instances.FirstOrDefault();
+        failures = Check(instance is { Id: "engine" } && instance.Model == engine.Id && instance.Meshes == engine.Parts.Sum(p => p.Primitives.Count) && scene.DrawingSolids > instance.Meshes,
+            $"the engine is drawn: {instance?.Meshes} primitives as {scene.DrawingSolids} solids (long parts and the ring are drawn in pieces)", failures);
+        failures = Check(scene.Labels.Any(l => l.Id == "l-rod") && scene.Highlights.LastOrDefault() == "l-rod" && scene.Tags.Contains("animation needs 3D"),
+            $"labels and highlights are kept, and the animation beat is tagged 'animation needs 3D' ([{string.Join(", ", scene.Tags)}])", failures);
+        failures = Check(scene.DrawingBuildMs is > 0 and < 100 && scene.CspViolations == 0, $"last beat drawn in {scene.DrawingBuildMs:F1} ms (< 100), 0 CSP violations", failures);
+        var card = await surface.DescribeCardAsync("card-strokes");
+        failures = Check(card.ElementIds.Contains("s-exhaust"), "the 2D card beside it still drew its steps", failures);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var pick = await surface.PickAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
+        failures = Check(pick is null && clock.ElapsedMilliseconds < 2000, $"no click-to-ask on the drawing yet, so a pick returns null at once ({clock.ElapsedMilliseconds} ms), DEC-031/034", failures);
         return Summarize(failures, "SCENE NO-WEBGL OK");
-    }
+    });
 
     // ---- LSU-13 / LSU-14: manual rows ---------------------------------------------------------
 
@@ -294,15 +286,25 @@ internal static partial class LessonSurfaceSmokeHost
 
         var dir = Path.GetFullPath(args[0]);
         Directory.CreateDirectory(dir);
-        await using var surface = await CardSurface.CreateAsync();
+        if (args.Contains("--no-webgl"))
+        {
+            return await WithoutWebGlAsync("snap", surface => SnapAllAsync(surface, dir, "-drawing"));
+        }
+
+        await using var webgl = await CardSurface.CreateAsync();
+        return await SnapAllAsync(webgl, dir, string.Empty);
+    }
+
+    private static async Task<int> SnapAllAsync(CardSurface surface, string dir, string suffix)
+    {
         var player = new LessonPlayer(surface, new PauseSpeaker(700));
         foreach (var model in ModelLibrary.V1)
         {
             await player.PlayAsync(Validated3d(SceneLesson(model.Id)));
-            await SnapAsync(surface, Path.Combine(dir, $"{model.Id}-rest.png"));
+            await SnapAsync(surface, Path.Combine(dir, $"{model.Id}-rest{suffix}.png"));
             await player.PlayAsync(Validated3d(SceneLesson(model.Id, """{ "op": "explode", "target": "m", "amount": 1 }""")));
             await Task.Delay(500);
-            await SnapAsync(surface, Path.Combine(dir, $"{model.Id}-exploded.png"));
+            await SnapAsync(surface, Path.Combine(dir, $"{model.Id}-exploded{suffix}.png"));
         }
 
         return 0;

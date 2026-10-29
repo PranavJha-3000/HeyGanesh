@@ -1,0 +1,31 @@
+/* 3D lesson drawing without WebGL (DEC-034). Generated from scene.js's PALETTE; one four-tone ramp per
+   Part Library finish over Anatomy's iso.css variables. Regenerate rather than hand-edit the ramps. */
+#drawing{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#drawing[hidden]{display:none}
+#view[hidden]{display:none}
+#drawing>svg{width:100%;height:100%}
+#notice.drawing{top:auto;bottom:6px;font-size:13px;color:#6b6b6b}
+.f-Metal{--anatomy-paper:#b9bec7;--anatomy-face:#b9bec7;--anatomy-shade-0:#73767b;--anatomy-shade-1:#898d93;--anatomy-shade-2:#9fa3ab;--anatomy-shade-3:#b9bec7;--anatomy-top:#cdd0d7;--anatomy-hi:#414246}
+.f-DarkMetal{--anatomy-paper:#5d636e;--anatomy-face:#5d636e;--anatomy-shade-0:#3a3d44;--anatomy-shade-1:#454951;--anatomy-shade-2:#50555f;--anatomy-shade-3:#5d636e;--anatomy-top:#8a8f97;--anatomy-hi:#212326}
+.f-Brass{--anatomy-paper:#c9a227;--anatomy-face:#c9a227;--anatomy-shade-0:#7d6418;--anatomy-shade-1:#95781d;--anatomy-shade-2:#ad8b22;--anatomy-shade-3:#c9a227;--anatomy-top:#d8bc63;--anatomy-hi:#46390e}
+.f-Glass{--anatomy-paper:#bfe3f2;--anatomy-face:#bfe3f2;--anatomy-shade-0:#768d96;--anatomy-shade-1:#8da8b3;--anatomy-shade-2:#a4c3d0;--anatomy-shade-3:#bfe3f2;--anatomy-top:#d1ebf6;--anatomy-hi:#434f55}
+.f-Glass{opacity:0.3}
+.f-Membrane{--anatomy-paper:#e9c46a;--anatomy-face:#e9c46a;--anatomy-shade-0:#907a42;--anatomy-shade-1:#ac914e;--anatomy-shade-2:#c8a95b;--anatomy-shade-3:#e9c46a;--anatomy-top:#efd594;--anatomy-hi:#524525}
+.f-Membrane{opacity:0.45}
+.f-Protein{--anatomy-paper:#7aa6c2;--anatomy-face:#7aa6c2;--anatomy-shade-0:#4c6778;--anatomy-shade-1:#5a7b90;--anatomy-shade-2:#698fa7;--anatomy-shade-3:#7aa6c2;--anatomy-top:#9fbfd3;--anatomy-hi:#2b3a44}
+.f-IonSodium{--anatomy-paper:#8e44ad;--anatomy-face:#8e44ad;--anatomy-shade-0:#582a6b;--anatomy-shade-1:#693280;--anatomy-shade-2:#7a3a95;--anatomy-shade-3:#8e44ad;--anatomy-top:#ae78c4;--anatomy-hi:#32183d}
+.f-IonPotassium{--anatomy-paper:#2a9d8f;--anatomy-face:#2a9d8f;--anatomy-shade-0:#1a6159;--anatomy-shade-1:#1f746a;--anatomy-shade-2:#24877b;--anatomy-shade-3:#2a9d8f;--anatomy-top:#66b8ae;--anatomy-hi:#0f3732}
+.f-Atp{--anatomy-paper:#e76f51;--anatomy-face:#e76f51;--anatomy-shade-0:#8f4532;--anatomy-shade-1:#ab523c;--anatomy-shade-2:#c75f46;--anatomy-shade-3:#e76f51;--anatomy-top:#ee9782;--anatomy-hi:#51271c}
+.f-BaseAdenine{--anatomy-paper:#d1495b;--anatomy-face:#d1495b;--anatomy-shade-0:#822d38;--anatomy-shade-1:#9b3643;--anatomy-shade-2:#b43f4e;--anatomy-shade-3:#d1495b;--anatomy-top:#de7c89;--anatomy-hi:#491a20}
+.f-BaseThymine{--anatomy-paper:#edae49;--anatomy-face:#edae49;--anatomy-shade-0:#936c2d;--anatomy-shade-1:#af8136;--anatomy-shade-2:#cc963f;--anatomy-shade-3:#edae49;--anatomy-top:#f2c57c;--anatomy-hi:#533d1a}
+.f-BaseGuanine{--anatomy-paper:#00798c;--anatomy-face:#00798c;--anatomy-shade-0:#004b57;--anatomy-shade-1:#005a68;--anatomy-shade-2:#006878;--anatomy-shade-3:#00798c;--anatomy-top:#479fac;--anatomy-hi:#002a31}
+.f-BaseCytosine{--anatomy-paper:#66a182;--anatomy-face:#66a182;--anatomy-shade-0:#3f6451;--anatomy-shade-1:#4b7760;--anatomy-shade-2:#588a70;--anatomy-shade-3:#66a182;--anatomy-top:#91bba5;--anatomy-hi:#24382e}
+.f-Backbone{--anatomy-paper:#3d405b;--anatomy-face:#3d405b;--anatomy-shade-0:#262838;--anatomy-shade-1:#2d2f43;--anatomy-shade-2:#34374e;--anatomy-shade-3:#3d405b;--anatomy-top:#737589;--anatomy-hi:#151620}
+.hl>.iso-edge{stroke:#ff7a00;stroke-width:2.2px}
+.lbl line{stroke:#7a6a3a;stroke-width:1.5}
+.lbl rect{fill:#fff6a8;stroke:#7a6a3a;stroke-width:1}
+.lbl.hl rect{stroke:#d0021b;stroke-width:2.5}
+.lbl text{font:14px 'Segoe UI',sans-serif;fill:#2b2b2b}
+.o-red{--anatomy-paper:#ff0000;--anatomy-face:#ff0000;--anatomy-shade-0:#ff0000;--anatomy-shade-1:#ff0000;--anatomy-shade-2:#ff0000;--anatomy-shade-3:#ff0000;--anatomy-top:#ff0000;--anatomy-hi:#ff0000}
+.o-green{--anatomy-paper:#00ff00;--anatomy-face:#00ff00;--anatomy-shade-0:#00ff00;--anatomy-shade-1:#00ff00;--anatomy-shade-2:#00ff00;--anatomy-shade-3:#00ff00;--anatomy-top:#00ff00;--anatomy-hi:#00ff00}
+.o-blue{--anatomy-paper:#0000ff;--anatomy-face:#0000ff;--anatomy-shade-0:#0000ff;--anatomy-shade-1:#0000ff;--anatomy-shade-2:#0000ff;--anatomy-shade-3:#0000ff;--anatomy-top:#0000ff;--anatomy-hi:#0000ff}

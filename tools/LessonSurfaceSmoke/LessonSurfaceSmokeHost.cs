@@ -33,6 +33,7 @@ internal static partial class LessonSurfaceSmokeHost
                 "--assert-orientation" => await RunAssertOrientationAsync(),
                 "--assert-scene-nowebgl" => await RunAssertSceneNoWebGlAsync(),
                 "--assert-pick" => await RunAssertPickAsync(),
+                "--assert-scene-svg" => await RunAssertSceneSvgAsync(),
                 "--snapshot-3d" => await RunSnapshot3dAsync(args.Skip(1).ToArray()),
                 "--demo-3d" => await RunDemo3dAsync(args.Skip(1).ToArray()),
                 "--demo" => await RunDemoAsync(args.Skip(1).ToArray()),
@@ -68,9 +69,10 @@ internal static partial class LessonSurfaceSmokeHost
         Console.WriteLine("  --assert-scene          the engine lesson on the real scene window: every op reflected, window hygiene, exit 0");
         Console.WriteLine("  --assert-scene-idle     frames only while something moves (render on demand), exit 0");
         Console.WriteLine("  --assert-orientation    +X right, +Y up, Z turn from real pixels, exit 0");
-        Console.WriteLine("  --assert-scene-nowebgl  without WebGL the lesson still completes in speech, exit 0");
+        Console.WriteLine("  --assert-scene-nowebgl  without WebGL the lesson is drawn as an SVG and spoken, exit 0");
+        Console.WriteLine("  --assert-scene-svg      the no-WebGL drawing: pixel orientation, depth order, literal labels, highlight, explode, speed, exit 0");
         Console.WriteLine("  --assert-pick           real mouse clicks on engine parts -> exactly that part; guards; close (moves the cursor), exit 0");
-        Console.WriteLine("  --snapshot-3d <dir>     PNG of every library model, rest and exploded (manual row)");
+        Console.WriteLine("  --snapshot-3d <dir> [--no-webgl]  PNG of every library model, rest and exploded; --no-webgl: the drawing (manual)");
         Console.WriteLine("  --demo-3d [--voice sapi|timed]  the engine lesson drawn and spoken (manual row)");
         return 0;
     }

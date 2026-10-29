@@ -233,7 +233,7 @@ ApplyBeatAsync routes scene ops through `SceneMessages`:
 - `animate` sends the library animation, with rotation keys densified to ≤ 45°;
 - `clear` on the scene and a `highlight` of a scene id or `instance.part` ref also go to the scene window.
 
-All of a beat's scene ops travel as one `beat` message, awaited alongside the cards' messages. The page acks after the scene is ready and one frame is drawn, then draws further frames only while something moves. Without WebGL it acks every scene op as `skipped`.
+All of a beat's scene ops travel as one `beat` message, awaited alongside the cards' messages. The page acks after the scene is ready and one frame is drawn, then draws further frames only while something moves. Without WebGL (DEC-034) the page draws instead: `scene.js` keeps the placed models, labels, highlights, explode amounts and focus, calls `SceneSvg.draw` (Page/scene-svg.js, Anatomy's kit) after every message and acks `{ drawing: true, buildMs }`; `orient` is drawn too, `picking` stays `skipped`. `ready` is posted only once the drawing module has loaded. Without the module it would fall back to acking `skipped`.
 
 `LessonPlayer` speaks while a beat draws, so a snapshot taken at the start of speech can predate that beat's ack. LSU-9 reads timings after the lesson for that reason.
 

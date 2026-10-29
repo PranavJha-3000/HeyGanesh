@@ -21,6 +21,7 @@ Subsystems, and the seams between them are load-bearing:
 | Element Selection (PRIMARY) | `src/Perception/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration plus a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
 | Vision / Coordinate Detection (FALLBACK) | `src/Perception/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
 | **Jev choice model** | **Integrated within `ElementSelection`** | **The Jev choice model routes Element Selection's ranked UIA candidates (`c001..`) to a selection; implemented via `IJevClient` / `TypeSafeJevClient` with `ModelId "jev-1.13.0"`; not a separate assembly. |
+| Turn Router | `src/Intelligence/HeyGanesh.TurnRouter/` | One Jev call per turn decides point / explain / lesson, 2D or 3D, and the catalogue model (DEC-035); below 0.5 or an id never offered is "no route". Built and offline-verified; not wired into the App Shell yet. |
 | Tutor Engine | `src/Intelligence/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
 | Visual Lesson Engine | `src/Intelligence/HeyGanesh.VisualLessonEngine/` + `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.LessonSurface/` + `src/Experience/HeyGanesh.LessonSession/` + `src/Intelligence/HeyGanesh.PartLibrary/` | VisualPlan v1 contract (parse/validate/degrade, DEC-023), `PlotExpression`, `LessonPlayer` runtime, the WebView2 card surface (DEC-020/DEC-025), the `VisualPlanner` (DEC-026) and `LessonTurn` (plan → cards → play, DEC-027); the 3D scene contract (VisualPlan 1.1, DEC-028), the Part Library of computed 3D teaching models (DEC-029), the Babylon.js scene window (DEC-030), click-a-part follow-ups (DEC-031) and a planner prompt that offers 3D (DEC-032). Wired into the App Shell behind `--lesson`, 3D included (DEC-033); the lesson model is built from `DEEPSEEK_API_KEY` or the leg reports its skip (FEATURE-007). |
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
@@ -172,6 +173,12 @@ tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Part
 #   -> 19 PASS, exit 0   (also: --assert-source 5, --assert-library 20, --assert-catalog 6)
 tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --dump all
 #   -> plain-text review of every model's parts and descriptions (manual row PL-5; no model is Reviewed yet)
+
+# Turn Router host (DEC-035 -- offline: recording fake Jev client, scripted answers, no key). Build library then host SEQUENTIALLY (CS2012).
+dotnet build src/Intelligence/HeyGanesh.TurnRouter -c Debug
+dotnet build tools/TurnRouterSmoke -c Debug
+tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnRouterSmoke.exe --assert-request
+#   -> 14 PASS, exit 0   (also: --assert-source 3, --assert-map 13, --assert-gate 7, --assert-errors 5)
 
 # App Shell lesson leg (DEC-027): --lesson teaches with drawn, spoken cards instead of the Tutor's prose.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --lesson --question "x"

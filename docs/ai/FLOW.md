@@ -299,3 +299,20 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 
+## Turn routing path (Turn Router — built offline, NOT yet wired into the App Shell; DEC-035)
+
+```
+caller (the App Shell, from step 2) builds RouteRequest { Question, WindowTitle?, ScreenMatchFound?, Models[] }
+  → TurnRouter.RouteAsync(request, ct)                         TurnRouter.cs
+      blank question → ArgumentException (nothing sent); a model with id "none" → ArgumentException
+      BuildRequest: one JevRequest { Model = jev-1.13.0, State = computed facts,
+                                     Questions = intent [+ dimension + model when Models is non-empty] }
+      IJevClient.EvaluateAsync(request, ct)                    faults and OCE pass through unchanged
+      Map:
+        intent missing / never offered / below 0.5 → TurnRoute { Routed = false, Reason }
+        point | explain                             → TurnRoute { Routed, Intent }
+        lesson, no models                           → Dimension = Flat
+        lesson, dimension or model id never offered → Routed = false
+        lesson, 3d with dimension and model ≥ 0.5 on an offered id → Dimension = Scene3d, ModelId
+        lesson, anything less sure                  → Dimension = Flat, Reason
+```

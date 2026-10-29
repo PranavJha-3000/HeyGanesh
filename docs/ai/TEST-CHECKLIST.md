@@ -248,6 +248,19 @@ Verification host: `tools/PartLibrarySmoke` (offline; reuses `tools/LessonSmoke/
 | PL-4 | `ModelLibrary.ToCatalog()` holds exactly the V1 ids/parts/animations; `engine-3d.json` on `four-stroke-engine` → Valid against it; `engine.flux-capacitor` → `part.unknown`; `engine-test` → `model.unknown`; no model `Reviewed` | `--assert-catalog` → 6 PASS, `CATALOG OK`, exit **0** | ✅ automated (verified 2026-10-29, exit 0) |
 | PL-5 | Review dump: every model's basis, parts, descriptions, primitive counts and animations as plain text | `--dump all` (or `--dump <model>`; unknown model → exit **2**) | 🧑 manual — the owner reads it before any model is marked `Reviewed` |
 
+## Turn Router checks
+
+Verification host: `tools/TurnRouterSmoke` (offline; recording fake `IJevClient`, scripted answers, no key). Build library then host sequentially (CS2012); read exit codes from `tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnRouterSmoke.exe`.
+
+| # | Check | How to verify | Status |
+|---|-------|---------------|--------|
+| TR-1 | TurnRouter has zero PackageReference, exactly one ProjectReference (ElementSelection), no P/Invoke, network, file, environment, process, console, registry or key use | `--assert-source` → 3 PASS, `SOURCE AUDIT OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0) |
+| TR-2 | One Jev call per turn with three choice questions (intent / dimension / model), the question quoted in each, model options = offered ids + `none`, facts as state and the question not repeated there; no models → intent only; `ModelId` option honoured | `--assert-request` → 14 PASS, `REQUEST OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0) |
+| TR-3 | point / explain / 3D lesson / 2D lesson / `none` / no catalogue each map to one route; an intent, dimension or model id never offered refuses the route; a model with id `none` is refused | `--assert-map` → 13 PASS, `MAP OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0) |
+| TR-4 | Intent below 0.5 → no route, exactly 0.5 → routed; unsure 3D or model → 2D lesson with a reason; no score → 0; probability used when confidence is absent; `MinScore` moves the gate | `--assert-gate` → 7 PASS, `GATE OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0) |
+| TR-5 | Auth, rate-limit and provider exceptions pass through as the same instance; a cancelled token sends nothing; a blank question is refused before any call | `--assert-errors` → 5 PASS, `ERRORS OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0) |
+| TR-L1 | TypeSafe accepts the three-question request and answers every question | needs `TYPESAFE_API_KEY` and a live caller (step 2) | 🔑 live-gated — not run |
+
 ## Lesson Turn checks
 
 Verification host: `tools/LessonTurnSmoke` (fake model = the planner host's `FakeLlmClient`, linked; fixtures linked from `tools/LessonSmoke`). Build `src/Experience/HeyGanesh.LessonSession` then the host, sequentially (CS2012). Read exit codes from `tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe`.

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Turn Router (DEC-035).
+
+    Not product code: it proves the router's one-call request shape, its answer mapping, the 0.5 score
+    gate and error pass-through against a recording fake IJevClient and scripted answers — no
+    provider, no key, no network.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.TurnRouterSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.TurnRouterSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.TurnRouter\HeyGanesh.TurnRouter.csproj" />
+  </ItemGroup>
+
+</Project>

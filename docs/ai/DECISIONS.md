@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-035](#dec-035--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A Turn Router asks Jev once per turn: intent (point / explain / lesson), 2D or 3D, and which catalogue model; below 0.5 or an unoffered id is no route, an unsure canvas is a 2D lesson; own assembly over `IJevClient`, not wired yet | accepted |
 | [DEC-034](#dec-034--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Without WebGL the 3D lesson is drawn as an isometric SVG with Anatomy's vendored MIT kit (models, labels, highlight, explode, focus; animation and views as stills; no click-to-ask yet); long parts cut into pieces and buried pieces painted just before their container | accepted |
 | [DEC-033](#dec-033--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | `--lesson` turns 3D on: the shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync` (30 s click wait); Ctrl+Alt stays refused while a lesson waits, with a message that says how to end it; exit code = the last turn's (13 if cancelled while waiting) | accepted |
 | [DEC-032](#dec-032--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | The planner offers 3D only when the request carries a catalogue: the same catalogue then validates the answer; schema 1.1, the 3D op shapes, limits, camera views and every model/part/animation id are interpolated from code; without one the prompt is byte-identical to v1 | accepted |
@@ -45,6 +46,32 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-035 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a Turn Router decides how each turn is taught, with one Jev call that answers up to three typed choices.**
+
+- **Where:** new assembly `src/Intelligence/HeyGanesh.TurnRouter/` (`TurnRouter`, `TurnRoute`, `TurnRouterOptions`). Its only reference is Element Selection, for `IJevClient` and its records (DEC-008). It reads no key and opens nothing: the caller hands it a client, so the Security Proxy can later stand behind the same seam.
+- **The questions:** `intent` (point / explain / lesson); when the caller offers models, also `dimension` (2d / 3d) and `model` (the offered ids plus `none`, each described by title and subject). Every instruction quotes the user's question, because question ids are never shown to Jev.
+- **Facts as state:** window title, whether the locate leg found a match ("found", "not found" or "not checked"), the question's word count and the model count. Computed in code, never asked. This is typesafe-computer-use's rule: the classifier picks, code decides facts.
+- **Mapping:**
+  - an intent, dimension or model id that was never offered refuses the whole route, as Element Selection refuses an unknown candidate;
+  - an intent scored below 0.5 is no route; the caller keeps its behaviour without a router (today, `--lesson`);
+  - for a lesson, every unsure step toward 3D (dimension below 0.5, model `none`, model below 0.5) gives a 2D lesson with a reason, because the lesson was wanted and only the canvas was in doubt;
+  - the score is Jev's confidence, else the chosen option's probability, else 0.
+- **0.5** is the Medium tier boundary Element Selection and Vision already share (DEC-009). `TurnRouterOptions.MinScore` moves it.
+- **Provider faults and cancellation pass through unchanged.** The caller decides what a failed router means.
+
+**Rejected.**
+- Putting the router in the Context Orchestrator: it would tie teaching choices to the locate module, against DEC-010's narrow job for it.
+- Three separate Jev calls: three round trips for what one request answers.
+- Letting a lesson's model choice fall back to a guessed id: only offered ids can come out.
+
+**Consequences.**
+- Nothing calls the router yet. Wiring it into the App Shell is step 2 of the build sequence.
+- Not verified: that TypeSafe accepts three choice questions in one request. Element Selection already sends two, and typesafe-computer-use sends three; a live row (TR-L1) checks it once `TYPESAFE_API_KEY` exists.
+
+Plan: [plans/2026-10-30-turn-router-v1.md](plans/2026-10-30-turn-router-v1.md). Rows: TR-1..TR-5 (CI G-18), TR-L1 live.
+
 ## DEC-034 — 2026-10-29 — claude-opus-5-5
 
 **Decision — when WebGL is missing, the scene page draws the lesson's 3D models as an isometric SVG with Anatomy's kit, instead of showing only a notice.**

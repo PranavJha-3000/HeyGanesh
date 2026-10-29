@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Turn Router (DEC-035) — one Jev call that decides how a turn is taught: point at it, explain it,
+    or draw a lesson; a 2D or 3D lesson; and which catalogue model, if any.
+
+    Pure policy over the existing Jev seam: its only ProjectReference is Element Selection, for
+    IJevClient and its request/answer records (DEC-008). It never reads a key, opens a socket or
+    touches the screen — the caller hands it an IJevClient, and the future Security Proxy swaps in
+    behind that same seam. Zero PackageReference. Nothing calls it yet; the App Shell wiring is the
+    next step of the build sequence.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.TurnRouter</RootNamespace>
+    <AssemblyName>HeyGanesh.TurnRouter</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Perception\HeyGanesh.ElementSelection\HeyGanesh.ElementSelection.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -348,3 +348,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `516d385` (the commit before this step).
 - **Files to restore:** `git checkout 516d385 -- src/Experience/HeyGanesh.LessonSurface tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.LessonSurface/Page/vendor/anatomy-1482e846/`, `Page/scene-svg.js`, `Page/scene-svg.css` and any new smoke file (`git status` lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSurfaceSmoke --assert-source 14, --assert-scene-nowebgl 5, --assert-scene 19.
+
+## 2026-10-30 · claude-opus-5-5 (Jev turn router, step 1 of the build sequence, DEC-035)
+
+- **Change:** New assembly `src/Intelligence/HeyGanesh.TurnRouter/` (TurnRouter, TurnRoute, TurnRouterOptions) and host `tools/TurnRouterSmoke/` (TR-1..TR-5); `HeyGanesh.sln` gains the library under `src`; CI gains G-18. Docs: DEC-035, ARCHITECTURE, FLOW, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan. No existing code path changes: nothing calls the router yet (the shell wiring is step 2).
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `3c2e7d8` (the commit before this step).
+- **Files to restore:** delete `src/Intelligence/HeyGanesh.TurnRouter/` and `tools/TurnRouterSmoke/`; `git checkout 3c2e7d8 -- HeyGanesh.sln .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; the local CI runner reports 13 gates, all exit 0.

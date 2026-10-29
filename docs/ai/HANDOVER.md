@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (Jev turn router, build sequence step 1, DEC-035)
+
+Did: New assembly `HeyGanesh.TurnRouter`: one Jev call per turn answers intent (point / explain / lesson), 2D or 3D, and which catalogue model; an id never offered or an intent below 0.5 is "no route", an unsure canvas is a 2D lesson. Host `tools/TurnRouterSmoke` (TR-1..TR-5), CI G-18. Patterns from typesafe-computer-use; qwen-audio-agent's protocol is still 7.0.0, so the voice client needs no change.
+Left: Nothing calls the router yet (step 2 wires it into the App Shell). TR-L1 (TypeSafe accepts three questions in one call) needs `TYPESAFE_API_KEY`. Steps 3-8 of the sequence are in the plan. These commits are local, ahead of PR #1; not pushed.
+Watch: The namespace and the class are both `TurnRouter`; inside `HeyGanesh.*` code, `TurnRouter` alone names the namespace, so callers write `TurnRouter.TurnRouter` or an alias. Bash heredocs holding Python with triple quotes failed to parse here; write scratchpad scripts with the Write tool.
+Next: Plan step 2 (the App Shell uses the router).
+Verified: TurnRouter and host build -warnaserror 0/0; TR-1 3, TR-2 14, TR-3 13, TR-4 7, TR-5 5 PASS; gate and guard mutations each failed their row and were reverted; all 14 CI gates exit 0 locally (G-18 42 PASS lines).
+
 ## 2026-10-29 · claude-opus-5-5 (no-WebGL 3D drawing, DEC-034)
 
 Did: Without WebGL the scene page now draws the lesson's models as an isometric SVG with Anatomy's vendored MIT kit (`Page/vendor/anatomy-1482e846/`, pinned): models, labels, highlight, explode and focus; animation and views as stills; no click-to-ask on it yet. Painter's order: long cylinders and boxes are cut into pieces, and buried pieces are painted before their (nested) container. LSU-12 reworked (8), LSU-16 new (8), LSU-7 20.

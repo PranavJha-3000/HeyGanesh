@@ -51,6 +51,19 @@ internal static partial class VoiceSmokeHost
                 verdict.BufferedFrames >= (StubReadyDelayMs / 100) - 2, $"{verdict.BufferedFrames} frames");
         }
 
+        // 1b. The wire-version check runs against upstream's field (BUG-001): a major-8 Gateway is refused.
+        await using (var stub = new GatewayStub(TimeSpan.FromMilliseconds(50), framesBeforeFinal: 3, wireVersion: "8.0.0"))
+        {
+            stub.Start();
+            var mic = new NumberedMicrophone(DateTimeOffset.UtcNow);
+            using var client = new QwenGatewayClient(Options(stub.Url), VoiceOptions.Default, mic);
+            var verdict = await client.ListenOnceAsync(CancellationToken.None);
+            failures += Check("a Gateway stating protocol_version 8.0.0 is refused, not listened to",
+                verdict.Failed && verdict.FailureReason!.Contains("8.0.0", StringComparison.Ordinal) && stub.Frames.Count == 0,
+                $"{verdict.FailureReason ?? verdict.ToString()}; frames sent={stub.Frames.Count}");
+            failures += Check("the version the client recorded is the stated one", client.GatewayProtocolVersion == "8.0.0", client.GatewayProtocolVersion ?? "null");
+        }
+
         // 2. A Gateway that cannot be reached: the microphone is released and nothing is sent anywhere.
         {
             var mic = new NumberedMicrophone(DateTimeOffset.UtcNow);

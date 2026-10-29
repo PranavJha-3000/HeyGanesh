@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (BUG-001: session.ready's version field)
+
+Did: `QwenGatewayProtocol.Classify` now reads the ready payload's version from `protocol_version` (upstream's name), with the old camelCase names as fallbacks, so the wire-version check actually runs against a real Gateway. VO-6 gains the upstream-shaped frame (21); the stub sends `protocol_version` and VO-11 gains a major-8 refusal (13). Checked upstream's transcript and audio fields too: they match.
+Left: Closes the open item from the pre-roll entry below. Still open: run the health check alongside the handshake. Steps 6-8 remain. Nine commits are local, ahead of PR #1; not pushed.
+Watch: Offline rows that use field names we wrote ourselves can pass while the real service disagrees; VO-6 now carries one frame shaped from upstream's schema file. The bugs/ folder started empty here, so this is BUG-001.
+Next: Plan step 6 (stream the first lesson beat).
+Verified: Voice and VoiceSmoke build -warnaserror 0/0; VO-6 21 PASS; VO-11 13 PASS; with the old field name restored, VO-6's new check and VO-11's two version checks fail, then pass again once fixed; all 17 CI gates exit 0 locally.
+
 ## 2026-10-30 · claude-opus-5-5 (voice pre-roll, build sequence step 5, DEC-040)
 
 Did: The microphone now starts at the press and buffers until the Gateway's session.ready, then the buffer goes out in order (the socket is still per utterance; "warm connection" was dropped because DEC-013 Option F rejected it). A missing Gateway URL fails before the microphone opens. `UtteranceResult.ConnectDuration`/`BufferedFrames`, printed by the shell as `connect :`. VO-11 `--assert-preroll` against a new loopback Gateway stub (CI G-21): it failed on the old client (first frame #7, ~700 ms of speech lost) and passes after.

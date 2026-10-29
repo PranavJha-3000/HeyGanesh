@@ -23,8 +23,9 @@ internal sealed class GatewayStub : IAsyncDisposable
     private readonly List<int> _frames = new();
     private Task? _loop;
 
-    public GatewayStub(TimeSpan readyDelay, int framesBeforeFinal)
+    public GatewayStub(TimeSpan readyDelay, int framesBeforeFinal, string wireVersion = QwenGatewayProtocol.WireVersion)
     {
+        WireVersion = wireVersion;
         ReadyDelay = readyDelay;
         FramesBeforeFinal = framesBeforeFinal;
         Port = FreePort();
@@ -34,6 +35,9 @@ internal sealed class GatewayStub : IAsyncDisposable
     public int Port { get; }
 
     public TimeSpan ReadyDelay { get; }
+
+    /// <summary>The version session.ready states, in upstream's own field (protocol_version, BUG-001).</summary>
+    public string WireVersion { get; }
 
     public int FramesBeforeFinal { get; }
 
@@ -134,7 +138,7 @@ internal sealed class GatewayStub : IAsyncDisposable
                     // The delay stands in for the Gateway opening its upstream realtime session: the window
                     // in which, before DEC-040, the user's first words were never recorded.
                     await Task.Delay(ReadyDelay, _stop.Token).ConfigureAwait(false);
-                    await SendAsync(socket, $"{{\"type\":\"{GatewayServerEvent.SessionReady}\",\"protocolVersion\":\"{QwenGatewayProtocol.WireVersion}\"}}").ConfigureAwait(false);
+                    await SendAsync(socket, $"{{\"type\":\"{GatewayServerEvent.SessionReady}\",\"protocol_version\":\"{WireVersion}\"}}").ConfigureAwait(false);
                 }
                 else if (type == GatewayClientMessage.InputAudioAppend)
                 {

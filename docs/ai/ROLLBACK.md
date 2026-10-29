@@ -390,3 +390,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `4cf33f7` (the commit before this step).
 - **Files to restore:** `git checkout 4cf33f7 -- src/Experience/HeyGanesh.Voice src/Experience/HeyGanesh.App tools/VoiceSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new VoiceSmoke file (`git status` lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; VoiceSmoke `--fake-transcript "x"`, `--assert-tutor-authority`, `--assert-gcp-events` exit 0; App `--once` without a Gateway URL exit 1; the local CI runner reports 16 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (session.ready's version is read from protocol_version, BUG-001)
+
+- **Change:** `QwenGatewayProtocol.Classify` reads the ready payload's version from `protocol_version` first (upstream's name), keeping `protocolVersion`/`protocol` as fallbacks. VoiceSmoke: VO-6 gains the upstream-shaped ready frame; the loopback stub sends `protocol_version` and VO-11 gains a major-8 refusal case. Docs: BUG-001, TEST-CHECKLIST, HANDOVER.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `0857ec1` (the commit before this fix).
+- **Files to restore:** `git checkout 0857ec1 -- src/Experience/HeyGanesh.Voice/QwenGatewayProtocol.Classify.cs tools/VoiceSmoke docs/ai`.
+- **Re-check after revert:** VoiceSmoke `--assert-gcp-events` and `--assert-preroll` exit 0 with their step-5 counts (20, 11).

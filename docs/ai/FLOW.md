@@ -131,8 +131,8 @@ Speech in (VoiceService.ListenOnceAsync — one utterance per call, transport op
   WinMmMicrophoneSource starts AT THE PRESS ── PCM16 16 kHz blocks ──▶ bounded queue (pre-roll, 10 s cap)
         │                                          ▼
         │                                     QwenGatewayClient
-        │                                          │  session.hello → session.ready (wire 7.0,
-        │                                          │  major-version mismatch refuses the listen)
+        │                                          │  session.hello → session.ready (wire 7.0, read from
+        │                                          │  protocol_version; major mismatch refuses, BUG-001)
         │                                          │  then the queue drains in order, then live:
         │                                          │  input_audio_buffer.append per block
         │                                          │  (failed listen → microphone stopped, queue dropped)

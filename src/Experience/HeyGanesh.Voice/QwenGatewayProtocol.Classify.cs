@@ -137,9 +137,10 @@ public static partial class QwenGatewayProtocol
                 Kind = GatewayEventKind.SessionLifecycle,
                 EventType = type,
                 // The wire version is negotiated, not assumed: if the Gateway states one, the handshake
-                // checks it. The field name is read tolerantly because the published schema for the ready
-                // payload was not fully verifiable at write time — absent means "not stated", not "wrong".
-                Version = Text(root, "protocolVersion") ?? Text(root, "protocol"),
+                // checks it. Upstream's schema names the field protocol_version (GatewaySessionReadySchema
+                // in shared/protocol/gateway-client-protocol.mjs, checked 2026-10-30, BUG-001); the two
+                // older spellings stay as fallbacks. Absent means "not stated", not "wrong".
+                Version = Text(root, "protocol_version") ?? Text(root, "protocolVersion") ?? Text(root, "protocol"),
             },
             GatewayServerEvent.GatewayConnected or GatewayServerEvent.GatewayDisconnected
                 or GatewayServerEvent.VoiceConnection

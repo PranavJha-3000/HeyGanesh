@@ -65,6 +65,9 @@ internal static partial class VoiceSmokeHost
         failures += Check("session.ready -> SessionLifecycle + stated wire version",
             Kind("{\"type\":\"session.ready\",\"protocolVersion\":\"7.0.0\"}", out var ready) == GatewayEventKind.SessionLifecycle &&
             ready.Version == "7.0.0");
+        failures += Check("session.ready as upstream sends it (protocol_version) -> the version is read (BUG-001)",
+            Kind("{\"type\":\"session.ready\",\"event_id\":\"evt_s\",\"request_event_id\":\"evt_c\",\"protocol_version\":\"7.0.0\",\"session_id\":\"s1\",\"capabilities\":[]}", out var upstreamReady) == GatewayEventKind.SessionLifecycle &&
+            upstreamReady.Version == "7.0.0", $"version={upstreamReady.Version ?? "not stated"}");
         failures += Check("transcript.final role=user -> UserFinal (the ONLY question source)",
             Kind("{\"type\":\"transcript.final\",\"role\":\"user\",\"content\":\"where is Save\"}") == GatewayEventKind.UserFinal);
         failures += Check("transcript.final role=assistant -> AssistantFinal (never text)",

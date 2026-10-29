@@ -63,6 +63,18 @@ html, body {
   outline: none;
 }
 
+/* Shown only while the host has picking on (DEC-031): after the lesson, before a click. */
+#hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  text-align: center;
+  font-size: 14px;
+  color: #5d4f22;
+  pointer-events: none;
+}
+
 #notice {
   position: absolute;
   left: 24px;

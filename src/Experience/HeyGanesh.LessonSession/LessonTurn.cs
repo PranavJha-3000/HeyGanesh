@@ -37,6 +37,37 @@ public enum LessonTurnOutcome
 /// </summary>
 public sealed record LessonTurnReport(LessonTurnOutcome Outcome, PlanResult? Plan, PlaybackReport? Playback, string? Error);
 
+/// <summary>Why <see cref="LessonTurn.RunWithFollowUpsAsync"/> stopped asking for follow-ups.</summary>
+public enum FollowUpEnd
+{
+    /// <summary>The last turn did not play to the end (rejected, stopped, fallback, provider fault, cancelled).</summary>
+    TurnEnded = 0,
+
+    /// <summary>The lesson drew no 3D scene, so there was nothing to click.</summary>
+    NoScene = 1,
+
+    /// <summary>The canvas cannot take clicks (it is not an <see cref="IPartPicker"/>).</summary>
+    NotPickable = 2,
+
+    /// <summary>No click: the student closed the lesson, the idle timeout passed, or the scene had nothing drawn.</summary>
+    NoPick = 3,
+
+    /// <summary><see cref="FollowUpOptions.MaxFollowUps"/> follow-ups were played.</summary>
+    MaxFollowUps = 4,
+
+    /// <summary>A pick named a part the Part Library does not have. A canvas defect; never asked about.</summary>
+    UnknownPart = 5,
+
+    /// <summary>The caller's token was cancelled while waiting for a click.</summary>
+    Cancelled = 6,
+}
+
+/// <summary>
+/// Every turn of one lesson and its follow-ups, in order (the first is the student's own question),
+/// the parts that were clicked between them, and why it stopped.
+/// </summary>
+public sealed record LessonConversationReport(IReadOnlyList<LessonTurnReport> Turns, IReadOnlyList<PartPick> Picks, FollowUpEnd End);
+
 /// <summary>A canvas for one turn, plus whatever must be disposed when the turn ends.</summary>
 public sealed record LessonCanvasLease(ILessonCanvas Canvas, IAsyncDisposable Owner);
 
@@ -51,7 +82,8 @@ public interface ILessonCanvasHost
 
 /// <summary>
 /// One lesson turn: plan → open cards → play → close. The App Shell calls it after a produced verdict
-/// with <c>--lesson</c>; tools/LessonTurnSmoke calls it with a fake model.
+/// with <c>--lesson</c>; tools/LessonTurnSmoke calls it with a fake model. <see cref="RunWithFollowUpsAsync"/>
+/// adds click-a-part follow-ups on the same cards (DEC-031); the shell does not call it yet.
 /// </summary>
 /// <remarks>
 /// Documented faults become outcomes so the shell never needs to know a provider type: provider
@@ -74,6 +106,120 @@ public static class LessonTurn
         ArgumentNullException.ThrowIfNull(speaker);
         ArgumentNullException.ThrowIfNull(request);
 
+        var (report, lease) = await PlayTurnAsync(planner, canvases, null, speaker, request, cancellationToken).ConfigureAwait(false);
+        if (lease is not null)
+        {
+            await lease.Owner.DisposeAsync().ConfigureAwait(false);
+        }
+
+        return report;
+    }
+
+    /// <summary>
+    /// One lesson, then click-to-ask follow-ups (DEC-031): once a lesson that drew a 3D scene has played
+    /// to the end, the canvas (if it is an <see cref="IPartPicker"/>) waits for the student to click a
+    /// part; the click becomes a question written here from the Part Library (<see cref="PartQuestion"/>),
+    /// planned with the lesson just shown as <see cref="PlanRequest.PreviousPlan"/>, and played on the
+    /// SAME canvas. Stops at the first turn that does not play to the end, on no click, or after
+    /// <see cref="FollowUpOptions.MaxFollowUps"/>. The canvas is opened at most once and closed on every path.
+    /// </summary>
+    /// <remarks>
+    /// Faults behave as in <see cref="RunAsync"/>. A follow-up has no screen grounding: it is about a
+    /// part on the lesson's own scene, so it may not mark the student's screen.
+    /// </remarks>
+    public static async Task<LessonConversationReport> RunWithFollowUpsAsync(
+        VisualPlanner planner,
+        ILessonCanvasHost canvases,
+        ILessonSpeaker speaker,
+        PlanRequest request,
+        FollowUpOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(planner);
+        ArgumentNullException.ThrowIfNull(canvases);
+        ArgumentNullException.ThrowIfNull(speaker);
+        ArgumentNullException.ThrowIfNull(request);
+        options ??= FollowUpOptions.Default;
+
+        var turns = new List<LessonTurnReport>();
+        var picks = new List<PartPick>();
+        LessonCanvasLease? lease = null;
+        try
+        {
+            var current = request;
+            while (true)
+            {
+                LessonTurnReport report;
+                (report, lease) = await PlayTurnAsync(planner, canvases, lease, speaker, current, cancellationToken).ConfigureAwait(false);
+                turns.Add(report);
+                if (report.Outcome != LessonTurnOutcome.Played)
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.TurnEnded);
+                }
+
+                var shown = report.Plan!.Lesson.Plan!;
+                if (!shown.Surfaces.Any(s => s.Kind == SurfaceKind.Scene3d))
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.NoScene);
+                }
+
+                if (lease!.Canvas is not IPartPicker picker)
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.NotPickable);
+                }
+
+                if (picks.Count >= options.MaxFollowUps)
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.MaxFollowUps);
+                }
+
+                PartPick? pick;
+                try
+                {
+                    pick = await picker.PickAsync(options.IdleTimeout, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.Cancelled);
+                }
+
+                if (pick is null)
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.NoPick);
+                }
+
+                var question = PartQuestion.For(pick);
+                if (question is null)
+                {
+                    return new LessonConversationReport(turns, picks, FollowUpEnd.UnknownPart);
+                }
+
+                picks.Add(pick);
+                current = current with { Question = question, PreviousPlan = shown, Screen = null };
+            }
+        }
+        finally
+        {
+            if (lease is not null)
+            {
+                await lease.Owner.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Plan, then play on <paramref name="lease"/> -- or on a canvas opened here when it is null and the
+    /// plan has something to show. Returns the lease in use (null if none was ever opened) for the
+    /// caller to close; a lease opened here is closed here only if an exception escapes.
+    /// </summary>
+    private static async Task<(LessonTurnReport Report, LessonCanvasLease? Lease)> PlayTurnAsync(
+        VisualPlanner planner,
+        ILessonCanvasHost canvases,
+        LessonCanvasLease? lease,
+        ILessonSpeaker speaker,
+        PlanRequest request,
+        CancellationToken cancellationToken)
+    {
         PlanResult plan;
         try
         {
@@ -81,21 +227,22 @@ public static class LessonTurn
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new LessonTurnReport(LessonTurnOutcome.Cancelled, null, null, null);
+            return (new LessonTurnReport(LessonTurnOutcome.Cancelled, null, null, null), lease);
         }
         catch (ProviderException ex)
         {
             var outcome = ex.Kind == ProviderErrorKind.AuthFailed ? LessonTurnOutcome.AuthError : LessonTurnOutcome.ProviderError;
-            return new LessonTurnReport(outcome, null, null, ex.ToString());
+            return (new LessonTurnReport(outcome, null, null, ex.ToString()), lease);
         }
 
         if (plan.Lesson.Outcome == LessonOutcome.Rejected)
         {
             // Nothing to draw and nothing to say: no card is opened for a lesson that cannot exist.
-            return new LessonTurnReport(LessonTurnOutcome.Rejected, plan, null, null);
+            return (new LessonTurnReport(LessonTurnOutcome.Rejected, plan, null, null), lease);
         }
 
-        var lease = await canvases.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var openedHere = lease is null;
+        lease ??= await canvases.OpenAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var playback = await new LessonPlayer(lease.Canvas, speaker).PlayAsync(plan.Lesson, cancellationToken).ConfigureAwait(false);
@@ -108,15 +255,16 @@ public static class LessonTurn
                 // A fresh player cannot refuse, and Rejected was returned above: reaching here is a defect.
                 _ => throw new InvalidOperationException($"unexpected playback status {playback.Status} on a fresh player"),
             };
-            return new LessonTurnReport(outcome, plan, playback, null);
+            return (new LessonTurnReport(outcome, plan, playback, null), lease);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new LessonTurnReport(LessonTurnOutcome.Cancelled, plan, null, null);
+            return (new LessonTurnReport(LessonTurnOutcome.Cancelled, plan, null, null), lease);
         }
-        finally
+        catch when (openedHere)
         {
             await lease.Owner.DisposeAsync().ConfigureAwait(false);
+            throw;
         }
     }
 }

@@ -17,7 +17,10 @@
   three models (engine, DNA, schematic Na+/K+ pump), none Reviewed yet ([plan](../plans/2026-10-29-part-library-v1.md)).
   Step 4 (3D renderer, DEC-030) BUILT 2026-10-29 · claude-opus-5-5: scene window with vendored Babylon.js 9.30.0,
   LSU-7..LSU-12 green (cold start ~2 s, warm model beat ~115 ms, orientation pixel-checked, no-WebGL speaks on)
-  ([plan](../plans/2026-10-29-scene-renderer-v1.md)). Steps 5–6 (click-to-ask, planner) not started.
+  ([plan](../plans/2026-10-29-scene-renderer-v1.md)).
+  Step 5 (click a 3D part to ask, DEC-031) BUILT 2026-10-29 · claude-opus-5-5: picking after playback, ids checked against
+  what was drawn, library-written question, follow-up on the same cards; LT-8 12 PASS, LSU-15 9 PASS (real mouse)
+  ([plan](../plans/2026-10-29-part-pick-v1.md)). Step 6 (planner learns the 3D ops; shell passes the catalogue) not started.
   Phases 6–8 not started. Phase 1 plan:
   [plans/2026-10-28-visualplan-contract-v1.md](../plans/2026-10-28-visualplan-contract-v1.md).
 - **Module(s):** Visual Lesson Engine (new), Tutor Engine, Screen Overlay, Voice Pipeline, App Shell.

@@ -14,8 +14,9 @@ namespace HeyGanesh.LessonSurface;
 /// pre-warmed; each declared surface gets a card, laid out top-right on the monitor under the cursor.
 /// Screen marks go to the native ScreenOverlay. Only validated plans reach this class (DEC-023), so
 /// every id it is given exists — but every string is still treated as untrusted text by the page.
+/// After a 3D lesson it can also let the student click a part (<see cref="IPartPicker"/>, DEC-031).
 /// </summary>
-public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
+public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
 {
     private readonly UiThread _ui = new();
     private readonly CardSurfaceOptions _options;
@@ -34,6 +35,10 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     private string? _sceneSurfaceId;
     private readonly HashSet<string> _sceneOwned = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _sceneInstances = new(StringComparer.Ordinal);
+    // Picking (DEC-031), UI-thread state: the one wait in flight, if any. A click is accepted only
+    // while it exists and only for an instance this surface drew and a part the catalogue has.
+    private TaskCompletionSource<PartPick?>? _pickWait;
+    private int _refusedPicks;
     private CoreWebView2Environment? _environment;
     private string _pageFolder = string.Empty;
     private int _seq;
@@ -80,6 +85,9 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
 
     /// <summary>Diagnostics: how long the last scene window took to start (environment page + Babylon parse + shader warm-up).</summary>
     public TimeSpan LastSceneStartup { get; private set; }
+
+    /// <summary>Diagnostics: part clicks refused — no pick was asked for, or the ids were not ones this surface drew.</summary>
+    public int RefusedPicks => Volatile.Read(ref _refusedPicks);
 
     /// <summary>Marks the overlay could not show, as short reasons (no screen text, no coordinates).</summary>
     public IReadOnlyList<string> MarkFaults => _markFaults.ToArray();
@@ -262,6 +270,67 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         }
     });
 
+    /// <summary>
+    /// Lets the student click one part of the scene on show (DEC-031). The page shows a hint and posts
+    /// only ids; <see cref="OnPartClicked"/> checks them. Null when there is no scene with a model on
+    /// show, no WebGL, the student closed the lesson, or <paramref name="idle"/> passed.
+    /// </summary>
+    public async Task<PartPick?> PickAsync(TimeSpan idle, CancellationToken cancellationToken)
+    {
+        var wait = await OnUi(async () =>
+        {
+            if (_scene is null || !_scene.Visible || _sceneInstances.Count == 0)
+            {
+                return null;
+            }
+
+            var reply = await SendAsync(_scene, "picking", seq => new { kind = "picking", seq, on = true }, cancellationToken);
+            if (reply.TryGetProperty("skipped", out _))
+            {
+                return null;   // no WebGL: nothing was drawn, so there is nothing to click
+            }
+
+            _pickWait = new TaskCompletionSource<PartPick?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            return _pickWait;
+        });
+
+        if (wait is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await wait.Task.WaitAsync(idle, cancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+        finally
+        {
+            try
+            {
+                await OnUi(async () =>
+                {
+                    if (ReferenceEquals(_pickWait, wait))
+                    {
+                        _pickWait = null;
+                    }
+
+                    if (_scene is not null)
+                    {
+                        await SendAsync(_scene, "picking", seq => new { kind = "picking", seq, on = false }, CancellationToken.None);
+                    }
+                });
+            }
+            catch (ObjectDisposedException)
+            {
+                // Disposed while waiting: the wait already ended with null and there is no page to tell.
+            }
+        }
+    }
+
     /// <summary>Hides every card and any mark. Cards are reused by the next lesson.</summary>
     public async Task HideAsync()
     {
@@ -330,6 +399,11 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         CardNative.GetWindowDisplayAffinity(scene.Handle, out var affinity);
         var b = scene.Bounds;
         static List<string> Strings(JsonElement e) => e.EnumerateArray().Select(x => x.GetString()!).ToList();
+
+        // The page reports viewport CSS pixels; the window's client area is the whole window (borderless,
+        // WebView2 docked), so screen = window origin + CSS x the window's DPI scale.
+        var scale = scene.DeviceDpi / 96.0;
+        Point ToScreen(JsonElement xy) => new(b.X + (int)Math.Round(xy[0].GetDouble() * scale), b.Y + (int)Math.Round(xy[1].GetDouble() * scale));
         return new SceneSnapshot(
             scene.SurfaceId,
             scene.Visible,
@@ -355,7 +429,10 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
             d.GetProperty("frames").GetInt32(),
             d.GetProperty("csp").GetInt32(),
             d.GetProperty("lastBuildMs").GetDouble(),
-            d.GetProperty("script").GetInt32());
+            d.GetProperty("script").GetInt32(),
+            d.GetProperty("picking").GetBoolean(),
+            d.GetProperty("pickPoints").EnumerateObject().ToDictionary(p => p.Name, p => ToScreen(p.Value), StringComparer.Ordinal),
+            ToScreen(d.GetProperty("closeAt")));
     });
 
     /// <summary>
@@ -408,6 +485,25 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
     });
 
     /// <summary>
+    /// Self-test of the pick guard (DEC-031): makes the scene page post three forged clicks — an instance
+    /// this surface never drew, a real instance with a part its model lacks, and ids that are not
+    /// strings — and returns how many were refused. All three must be, and a pick in progress must still
+    /// be waiting afterwards. The script is fixed; the one id in it is a validated instance id, JSON-encoded.
+    /// </summary>
+    public Task<int> ProbePickGuardAsync() => OnUi(async () =>
+    {
+        var scene = _scene ?? throw new InvalidOperationException("no scene window has been created");
+        var instance = JsonSerializer.Serialize(_sceneInstances.Keys.FirstOrDefault() ?? "none");
+        var before = RefusedPicks;
+        await scene.RunHostScriptAsync(
+            "window.chrome.webview.postMessage({ kind: 'part-clicked', instance: 'ghost', part: 'piston' });"
+            + $"window.chrome.webview.postMessage({{ kind: 'part-clicked', instance: {instance}, part: 'flux-capacitor' }});"
+            + "window.chrome.webview.postMessage({ kind: 'part-clicked', instance: 42, part: null }); 1");
+        await Task.Delay(400);
+        return RefusedPicks - before;
+    });
+
+    /// <summary>
     /// Self-test of the page's isolation: tries to navigate away and to fetch an outside URL from
     /// inside the page, and reports whether both were refused. Usable as a startup health check.
     /// </summary>
@@ -435,6 +531,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         {
             await _ui.InvokeAsync(() =>
             {
+                _pickWait?.TrySetResult(null);
                 foreach (var card in AllWindows())
                 {
                     card.FailPending(new ObjectDisposedException(nameof(CardSurface)));
@@ -499,8 +596,10 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
                 c.Hide();
             }
 
+            _pickWait?.TrySetResult(null);
             DismissedByUser?.Invoke(this, EventArgs.Empty);
         };
+        scene.PartClicked += OnPartClicked;
         await scene.InitializeAsync(_environment!, _pageFolder, CardWindow.ScenePage);
         lock (_cardsLock)
         {
@@ -510,6 +609,28 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
         await SendAsync(scene, "warmup", seq => new { kind = "warmup", seq }, cancellationToken);
         LastSceneStartup = clock.Elapsed;
         return scene;
+    }
+
+    /// <summary>
+    /// UI thread. The page's ids are not trusted: the instance must be one this surface drew, its model
+    /// must be in the catalogue, the part must be one of that model's, and a pick must be in progress.
+    /// Anything else is counted and dropped, so a confused or scripted page can never start a question.
+    /// </summary>
+    private void OnPartClicked(string? instance, string? part)
+    {
+        if (_pickWait is { } wait
+            && instance is not null
+            && part is not null
+            && _sceneInstances.TryGetValue(instance, out var model)
+            && Scene3dCatalog.TryGet(model, out var entry)
+            && entry.Parts.Contains(part))
+        {
+            _pickWait = null;
+            wait.TrySetResult(new PartPick(instance, model, part));
+            return;
+        }
+
+        Interlocked.Increment(ref _refusedPicks);
     }
 
     private bool IsSceneTarget(string target) => target.Contains('.', StringComparison.Ordinal) || _sceneOwned.Contains(target);
@@ -555,6 +676,7 @@ public sealed class CardSurface : ILessonCanvas, IAsyncDisposable
                 c.Hide();
             }
 
+            _pickWait?.TrySetResult(null);
             DismissedByUser?.Invoke(this, EventArgs.Empty);
         };
         await card.InitializeAsync(_environment!, _pageFolder);

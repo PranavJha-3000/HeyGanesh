@@ -28,3 +28,25 @@ public interface ILessonSpeaker
 {
     Task SpeakAsync(string text, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// One part the student clicked in a 3D scene: the scene instance id the lesson placed, the catalogue
+/// model it is, and the part id within that model. Every id was checked by the canvas against what it
+/// drew and the catalogue before this record exists (DEC-031).
+/// </summary>
+public sealed record PartPick(string InstanceId, string ModelId, string PartId);
+
+/// <summary>
+/// Optional: a canvas that can let the student click a part of the 3D scene it drew (FEATURE-007
+/// Phase 5 step 5). The lesson session asks for one pick after a lesson has finished playing and turns
+/// it into a follow-up question; a canvas without a scene, or without this interface, is never asked.
+/// </summary>
+public interface IPartPicker
+{
+    /// <summary>
+    /// Turns picking on, waits for one valid click, and turns it off again. Returns null when the
+    /// student closed the lesson, when <paramref name="idle"/> passed with no click, or when the canvas
+    /// has no scene on show. Cancelling <paramref name="cancellationToken"/> throws.
+    /// </summary>
+    Task<PartPick?> PickAsync(TimeSpan idle, CancellationToken cancellationToken);
+}

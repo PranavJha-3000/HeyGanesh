@@ -69,6 +69,7 @@ public sealed class VisualPlanner : IDisposable
             RequireGroundedMarks = true,
             GroundedTarget = request.Screen?.TargetBox,
             GroundedMarginPx = _options.MarkMarginPx,
+            Scene3d = request.Scene3d,
         };
 
         var user = new LlmMessage

@@ -47,6 +47,13 @@ internal sealed class CardWindow : Form
     /// <summary>Raised (UI thread) when the student presses the card's close button.</summary>
     public event EventHandler? CloseRequested;
 
+    /// <summary>
+    /// Raised (UI thread) when the scene page reports a click on a part: the instance and part ids
+    /// exactly as the page sent them (null when absent or not a string). Unchecked here — the window
+    /// knows nothing of scenes; CardSurface validates them (DEC-031).
+    /// </summary>
+    public event Action<string?, string?>? PartClicked;
+
     protected override bool ShowWithoutActivation => true;
 
     protected override CreateParams CreateParams
@@ -167,6 +174,9 @@ internal sealed class CardWindow : Form
         }
     }
 
+    private static string? StringProperty(JsonElement message, string name) =>
+        message.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+
     private void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         JsonElement message;
@@ -201,6 +211,9 @@ internal sealed class CardWindow : Form
                 break;
             case "close":
                 CloseRequested?.Invoke(this, EventArgs.Empty);
+                break;
+            case "part-clicked":
+                PartClicked?.Invoke(StringProperty(message, "instance"), StringProperty(message, "part"));
                 break;
         }
     }

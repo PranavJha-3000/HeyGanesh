@@ -239,7 +239,28 @@ All of a beat's scene ops travel as one `beat` message, awaited alongside the ca
 
 No caller passes `ValidationContext.Scene3d` yet, so only LessonSurfaceSmoke drives this path.
 
-**3D gate (schema 1.1, DEC-028).** `VisualPlanValidator.Validate` accepts a `scene3d` surface only when `ValidationContext.Scene3d` carries a `ModelCatalog`; every model/part/animation name in `model`/`label`/`highlight`/`explode`/`animate`/`camera` is checked against it in beat order. No caller passes one yet (`VisualPlanner`, LessonTurn, the App), so a plan that declares a scene is `surface.unsupported` → TextFallback and is spoken, never laid out by `CardSurface` (which would draw it as an empty card). The first caller to pass a catalogue is the 3D renderer (FEATURE-007 Phase 5 step 4).
+**Click a part to ask (DEC-031).** `LessonTurn.RunWithFollowUpsAsync` (not yet called by the App Shell; `RunAsync` is unchanged):
+
+```
+turn 1 = plan -> open lease -> play                        (PlayTurnAsync, shared with RunAsync)
+loop:
+  outcome != Played -> stop (TurnEnded)
+  no scene3d surface -> stop (NoScene); canvas not IPartPicker -> stop (NotPickable)
+  MaxFollowUps reached -> stop
+  IPartPicker.PickAsync(idle) = CardSurface:
+    'picking' on -> page shows the hint; click -> pickPart (solid parts before see-through ones)
+    -> post part-clicked(instance, part) -> CardWindow.PartClicked -> CardSurface.OnPartClicked
+    -> instance drawn here? model in Scene3dCatalog? part in that model? pick in progress? -> PartPick, else RefusedPicks++
+    close button / idle / dispose -> null; 'picking' off
+  null -> stop (NoPick)
+  PartQuestion.For(pick) (Part Library name + description; null -> stop UnknownPart)
+  request with { Question, PreviousPlan = lesson shown, Screen = null } -> plan -> reset + play on the SAME lease
+dispose the lease (every path)
+```
+
+`PlanRequest.Scene3d` reaches `ValidationContext.Scene3d` (DEC-031), so a caller that passes `CardSurface.Scene3dCatalog` gets 3D plans validated. Only LessonTurnSmoke passes it today.
+
+**3D gate (schema 1.1, DEC-028).** `VisualPlanValidator.Validate` accepts a `scene3d` surface only when `ValidationContext.Scene3d` carries a `ModelCatalog`; every model/part/animation name in `model`/`label`/`highlight`/`explode`/`animate`/`camera` is checked against it in beat order. No product caller passes one yet (since DEC-031 `VisualPlanner` forwards `PlanRequest.Scene3d`, but only LessonTurnSmoke sets it; the App does not), so a plan that declares a scene is `surface.unsupported` → TextFallback and is spoken, never laid out by `CardSurface` (which would draw it as an empty card). The first caller to pass a catalogue is the 3D renderer (FEATURE-007 Phase 5 step 4).
 
 ## Lesson planning path (Lesson Planner — built offline; wired into the App Shell by `--lesson`, see Lesson leg; FEATURE-007 Phase 4)
 

@@ -5,6 +5,8 @@
 // angles. Model text (labels, titles) only ever reaches the screen through textContent or Babylon GUI
 // text drawn on a canvas — never as markup. Nothing from the model is evaluated here.
 // Frames are drawn only while something changes (render on demand, spike 0b condition 2).
+// After a lesson the host may turn picking on (DEC-031): a click on a part posts only two ids, never
+// text; the host checks them against what it drew before anything is asked about them.
 (function () {
   "use strict";
 
@@ -12,6 +14,7 @@
   var titleEl = document.getElementById("title");
   var tagsEl = document.getElementById("tags");
   var noticeEl = document.getElementById("notice");
+  var hintEl = document.getElementById("hint");
   var cspViolations = 0;
   document.addEventListener("securitypolicyviolation", function () { cspViolations++; });
 
@@ -49,6 +52,7 @@
   var cameraView = "", cameraFocus = "";
   var frames = 0, pending = 0, looping = false, lastBuildMs = 0;
   var tags = [];
+  var picking = false;  // on only between the host's picking:on and picking:off (or a click / reset)
 
   if (engine) {
     scene = new BABYLON.Scene(engine);
@@ -195,6 +199,53 @@
     tags = [];
     setTags();
     cameraView = ""; cameraFocus = "";
+    setPicking(false);
+  }
+
+  function setPicking(on) {
+    picking = on;
+    hintEl.hidden = !on;
+  }
+
+  function isPart(mesh) { return !!(mesh.metadata && mesh.metadata.part); }
+  function isSolidPart(mesh) { return isPart(mesh) && !(mesh.material && mesh.material.alpha < 0.5); }
+
+  // What the student sees is what they click: parts seen THROUGH glass or a membrane win over the
+  // see-through surface in front; a see-through part is picked only where nothing solid is behind it.
+  function pickPart(x, y) {
+    var hit = scene.pick(x, y, isSolidPart);
+    return hit && hit.hit ? hit : scene.pick(x, y, isPart);
+  }
+
+  // Viewport CSS pixels of a point on each part that really picks that part (a mesh centre hidden
+  // behind another part is skipped), so a verification row can click it with a real mouse. The point
+  // and the four 2 px around it must all pick the part, so rounding to physical pixels cannot tip a
+  // click onto a neighbour.
+  function pickPoints() {
+    var out = {};
+    var rect = canvas.getBoundingClientRect();
+    var scale = engine.getHardwareScalingLevel();
+    var vp = camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight());
+    Object.keys(instances).forEach(function (id) {
+      Object.keys(instances[id].parts).forEach(function (pid) {
+        instances[id].parts[pid].meshes.some(function (m) {
+          m.computeWorldMatrix(true);
+          var c = m.getBoundingInfo().boundingSphere.centerWorld;
+          var s = BABYLON.Vector3.Project(c, BABYLON.Matrix.IdentityReadOnly, scene.getTransformMatrix(), vp);
+          var x = s.x * scale, y = s.y * scale;
+          var steady = [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]].every(function (d) {
+            var hit = pickPart(x + d[0], y + d[1]);
+            return hit && hit.hit && hit.pickedMesh.metadata.instance === id && hit.pickedMesh.metadata.part === pid;
+          });
+          if (steady) {
+            out[id + "." + pid] = [rect.left + x, rect.top + y];
+            return true;
+          }
+          return false;
+        });
+      });
+    });
+    return out;
   }
 
   // ---------- ops ----------
@@ -214,6 +265,9 @@
       pose.rotationQuaternion = q4(p.rotation);
       var meshes = p.primitives.map(function (prim, i) {
         var mesh = buildPrimitive(prim, op.id + "." + p.id + "#" + i);
+        // Lesson meshes are pickable and say which part they belong to; warm-up and orientation meshes are not.
+        mesh.isPickable = true;
+        mesh.metadata = { instance: op.id, part: p.id };
         mesh.parent = pose;
         mesh.position = v3(prim.position);
         mesh.rotationQuaternion = q4(prim.rotation);
@@ -402,6 +456,9 @@
       frames: frames,
       csp: cspViolations,
       lastBuildMs: lastBuildMs,
+      picking: picking,
+      pickPoints: engine ? pickPoints() : {},
+      closeAt: (function () { var r = document.getElementById("close").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })(),
       script: document.querySelectorAll("script").length
     };
   };
@@ -440,6 +497,10 @@
         case "warmup":
           warmup().then(function () { done(m); }, function (err) { done(m, { error: String(err && err.message || err) }); });
           return;
+        case "picking":
+          setPicking(!!m.on);
+          done(m);
+          return;
         case "orient":
           orient(m.turn).then(function (made) { orientMade = made; done(m); }, function (err) { done(m, { error: String(err && err.message || err) }); });
           return;
@@ -470,6 +531,18 @@
     if (e.button === 0 && e.target.id !== "close") post({ kind: "drag" });
   });
   document.getElementById("close").addEventListener("click", function () { post({ kind: "close" }); });
+  // One click, one pick: the part glows, picking turns itself off, and only the two ids go to the host.
+  canvas.addEventListener("click", function (e) {
+    if (!picking || !scene) return;
+    var hit = pickPart(e.offsetX, e.offsetY);
+    if (!hit || !hit.hit) return;
+    var meta = hit.pickedMesh.metadata;
+    var r = resolve(meta.instance + "." + meta.part);
+    if (r) r.meshes.forEach(function (m) { glow.addMesh(m, BABYLON.Color3.FromHexString("#2a9d8f")); });
+    setPicking(false);
+    kick();
+    post({ kind: "part-clicked", instance: meta.instance, part: meta.part });
+  });
   window.addEventListener("resize", function () { if (engine) { engine.resize(); kick(); } });
 
   post({ kind: "ready", webgl: webgl });

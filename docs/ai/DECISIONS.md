@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-031](#dec-031--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Click a 3D part to ask: picking only after a lesson has played; the page sends two ids, CardSurface checks them against what it drew and the catalogue; the question is written in C# from the Part Library; the follow-up plays on the same cards; at most 3, 60 s idle | accepted |
 | [DEC-030](#dec-030--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D renderer: a scene window in CardSurface (same isolation as cards) running vendored, SHA-pinned Babylon.js 9.30.0; rotations sent as C#-computed quaternions + an orientation self-test from real pixels; created on the first 3D lesson with a shader warm-up; render on demand; no-WebGL → speech | accepted |
 | [DEC-029](#dec-029--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Part library v1 as C# code in a new `HeyGanesh.PartLibrary`: closed primitive kit, computed geometry/motion where physics defines it, `Schematic` and `Reviewed` (false) flags, budgets 16 parts / 64 primitives / ±2 box; produces the scene3d `ModelCatalog` | accepted |
 | [DEC-028](#dec-028--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D as VisualPlan 1.1: one `scene3d` surface, ops model/label/explode/animate/camera + part refs, names bound to a caller-supplied `ModelCatalog`; off unless the canvas passes a catalogue (`ValidationContext.Scene3d`) | accepted |
@@ -41,6 +42,42 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-031 — 2026-10-29 — claude-opus-5-5
+
+**Decision — after a 3D lesson has played, the student can click a part; the click becomes a follow-up lesson about that part, on the same window.**
+
+- **When.** `LessonTurn.RunWithFollowUpsAsync` asks for a pick only once a lesson that drew a `scene3d` surface has played to the end (`Played`). Clicks during playback do nothing. The page shows "Click a part to ask about it" only while a pick is wanted.
+- **The seam.** `IPartPicker.PickAsync(idle, ct)` in VisualLessonEngine.Runtime, optional on an `ILessonCanvas`. `CardSurface` implements it. Null means no click: the student closed the lesson, the idle time passed, or there was no scene with a model on show (including no WebGL).
+- **What crosses the page boundary.** On a click the page posts `{ kind: "part-clicked", instance, part }`: two ids and nothing else (LSU-7 audits that). `CardSurface.OnPartClicked` accepts them only while a pick is in progress, only for an instance this surface drew, and only for a part the catalogue lists for that instance's model. Anything else is counted in `RefusedPicks` and dropped. `ProbePickGuardAsync` is the self-test.
+- **What is clicked.** Lesson meshes are pickable and tagged with their instance and part; warm-up and orientation meshes are not. A part seen through glass or a membrane (finish alpha < 0.5) wins over the see-through surface in front. A see-through part is picked only where nothing solid is behind it.
+- **The question.** `PartQuestion.For(pick)` writes it from the Part Library's own name, title and description: "Tell me more about the connecting rod in the single-cylinder four-stroke engine. The part library describes it as: …". It goes to the planner with the lesson just shown as `PlanRequest.PreviousPlan` (the existing DEC-022 path) and with no screen grounding, so a follow-up can never mark the student's screen.
+- **Same cards.** The follow-up is reset and played on the lease the first lesson opened. The lease is opened at most once and closed on every path. `RunAsync` keeps its old behaviour and is what the App Shell still calls.
+- **Bounds.** `FollowUpOptions`: `MaxFollowUps` 3 and `IdleTimeout` 60 s. `FollowUpEnd` says why the loop stopped.
+- **Planner pass-through.** `PlanRequest.Scene3d` (a `ModelCatalog?`) now reaches `ValidationContext.Scene3d`. Without it the planner refuses every 3D plan, so the loop could not be tested. The prompt does not teach the 3D ops yet, and no caller in the product passes a catalogue (step 6).
+
+**Measured (this machine; LSU-15, LT-8).**
+- A real click on the connecting rod comes back as `PartPick(m, four-stroke-engine, connecting-rod)` in 128–153 ms.
+- 6–8 of the engine's 10 parts have a steady point to click from the iso view. The glass cylinder, the piston pin (inside the piston) and, with the 2 px steadiness check, the thin valve stems have none.
+- Forged clicks: 3 of 3 refused. The close button ends a wait in under 140 ms.
+
+**Reasoning.**
+- Ids checked against what was drawn keep the follow-up question C#-authored. Page text can't become model input, which is the same rule as every other page message.
+- Reusing the window avoids a second ~2 s scene start-up (DEC-030) on every click.
+- Picking only after playback avoids racing the speaker; the player has no stop-then-replan path.
+
+**Rejected.**
+- Clicks during playback that interrupt the lesson (later: stop, then pick).
+- A new window per follow-up.
+- Sending the part's name from the page.
+- Running the loop in the App Shell, which carries no fakes (DEC-012), so the loop couldn't be tested offline.
+
+**Consequences.**
+- Thin parts (valve stems) are hard to hit at this zoom. A screen-space tolerance or a larger hit volume is a later refinement.
+- LSU-15 moves the real cursor. It needs a desktop nobody is using: a hand on the mouse is reported as interference rather than as a wrong part.
+- The App Shell can't reach any of this until step 6 teaches the planner the 3D ops and the shell calls `RunWithFollowUpsAsync` with `CardSurface.Scene3dCatalog`.
+
+Plan: [plans/2026-10-29-part-pick-v1.md](plans/2026-10-29-part-pick-v1.md). Rows: LT-8, LT-9, LSU-15 (and LSU-7, LSU-12 extended).
+
 ## DEC-030 — 2026-10-29 — claude-opus-5-5
 
 **Decision — 3D lessons render in one more CardSurface window, built from Part Library data by vendored Babylon.js, with the rotation convention fixed in C# and proven from pixels.**

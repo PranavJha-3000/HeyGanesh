@@ -52,6 +52,9 @@ internal static partial class LessonSurfaceSmokeHost
         string[] sinks = { "innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "setTimeout(\"", "setInterval(\"" };
         var found = sinks.Where(s => js.Contains(s, StringComparison.Ordinal)).ToArray();
         failures = Check(found.Length == 0, $"scene.js has no HTML/code sinks ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
+        var clicks = Regex.Matches(js, @"post\(\{\s*kind:\s*""part-clicked""([^}]*)\}\)").Select(m => m.Groups[1].Value).ToList();
+        failures = Check(clicks.Count == 1 && Regex.Matches(clicks[0], @"(\w+):").Select(m => m.Groups[1].Value).SequenceEqual(new[] { "instance", "part" }),
+            "scene.js posts a part click as two ids only (instance, part) -- no text the host could mistake for a question (DEC-031)", failures);
 
         var vendor = Path.Combine(dir, "Page", "vendor");
         var table = File.ReadAllText(Path.Combine(vendor, "VENDOR.md"));
@@ -255,6 +258,9 @@ internal static partial class LessonSurfaceSmokeHost
             failures = Check(report.Status == PlaybackStatus.Completed && spoken.Count == 6, $"every beat acknowledged and all 6 sentences spoken ({report.Status}, {spoken.Count})", failures);
             var card = await surface.DescribeCardAsync("card-strokes");
             failures = Check(card.ElementIds.Contains("s-exhaust"), "the 2D card beside it still drew its steps", failures);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var pick = await surface.PickAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
+            failures = Check(pick is null && clock.ElapsedMilliseconds < 2000, $"nothing was drawn, so a pick returns null at once ({clock.ElapsedMilliseconds} ms), DEC-031", failures);
         }
         finally
         {

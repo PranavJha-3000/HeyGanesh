@@ -67,7 +67,7 @@ jobs:
         run: dotnet run --project tools\SecretSmoke -c Debug
 
       # G-13..G-15: the lesson hosts are read from the built EXE, as TEST-CHECKLIST does. All three use
-      # fake canvases / fake models; LessonSurfaceSmoke and LT-6/LT-7 draw real cards and stay local-only.
+      # fake canvases / fake models; LessonSurfaceSmoke and LT-6/LT-7/LT-9 draw real cards and stay local-only.
       - name: G-13 Visual Lesson Engine offline
         shell: pwsh
         run: |
@@ -98,7 +98,7 @@ jobs:
           dotnet build tools\LessonTurnSmoke -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\LessonTurnSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonTurnSmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-turn', '--assert-turn-degraded', '--assert-turn-rejected', '--assert-turn-errors')) {
+          foreach ($mode in @('--assert-source', '--assert-turn', '--assert-turn-degraded', '--assert-turn-rejected', '--assert-turn-errors', '--assert-followup-pick')) {
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -114,7 +114,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
-      # G-17: the Lesson Surface rows that need no desktop. The scene/window rows (LSU-2..LSU-6, LSU-9..LSU-14) create
+      # G-17: the Lesson Surface rows that need no desktop. The scene/window rows (LSU-2..LSU-6, LSU-9..LSU-15) create
       # real windows and stay local-only.
       - name: G-17 Lesson Surface offline
         shell: pwsh

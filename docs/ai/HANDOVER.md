@@ -1,4 +1,12 @@
 
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 5: click a 3D part to ask)
+
+Did: After a 3D lesson has played, the student can click a part and a follow-up lesson about it plays in the same window (DEC-031). `IPartPicker`/`PartPick` (VisualLessonEngine), scene-page picking + `CardSurface` id checks (LessonSurface), `LessonTurn.RunWithFollowUpsAsync` + `PartQuestion` + `FollowUpOptions` (LessonSession), `PlanRequest.Scene3d` pass-through (LessonPlanner). New rows LT-8, LT-9, LSU-15; LSU-7/LSU-12 extended; CI G-15 gains `--assert-followup-pick`.
+Left: Step 6 (planner prompt learns the 3D ops; the App Shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync`). BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md (Apache-2.0 §4(d)). Owner: PL-5 / LSU-13 reviews; merge decision. Branch not pushed.
+Watch: `--assert-pick` moves the real cursor; run it with nobody on the mouse (2 of 3 runs failed while the mouse was in use, before the single-SendInput fix). Thin parts (valve stems) and parts inside others (piston pin) have no click point. Don't use `sed -i` on source files here: it rewrote CardWindow.cs to LF.
+Next: Plan step 6 (teach VisualPlanner the scene3d ops, then wire `--lesson` to RunWithFollowUpsAsync with the catalogue).
+Verified: sln -warnaserror 0/0; LT-8 12 PASS; LSU-15 9 PASS on 5 of 5 runs; a guard mutation (accept any part) fails LSU-15 and was reverted; every other LessonTurnSmoke and LessonSurfaceSmoke row unchanged and exit 0 (LSU-7 now 13, LSU-12 5); `--demo-pick --voice timed` exit 0; all 13 CI gates exit 0 locally.
+
 ## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 4.5: lesson shell wiring)
 
 Did: Added `HeyGanesh.LessonSession` (LessonTurn: plan → open cards only once a plan exists → play → always close; provider faults/cancel as outcomes; DelegateLessonSpeaker; CardSurfaceHost) and `tools/LessonTurnSmoke` (LT-1..LT-7, fake model + fake/real cards). The App Shell gains `--lesson`: after a produced verdict it maps the verdict to ScreenGrounding and runs one lesson turn with Voice as the speaker. The planner is built from DEEPSEEK_API_KEY (DeepSeek via OpenAiCompat + a read-only EnvironmentSecretStore), or the leg prints its skip (DEC-027).

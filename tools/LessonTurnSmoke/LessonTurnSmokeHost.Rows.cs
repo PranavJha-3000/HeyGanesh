@@ -32,8 +32,8 @@ internal static partial class LessonTurnSmokeHost
         var failures = 0;
         failures = Check(!csproj.Contains("<PackageReference", StringComparison.Ordinal), "no direct PackageReference (WebView2 arrives only through LessonSurface)", failures);
         failures = Check(
-            refs.SequenceEqual(new[] { "HeyGanesh.LessonPlanner", "HeyGanesh.LessonSurface", "HeyGanesh.VisualLessonEngine" }),
-            $"references are LessonPlanner + LessonSurface + VisualLessonEngine only ({string.Join(", ", refs)})", failures);
+            refs.SequenceEqual(new[] { "HeyGanesh.LessonPlanner", "HeyGanesh.LessonSurface", "HeyGanesh.PartLibrary", "HeyGanesh.VisualLessonEngine" }),
+            $"references are LessonPlanner + LessonSurface + PartLibrary + VisualLessonEngine only ({string.Join(", ", refs)})", failures);
         failures = Check(!layering, "no Voice or ContextOrchestrator use: the shell maps the verdict and owns speech (DEC-015/016)", failures);
         failures = Check(found.Length == 0, $"no P/Invoke, network, file, environment, process or registry use ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
         return Summarize(failures, "SOURCE AUDIT OK");

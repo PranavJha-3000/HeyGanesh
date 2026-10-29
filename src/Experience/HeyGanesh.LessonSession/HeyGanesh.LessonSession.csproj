@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
+    <!-- Part names and descriptions for click-to-ask follow-up questions (PartQuestion, DEC-031). -->
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.VisualLessonEngine\HeyGanesh.VisualLessonEngine.csproj" />
     <ProjectReference Include="..\HeyGanesh.LessonSurface\HeyGanesh.LessonSurface.csproj" />
   </ItemGroup>

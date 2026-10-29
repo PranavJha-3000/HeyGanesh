@@ -25,6 +25,13 @@ public sealed record PlanRequest
     public VisualPlan? PreviousPlan { get; init; }
 
     public LessonMode Mode { get; init; } = LessonMode.Explain;
+
+    /// <summary>
+    /// The 3D vocabulary the caller's canvas can draw (DEC-028), passed straight to the validator. Null
+    /// (the default) refuses every 3D surface. Validation only: the prompt does not teach the 3D ops
+    /// yet (FEATURE-007 Phase 5 step 6).
+    /// </summary>
+    public ModelCatalog? Scene3d { get; init; }
 }
 
 /// <summary>

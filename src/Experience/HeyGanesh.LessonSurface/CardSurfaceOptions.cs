@@ -44,6 +44,8 @@ public sealed record SceneLabel(string Id, string Target, string Text);
 /// <summary>
 /// Read-only description of the 3D scene window and what its page shows (verification hosts and
 /// health checks). <see cref="WebGl"/> is 0 when the page could not start WebGL and is speaking only.
+/// <see cref="PickPoints"/> maps "instance.part" to a screen point (global physical pixels) where a click
+/// lands on that part and nothing in front of it; parts hidden from the camera are absent (DEC-031).
 /// </summary>
 public sealed record SceneSnapshot(
     string SurfaceId,
@@ -66,7 +68,10 @@ public sealed record SceneSnapshot(
     int Frames,
     int CspViolations,
     double LastModelBuildMs,
-    int ScriptElements);
+    int ScriptElements,
+    bool Picking,
+    IReadOnlyDictionary<string, Point> PickPoints,
+    Point CloseButton);
 
 /// <summary>
 /// Result of the orientation self-test (DEC-029/DEC-030): three test markers posed from C#, located in

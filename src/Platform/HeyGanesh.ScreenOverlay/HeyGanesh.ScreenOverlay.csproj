@@ -10,8 +10,9 @@
     OverlayNative.cs, the same shape as the Global Hotkey Monitor and Screen Capture modules.
 
     ProjectReferences: ScreenCapture (monitor topology, PixelRect, and the CaptureExclusion contract the
-    overlay must satisfy) and ContextOrchestrator (GuidanceResult — consumed directly, never re-mapped:
-    a second coordinate type or a shared abstraction assembly would break DEC-009).
+    overlay must satisfy) and Foundation's HeyGanesh.Abstractions (GuidanceResult and its types, moved
+    there so this Platform module references nothing above Foundation; the overlay consumes GuidanceResult
+    directly and never re-maps it).
 
     The overlay renders; it never acts. No input injection of any kind exists in this assembly (see
     CONSTRAINTS.md and docs/ai/DECISIONS.md DEC-011).

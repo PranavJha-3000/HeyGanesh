@@ -53,7 +53,6 @@
 | 2026-09-29 | delete `src/HeyGanesh.App/` + `docs/ai/features/FEATURE-003.md`, revert this session's doc edits | new shell host + docs; no existing file's behaviour changed | SH-1..SH-6 offline rows |
 | 2026-09-24 | delete `src/HeyGanesh.ScreenOverlay/` + `tools/OverlaySmoke/` + `docs/ai/features/FEATURE-002.md`, revert this session's doc edits | new module + new smoke host + docs; no existing file's behaviour changed | SO-1..SO-9 offline smoke scenarios |
 | 2026-09-23 | revert of the Context Orchestrator commit (parent `8824568`) | new module + new smoke host + docs; no existing file's behaviour changed | build + offline smoke scenarios |
-| — | — | *(no rollback points recorded yet)* | — |
 ---
 
 <!-- ROLLBACK ENTRIES BELOW THIS LINE — newest first -->
@@ -569,3 +568,13 @@
 - **Files to restore:** `git checkout d297155 -- .gitignore tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `installer/`, `artifacts/` and any new file `git status` lists.
 - **If you installed it:** run `%LOCALAPPDATA%\Programs\HeyGanesh\uninstall.ps1` (or Apps & features → Hey Ganesh → Uninstall) before reverting.
 - **Re-check after revert:** TraySmoke `--assert-source` 7; the local CI runner reports 20 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (three stale open items cleared, documentation only)
+
+- **Change:** comments and docs only, no behaviour.
+  - `VisionResult.FailureReason`'s doc now says what the code does: every not-found carries a reason, so `Failed` is true whenever `Found` is false (the CO-6 mismatch).
+  - The ScreenOverlay project comment and ARCHITECTURE.md no longer name a ContextOrchestrator reference that was replaced by `HeyGanesh.Abstractions` earlier.
+  - The `*(no rollback points recorded yet)*` row is removed from this file's table.
+  - TEST-CHECKLIST's CO-6 note says the mismatch is resolved.
+- **Rollback point:** `9cc4a75`. `git checkout 9cc4a75 -- src/Perception/HeyGanesh.Vision/VisionResult.cs src/Platform/HeyGanesh.ScreenOverlay/HeyGanesh.ScreenOverlay.csproj docs/ai`.
+- **Re-check after revert:** `dotnet build -c Debug -warnaserror` 0/0; ContextOrchestratorSmoke `--question "Save" --fake-vision-none` exit 0 (CO-6).

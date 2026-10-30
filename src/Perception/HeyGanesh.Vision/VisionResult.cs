@@ -183,9 +183,12 @@ public sealed record VisionResult
     public bool WasBlankFrame { get; init; }
 
     /// <summary>
-    /// Non-null when the call could not produce a result at all (blank frame, parse failures, network
-    /// error, auth/quota error). Absent for a valid "element not found" answer, which is a successful
-    /// result with <see cref="Found"/> = false.
+    /// Non-null whenever no element was located. That covers a call that could not produce a result
+    /// (blank frame, parse failures, network, auth or quota error), and also a model that inspected the
+    /// frame and found nothing ("the model inspected the image but could not locate the requested element.").
+    /// Every not-found therefore carries a reason, and <see cref="Failed"/> is true whenever <see cref="Found"/>
+    /// is false. The Context Orchestrator carries this verdict as-is, and the Screen Overlay (SO-5) and the
+    /// App Shell (no teaching from a Failed verdict) rely on it (CO-6).
     /// </summary>
     public string? FailureReason { get; init; }
 

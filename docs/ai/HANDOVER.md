@@ -1,4 +1,26 @@
 
+## 2026-10-31 · claude-opus-5-5 (Recent lessons and replay in the tray, build sequence step 12c, DEC-060)
+
+Did:
+- Tray "Recent lessons…":
+  - `RecentLessonsModel` + `RecentLessons` window: list, details, Delete, Clear all;
+  - Replay through `ShellHost.ReplayAsync`, with `PrepareReplay` re-validating the stored plan (marks dropped), on the real cards, with the shell's voice or silent pacing, and no model call;
+  - Ctrl+Alt is paused during a replay.
+- Rows: RL-1 8, RL-2 4 (CI G-24), RL-3 4, RL-4 11 (local).
+
+Left: 12d (optional session context, your decision); retention number; RL-5, NB-3 and the other owner rows. `feat/notes-v1` (plan, 12a, 12b, 12c) is local only.
+Watch:
+- RL-3 opens real lesson windows for a few seconds.
+- A mutation whose changed text contains the original cannot be reverted by text swap: restore from the pre-run copy, as done here for `ShellHost.Replay.cs`.
+- Bash heredocs still collapse `\\\\` (TraySmoke.csproj got a form feed, fixed).
+Next: Push `feat/notes-v1` and open its PR on the owner's go-ahead; then 12d if wanted.
+Verified:
+- Tray and TraySmoke build -warnaserror 0/0.
+- RL-1 8, RL-2 4, RL-3 4, RL-4 11; TY source 8, tray 10, stop 6; keys-window 11, notes-map 6.
+- The real data folder has no notes.db after every run.
+- RL-2 caught replay keeping stale marks (fixed). Mutations, all restored: no pause during a replay fails RL-4; Replay for every lesson fails RL-1; opening cards before validating fails RL-3.
+- Local CI runner: 22 gates, all exit 0 (G-24 56).
+
 ## 2026-10-30 · claude-opus-5-5 (the shell records each turn, build sequence step 12b, DEC-059)
 
 Did:

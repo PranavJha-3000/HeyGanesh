@@ -24,6 +24,11 @@
     <ProjectReference Include="..\..\src\Experience\HeyGanesh.Tray\HeyGanesh.Tray.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The golden lessons, for the replay rows (RL-1..RL-4); linked from tools/LessonSmoke so every host tests the same lessons. -->
+    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>

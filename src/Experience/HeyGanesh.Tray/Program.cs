@@ -48,7 +48,10 @@ internal static class Program
 
         using var keys = new KeyRing();
         using var app = new TrayApp((stop, hookLive, paused) => ShellHost.RunAsync(args, stop, hookLive, paused), keys, log.Folder, instance.ShowRequested, openKeysIfMissing: true,
-            startup: StartupEntry.ForThisUser(Environment.ProcessPath!));
+            startup: StartupEntry.ForThisUser(Environment.ProcessPath!),
+            recent: new RecentLessonsSource(
+                () => Notes.NotesStore.Open(Notes.NotesStore.DefaultPath()),
+                async (plan, ct) => (await ShellHost.ReplayAsync(plan, ct)).Said));
         Application.Run(app);
         Console.WriteLine($"tray: exit {app.ExitCode}");
         return app.ExitCode;

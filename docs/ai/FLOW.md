@@ -377,6 +377,16 @@ Shell (DEC-059):
       Lesson → TeachWithLessonAsync fills title, PlanJson (first lesson's PlanResult.PlanJson), picks, outcome
     → TurnNotes.From(question, session, now, verdict, record, exit code): null for 12 / 13 / Failed / no question
     → Notes.Record(note) → "notes : saved #N"   (a failure is "notes : not saved (...)", the exit code unchanged)
+
+Recent lessons (DEC-060), in the tray:
+  menu "Recent lessons…" → TrayApp.OpenRecent → RecentLessonsModel(NotesStore.Open(default path)) → RecentLessons window
+    rows = Recent(200), newest first; details = the turn in words; Delete / Clear all (Clear all asks first)
+    Replay (a lesson with a stored plan) → paused = true (Ctrl+Alt refused) →
+      ShellHost.ReplayAsync(plan): PrepareReplay = Parse + Validate(desktop, RequireGroundedMarks, Scene3d, Schematics.Check)
+        Rejected → the reason, no window opened
+        else CardSurfaceHost.OpenAsync → LessonPlayer.PlayAsync(lesson, speaker) → close the cards
+          speaker = the shell's VoiceService when a Fish key is set (a failure paces that sentence), else silent pacing
+    → status line ("replayed "<title>": Completed, N beat(s)") → paused = false
 ```
 
 ## Installer (DEC-055)

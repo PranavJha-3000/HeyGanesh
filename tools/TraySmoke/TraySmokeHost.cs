@@ -29,6 +29,10 @@ internal static partial class TraySmokeHost
                 "--assert-install" => RunAssertInstall(args.Length > 1 ? args[1] : null),
                 "--assert-notes-map" => RunAssertNotesMap(),
                 "--assert-notes-shell" => RunAssertNotesShell(),
+                "--assert-recent-model" => RunAssertRecentModel(),
+                "--assert-replay-prepare" => RunAssertReplayPrepare(),
+                "--assert-replay" => await RunAssertReplayAsync(),
+                "--assert-recent-window" => RunAssertRecentWindow(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -61,6 +65,10 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-startup-menu LOCAL: the tray's Start at login item over a throwaway key; exit 0");
         Console.WriteLine("  --assert-install [package]  LOCAL: install.ps1 / uninstall.ps1 from a built package into temp folders and throwaway HKCU keys; exit 0");
         Console.WriteLine("  --assert-notes-map    the shell's turn-to-note mapping, every case, through a real temporary store (DEC-059); exit 0");
+        Console.WriteLine("  --assert-recent-model   what Recent lessons lists and says: newest first, replayable only with a stored plan, details, delete, clear (DEC-060); exit 0");
+        Console.WriteLine("  --assert-replay-prepare a stored plan is validated again before it may play; bad ones refused with a reason; exit 0");
+        Console.WriteLine("  --assert-replay         LOCAL: a stored lesson replays on the real cards with no model; a bad one opens nothing; exit 0");
+        Console.WriteLine("  --assert-recent-window  LOCAL: the real Recent lessons window from the tray: list, replay pauses Ctrl+Alt, delete, clear; exit 0");
         Console.WriteLine("  --assert-notes-shell  LOCAL: the real HeyGanesh.App.exe with temporary data folders: header, --no-notes, no note on a key error, a broken db kept; refuses to run with keys; exit 0");
         return 0;
     }
@@ -123,7 +131,7 @@ internal static partial class TraySmokeHost
         var failures = 0;
         failures = Check(csproj.Contains("<OutputType>WinExe</OutputType>", StringComparison.Ordinal), "WinExe: Windows opens no console for it", failures);
         failures = Check(!csproj.Contains("<PackageReference", StringComparison.Ordinal), "zero PackageReference (WinForms is a framework reference)", failures);
-        failures = Check(refs.SequenceEqual(new[] { "HeyGanesh.App", "HeyGanesh.Security" }), $"references the App Shell and Security only ({string.Join(", ", refs)})", failures);
+        failures = Check(refs.SequenceEqual(new[] { "HeyGanesh.App", "HeyGanesh.Security", "HeyGanesh.Notes" }), $"references the App Shell, Security and Notes only ({string.Join(", ", refs)})", failures);
         failures = Check(sources["Program.cs"].Contains("ShellHost.RunAsync(args, stop, hookLive, paused)", StringComparison.Ordinal), "runs the App Shell's own composition through RunAsync(args, stop, hookLive, paused)", failures);
         failures = Check(found.Length == 0, $"no key value read, no console input, no P/Invoke, network, focus stealing or pipeline built here ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
         failures = Check(shell.Contains("RunAsync(string[] args) => RunAsync(args, CancellationToken.None, null);", StringComparison.Ordinal), "the console's RunAsync(args) passes no stop token and no callback, so it is unchanged", failures);

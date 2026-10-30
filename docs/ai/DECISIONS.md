@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-060](#dec-060--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Recent lessons in the tray: list, details, Delete, Clear all, and Replay of a stored lesson with no model call; the stored plan is validated again with grounded marks required (the old screen's marks are dropped); Ctrl+Alt paused during a replay | accepted |
 | [DEC-059](#dec-059--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell records each taught turn as a note (none for key errors, cancelled turns or Failed verdicts); the planner keeps the kept plan's exact JSON (`PlanResult.PlanJson`) so a lesson can be replayed; `--no-notes`; a store or write failure never fails a turn | accepted |
 | [DEC-058](#dec-058--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Notes Persistence: a `HeyGanesh.Notes` store in Foundation over Windows' own `winsqlite3.dll` (BUILD-PLAYBOOK D3, owner's choice), one row per turn, WAL, versioned schema, broken files moved aside, newest 1,000 kept | accepted |
 | [DEC-057](#dec-057--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Click-to-ask on a lesson schematic's parts: DEC-031's library-only rule is relaxed for the lesson's own schematic; the follow-up uses its cleaned names and says the part is from a simplified drawing. Also recorded: the tray log keeps transcribed questions (owner) | accepted |
@@ -70,6 +71,34 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-060 — 2026-10-31 — claude-opus-5-5
+
+**Decision — Recent lessons lives in the tray, and replay plays the stored plan with no model.** Step 12c of the build sequence (the owner: "Yes, build 12c").
+
+- **The window:**
+  - `RecentLessons` (WinForms) over `RecentLessonsModel`, which has no UI and is checked offline (RL-1).
+  - Lists the newest 200 turns: when, the question, and what was taught.
+  - The details pane gives the whole turn in words, never the plan's JSON.
+  - Delete removes one turn; Clear all asks first.
+  - It opens its own connection to `notes.db`, so the shell keeps writing while it is open (WAL).
+  - One window at a time. A store that cannot open is a balloon and a log line.
+- **Replay:** `ShellHost.ReplayAsync`. `PrepareReplay` (pure, RL-2) parses the stored text (`PlanJson`, DEC-059) and validates it again, with the 3D catalogue and the schematic check the live lesson had, and with `RequireGroundedMarks` and no grounded target.
+  - Screen marks are dropped: the screen they marked is gone, so a mark would land on whatever is there now.
+  - Each such beat keeps its speech, as a live lesson with no match would.
+  - A plan that no longer validates is refused with its first issue, and no window opens.
+  - The lesson plays on the real cards (and scene window) and closes at the end, as a live 2D lesson does. There is no click-to-ask: that would call a model.
+- **Voice:** the running shell's `VoiceService` (kept as `ReplayVoice`) when a Fish key is set. A sentence it cannot speak, for example while a live turn is speaking, is paced instead. With no Fish key every sentence is paced silently, like `--no-speak`.
+- **Ctrl+Alt:** paused while a replay plays (`TriggerPaused` includes it), so a live turn cannot start a second lesson over it. A turn already running is not stopped.
+
+**Found by its own row, fixed before commit.** The first version validated without `RequireGroundedMarks`, so a stored lesson's marks would have been drawn at their old screen coordinates. RL-2's chain-rule check failed on the first run, and the validation context was fixed, not the check.
+
+**Rejected.**
+- Re-planning the lesson from the stored question: it calls a model, and the student may get a different lesson.
+- Showing the plan JSON in the details pane: it means nothing to a student.
+- A separate replay voice: two voices could talk over each other.
+
+Rows: RL-1, RL-2 (offline, CI G-24), RL-3, RL-4 (local), RL-5 (owner); TY-1 reference list +Notes.
+
 ## DEC-059 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the shell records each taught turn, and the planner keeps the exact plan text.** Step 12b of the build sequence (the owner: "Yes, build 12b").

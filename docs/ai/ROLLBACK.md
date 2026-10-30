@@ -622,3 +622,14 @@
 - **Files to restore:** `git checkout 09d4747 -- src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **If notes were recorded and you want them gone:** delete `%LOCALAPPDATA%\HeyGanesh\notes.db` (and its `-wal`/`-shm`).
 - **Re-check after revert:** App `--once --question "x"` exit 12; TraySmoke `--assert-source` 8; the local CI runner reports 22 gates, all exit 0.
+
+## 2026-10-31 · claude-opus-5-5 (Recent lessons and replay in the tray, build sequence step 12c, DEC-060)
+
+- **Change:**
+  - App Shell: `ShellHost.PrepareReplay` (pure: parse and validate a stored plan, or say why not) and `ShellHost.ReplayAsync` (play it on the cards with the shell's voice, or paced silently without a Fish key; no model call). The running shell's `VoiceService` is kept for it.
+  - Tray: `RecentLessonsModel` (no UI) and the `RecentLessons` window (list, details, Replay, Delete, Clear all); a "Recent lessons…" menu item; Ctrl+Alt is paused while a replay plays.
+  - TraySmoke: RL-1 and RL-2 (offline, CI G-24), RL-3 and RL-4 (local); the lesson fixtures are linked in.
+  - Docs: DEC-060, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/notes-v1` at `7d5ea59` (the commit before this step).
+- **Files to restore:** `git checkout 7d5ea59 -- src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** TraySmoke `--assert-tray` 10, `--assert-notes-map` 6; the local CI runner reports 22 gates, all exit 0.

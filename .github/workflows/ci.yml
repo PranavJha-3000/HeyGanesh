@@ -204,7 +204,7 @@ jobs:
           dotnet build tools\TraySmoke -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\TraySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TraySmoke.exe'
-          foreach ($m in @('--assert-source', '--assert-log', '--assert-keys-model', '--assert-startup', '--assert-notes-map')) {
+          foreach ($m in @('--assert-source', '--assert-log', '--assert-keys-model', '--assert-startup', '--assert-notes-map', '--assert-recent-model', '--assert-replay-prepare')) {
             & $exe $m
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

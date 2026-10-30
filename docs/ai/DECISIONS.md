@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-048](#dec-048--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | VisualPlan 1.2: a lesson may define one schematic model (closed shapes and finishes, ≤ 12 parts / 40 shapes, ±2 box) for an object the catalogue lacks; the engine checks structure, the Part Library's `Schematics.Check` checks geometry through a delegate; a refused schematic costs only its beats | accepted |
 | [DEC-047](#dec-047--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Tutor is on: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key (null and an honest skip otherwise); TU-8 allows exactly one key-named option, `DeepSeekTutorOptions.ApiKey` typed `Func<string?>` (amends DEC-017) | accepted |
 | [DEC-046](#dec-046--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell's API clients (Jev, Vision, Fish, the lesson and router models) read their keys through the key ring per request; `SelectionOptions`, `VisionOptions`, `FishTtsOptions` gain an optional `Func<string?> ApiKey` that defaults to the old environment read; the Tutor waits for step 9 because TU-8 forbids a key-named option | accepted |
 | [DEC-045](#dec-045--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The "API key security proxy" is `HeyGanesh.Security.KeyRing`: three known keys, Windows Credential Manager first and the environment variable as fallback, described by presence/length/source only; the App Shell gains `--keys`, `--set-key`, `--remove-key`; clients read through it from step 8b | accepted |
@@ -58,6 +59,33 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-048 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a lesson may define one simplified 3D model of its own, a schematic, for an object the Part Library does not have.** Step 10a of the build sequence (the owner: "Yes, build 10a"). FEATURE-007 §3.2 already allowed free-form composition "rendered with a visible schematic tag"; this is its contract.
+
+- **The contract** (schema `heyganesh.visualplan/1.2` = 1.1 plus a header field `schematics`):
+  - each part is a list of shapes, `{ shape, size, at, turn, finish }`;
+  - shapes are `box`, `cylinder`, `sphere`, `torus`, `capsule`, and finishes `metal`, `dark-metal`, `brass`, `glass`, both closed vocabularies;
+  - limits: 1 per lesson, ≤ 12 parts, ≤ 40 shapes;
+  - every number finite, centres in ±2, sizes in [0, 4], turns in ±360;
+  - the id may not be a catalogue id.
+- **Placing it:** a `model` op may place it, and label, highlight, explode and camera may name its parts; it has no animations.
+- **Geometry:** checked by the caller's `ValidationContext.SchematicGeometry` delegate. The Part Library's `Schematics.Check` converts the schematic to a `LibraryModel` (`Schematic`, never `Reviewed`, basis "drawn by the lesson model for this lesson only: simplified, not to scale, not reviewed") and runs `LibraryCheck`. The engine still references nothing.
+- **A refused schematic** gets a `schematic.*` plan-level issue and is left out. Unlike other plan-level issues it does not force TextFallback: only the beats that place or name it degrade (they fail `model.unknown` / `ref.target`).
+
+**Changed from the plan while building.** The plan said sizes in (0, 2]; a size spans the shape, so in a ±2 box it may be up to 4 (the golden fixture's fuselage is 3.2 long). The rule is [0, 4], and `LibraryCheck` still refuses any placed shape that leaves the box, and any zero size a shape actually uses.
+
+**Rejected.**
+- More hand-built library models as the only answer (never enough; kept as the complement, driven by eval misses).
+- Raw meshes or vertices from the model (unbounded, uncheckable, slow).
+- Schematic animations (invented motion is the riskiest content).
+
+**Consequences.**
+- Nothing draws or plans a schematic yet: the planner prompt (10b), the scene window (10c) and the router (10d) follow.
+- Without the collision rule a schematic named like a catalogue model would make the merged catalogue throw. The rule is what keeps the validator from ever throwing on model output here.
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: LS-14 (CI G-13), PL-6 (CI G-16).
+
 ## DEC-047 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the App Shell's teaching leg uses the DeepSeek Tutor whenever there is a DeepSeek key, and the Tutor reads that key through the key ring.** Step 9 of the build sequence (SH-17). The owner chose "turn the Tutor on" as a must-have, and option A for TU-8: "Option A, build it". The provider stays as DEC-017 chose it: DeepSeek `deepseek-flash`, the lesson planner's key.

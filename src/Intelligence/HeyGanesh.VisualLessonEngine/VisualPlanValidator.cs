@@ -49,6 +49,14 @@ public sealed record ValidationContext(PixelRect VirtualDesktop)
     /// spoken. Kept off until a renderer exists, because CardSurface would lay a scene out as a card.
     /// </summary>
     public ModelCatalog? Scene3d { get; init; }
+
+    /// <summary>
+    /// The geometry check for a lesson's schematics (DEC-048): the Part Library's <c>Schematics.Check</c>,
+    /// passed in by the caller so this assembly never references the Part Library. It returns the reasons
+    /// a schematic cannot be drawn (out of the ±2 box, a zero-size shape, a budget), empty when it can.
+    /// Null: only the structural rules here apply.
+    /// </summary>
+    public Func<SchematicModel, IReadOnlyList<string>>? SchematicGeometry { get; init; }
 }
 
 /// <summary>
@@ -62,6 +70,9 @@ public sealed class VisualPlanValidator
 
     /// <summary>The 1.1 minor (DEC-028): v1 plus the scene3d surface and its ops. Both ids are accepted.</summary>
     public const string Schema11 = "heyganesh.visualplan/1.1";
+
+    /// <summary>The 1.2 minor (DEC-048): 1.1 plus the <c>schematics</c> header field.</summary>
+    public const string Schema12 = "heyganesh.visualplan/1.2";
 
     private static readonly Regex IdPattern = new(@"^[a-z][a-z0-9-]{0,31}\z", RegexOptions.CultureInvariant);
 
@@ -89,16 +100,18 @@ public sealed class VisualPlanValidator
 
         var plan = parsed.Plan;
         CheckPlan(plan, issues, context);
-        var degraded = CheckBeats(plan, issues, context);
-        return Decide(plan, issues, degraded);
+        var schematics = CheckSchematics(plan, issues, context);
+        var degraded = CheckBeats(plan, issues, context, schematics);
+        return Decide(plan with { Schematics = schematics }, issues, degraded);
     }
 
     private void CheckPlan(VisualPlan plan, List<LessonIssue> issues, ValidationContext context)
     {
-        var is11 = string.Equals(plan.Schema, Schema11, StringComparison.Ordinal);
+        // 1.2 is 1.1 plus schematics, so everything 1.1 allows it allows.
+        var is11 = string.Equals(plan.Schema, Schema11, StringComparison.Ordinal) || string.Equals(plan.Schema, Schema12, StringComparison.Ordinal);
         if (!is11 && !string.Equals(plan.Schema, SupportedSchema, StringComparison.Ordinal))
         {
-            issues.Add(Plan(LessonIssueCodes.SchemaUnsupported, $"schema '{plan.Schema}' is not {SupportedSchema} or {Schema11}"));
+            issues.Add(Plan(LessonIssueCodes.SchemaUnsupported, $"schema '{plan.Schema}' is not {SupportedSchema}, {Schema11} or {Schema12}"));
         }
 
         // Scene rules are plan-level, like every surface rule: a scene the host cannot draw, or one the
@@ -143,6 +156,154 @@ public sealed class VisualPlanValidator
     }
 
     /// <summary>
+    /// The lesson's own models (DEC-048), checked before the beats so the beats are checked against them.
+    /// Returns the ones that may be drawn. A refused schematic is reported at plan level under a
+    /// <c>schematic.*</c> code and simply left out: every beat that places or names it then fails its own
+    /// reference check (model.unknown / ref.target) and degrades, so a bad schematic costs those beats,
+    /// never the whole lesson.
+    /// </summary>
+    private List<SchematicModel> CheckSchematics(VisualPlan plan, List<LessonIssue> issues, ValidationContext context)
+    {
+        var accepted = new List<SchematicModel>();
+        var is12 = string.Equals(plan.Schema, Schema12, StringComparison.Ordinal);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        for (var n = 0; n < plan.Schematics.Count; n++)
+        {
+            var s = plan.Schematics[n];
+            if (!is12)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicUnavailable, $"schematic '{s.Id}' needs schema {Schema12}"));
+                continue;
+            }
+
+            if (context.Scene3d is null)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicUnavailable, $"schematic '{s.Id}': scene3d is not available on this canvas"));
+                continue;
+            }
+
+            if (n >= _limits.MaxSchematics)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicInvalid, $"schematic '{s.Id}': at most {_limits.MaxSchematics} per lesson"));
+                continue;
+            }
+
+            if (context.Scene3d.TryGet(s.Id, out _))
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicCollision, $"schematic '{s.Id}' has the id of a catalogue model"));
+                continue;
+            }
+
+            var problems = SchematicProblems(s, ids);
+            if (problems.Count > 0)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicInvalid, $"schematic '{s.Id}': {string.Join("; ", problems.Take(5))}{(problems.Count > 5 ? $" (+{problems.Count - 5} more)" : string.Empty)}"));
+                continue;
+            }
+
+            var geometry = context.SchematicGeometry?.Invoke(s) ?? Array.Empty<string>();
+            if (geometry.Count > 0)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicGeometry, $"schematic '{s.Id}': {string.Join("; ", geometry.Take(5))}{(geometry.Count > 5 ? $" (+{geometry.Count - 5} more)" : string.Empty)}"));
+                continue;
+            }
+
+            accepted.Add(s);
+        }
+
+        return accepted;
+    }
+
+    /// <summary>The structural rules: ids, names, counts, the closed vocabularies, and every number finite and in range.</summary>
+    private List<string> SchematicProblems(SchematicModel s, HashSet<string> modelIds)
+    {
+        var problems = new List<string>();
+        if (!IdPattern.IsMatch(s.Id))
+        {
+            problems.Add($"id '{s.Id}' is not a valid id");
+        }
+        else if (!modelIds.Add(s.Id))
+        {
+            problems.Add($"id '{s.Id}' used twice");
+        }
+
+        if (string.IsNullOrWhiteSpace(s.Title) || s.Title.Length > _limits.MaxTitleChars)
+        {
+            problems.Add($"title must be 1..{_limits.MaxTitleChars} chars");
+        }
+
+        if (s.Parts.Count == 0 || s.Parts.Count > _limits.MaxSchematicParts)
+        {
+            problems.Add($"{s.Parts.Count} parts (1..{_limits.MaxSchematicParts})");
+        }
+
+        var shapes = s.Parts.Sum(p => p.Shapes.Count);
+        if (shapes > _limits.MaxSchematicShapes)
+        {
+            problems.Add($"{shapes} shapes (max {_limits.MaxSchematicShapes})");
+        }
+
+        var partIds = new HashSet<string>(StringComparer.Ordinal);
+        var extent = _limits.SchematicExtent;
+        foreach (var part in s.Parts)
+        {
+            if (!IdPattern.IsMatch(part.Id))
+            {
+                problems.Add($"part id '{part.Id}' is not a valid id");
+            }
+            else if (!partIds.Add(part.Id))
+            {
+                problems.Add($"part id '{part.Id}' used twice");
+            }
+
+            if (string.IsNullOrWhiteSpace(part.Name) || part.Name.Length > _limits.MaxSchematicNameChars)
+            {
+                problems.Add($"part '{part.Id}' name must be 1..{_limits.MaxSchematicNameChars} chars");
+            }
+
+            if (part.Shapes.Count == 0)
+            {
+                problems.Add($"part '{part.Id}' has no shapes");
+            }
+
+            foreach (var shape in part.Shapes)
+            {
+                if (!LessonVocabulary.SchematicShapes.Contains(shape.Shape))
+                {
+                    problems.Add($"part '{part.Id}': shape '{shape.Shape}' is not one of {string.Join(", ", LessonVocabulary.SchematicShapes)}");
+                }
+
+                if (!LessonVocabulary.SchematicFinishes.Contains(shape.Finish))
+                {
+                    problems.Add($"part '{part.Id}': finish '{shape.Finish}' is not one of {string.Join(", ", LessonVocabulary.SchematicFinishes)}");
+                }
+
+                // A size spans the shape, so it may be up to the box's full width; whether the placed shape
+                // stays inside the box is the geometry check's job (LibraryCheck.Bounds).
+                if (!Triple(shape.Size, 0, 2 * extent))
+                {
+                    problems.Add($"part '{part.Id}': size must be three numbers in [0, {2 * extent}]");
+                }
+
+                if (!Triple(shape.At, -extent, extent))
+                {
+                    problems.Add($"part '{part.Id}': at must be three numbers in [-{extent}, {extent}]");
+                }
+
+                if (!Triple(shape.Turn, -360, 360))
+                {
+                    problems.Add($"part '{part.Id}': turn must be three numbers in [-360, 360]");
+                }
+            }
+        }
+
+        return problems;
+    }
+
+    private static bool Triple(IReadOnlyList<double> values, double min, double max) =>
+        values.Count == 3 && values.All(v => double.IsFinite(v) && v >= min && v <= max);
+
+    /// <summary>
     /// Running state of the beat walk. Element ids are unique plan-wide (<see cref="EverUsed"/>), but
     /// only elements still on a card (<see cref="Live"/>) can be pointed at — a clear removes them,
     /// and an element written in a later beat does not exist yet. That ordering is what lets a
@@ -164,16 +325,23 @@ public sealed class VisualPlanValidator
         /// </summary>
         public Dictionary<string, string> Instances { get; } = new(StringComparer.Ordinal);
 
-        public ModelCatalog Catalog => Context.Scene3d ?? ModelCatalog.Empty;
+        /// <summary>The caller's catalogue plus this lesson's accepted schematics (DEC-048): what the beats may place.</summary>
+        public required ModelCatalog Catalog { get; init; }
     }
 
     /// <summary>Walks the beats in order and returns the indices of beats that lose their drawing.</summary>
-    private HashSet<int> CheckBeats(VisualPlan plan, List<LessonIssue> issues, ValidationContext context)
+    private HashSet<int> CheckBeats(VisualPlan plan, List<LessonIssue> issues, ValidationContext context, IReadOnlyList<SchematicModel> schematics)
     {
         var degraded = new HashSet<int>();
         var parserFlagged = issues.Where(i => i.BeatId is not null).Select(i => i.BeatId!).ToHashSet(StringComparer.Ordinal);
         var beatIds = new HashSet<string>(StringComparer.Ordinal);
-        var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Context = context };
+        var catalog = schematics.Count == 0
+            ? context.Scene3d ?? ModelCatalog.Empty
+            : new ModelCatalog((context.Scene3d ?? ModelCatalog.Empty).Models.Concat(schematics.Select(s => new CatalogModel(
+                s.Id,
+                s.Parts.Select(p => p.Id).ToHashSet(StringComparer.Ordinal),
+                new HashSet<string>(StringComparer.Ordinal)))));
+        var board = new Board { Surfaces = plan.Surfaces.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), Context = context, Catalog = catalog };
         foreach (var surface in plan.Surfaces)
         {
             board.Kinds.TryAdd(surface.Id, surface.Kind);
@@ -503,7 +671,9 @@ public sealed class VisualPlanValidator
             return new LessonValidationResult(LessonOutcome.Rejected, null, string.Empty, issues);
         }
 
-        if (issues.Any(i => i.BeatId is null) || (double)degraded.Count / plan.Beats.Count >= _limits.FallbackDegradedRatio)
+        // A schematic.* issue is plan-level but costs only the beats that used the schematic (DEC-048).
+        if (issues.Any(i => i.BeatId is null && !i.Code.StartsWith("schematic.", StringComparison.Ordinal))
+            || (double)degraded.Count / plan.Beats.Count >= _limits.FallbackDegradedRatio)
         {
             return new LessonValidationResult(LessonOutcome.TextFallback, null, fallback, issues);
         }

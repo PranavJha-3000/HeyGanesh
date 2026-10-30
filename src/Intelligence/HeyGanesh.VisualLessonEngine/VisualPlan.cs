@@ -44,4 +44,29 @@ public sealed record VisualPlan(
     string Title,
     LessonMode Mode,
     IReadOnlyList<LessonSurface> Surfaces,
-    IReadOnlyList<LessonBeat> Beats);
+    IReadOnlyList<LessonBeat> Beats)
+{
+    /// <summary>
+    /// Schema 1.2 (DEC-048): models this lesson defines for itself, for objects the catalogue does not
+    /// have. Header data, declared before the beats. In a validated plan only the schematics that passed
+    /// remain; a refused one is gone, and the beats that used it lost their drawing.
+    /// </summary>
+    public IReadOnlyList<SchematicModel> Schematics { get; init; } = Array.Empty<SchematicModel>();
+}
+
+/// <summary>
+/// One shape of a schematic part, in the Part Library's model space (metres-ish units, ±2 box). The
+/// strings are kept raw so the validator can refuse an unknown shape or finish with a reason instead of
+/// the parser guessing. Size follows <c>PrimitiveShape</c>'s per-shape meaning; At is the centre, Turn
+/// the rotation in degrees about X, Y, Z. A missing or non-numeric component reads as NaN.
+/// </summary>
+public sealed record SchematicShape(string Shape, IReadOnlyList<double> Size, IReadOnlyList<double> At, IReadOnlyList<double> Turn, string Finish);
+
+/// <summary>A named, labelable part of a schematic: what "&lt;instance&gt;.&lt;part&gt;" points at.</summary>
+public sealed record SchematicPart(string Id, string Name, IReadOnlyList<SchematicShape> Shapes);
+
+/// <summary>
+/// A simplified 3D model a lesson draws for an object the catalogue lacks (FEATURE-007 §3.2 free-form
+/// composition). Never reviewed; every renderer shows it with a "schematic" tag. It has no animations.
+/// </summary>
+public sealed record SchematicModel(string Id, string Title, IReadOnlyList<SchematicPart> Parts);

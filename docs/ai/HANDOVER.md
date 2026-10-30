@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (schematic 3D contract, build sequence step 10a, DEC-048)
+
+Did: VisualPlan 1.2. `VisualPlan.Schematics` (`SchematicModel` / `SchematicPart` / `SchematicShape`) is parsed raw and validated: closed shapes and finishes, limits, the ±2 box, the catalogue-collision rule, and `ValidationContext.SchematicGeometry`. A refused schematic is dropped and costs only its beats (`schematic.*` codes do not force TextFallback). The Part Library gains `Schematics.ToModel` / `Check` (through `LibraryCheck`). New fixture `f35b-schematic.json`. Rows: LS-14 (20) and PL-6 (7), in CI G-13 and G-16.
+Left: 10b (the planner offers schematics, eval K-12), 10c (the scene window draws them, and picking), 10d (the router chooses "3D schematic"). Then step 11. Three commits are local (8b, 9, 10a), ahead of PR #1.
+Watch: The size rule is [0, 4], not the plan's (0, 2]. The streaming scanner's prefix must carry `schematics`, or streamed beats would fail against an empty catalogue: check this in 10b (LP-11 must stream the fixture). Without the collision rule the merged catalogue throws, so keep it.
+Next: Plan-approved 10b: build on the owner's go-ahead.
+Verified: VisualLessonEngine, PartLibrary, LessonSmoke and PartLibrarySmoke build -warnaserror 0/0. LS-14 20 and PL-6 7 PASS. LessonSmoke source 6, parse 9, limits 20, refs 15, degrade 7, fixtures 6, plot 16, grounded 6, scene3d 22, play 5, play-degraded 5, controls 11 (unchanged). Part Library source 5, library 20, physics 19, catalog 6 (unchanged). Four validator mutations (schematic issues cost the drawing, no collision rule, geometry skipped, any shape accepted) each fail LS-14, and the geometry one fails PL-6 too; restored byte for byte. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (the Tutor is on, build sequence step 9, DEC-047)
 
 Did: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key, and null (an honest skip) otherwise. `DeepSeekTutorOptions.ApiKey` is a per-request key source; TU-8 allows exactly that one, by name and type. TU-11 gains the two key-source checks. The header's `tutor :` line and the skip text name the key. SH-27 is a new App row.

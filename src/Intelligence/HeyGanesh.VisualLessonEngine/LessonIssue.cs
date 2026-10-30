@@ -35,4 +35,11 @@ public static class LessonIssueCodes
     public const string AnimationUnknown = "animation.unknown";
     public const string LimitScenes = "limit.scenes";
     public const string LimitModels = "limit.models";
+
+    // Schema 1.2 (schematics, DEC-048). Plan-level, but unlike every other plan-level code they do not cost
+    // the whole drawing: the schematic is dropped and only the beats that use it degrade.
+    public const string SchematicUnavailable = "schematic.unavailable";
+    public const string SchematicInvalid = "schematic.invalid";
+    public const string SchematicCollision = "schematic.collision";
+    public const string SchematicGeometry = "schematic.geometry";
 }

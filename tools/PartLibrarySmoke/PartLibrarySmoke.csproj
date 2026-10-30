@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <None Include="..\LessonSmoke\fixtures\engine-3d.json" Link="fixtures\engine-3d.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\LessonSmoke\fixtures\f35b-schematic.json" Link="fixtures\f35b-schematic.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

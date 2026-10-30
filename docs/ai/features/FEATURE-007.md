@@ -7,7 +7,7 @@
   on `feat/lesson-runtime-v1`, LS-8..LS-10 green offline; DEC-024 keeps the planner multimodal and multi-model.
   Phase 3 (Lesson Surface, 2D cards) BUILT 2026-10-28 on `feat/lesson-surface-v1` (DEC-025): LS-11 + LSU-1..LSU-5
   green on the real desktop, LSU-6 demo runs; KaTeX/Rough.js deferred. Phase 4 (Lesson Planner) BUILT offline 2026-10-28 on
-  `feat/lesson-planner-v1` (DEC-026): LS-12 + LP-1..LP-7 green; LP-8 live row, streaming and the eval harness wait for a key. Eval harness v0 step 7a BUILT 2026-10-30 (DEC-043): `tools/PlannerEval`, 30 cases + checks K-1..K-11, PE-1/PE-2 green offline; real scores wait for 7b and a key.
+  `feat/lesson-planner-v1` (DEC-026): LS-12 + LP-1..LP-7 green; LP-8 live row, streaming and the eval harness wait for a key. Eval harness v0 step 7a BUILT 2026-10-30 (DEC-043): `tools/PlannerEval`, 30 cases + checks K-1..K-11, PE-1/PE-2 green offline; real scores wait for 7b and a key. Schematic 3D contract (step 10a, DEC-048): VisualPlan 1.2 lets a lesson define one tagged, simplified model for an object the library lacks (LS-14, PL-6); planner, scene and router follow in 10b–10d.
   Phase 4.5 (App Shell wiring) BUILT 2026-10-28 on `feat/lesson-shell-wiring-v1` (DEC-027): `--lesson` runs
   LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; LT-1..LT-6 + SH-18 green offline; SH-19 live-gated.
   Plan: [plans/2026-10-28-lesson-shell-wiring-v1.md](../plans/2026-10-28-lesson-shell-wiring-v1.md).

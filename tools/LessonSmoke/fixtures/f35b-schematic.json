@@ -1,0 +1,89 @@
+{
+  "schema": "heyganesh.visualplan/1.2",
+  "lessonId": "f35b-schematic",
+  "title": "How the F-35B hovers",
+  "mode": "explain",
+  "surfaces": [
+    { "id": "scene-jet", "kind": "scene3d", "title": "F-35B (schematic)" },
+    { "id": "card-hover", "kind": "card", "title": "how it hovers" }
+  ],
+  "schematics": [
+    {
+      "id": "f35b",
+      "title": "F-35B (simplified)",
+      "parts": [
+        { "id": "fuselage", "name": "Fuselage", "shapes": [
+          { "shape": "capsule", "size": [0.5, 3.2, 0], "at": [0, 0, 0], "turn": [0, 0, 90], "finish": "metal" } ] },
+        { "id": "wings", "name": "Wings", "shapes": [
+          { "shape": "box", "size": [1.0, 0.06, 2.8], "at": [-0.2, 0, 0], "turn": [0, 0, 0], "finish": "metal" } ] },
+        { "id": "tail", "name": "Tail", "shapes": [
+          { "shape": "box", "size": [0.5, 0.05, 1.2], "at": [-1.4, 0.05, 0], "turn": [0, 0, 0], "finish": "metal" },
+          { "shape": "box", "size": [0.45, 0.5, 0.05], "at": [-1.4, 0.35, 0.25], "turn": [0, 0, 0], "finish": "metal" },
+          { "shape": "box", "size": [0.45, 0.5, 0.05], "at": [-1.4, 0.35, -0.25], "turn": [0, 0, 0], "finish": "metal" } ] },
+        { "id": "cockpit", "name": "Cockpit", "shapes": [
+          { "shape": "sphere", "size": [0.36, 0, 0], "at": [1.1, 0.22, 0], "turn": [0, 0, 0], "finish": "glass" } ] },
+        { "id": "lift-fan", "name": "Lift fan", "shapes": [
+          { "shape": "cylinder", "size": [0.55, 0.12, 0.55], "at": [0.55, 0.2, 0], "turn": [0, 0, 0], "finish": "dark-metal" } ] },
+        { "id": "nozzle", "name": "Swivel nozzle", "shapes": [
+          { "shape": "cylinder", "size": [0.32, 0.4, 0.26], "at": [-1.7, -0.15, 0], "turn": [0, 0, 0], "finish": "brass" } ] },
+        { "id": "roll-posts", "name": "Roll posts", "shapes": [
+          { "shape": "cylinder", "size": [0.08, 0.12, 0.08], "at": [-0.3, -0.06, 1.2], "turn": [0, 0, 0], "finish": "dark-metal" },
+          { "shape": "cylinder", "size": [0.08, 0.12, 0.08], "at": [-0.3, -0.06, -1.2], "turn": [0, 0, 0], "finish": "dark-metal" } ] }
+      ]
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "say": "This is a simplified 3D drawing of the F-35B, not to scale.",
+      "ops": [
+        { "op": "model", "surface": "scene-jet", "id": "jet", "model": "f35b" },
+        { "op": "camera", "surface": "scene-jet", "focus": "jet", "view": "iso" },
+        { "op": "write", "surface": "card-hover", "id": "w-title", "text": "three places air is pushed down", "style": "heading" }
+      ]
+    },
+    {
+      "id": "b2",
+      "say": "Behind the cockpit, a lift fan blows air straight down.",
+      "ops": [
+        { "op": "label", "surface": "scene-jet", "id": "l-fan", "target": "jet.lift-fan", "text": "lift fan" },
+        { "op": "highlight", "target": "jet.lift-fan" },
+        { "op": "step", "surface": "card-hover", "id": "s-fan", "index": 1, "text": "the lift fan pushes air down behind the cockpit" }
+      ]
+    },
+    {
+      "id": "b3",
+      "say": "At the tail, the engine nozzle swivels to point its exhaust downward.",
+      "ops": [
+        { "op": "label", "surface": "scene-jet", "id": "l-nozzle", "target": "jet.nozzle", "text": "swivel nozzle" },
+        { "op": "highlight", "target": "jet.nozzle" },
+        { "op": "step", "surface": "card-hover", "id": "s-nozzle", "index": 2, "text": "the nozzle turns the engine's exhaust downward" }
+      ]
+    },
+    {
+      "id": "b4",
+      "say": "Small roll posts under the wings keep it level.",
+      "ops": [
+        { "op": "label", "surface": "scene-jet", "id": "l-posts", "target": "jet.roll-posts", "text": "roll posts" },
+        { "op": "step", "surface": "card-hover", "id": "s-posts", "index": 3, "text": "roll posts steady it side to side" }
+      ]
+    },
+    {
+      "id": "b5",
+      "say": "Pulled apart, you can see each place where air is pushed down.",
+      "ops": [
+        { "op": "explode", "target": "jet", "amount": 0.5 },
+        { "op": "camera", "surface": "scene-jet", "focus": "jet", "view": "side" }
+      ]
+    },
+    {
+      "id": "b6",
+      "say": "Together their thrust balances the jet's weight, so it hovers.",
+      "ops": [
+        { "op": "explode", "target": "jet", "amount": 0 },
+        { "op": "highlight", "target": "w-title" },
+        { "op": "step", "surface": "card-hover", "id": "s-hover", "index": 4, "text": "upward thrust equals weight, so it hovers" }
+      ]
+    }
+  ]
+}

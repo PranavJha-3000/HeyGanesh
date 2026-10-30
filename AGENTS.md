@@ -146,7 +146,7 @@ dotnet build src/Intelligence/HeyGanesh.VisualLessonEngine -c Debug
 dotnet build tools/LessonSmoke -c Debug
 tools/LessonSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSmoke.exe --assert-source
 #   -> 6 PASS, exit 0   (also: --assert-parse 9, --assert-limits 20, --assert-refs 15, --assert-degrade 7, --assert-fixtures 6)
-#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 16, --assert-grounded 6, --assert-scene3d 22 (schema 1.1 3D contract, DEC-028)
+#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 16, --assert-grounded 6, --assert-scene3d 22 (schema 1.1 3D contract, DEC-028), --assert-schematic 20 (schema 1.2 schematics, DEC-048)
 
 # Lesson Surface host (real WebView2 cards on the desktop; needs an interactive session, no key).
 # Build library then host SEQUENTIALLY. Cards are capture-excluded: use --snapshot to see them as PNGs.
@@ -181,7 +181,7 @@ tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Lesso
 dotnet build src/Intelligence/HeyGanesh.PartLibrary -c Debug
 dotnet build tools/PartLibrarySmoke -c Debug
 tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --assert-physics
-#   -> 19 PASS, exit 0   (also: --assert-source 5, --assert-library 20, --assert-catalog 6)
+#   -> 19 PASS, exit 0   (also: --assert-source 5, --assert-library 20, --assert-catalog 6, --assert-schematic 7)
 tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --dump all
 #   -> plain-text review of every model's parts and descriptions (manual row PL-5; no model is Reviewed yet)
 

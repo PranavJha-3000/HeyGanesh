@@ -22,6 +22,7 @@ internal static partial class LessonSmokeHost
         AssertPlot,
         AssertGrounded,
         AssertScene3d,
+        AssertSchematic,
     }
 
     public static async Task<int> RunAsync(string[] args)
@@ -53,6 +54,7 @@ internal static partial class LessonSmokeHost
                 Mode.AssertPlot => RunAssertPlot(),
                 Mode.AssertGrounded => RunAssertGrounded(),
                 Mode.AssertScene3d => RunAssertScene3d(),
+                Mode.AssertSchematic => RunAssertSchematic(),
                 Mode.AssertPlay => await RunAssertPlayAsync(),
                 Mode.AssertPlayDegraded => await RunAssertPlayDegradedAsync(),
                 Mode.AssertControls => await RunAssertControlsAsync(),
@@ -84,6 +86,7 @@ internal static partial class LessonSmokeHost
                 case "--assert-plot": mode = Mode.AssertPlot; break;
                 case "--assert-grounded": mode = Mode.AssertGrounded; break;
                 case "--assert-scene3d": mode = Mode.AssertScene3d; break;
+                case "--assert-schematic": mode = Mode.AssertSchematic; break;
                 case "--assert-play": mode = Mode.AssertPlay; break;
                 case "--assert-play-degraded": mode = Mode.AssertPlayDegraded; break;
                 case "--assert-controls": mode = Mode.AssertControls; break;
@@ -113,6 +116,7 @@ internal static partial class LessonSmokeHost
         Console.WriteLine("  --assert-plot                 closed-grammar plot expressions, app-computed samples, exit 0");
         Console.WriteLine("  --assert-grounded             marks only inside the grounded target box, exit 0");
         Console.WriteLine("  --assert-scene3d              schema 1.1 scene: catalogue-bound models/parts/animations, off without a catalogue, exit 0");
+        Console.WriteLine("  --assert-schematic            schema 1.2 schematics: every rule alone, a refused one costs only its beats, geometry delegate, exit 0");
         Console.WriteLine();
         Console.WriteLine("Playback rows (fake canvas + fake speaker, no renderer, no TTS):");
         Console.WriteLine("  --assert-play                 draw-then-speak per beat, speech is the clock, report, exit 0");

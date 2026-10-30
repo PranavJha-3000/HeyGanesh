@@ -24,6 +24,19 @@ public sealed record LessonLimits
     /// <summary>At or above this share of degraded beats the plan becomes plain spoken text.</summary>
     public double FallbackDegradedRatio { get; init; } = 0.5;
 
+    // Schematics (schema 1.2, DEC-048): one per lesson, small enough to read at a glance and well inside the
+    // Part Library's budgets (LibraryCheck: 16 parts, 64 primitives, the ±2 box).
+    public int MaxSchematics { get; init; } = 1;
+
+    public int MaxSchematicParts { get; init; } = 12;
+
+    public int MaxSchematicShapes { get; init; } = 40;
+
+    /// <summary>The model's half-width: every centre component lies in [-this, this], every size component in [0, 2 × this].</summary>
+    public double SchematicExtent { get; init; } = 2.0;
+
+    public int MaxSchematicNameChars { get; init; } = 40;
+
     public static LessonLimits Default { get; } = new();
 }
 
@@ -33,5 +46,17 @@ public static class LessonVocabulary
     public static IReadOnlySet<string> Glyphs { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
         "atom", "bulb", "book", "cell", "flask", "gear", "leaf", "magnet", "cycle", "scale",
+    };
+
+    /// <summary>The shapes a schematic may use: the five both 3D renderers already draw (DEC-048).</summary>
+    public static IReadOnlySet<string> SchematicShapes { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "box", "cylinder", "sphere", "torus", "capsule",
+    };
+
+    /// <summary>The finishes a schematic may use: the Part Library's general ones, never a subject-specific colour.</summary>
+    public static IReadOnlySet<string> SchematicFinishes { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "metal", "dark-metal", "brass", "glass",
     };
 }

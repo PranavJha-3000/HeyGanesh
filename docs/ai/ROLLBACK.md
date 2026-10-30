@@ -474,3 +474,15 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `ae9442c` (the commit before this step).
 - **Files to restore:** `git checkout ae9442c -- src/Intelligence/HeyGanesh.TutorEngine src/Experience/HeyGanesh.App tools/TutorSmoke AGENTS.md docs/ai`.
 - **Re-check after revert:** TutorSmoke `--assert-source` 15 and `--assert-tutor-payload` 33 PASS lines; App `--once --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (schematic 3D contract: a lesson may define one simplified model, build sequence step 10a, DEC-048)
+
+- **Change:**
+  - VisualLessonEngine: schema 1.2 with an optional `schematics` header field (`SchematicModel`/`SchematicPart`/`SchematicShape`), parsed and validated (closed shapes and finishes, limits, a catalogue-collision rule, an optional geometry delegate on `ValidationContext`). A broken schematic is dropped and costs only the beats that use it.
+  - PartLibrary: `Schematics.ToModel` / `Schematics.Check` (the existing `LibraryCheck`).
+  - Fixture `tools/LessonSmoke/fixtures/f35b-schematic.json`; LessonSmoke `--assert-schematic`; PartLibrarySmoke `--assert-schematic`; CI G-13 / G-16 run them.
+  - Docs: DEC-048, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, FEATURE-007, plan.
+  - Nothing outside these two libraries and their hosts changes; no renderer, planner or router change (10b–10d).
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `9bde849` (the commit before this step).
+- **Files to restore:** `git checkout 9bde849 -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Intelligence/HeyGanesh.PartLibrary tools/LessonSmoke tools/PartLibrarySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Intelligence/HeyGanesh.PartLibrary/Schematics.cs`, `tools/LessonSmoke/fixtures/f35b-schematic.json` and the new smoke files (`git status` lists them).
+- **Re-check after revert:** LessonSmoke `--assert-scene3d` 22 and `--assert-fixtures` 6; PartLibrarySmoke `--assert-catalog` 6; the local CI runner reports 19 gates, all exit 0.

@@ -25,6 +25,7 @@ internal static partial class PartLibrarySmokeHost
                 "--assert-library" when args.Length == 1 => RunAssertLibrary(),
                 "--assert-physics" when args.Length == 1 => RunAssertPhysics(),
                 "--assert-catalog" when args.Length == 1 => RunAssertCatalog(),
+                "--assert-schematic" when args.Length == 1 => RunAssertSchematic(),
                 "--dump" when args.Length == 2 => RunDump(args[1]),
                 _ => Usage($"unknown arguments '{string.Join(' ', args)}'"),
             };
@@ -52,6 +53,7 @@ internal static partial class PartLibrarySmokeHost
         Console.WriteLine("  --assert-library       every model meets the structural rules; each rule fires on a broken model, exit 0");
         Console.WriteLine("  --assert-physics       slider-crank, B-DNA and pump numbers hold in the shipped data, exit 0");
         Console.WriteLine("  --assert-catalog       ToCatalog() matches the models; lessons validate against it; nothing Reviewed yet, exit 0");
+        Console.WriteLine("  --assert-schematic     a lesson's schematic becomes a schematic LibraryModel and meets LibraryCheck; wired as the geometry delegate, exit 0");
         Console.WriteLine("  --dump <model|all>     plain-text review dump of the parts, descriptions and animations, exit 0");
         return 0;
     }

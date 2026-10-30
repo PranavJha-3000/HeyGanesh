@@ -89,8 +89,25 @@ public static class VisualPlanParser
             })
             .ToList();
 
-        return new VisualPlan(Str(root, "schema"), Str(root, "lessonId"), Str(root, "title"), mode, surfaces, beats);
+        var schematics = Items(root, "schematics")
+            .Select(s => new SchematicModel(
+                Str(s, "id"),
+                Str(s, "title"),
+                Items(s, "parts").Select(p => new SchematicPart(
+                    Str(p, "id"),
+                    Str(p, "name"),
+                    Items(p, "shapes").Select(x => new SchematicShape(Str(x, "shape"), Numbers(x, "size"), Numbers(x, "at"), Numbers(x, "turn"), Str(x, "finish"))).ToList())).ToList()))
+            .ToList();
+
+        return new VisualPlan(Str(root, "schema"), Str(root, "lessonId"), Str(root, "title"), mode, surfaces, beats) { Schematics = schematics };
     }
+
+    /// <summary>
+    /// A schematic's number triple, read as given: a non-number becomes NaN and a missing field an empty
+    /// list, so the validator can refuse it with a reason (schematic numbers are never defaulted to 0).
+    /// </summary>
+    private static IReadOnlyList<double> Numbers(JsonElement e, string name) =>
+        Items(e, name).Select(v => v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var d) ? d : double.NaN).ToList();
 
     private static LessonOp ReadOp(JsonElement o, string beatId, List<LessonIssue> issues)
     {

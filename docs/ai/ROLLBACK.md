@@ -425,3 +425,15 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `0c70070` (step 7a as first built).
 - **Files to restore:** `git checkout 0c70070 -- tools/PlannerEval AGENTS.md docs/ai`.
 - **Re-check after revert:** PlannerEval `--assert-set` 7 PASS and `--assert-checks` 21 PASS, exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (planner evaluation: live record, offline replay, baseline gate, build sequence step 7b, DEC-044)
+
+- **Change:** `tools/PlannerEval` only (no product code):
+  - new files: `LiveClient`, `EnvKeyStore`, `RecordingLlmClient`, `EvalRun` (the case loop PE-2 now shares), `EvalReport`, `StubServer`;
+  - new modes `--record`, `--replay`, `--assert-record-stub` (PE-4), `--assert-drift` (PE-5);
+  - csproj references to Providers.OpenAiCompat and Security;
+  - CI G-22 gains PE-4, PE-5 and a baseline replay that is skipped while no baseline exists.
+  - Docs: DEC-044, TEST-CHECKLIST, CI.md, AGENTS.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `e489d82` (the commit before this step).
+- **Files to restore:** `git checkout e489d82 -- tools/PlannerEval .github/workflows/ci.yml AGENTS.md docs/ai`, then delete any new file under `tools/PlannerEval/` (`git status` lists them).
+- **Re-check after revert:** PlannerEval `--assert-set` 7 PASS and `--assert-checks` 24 PASS; the local CI runner reports 18 gates, all exit 0.

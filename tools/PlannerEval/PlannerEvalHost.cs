@@ -11,20 +11,21 @@ using FakeLlm = HeyGanesh.Tools.LessonPlannerSmoke.FakeLlmClient;
 namespace HeyGanesh.Tools.PlannerEval;
 
 /// <summary>
-/// The planner evaluation host (DEC-043). 7a rows run offline: PE-1 checks the set itself, PE-2 runs
-/// golden and seed answers through the real VisualPlanner (streaming path, recording fake model) and
-/// proves every check both passes and fails. Exit codes: 0 pass, 1 failed check, 2 usage.
+/// The planner evaluation host (DEC-043/DEC-044). PE-1 checks the set itself; PE-2 runs golden and seed
+/// answers through the real VisualPlanner (streaming path, recording fake model) and proves every check both
+/// passes and fails; PE-4/PE-5 prove the recording path offline; <c>--record</c> is the one live mode.
+/// Exit codes: 0 pass, 1 failed check or regression, 2 usage, 3 prompt changed since the baseline,
+/// 12 key missing or refused, 13 cancelled.
 /// </summary>
-internal static class PlannerEvalHost
+internal static partial class PlannerEvalHost
 {
-    private static readonly PixelRect Desktop = new(0, 0, 2560, 1440);
     private const ProviderCapability StreamingText = ProviderCapability.Text | ProviderCapability.Streaming;
     private static readonly string[] AllChecks = Enumerable.Range(1, 11).Select(i => $"K-{i}").ToArray();
 
     public static async Task<int> RunAsync(string[] args)
     {
         var mode = args.Length > 0 ? args[0] : "--help";
-        Console.WriteLine("Planner evaluation host (30 questions, automatic checks; offline rows use a recording fake model, no key)");
+        Console.WriteLine("Planner evaluation host (30 questions, automatic checks; only --record calls a real model)");
         Console.WriteLine();
         try
         {
@@ -32,6 +33,10 @@ internal static class PlannerEvalHost
             {
                 "--assert-set" => RunAssertSet(),
                 "--assert-checks" => await RunAssertChecksAsync(),
+                "--assert-record-stub" => await RunAssertRecordStubAsync(),
+                "--assert-drift" => RunAssertDrift(),
+                "--record" => await RunRecordAsync(args[1..]),
+                "--replay" => await RunReplayAsync(args[1..]),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -54,6 +59,10 @@ internal static class PlannerEvalHost
         Console.WriteLine("Usage: PlannerEval <mode>");
         Console.WriteLine("  --assert-set     30 cases, unique ids, follow-ups resolve, every named model is in the Part Library, golden files exist, exit 0");
         Console.WriteLine("  --assert-checks  golden lessons pass their cases; each seed fails exactly its own check; every check seen passing and failing, exit 0");
+        Console.WriteLine("  --assert-record-stub  record through the real client against a loopback stub; no key in any file; replay reproduces it; the baseline gate fires, exit 0");
+        Console.WriteLine("  --assert-drift   the live client's settings match the App Shell's lesson client, exit 0");
+        Console.WriteLine("  --record [dir] [--cases E-01,M-02]  LIVE: plan the cases with DeepSeek (DEEPSEEK_API_KEY) and write a recording; no key -> exit 12");
+        Console.WriteLine("  --replay <dir> [--baseline <dir>]   re-score a recording offline; with a baseline: exit 1 on a regression, 3 when the prompt changed");
         return 0;
     }
 
@@ -129,25 +138,15 @@ internal static class PlannerEvalHost
 
         foreach (var (c, label, expect, answer) in runs)
         {
-            var previous = c.Previous is { } p && lessons.TryGetValue(p, out var prev) ? prev : null;
-            var model = new FakeLlm(StreamingText, answer, answer);
-            using var planner = new VisualPlanner(model);
-            var result = await planner.PlanStreamingAsync(Request(c, previous));
-            var sent = model.Recorded.Count > 0 ? model.Recorded[0].Messages.Last(m => m.Role == "user").Text : null;
-            var checks = EvalChecks.Score(c, result, previous, sent);
-            if (result.Lesson.Plan is { } plan)
+            var run = await EvalRun.RunOneAsync(c, new FakeLlm(StreamingText, answer, answer), lessons);
+            foreach (var (id, passed) in run.Checks)
             {
-                lessons[c.Id] = plan;
+                (passed ? seenPass : seenFail).Add(id);
             }
 
-            foreach (var r in checks)
-            {
-                (r.Passed ? seenPass : seenFail).Add(r.Id);
-            }
-
-            var failed = checks.Where(r => !r.Passed).Select(r => r.Id).ToList();
-            var ok = expect == "pass" ? failed.Count == 0 : failed.SequenceEqual(new[] { expect });
-            var detail = string.Join(", ", checks.Where(r => !r.Passed || r.Id == expect).Select(r => $"{r.Id} {r.Detail}"));
+            var failed = run.Checks.Where(r => !r.Value).Select(r => r.Key).ToList();
+            var ok = run.Error is null && (expect == "pass" ? failed.Count == 0 : failed.SequenceEqual(new[] { expect }));
+            var detail = string.Join(", ", run.Details.Where(d => d.StartsWith("fail", StringComparison.Ordinal) || d.StartsWith($"pass {expect} ", StringComparison.Ordinal)).Select(d => d[5..]));
             failures = Check(ok, $"{c.Id} {label}: expect {expect}; failed [{string.Join(", ", failed)}]{(detail.Length == 0 ? string.Empty : $" -- {detail}")}", failures);
         }
 
@@ -159,15 +158,6 @@ internal static class PlannerEvalHost
     }
 
     private static string Names(List<string> ids) => ids.Count == 0 ? "none" : string.Join(", ", ids);
-
-    private static PlanRequest Request(EvalCase c, VisualPlan? previous) => new()
-    {
-        Question = c.Question,
-        Screen = c.Screen is { } s ? new ScreenGrounding(s.Description, s.TargetBox, null, 0, 0) : null,
-        VirtualDesktop = Desktop,
-        PreviousPlan = previous,
-        Scene3d = c.OffersScene3d ? ModelLibrary.ToCatalog() : null,
-    };
 
     // The golden engine lesson names the stand-in model "engine-test"; with the real catalogue it is the
     // shipped four-stroke engine (LP-10 does the same).

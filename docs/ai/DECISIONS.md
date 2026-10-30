@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-044](#dec-044--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The evaluation set records live (`--record`, the shell's DeepSeek client, key presence only) and replays offline (`--replay`); a committed baseline gates CI: a check that passed there and fails now exits 1, a changed planner prompt exits 3 | accepted |
 | [DEC-043](#dec-043--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A planner evaluation set: 30 questions (six verbatim from the HeyClicky reference video) scored by 11 deterministic checks in a new host `tools/PlannerEval`; 7a proves every check passes and fails offline (CI G-22); no LLM judge in v0 | accepted |
 | [DEC-042](#dec-042--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A lesson turn plans through `PlanStreamingAsync`: the cards open on the first released beat and each beat plays while the rest is written; a stream that stops early ends `Stopped` with the reason; the shell's DeepSeek client advertises `Streaming` and prints `first beat :` | accepted |
 | [DEC-041](#dec-041--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner can stream: `PlanStreamingAsync` releases each beat once header + beats-so-far validate (the validator's own output), repairs only while nothing was released, and stops after the released beats on a mid-stream fault; `PlanAsync` unchanged; not wired into the shell yet | accepted |
@@ -54,6 +55,42 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-044 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the evaluation set records live once and replays offline forever; a reviewed recording becomes the baseline CI gates on.** Step 7b of the build sequence (the owner: "For now build all systems with API keys... I will add them later").
+
+- **Record** (`--record [dir] [--cases ...]`, live):
+  - the shell's DeepSeek client (`LiveClient`: `https://api.deepseek.com`, `deepseek-flash`, `Text | Streaming`, `DEEPSEEK_API_KEY`); PE-5 fails if it stops matching `ShellHost.Lesson.cs`;
+  - `RecordingLlmClient` keeps every answer as it streams;
+  - writes `cases/<id>.json`, `summary.json` and `report.txt`, which hold checks, first-beat p50/p90 against 2.5 s, library misses, tokens when reported, and a SHA-256 of the planner prompt;
+  - the key is described as "present (N chars)" only.
+- **Exit codes:**
+  - no key → exit 12 before any client exists;
+  - an auth error stops the run (12), and the cases so far are written;
+  - another provider fault is recorded on its case and the run continues;
+  - Ctrl+C → 13.
+- **Replay** (`--replay <dir> [--baseline <dir>]`, offline):
+  - recorded answers go back through the current planner and checks;
+  - exit 1 when a check that passed in the baseline fails now, or the total drops;
+  - **exit 3 when the prompt hash changed** (frozen answers say nothing about a new prompt; re-record);
+  - cases with a provider error or a cut-short stream keep their recorded result.
+- **The shared case loop:** `EvalRun.RunOneAsync` (PE-2 now uses it too; its output is unchanged).
+- **CI:** G-22 adds PE-4 and PE-5. It replays `tools/PlannerEval/baseline` once the owner commits one, and says "no baseline yet" until then.
+
+**Choices taken without an explicit answer.** The owner was asked "fail or warn on a prompt change" and replied "build all systems", so I took the recommended **fail** (exit 3). Switching to a warning is one line in `RunReplayAsync`.
+
+**Rejected.**
+- A `--base-url` flag (it would send the key wherever it is told).
+- Moving the shell's client factory into a product assembly now (it would change a product module's dependencies; PE-5 guards drift until the Security Proxy replaces both).
+- Several runs per case (the report says "one run" instead).
+
+**Consequences.**
+- Scores, timings and the baseline exist only after the owner's first live run (PE-6).
+- The client sends no `stream_options`, so DeepSeek reports no tokens in streams: the report says "not reported".
+- A follow-up whose previous case could not be replayed is scored without its previous lesson.
+
+Plan: [plans/2026-10-30-planner-eval-v1.md](plans/2026-10-30-planner-eval-v1.md). Rows: PE-4, PE-5 (CI G-22), PE-6 (live, owner), PE-7.
+
 ## DEC-043 — 2026-10-30 — claude-opus-5-5
 
 **Decision — lessons are measured on a fixed set of 30 student questions with automatic checks, in a host of their own.** Step 7a of the build sequence (the owner: "Yes, build 7a"). Before this, the planner rows proved the machinery on four golden lessons and said nothing about whether real lessons are usable.

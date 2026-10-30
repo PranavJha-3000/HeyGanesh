@@ -2,7 +2,8 @@
 
 2026-10-30 · claude-opus-5-5 · STATUS: 7a BUILT 2026-10-30 (owner: "Yes, build 7a"): PE-1 7 PASS, PE-2 21 PASS; DEC-043.
 Changed while building: K-5/K-6 apply to every case that expects a canvas / is offered the catalogue; PE-1 also proves a
-broken set is refused; the host is not in `HeyGanesh.sln` (no tool host is); ARCHITECTURE unchanged. 7b is not built.
+broken set is refused; the host is not in `HeyGanesh.sln` (no tool host is); ARCHITECTURE unchanged. 7b BUILT 2026-10-30 (owner: "build all systems with API keys... I will add them later"): PE-4 9 PASS, PE-5 5 PASS;
+prompt change = fail (exit 3), the recommended default, since no choice was given.
 Revised 2026-10-30 after the owner's review ("Yes, apply all 8"): see DEC-043; PE-2 is now 24 PASS; P-02 became U-01.
 
 ## What the reference video shows (HeyClicky "introducing real-time graphics", 2026-10-29, 2:27)
@@ -102,20 +103,104 @@ manipulated lessons, but not subtle factual errors. That gap is stated in the re
 - `HeyGanesh.sln`, CI gate G-22 (PE-1, PE-2), and the docs (DEC-043, TEST-CHECKLIST, CI.md, AGENTS.md, ARCHITECTURE
   tools list, HANDOVER, ROLLBACK first, FEATURE-007 status).
 
-### 7b: record live, replay offline
+### 7b: record live, replay offline (built 2026-10-30, DEC-044; the live run PE-6 waits for the key)
 
-- `--record <dir>`, live, needs `DEEPSEEK_API_KEY`. It runs all 30 cases through the same DeepSeek client the shell
-  builds, streaming, and writes three things per case:
-  - the raw answer;
-  - the first-beat time;
-  - the tokens used.
-  It also writes a report: pass/fail per check, the first-beat p50 and p90 against 2.5 s, and the library misses. The
-  key is reported as present or missing only. Default dir: `%LOCALAPPDATA%/HeyGanesh/eval/<date>`.
-- `--replay <dir>`, offline: re-scores recorded answers through the fake model.
-  - Once the owner commits a reviewed recording as `tools/PlannerEval/baseline/`, CI gate G-22 also replays it and
-    fails when fewer checks pass than the baseline's count.
-  - That is the "does not merge" rule.
-- Built and proven offline with the loopback stub pattern from TU-11. The real recording is the owner's first live run.
+**Problem.** 7a proves the checks work; it has scored no real lesson. The FEATURE-007 rule "a prompt or model change
+that lowers accuracy does not merge" also needs a recorded baseline to compare against. This step adds three things:
+- a way to record DeepSeek's lessons for all 30 cases once;
+- a way to re-score a recording offline;
+- a CI gate on a baseline the owner commits.
+
+**What replay can and cannot catch.** Replaying recorded answers offline catches changes to the parser, the validator,
+the checks or the set. It cannot show what a prompt or model change does, because the answers are frozen. A change
+like that needs a new live recording. So the gate also pins the prompt (below) and tells you when to re-record.
+
+#### Files
+
+All of them are in `tools/PlannerEval/`; no product code changes.
+- `PlannerEval.csproj`: adds project references to `HeyGanesh.Providers.OpenAiCompat` and `HeyGanesh.Security`. These
+  are in-repo projects, not NuGet packages.
+- `LiveClient.cs` (new): builds the DeepSeek client exactly as `ShellHost.CreateLessonPlanner` does:
+  - base URL `https://api.deepseek.com`, model `deepseek-flash`, `Text | Streaming`;
+  - a key read per request from `DEEPSEEK_API_KEY`.
+
+  The base URL is a constant. No command-line flag can redirect the key to another host.
+- `EnvKeyStore.cs` (new): a tool copy of the App's `EnvironmentSecretStore`, which is `internal` to the App. It is about
+  20 lines and matches the original's comments.
+- `RecordingLlmClient.cs` (new): wraps any `ILlmClient` and keeps each call's full answer text, in order, as it
+  streams past. Repairs count, so a case can have two answers. It adds nothing to the request.
+- `EvalRun.cs` (new): the case loop, shared by PE-2, record and replay:
+  - cases run in order, and each follow-up is sent the lesson planned for its previous case;
+  - each case gets its request, its plan and its checks;
+  - PE-2 moves onto this loop with no change to its output.
+- `EvalReport.cs` (new): writes `report.txt` (for people) and `summary.json` (for the gate), holding:
+  - each case's check results and errors;
+  - per-check pass totals;
+  - first-beat p50 and p90 against 2.5 s, and the whole-lesson p50;
+  - library misses;
+  - tokens, when the provider reports them. The client doesn't request usage in streams today, so they may show as
+    "not reported".
+  - the model id;
+  - a SHA-256 of the planner's system prompt (2D and 3D variants);
+  - the key as "present (N chars)" only.
+- `StubServer.cs` (new): a loopback-only server sending OpenAI-style SSE answers, modelled on TutorSmoke's
+  `StubServer`. It binds `127.0.0.1` only, never a wildcard.
+- `PlannerEvalHost.cs`: the new modes below.
+
+#### Modes and rows
+
+| Row | Mode | What it does | Needs |
+|---|---|---|---|
+| PE-4 | `--assert-record-stub` | real `OpenAiCompatLlmClient` → loopback SSE stub serving the goldens and seeds; records to a temp dir; asserts every case file, the report and summary exist; a dummy key reaches the stub's `Authorization` header but **no written file contains it**; `--replay` of that dir reproduces the identical per-check results; p50/p90 computed from recorded times | nothing (CI) |
+| PE-5 | `--assert-drift` | the eval's live settings equal the shell's: reads `ShellHost.Lesson.cs` and checks base URL, model id, capability and key variable appear exactly as `LiveClient` uses them, so the two can't silently diverge | nothing (CI) |
+| PE-6 | `--record [dir] [--cases E-01,M-02,...]` | **live**: all 30 cases (or the listed subset, follow-ups pulling in their previous case) through DeepSeek; per-case files + report. Without the key: `KEY MISSING`, exit 12, no network. An auth error aborts with exit 12; other provider faults are recorded per case and the run continues; Ctrl+C exits 13 | `DEEPSEEK_API_KEY` (owner) |
+| PE-7 | `--replay <dir> [--baseline <dir>]` | offline re-score; with a baseline: exit 1 when any check that passed in the baseline now fails, or the total drops; exit 3 when the prompt hash differs from the baseline's ("prompt changed since the baseline: re-record with --record") | nothing |
+
+The default record directory is `%LOCALAPPDATA%/HeyGanesh/eval/<yyyyMMdd-HHmmss>`, or under `HEYGANESH_DATA_DIR` when
+that is set. Recordings contain model output, the written-for-the-set screen text and timings: no key, nothing
+captured from the screen.
+
+#### The baseline and CI
+
+- After your first live run, you review `report.txt`. If you accept it, the run is committed as
+  `tools/PlannerEval/baseline/`, but only on your word.
+- From then on, G-22 adds `--replay tools/PlannerEval/baseline --baseline tools/PlannerEval/baseline`.
+- Until a baseline exists, G-22 prints "no baseline yet" and passes.
+- **Prompt-hash mismatch, my recommendation: fail CI.** That enforces "every prompt change runs the eval". It also means
+  a prompt edit blocks CI until you re-record with your key. The alternative is a loud warning that still passes; it's
+  your choice, and it's a one-line switch either way.
+
+#### Alternatives considered
+
+- **Move `CreateLessonPlanner` and `EnvironmentSecretStore` into a shared product assembly**, so the eval calls the
+  shell's own code. It's cleaner, but it changes a product assembly's dependencies: LessonSession's source row pins its
+  references. Rejected for now; PE-5 guards against drift instead. Worth doing alongside the Security Proxy (step 8),
+  which replaces both anyway.
+- **A `--base-url` flag**, so other OpenAI-compatible models could be recorded, such as HeyClicky's GPT-6.1 Sol.
+  Rejected: a flag that sends the key wherever it's told is the exact risk the API-key rule exists for. Comparing
+  another model needs its own client and its own key variable, as its own step.
+- **Several runs per case to average out randomness.** Deferred: one run of 30 shows whether the lessons are usable.
+  The model's temperature makes scores noisy, so the report says "one run".
+
+#### What could break, and how we'd know
+
+- **Spend.** Thirty lessons plus any repairs is roughly 30–60 planner calls. The report prints the total tokens when
+  the provider reports them. `--cases` lets you start with a few.
+- **The key appearing in a file.** PE-4 searches every written file for the dummy key.
+- **Flaky live timings.** p50/p90 are reported, never gated.
+- **The eval's client drifting from the shell's.** PE-5 fails.
+
+#### Verification
+
+- Build with `-warnaserror` 0/0.
+- PE-1/PE-2 unchanged (7 and 24).
+- PE-4 and PE-5 pass, and each has a mutation proving it.
+- PE-7 against the PE-4 recording: identical results exit 0; a seed edited to fail one check exits 1; a changed prompt
+  hash exits 3.
+- `--record` without the key: exit 12, and no connection is opened.
+- Local CI: 18 gates.
+
+**Not verifiable by me:** PE-6, the real scores and timings. That needs your key and one run.
 
 ## Execution path
 

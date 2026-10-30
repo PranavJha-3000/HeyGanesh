@@ -169,14 +169,24 @@ jobs:
           & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-preroll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      # G-22: the planner evaluation set (DEC-043) - the set is well formed, and every automatic check both passes
-      # and fails on golden and seed answers through the real planner and a recording fake model; no key.
+      # G-22: the planner evaluation set (DEC-043/DEC-044) - the set is well formed; every automatic check both passes
+      # and fails; the recording path works through the real client against a loopback stub with no key in any file;
+      # the live client matches the App Shell's. Once the owner commits a reviewed live recording as
+      # tools\PlannerEval\baseline, it is replayed too: a check that passed there and fails now exits 1, a changed
+      # planner prompt exits 3 (re-record with --record). No key is used here.
       - name: G-22 Planner evaluation set
         shell: pwsh
         run: |
           dotnet build tools\PlannerEval -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          foreach ($m in @('--assert-set', '--assert-checks')) {
-            & 'tools\PlannerEval\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PlannerEval.exe' $m
+          $exe = 'tools\PlannerEval\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PlannerEval.exe'
+          foreach ($m in @('--assert-set', '--assert-checks', '--assert-record-stub', '--assert-drift')) {
+            & $exe $m
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          if (Test-Path 'tools\PlannerEval\baseline\summary.json') {
+            & $exe --replay 'tools\PlannerEval\baseline'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } else {
+            Write-Output 'no baseline yet: tools\PlannerEval\baseline is committed after the first reviewed live recording'
           }

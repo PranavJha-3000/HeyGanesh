@@ -23,6 +23,9 @@
     <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
     <!-- 3D cases are offered the real catalogue, as the App Shell offers it. The planner itself never references it. -->
     <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+    <!-- 7b (DEC-044): the live recording uses the App Shell's lesson client, built the same way (LiveClient, checked by PE-5). -->
+    <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
+    <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

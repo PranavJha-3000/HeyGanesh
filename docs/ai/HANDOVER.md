@@ -1,4 +1,18 @@
 
+## 2026-10-30 · claude-opus-5-5 (planner evaluation: record live, replay offline, baseline gate, build sequence step 7b, DEC-044)
+
+Did: `tools/PlannerEval` gains:
+- `LiveClient`, the shell's DeepSeek client with a constant URL;
+- `EnvKeyStore`, `RecordingLlmClient`;
+- `EvalRun` (the shared case loop; PE-2 uses it, output unchanged), `EvalReport`, `StubServer`;
+- modes `--record` (live) and `--replay` (offline, baseline gate: 1 on a regression, 3 when the prompt changed);
+- rows PE-4 `--assert-record-stub` (9) and PE-5 `--assert-drift` (5), both in CI G-22, plus a baseline replay that is skipped while no baseline exists.
+No product code changed.
+Left: PE-6, the first live recording: set `DEEPSEEK_API_KEY`, run `--record` (try `--cases E-01,E-03` first), read `report.txt`. PE-7: on your review, commit that folder as `tools/PlannerEval/baseline/`. Step 8 (the Security Proxy) remains. Fourteen commits are local, ahead of PR #1; not pushed.
+Watch: The prompt-change rule is fail (exit 3); you were asked fail or warn and didn't choose, so I took the recommendation. A prompt edit therefore blocks G-22 until you re-record. DeepSeek reports no tokens in streams (no `stream_options`), so the report says "not reported". `EnvKeyStore` copies the App's internal store; both go away with the Security Proxy.
+Next: Owner: one live `--record` run. Me: plan step 8 (the Security Proxy).
+Verified: PlannerEval builds -warnaserror 0/0; PE-1 7, PE-2 24, PE-4 9, PE-5 5 PASS; `--record` without the key exits 12 and creates nothing. Each of these makes its row fail: changing the base URL (PE-5), writing the key into the report, disabling regressions, disabling the prompt pin (PE-4). All were restored byte for byte. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (evaluation set revised after the owner's review, DEC-043)
 
 Did: Applied the owner's eight review fixes to `tools/PlannerEval`. K-4 now ignores a misconception named in order to correct it. `EvalCase.MinBeats` lets the new abstention case U-01 (replacing P-02) pass with 1–2 beats. Terms were widened (M-05, M-02) or tightened (G-02, P-05, E-04). E-06 requires a power-off step and gains a grounded target. The header notes the 2d/3D scope and that E-01's slide is a recollection. Three new seeds; PE-2 is now 24.

@@ -1,0 +1,61 @@
+{
+  "schema": "heyganesh.visualplan/1",
+  "lessonId": "photosynthesis",
+  "title": "How photosynthesis makes sugar",
+  "mode": "explain",
+  "surfaces": [
+    { "id": "card-inputs", "kind": "card", "title": "what goes in" },
+    { "id": "card-process", "kind": "card", "title": "what happens" }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "say": "Photosynthesis turns light energy into chemical energy stored in sugar.",
+      "ops": [
+        { "op": "icon", "surface": "card-inputs", "id": "i-leaf", "glyph": "leaf" },
+        { "op": "write", "surface": "card-inputs", "id": "w-title", "text": "photosynthesis", "style": "heading" }
+      ]
+    },
+    {
+      "id": "b2",
+      "say": "The plant takes in carbon dioxide and water, and captures light.",
+      "ops": [
+        { "op": "icon", "surface": "card-inputs", "id": "i-light", "glyph": "bulb" },
+        { "op": "icon", "surface": "card-inputs", "id": "i-water", "glyph": "flask" },
+        { "op": "write", "surface": "card-inputs", "id": "w-in", "text": "inputs", "style": "body", "math": "6\\,CO_2 + 6\\,H_2O" }
+      ]
+    },
+    {
+      "id": "b3",
+      "say": "Overall, six carbon dioxide and six water become one glucose and six oxygen.",
+      "ops": [
+        { "op": "write", "surface": "card-process", "id": "w-eq", "text": "overall reaction", "style": "heading", "math": "6\\,CO_2 + 6\\,H_2O \\xrightarrow{\\text{light}} C_6H_{12}O_6 + 6\\,O_2" }
+      ]
+    },
+    {
+      "id": "b4",
+      "say": "Step one happens in the thylakoid membranes: light splits water and releases oxygen.",
+      "ops": [
+        { "op": "step", "surface": "card-process", "id": "s-light", "index": 1, "text": "light reactions (thylakoids): water is split, oxygen released" }
+      ]
+    },
+    {
+      "id": "b5",
+      "say": "Step two: those light reactions store the energy as ATP and NADPH.",
+      "ops": [
+        { "op": "step", "surface": "card-process", "id": "s-carriers", "index": 2, "text": "energy stored as ATP and NADPH" },
+        { "op": "arrow", "surface": "card-process", "from": "s-light", "to": "s-carriers" }
+      ]
+    },
+    {
+      "id": "b6",
+      "say": "Then the Calvin cycle in the stroma spends them to fix carbon dioxide into sugar, and regenerates RuBP so the cycle repeats.",
+      "ops": [
+        { "op": "icon", "surface": "card-process", "id": "i-cycle", "glyph": "cycle" },
+        { "op": "step", "surface": "card-process", "id": "s-calvin", "index": 3, "text": "Calvin cycle (stroma): carbon dioxide fixed into sugar" },
+        { "op": "step", "surface": "card-process", "id": "s-rubp", "index": 4, "text": "RuBP regenerated, so the cycle repeats" },
+        { "op": "highlight", "target": "w-eq" }
+      ]
+    }
+  ]
+}

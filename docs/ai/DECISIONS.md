@@ -9,6 +9,44 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-057](#dec-057--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Click-to-ask on a lesson schematic's parts: DEC-031's library-only rule is relaxed for the lesson's own schematic; the follow-up uses its cleaned names and says the part is from a simplified drawing. Also recorded: the tray log keeps transcribed questions (owner) | accepted |
+| [DEC-056](#dec-056--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Hey Ganesh mark: one tapered ink stroke from ear to trunk, the bindu and a crown arc on kraft paper; the tray exe's icon, the notification-area icon and the key screen's | accepted |
+| [DEC-055](#dec-055--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The installer is per-user PowerShell (installer option A): a self-contained win-x64 package, installed to `%LOCALAPPDATA%\Programs\HeyGanesh` with a Start-menu shortcut and an HKCU Apps & features entry; no admin, no signing; MSIX stays a later option | accepted |
+| [DEC-054](#dec-054--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Start at login is the per-user HKCU `Run` value `HeyGanesh` (the quoted tray path), toggled only by the tray's menu item, off by default; `StartupEntry` is the tray's only registry use | accepted |
+| [DEC-053](#dec-053--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The tray's key screen: one masked box per key, Save/Remove through the key ring, presence and length only; it opens by itself when DeepSeek or TypeSafe is missing; Ctrl+Alt is refused while it is open, through a new optional `triggerPaused` on `RunAsync` | accepted |
+| [DEC-052](#dec-052--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A tray host (`HeyGanesh.Tray`, WinExe, WinForms `NotifyIcon`) runs the App Shell's own composition through a new `RunAsync(args, stop, hookLive)`; the console exe is unchanged; output goes to a log file (newest 5); one tray per session | accepted |
+| [DEC-051](#dec-051--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The router can choose a 3D schematic: with `RouteRequest.Schematics` set (the shell sets it), "3D, no listed model fits" is a schematic lesson on the full catalogue instead of 2D cards; off by default | accepted |
+| [DEC-050](#dec-050--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The scene window draws a lesson's schematic (optional `ISchematicCanvas`, handed the schematics by `LessonPlayer`) and the shell asks for them whenever it offers 3D; a click on a schematic part stays refused, because follow-ups use vetted library text only | accepted |
+| [DEC-049](#dec-049--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner offers one schematic only when the request carries a catalogue and the Part Library's geometry check; the validator accepts none without that check; the eval gains K-12 (a schematic lesson must say it is simplified) | accepted |
+| [DEC-048](#dec-048--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | VisualPlan 1.2: a lesson may define one schematic model (closed shapes and finishes, ≤ 12 parts / 40 shapes, ±2 box) for an object the catalogue lacks; the engine checks structure, the Part Library's `Schematics.Check` checks geometry through a delegate; a refused schematic costs only its beats | accepted |
+| [DEC-047](#dec-047--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Tutor is on: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key (null and an honest skip otherwise); TU-8 allows exactly one key-named option, `DeepSeekTutorOptions.ApiKey` typed `Func<string?>` (amends DEC-017) | accepted |
+| [DEC-046](#dec-046--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell's API clients (Jev, Vision, Fish, the lesson and router models) read their keys through the key ring per request; `SelectionOptions`, `VisionOptions`, `FishTtsOptions` gain an optional `Func<string?> ApiKey` that defaults to the old environment read; the Tutor waits for step 9 because TU-8 forbids a key-named option | accepted |
+| [DEC-045](#dec-045--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The "API key security proxy" is `HeyGanesh.Security.KeyRing`: three known keys, Windows Credential Manager first and the environment variable as fallback, described by presence/length/source only; the App Shell gains `--keys`, `--set-key`, `--remove-key`; clients read through it from step 8b | accepted |
+| [DEC-044](#dec-044--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The evaluation set records live (`--record`, the shell's DeepSeek client, key presence only) and replays offline (`--replay`); a committed baseline gates CI: a check that passed there and fails now exits 1, a changed planner prompt exits 3 | accepted |
+| [DEC-043](#dec-043--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A planner evaluation set: 30 questions (six verbatim from the HeyClicky reference video) scored by 11 deterministic checks in a new host `tools/PlannerEval`; 7a proves every check passes and fails offline (CI G-22); no LLM judge in v0 | accepted |
+| [DEC-042](#dec-042--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A lesson turn plans through `PlanStreamingAsync`: the cards open on the first released beat and each beat plays while the rest is written; a stream that stops early ends `Stopped` with the reason; the shell's DeepSeek client advertises `Streaming` and prints `first beat :` | accepted |
+| [DEC-041](#dec-041--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner can stream: `PlanStreamingAsync` releases each beat once header + beats-so-far validate (the validator's own output), repairs only while nothing was released, and stops after the released beats on a mid-stream fault; `PlanAsync` unchanged; not wired into the shell yet | accepted |
+| [DEC-040](#dec-040--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Voice pre-roll: the microphone starts at the press and buffers until `session.ready`, then the buffer is sent in order; the socket stays per-utterance (DEC-013 Option F stands); configuration is checked before the microphone opens | accepted |
+| [DEC-039](#dec-039--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Element Selection offers up to 40 lines of screen text to Jev as "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, none that look secret); the shell turns OCR on, `--no-ocr` turns it off | accepted |
+| [DEC-038](#dec-038--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The capture can read the cursor monitor's text with Windows' built-in OCR on the full-size frame (`ReadText`, off by default), into `MonitorCapture.TextLines` in global physical pixels; local only; nothing consumes it yet | accepted |
+| [DEC-037](#dec-037--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A found Element Selection choice in the Low tier is checked by Vision on the same frame (on by default, `CheckLowConfidence`); Vision replaces it only when Medium+ and elsewhere; a failed or unsure check keeps the choice. Supersedes DEC-010's rejection of Option C and DEC-009's "not a gate", for Low only | accepted |
+| [DEC-036](#dec-036--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell routes each turn with the Turn Router when `TYPESAFE_API_KEY` is set: point → highlight only, explain → Tutor, lesson → 2D or one 3D model; `--lesson` and the new `--no-route` keep the old behaviour; a router fault falls back; one shared Jev client from `JevClients.CreateTypeSafe` | accepted |
+| [DEC-035](#dec-035--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A Turn Router asks Jev once per turn: intent (point / explain / lesson), 2D or 3D, and which catalogue model; below 0.5 or an unoffered id is no route, an unsure canvas is a 2D lesson; own assembly over `IJevClient`, not wired yet | accepted |
+| [DEC-034](#dec-034--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Without WebGL the 3D lesson is drawn as an isometric SVG with Anatomy's vendored MIT kit (models, labels, highlight, explode, focus; animation and views as stills; no click-to-ask yet); long parts cut into pieces and buried pieces painted just before their container | accepted |
+| [DEC-033](#dec-033--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | `--lesson` turns 3D on: the shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync` (30 s click wait); Ctrl+Alt stays refused while a lesson waits, with a message that says how to end it; exit code = the last turn's (13 if cancelled while waiting) | accepted |
+| [DEC-032](#dec-032--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | The planner offers 3D only when the request carries a catalogue: the same catalogue then validates the answer; schema 1.1, the 3D op shapes, limits, camera views and every model/part/animation id are interpolated from code; without one the prompt is byte-identical to v1 | accepted |
+| [DEC-031](#dec-031--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Click a 3D part to ask: picking only after a lesson has played; the page sends two ids, CardSurface checks them against what it drew and the catalogue; the question is written in C# from the Part Library; the follow-up plays on the same cards; at most 3, 60 s idle | accepted |
+| [DEC-030](#dec-030--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D renderer: a scene window in CardSurface (same isolation as cards) running vendored, SHA-pinned Babylon.js 9.30.0; rotations sent as C#-computed quaternions + an orientation self-test from real pixels; created on the first 3D lesson with a shader warm-up; render on demand; no-WebGL → speech | accepted |
+| [DEC-029](#dec-029--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | Part library v1 as C# code in a new `HeyGanesh.PartLibrary`: closed primitive kit, computed geometry/motion where physics defines it, `Schematic` and `Reviewed` (false) flags, budgets 16 parts / 64 primitives / ±2 box; produces the scene3d `ModelCatalog` | accepted |
+| [DEC-028](#dec-028--2026-10-29--claude-opus-5-5) | 2026-10-29 | claude-opus-5-5 | 3D as VisualPlan 1.1: one `scene3d` surface, ops model/label/explode/animate/camera + part refs, names bound to a caller-supplied `ModelCatalog`; off unless the canvas passes a catalogue (`ValidationContext.Scene3d`) | accepted |
+| [DEC-027](#dec-027--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | App Shell lesson leg: `--lesson` runs one LessonTurn (new HeyGanesh.LessonSession) after a produced verdict; planner built from `DEEPSEEK_API_KEY` (DeepSeek via OpenAiCompat) or the leg reports its skip; WebView2 reaches the App transitively | accepted |
+| [DEC-026](#dec-026--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Planner v1: `VisualPlanner` in its own assembly over any `ILlmClient`; prompt contract interpolated from validator code; image only to Vision models; grounded marks; one repair turn keeping the better answer; no structured output and no streaming yet | accepted |
+| [DEC-025](#dec-025--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson Surface v1: `CardSurface` (WebView2 cards on their own STA thread, text-only page, acked beats with timeout), seam `ClearAsync`→`ResetAsync(surfaces)`, plots computed by C# `PlotExpression` and refused by the validator when unparsable, TeX-lite + in-page strokes until KaTeX/Rough.js are vendored, marks as overlay box+pointer | accepted |
+| [DEC-024](#dec-024--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner is provider-agnostic and multimodal: resolved through ProviderRegistry (no hard-wired provider), sends the question + one bounded screen crop as an image part when the model has Vision, otherwise an explicit text-only grounding path; refines DEC-021 | accepted |
+| [DEC-022](#dec-022--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Tutor session state: in-memory only — last validated plan + last 6 turns, cleared on idle/exit; no persistence until Notes (M8) | accepted |
+| [DEC-021](#dec-021--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson planner calls models through Providers.Core `ILlmClient` (structured output + streaming already built), default DeepSeek `deepseek-flash` via OpenAiCompat; Tutor's DeepSeek client untouched | accepted |
+| [DEC-020](#dec-020--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | Lesson rendering: WebView2 (`Microsoft.Web.WebView2` 1.0.4314.35, one NuGet in one new Experience assembly) as OPAQUE borderless no-activate capture-excluded card windows; screen marks stay on the native ScreenOverlay; SVG + vendored KaTeX/Rough.js; Babylon.js deferred to Phase 5; transparent full-screen surface rejected for now | accepted |
+| [DEC-023](#dec-023--2026-10-28--claude-opus-5-5) | 2026-10-28 | claude-opus-5-5 | VisualPlan v1 contract: closed op set, hard limits, plan-wide ids with time-ordered references, never-throw parser; degrade bad beats to speech, ≥50% degraded or any plan-level issue to text; `HeyGanesh.VisualLessonEngine` references Abstractions only; LS-1..LS-7 | accepted |
 | [DEC-017](#dec-017--2026-10-01--cline-agent-pixel-canary) | 2026-10-01 | Cline agent (Pixel Canary) | First live teaching provider: internal DeepSeekTutorClient (deepseek-flash, direct Chat Completions, DEEPSEEK_API_KEY at call time per DEC-007, fixed thinking:disabled) exposed only through TutorClientFactory.CreateDeepSeek → ITutorClient; verified offline through the exact public construction path via a loopback BaseUrl stub (no InternalsVisibleTo, no handler seam); TU-11/TU-12 | accepted |
 | [DEC-016](#dec-016--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Teaching leg wired into the shell: non-Failed verdict maps to a TutorContext snapshot at the call edge (Failed short-circuits; no-match → Empty; Found carries the whole retained frame as a DownscaledFrame visual), the explanation is spoken verbatim behind a new `--no-speak`; seam composed by `CreateTutorClient()` which returns null — DEC-015's provider decision stays unmade | accepted |
 | [DEC-015](#dec-015--2026-09-30--cline-agent-pixel-canary) | 2026-09-30 | Cline agent (Pixel Canary) | Tutor Engine as a provider-agnostic teaching layer: question-first prompt owned by the service, screen data as labelled untrusted input, opaque bounded JPEG visuals over a caller-supplied seam; no live client, no actuation, no disposal of the injected seam | accepted |
@@ -30,6 +68,909 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-057 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a schematic's parts can be clicked to ask about them.** This relaxes DEC-031's library-only rule, which DEC-050 left as the owner's call. The owner said "yes".
+
+- **The click:** `CardSurface.OnPartClicked` accepts a part when the instance is one the surface drew and the part id belongs to its catalogue model or to the lesson's own schematic. The page's ids still never reach a question, and forged messages are still counted and dropped (LSU-18).
+- **The question:** `PartQuestion.For(pick, schematics)`, with `LessonTurn` passing the shown plan's schematics. A library part is asked about exactly as before. A schematic part's name and title were written by the model, so:
+  - they are cleaned to letters, digits, spaces and `-'(),.`, collapsed, and capped at 40 and 60 characters;
+  - the question says "It is a part of the simplified drawing in the last lesson, not of the part library, so explain what it is and what it does in general terms";
+  - if nothing is left after cleaning, or the part is not in the schematic, there is no question (UnknownPart).
+- **Why this is safe enough:** the model's names already reach the planner in the PREVIOUS LESSON block, fenced as untrusted. The question adds only a cleaned, capped copy of one name, and the student chose which part.
+
+**Rejected.**
+- Asking by part id only ("the part 'lift-fan'"): ids are less readable than names, and the follow-up should name what the student clicked.
+- Leaving clicks refused: the owner asked for it.
+
+**Also recorded here: the tray log keeps the transcribed questions** (owner: "Keep transcribed questions"), as DEC-052 had left by default. No code change.
+
+Rows: LT-8 15 (+3), LSU-18 (new, local, moves the cursor).
+
+## DEC-056 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a logo that refers to Lord Ganesha subtly, in three marks.** The owner asked for a logo "inspired from" a line drawing of Ganesha, "subtly referencing Lord Ganesha and as simple as intuitive as HeyClicky logo".
+
+- **The mark:** black ink on a kraft-paper tile, the reference's own colours.
+  - One tapered brush stroke runs from the ear's tip across the forehead, down the trunk and into its curl, like the reference's right-hand line.
+  - A dot is the bindu.
+  - A short arc above it is the crown.
+  - The trunk with the dot also reads as a question mark, which fits a tutor you ask questions.
+- **Size check:** looked at 16–128 px on light and dark backgrounds. From 24 px all three marks are distinct; at 16 px the arc and the dot merge, and the trunk still carries the shape.
+- **Files:** `assets/brand/heyganesh.svg` is the source drawing, filled outlines so it renders the same everywhere; also `heyganesh-256.png`. `src/Experience/HeyGanesh.Tray/heyganesh.ico` holds 16, 20, 24, 32, 40, 48, 64 and 256 px. The drawing and the ICO came from one geometry, drawn with Pillow in a scratch script that is not part of the repo or the build.
+- **Where it shows:**
+  - the tray exe (`ApplicationIcon`), and so the installer's Start-menu shortcut and the Apps & features entry;
+  - the notification-area icon and the key screen, through `TrayIcons` (embedded resource), which replaces `SystemIcons.Application`.
+- **Rejected while drawing:**
+  - an S-curve and a dot alone: it read as a letter, not a trunk;
+  - adding the ear's inner tick and three tilak lines: too much at 16 px.
+
+**Not changed:** the version stays 1.0.0.0, and the lesson windows keep their own icons.
+
+Rows: TY-1 +1, TY-4 +1, IN-2 +1.
+
+## DEC-055 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a per-user script installer around a self-contained package.** Step 11d of the build sequence. The owner chose installer option A ("A: script installer") and a self-contained build that downloads the runtime packs ("Self-contained, allow download").
+
+- **Package:** `installer\build.ps1` runs `dotnet publish` on the tray: Release, `-r win-x64 --self-contained`, `DebugType=none`. It writes into `artifacts\installer\app` (git-ignored), with the two scripts beside it and `package.txt`, and checks the files a package cannot run without. Measured: 513 files, 198 MB, version 1.0.0.0, more than the plan's ~150 MB guess. The publish includes the App Shell as a library, not its console exe as a command, so key commands in an install are the tray's key screen.
+- **Install:** `install.ps1` (Windows PowerShell 5.1, which every PC has) copies the package to `%LOCALAPPDATA%\Programs\HeyGanesh` and creates a `Hey Ganesh` Start-menu shortcut with `WScript.Shell`. It adds an HKCU `Uninstall\HeyGanesh` entry (name, version, location, icon, size, NoModify/NoRepair, an uninstall command running the installed `uninstall.ps1`). It neither starts the app nor turns on start at login.
+- **Guards, in both scripts:**
+  - a folder is replaced or removed only if it carries the `.heyganesh-install` marker (or is empty);
+  - nothing happens while a tray runs from the install;
+  - uninstall removes the folder before the Apps & features entry, so a locked file leaves a way to retry.
+- **Uninstall keeps** the keys in Credential Manager and `%LOCALAPPDATA%\HeyGanesh` (logs, WebView2 data), and says so. It removes the Run value only when it starts this install (DEC-054).
+- **Testable:** every location is a parameter. IN-2 runs the real scripts against temp folders and throwaway HKCU keys, and only reads the real locations.
+
+**The download.** The first publish restored three runtime packs from nuget.org into the NuGet cache, not the two named when asking: `microsoft.netcore.app.runtime.win-x64`, `microsoft.windowsdesktop.app.runtime.win-x64`, and also `microsoft.aspnetcore.app.runtime.win-x64`. The SDK restores every runtime pack for the RID. Unpacked: 124, 126 and 40 MB. CI's runner downloads them on each run.
+
+**Known limits.**
+- Unsigned: SmartScreen may warn about the scripts, and they need `-ExecutionPolicy Bypass`.
+- The version is the default 1.0.0.0 until the project sets one.
+- The icon is still Windows' generic one.
+
+**Rejected.**
+- MSIX (option B): it needs MakeAppx/SignTool and a trusted certificate. It would also bring the capture-border capability, and stays a later step.
+- Framework-dependent: smaller, but needs the .NET 8 Desktop Runtime on the target PC (the owner chose self-contained).
+- Inno Setup / WiX: new external tools.
+- A zip with no installer: no shortcut, no uninstall entry.
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: IN-1 (CI G-25), IN-2 (local), IN-3 (owner).
+
+## DEC-054 — 2026-10-30 — claude-opus-5-5
+
+**Decision — start at login is one per-user Run value, changed only by the menu.** Step 11c of the build sequence (the owner: "Yes, build 11c").
+
+- **Where it lives:** `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `HeyGanesh`, holding the tray exe's path in quotes (a folder with spaces must still start the right file). Per user: no admin rights, no other account affected.
+- **Who changes it:** only a click on "Start at login". Nothing is written at start or by default, which TS-2 checks.
+- **The check mark** is read from the registry each time the menu opens. Three states:
+  - On: the value points at this copy;
+  - Off: no value;
+  - Elsewhere: the value points at another copy, such as an older build folder. The item reads "(set for another copy)", and a click points it here.
+- **Errors:** a registry refusal is a log line and a balloon, never a crash.
+- **Code:** `StartupEntry` is the only class in the tray that touches the registry (TY-1). Its key path is injectable, so the rows use a throwaway `HKCU\Software\HeyGanesh\Test-<id>` key and only read the real one.
+
+**Not handled, said instead.** Task Manager's "Startup apps" can switch the entry off without touching the value (it records that elsewhere, under `StartupApproved`). The menu would then show it checked while Windows skips it. Reading that undocumented key was left out; TS-3 says so.
+
+**Rejected.**
+- A shortcut in the Startup folder: it needs COM (`WScript.Shell`) to create, and is easier to break by moving files.
+- A Scheduled Task: more privilege and harder to remove.
+- MSIX's StartupTask: only for a packaged app, which is installer option B (11d).
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: TS-1 (CI G-24), TS-2 (local), TS-3 (owner); TY-1 +1.
+
+## DEC-053 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a key screen in the tray, writing only through the key ring.** Step 11b of the build sequence (the owner: "Yes, build 11b").
+
+- **Rules, no UI:** `KeyScreenModel`. Save is `KeyRing.Store` (trimmed; empty and inner-whitespace keys refused with KeyRing's sentence, .NET's "(Parameter …)" suffix stripped). Remove is `KeyRing.Remove`, and it says when an environment variable still provides the key. A status is "missing" or `KeyState`'s "present (N chars, source)". No text it returns holds a value (TK-1).
+- **Window:** `KeyScreen`, WinForms. One `UseSystemPasswordChar` box per key, with Save and Remove; nothing is written until Save, and the box is cleared at once. It is the tray's one window that takes focus, on purpose. What was typed lives in a .NET string until then, like any text box; it is handed only to `KeyRing.Store`.
+- **When it opens:** from "Keys…", and by itself at start when DeepSeek or TypeSafe is missing (`KeyScreenModel.Required`). Fish is optional. This was plan decision 3. The owner approved building 11b as planned, so it follows the plan's recommendation.
+- **The pause:** `ShellHost.RunAsync(args, stop, hookLive, triggerPaused)`, the last optional. In hooked mode a Ctrl+Alt press while it returns true prints `REFUSED: the key screen is open; …` and starts nothing. The reason: AltGr is Ctrl+Alt on many keyboards, so typing a key could otherwise start a listen. The tray passes "the key screen is open".
+
+**Rejected.**
+- A modal dialog: it would block the tray's menu, including Quit.
+- Showing the last 4 characters: even a partial value is a value, and the API Key Isolation invariant has no exception for it.
+- Pausing inside `TriggerPump`: the hotkey handler in `RunHookedAsync` is the one place a press enters, so the check sits there, before the pump.
+
+**Owner rows.** TK-4: a real save and remove writes the real Credential Manager slot, which this session's guard keeps for the owner, like SH-25.
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: TK-1 (CI G-24), TK-2, TK-3 (local), TK-4 (owner); TY-1 and TY-4 updated.
+
+## DEC-052 — 2026-10-30 — claude-opus-5-5
+
+**Decision — Hey Ganesh gets a tray host that runs the App Shell's own composition; the console exe stays as it is.** Step 11a of the build sequence (the owner: "Yes, build 11a").
+
+- **Seam:** `ShellHost.RunAsync(args, stop, hookLive)`. In hooked mode, `stop` ends the wait the way Ctrl+C does (`stopToken.Register(stop.Set)`), so the teardown is the same code; `hookLive` is called once the hook is installed. `RunAsync(args)` passes neither, so every console row and exit code is unchanged. `InternalsVisibleTo` lets the tray and its host use the internal shell.
+- **Host:** `src/Experience/HeyGanesh.Tray`, `OutputType=WinExe`, `UseWindowsForms` (a framework reference that ships with the Desktop runtime and LessonSurface already uses; no PackageReference). The shell runs on the pool, because hooked mode blocks its thread before any await; the icon's message loop owns the STA main thread. Every UI change goes through a hidden control's `BeginInvoke`.
+- **Menu:** status, one line per key saying present or missing (not even a length), Open log folder, Quit. Keys… and Start at login are not there yet: 11b and 11c add them, so the menu has no item that does nothing.
+- **Log:** the shell's console lines, unchanged, in `logs/shell-<stamp>.log` under the data folder; the newest 5 kept. The shell already prints keys only as "present (N chars, source)", and TY-5 checks the real exe with planted keys. Transcribed questions are logged as the console shows them. The owner has not decided this yet (plan decision 2), so the default is the console's behaviour.
+- **One instance:** a `Local\` mutex; a second launch sets a `Local\` event, the first shows a balloon, and the second exits 3. The console exe does not take the mutex.
+- **Console-only flags** (`--once`, `--help`, key commands) are refused with exit 2 and a log line: key entry reads hidden keystrokes, and a WinExe has no console to read them from.
+
+**Rejected.**
+- A `--tray` flag on the console exe: a console app always opens a console window.
+- Raw `Shell_NotifyIcon`: no dependency either way, but hundreds of lines WinForms already has.
+- WinUI 3: the reasons DEC-012 gives still hold.
+- Building the pipeline again in the tray: the two would drift.
+
+**Known gaps.**
+- The icon is the generic application icon; there is no Hey Ganesh artwork in the repo yet.
+- A shell that fails at start (exit 2, e.g. no capture support) shows a message box. That is the one place the tray takes focus, and only when it is about to exit.
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: TY-1..TY-5 (TY-1/TY-2 in CI G-24), TY-6 manual.
+
+## DEC-051 — 2026-10-30 — claude-opus-5-5
+
+**Decision — "3D, but no listed model fits" becomes a schematic lesson when the caller can draw one.** Step 10d of the build sequence (the owner: "Yes, build 10d").
+
+- **Router:** `RouteRequest.Schematics` (default false). With it, the model answer `none` at 0.5 or above, after a 3D answer at 0.5 or above, maps to `Dimension = Scene3d`, `Schematic = true`, no `ModelId`, with a reason. `none` is gated like any model answer, so an unsure `none` is still a 2D lesson. Only then do the 3D and `none` options tell Jev a simplified 3D drawing is made. Without the flag, every answer maps exactly as before (TR-3's old `none` check still passes unchanged).
+- **Legs:** `TurnLegs.Choose` maps it to the new `LessonCanvas.Schematic`. A 3D route with no model id that is not a schematic still falls back to 2D.
+- **Shell:** the route request sets `Schematics = true`. `CatalogFor` offers the whole catalogue for a schematic leg, so `RunLessonAsync` also hands over `Schematics.Check` (DEC-050). The planner's prompt already says to use a catalogue model when one fits, so a wrong "none" can still end up on a library model.
+
+**Rejected.** Meaning "schematic" by `Scene3d` with a null `ModelId` and no flag: `TurnLegs` already treats that as a malformed route and draws 2D, and that guard is worth keeping. Always on, with no request flag: a router caller that cannot draw schematics would be sent lessons it cannot show.
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: TR-2 (+1), TR-3 (+2), TR-6 (+1).
+
+## DEC-050 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the cards draw a lesson's schematic like any model, and the shell asks for one whenever it offers 3D.** Step 10c of the build sequence (the owner: "Yes, build 10c").
+
+- **Seam:** `ISchematicCanvas.UseSchematics` (VisualLessonEngine Runtime) is optional, like `IPartPicker`, so `ILessonCanvas` and every fake canvas are unchanged.
+  - `LessonPlayer` calls it before each reset, with the validated plan's schematics on `PlayAsync` and with a new optional argument on `PlayStreamAsync`. A later lesson's call replaces an earlier one's.
+  - `LessonTurn` passes the first released beat's header schematics on the streamed path.
+- **Surface:** `CardSurface` converts them with `Schematics.ToModel` and resolves a `model` op from them before `ModelLibrary`. `SceneMessages.Model(op, model)` is the shared message, so `scene.js` and `scene-svg.js` draw it unchanged, with the existing "schematic" and "not yet reviewed" tags.
+- **Shell:** `PlanRequest.SchematicGeometry = Schematics.Check` whenever `Scene3d` is offered (`--lesson`, or a route that chose 3D). The `--lesson` header line adds "or one schematic for anything else".
+
+**Not done, deliberately: click-to-ask on a schematic.** `PartQuestion` writes a follow-up only from the Part Library's vetted names and descriptions (DEC-031: "never from anything the page or a model said"), and a schematic's part names come from the model. `CardSurface.OnPartClicked` checks the library catalogue only, so a click on a schematic part is counted and refused, and the 30 s wait for a click continues. Allowing it means relaxing DEC-031 (for example a question built from the part's model-written name, filtered and fenced as untrusted). That decision is the owner's.
+
+**Changed from the plan while building.** The fixture's exploded-view camera is `top` instead of `side`: `side` looks straight down the fuselage, nose-on, and the labels piled up in the snapshot.
+
+**Rejected.** Adding a schematics argument to `ILessonCanvas.ResetAsync` (it would change every canvas and fake for a feature only one canvas has).
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: LSU-17 (local), LS-14 (+2), LT-10 (+1).
+
+## DEC-049 — 2026-10-30 — claude-opus-5-5
+
+**Decision — schematics are offered, and accepted, only where they can be drawn: a request that carries both the catalogue and the geometry check.** Step 10b of the build sequence (the owner: "Yes, build 10b").
+
+- **Engine:** `ValidationContext.SchematicGeometry` is now also the caller's statement that its canvas draws schematics. Null refuses every schematic with `schematic.unavailable`, even one the model sends unasked. 10a accepted structurally-valid ones without a check; that would have let a schematic reach the shell's scene window before it can draw one (10c), which would throw.
+- **Planner:**
+  - `PlanRequest.SchematicGeometry` flows into the validation context;
+  - with a catalogue and the check, `PlannerPrompt.System` asks for schema 1.2 and appends a SCHEMATICS block drawn from the code (shapes, finishes, every limit, the ±2 model space, what each size means), with three rules: catalogue models first, one beat must say it is a simplified drawing, not to scale, and no animations;
+  - it also asks for the header before the beats, so streamed beats are checked against the schematic (the scanner's header is everything before `beats`);
+  - without the check the prompt is unchanged character for character (LP-10 and LP-11 unchanged).
+- **Eval:**
+  - 3D cases pass `Schematics.Check`;
+  - K-12: when the validated lesson draws a schematic, its speech must say simplified, schematic, not to scale or sketch;
+  - E-04 gains a pass seed (the F-35B fixture) and a fail seed (the same lesson without that sentence).
+
+**Measured.** The 3D prompt grows from 5,026 to 6,498 characters (about 370 tokens). Its effect on the first beat shows only in the live run (PE-6).
+
+**Rejected.**
+- Offering schematics whenever a catalogue is passed (the shell would then receive them before it can draw them).
+- Scoring the drawing's quality offline (no honest offline measure; the live E-04 run and a human look are the measure).
+
+**Consequences.**
+- The shell does not pass the check yet, so it still never asks for or accepts a schematic: 10c (the scene window) and 10d (the router) turn it on.
+- Any baseline recorded later must be re-recorded if this prompt changes again (the prompt-hash gate).
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: LP-12 (CI G-14), LS-14 (updated), PE-2 (K-12).
+
+## DEC-048 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a lesson may define one simplified 3D model of its own, a schematic, for an object the Part Library does not have.** Step 10a of the build sequence (the owner: "Yes, build 10a"). FEATURE-007 §3.2 already allowed free-form composition "rendered with a visible schematic tag"; this is its contract.
+
+- **The contract** (schema `heyganesh.visualplan/1.2` = 1.1 plus a header field `schematics`):
+  - each part is a list of shapes, `{ shape, size, at, turn, finish }`;
+  - shapes are `box`, `cylinder`, `sphere`, `torus`, `capsule`, and finishes `metal`, `dark-metal`, `brass`, `glass`, both closed vocabularies;
+  - limits: 1 per lesson, ≤ 12 parts, ≤ 40 shapes;
+  - every number finite, centres in ±2, sizes in [0, 4], turns in ±360;
+  - the id may not be a catalogue id.
+- **Placing it:** a `model` op may place it, and label, highlight, explode and camera may name its parts; it has no animations.
+- **Geometry:** checked by the caller's `ValidationContext.SchematicGeometry` delegate. The Part Library's `Schematics.Check` converts the schematic to a `LibraryModel` (`Schematic`, never `Reviewed`, basis "drawn by the lesson model for this lesson only: simplified, not to scale, not reviewed") and runs `LibraryCheck`. The engine still references nothing.
+- **A refused schematic** gets a `schematic.*` plan-level issue and is left out. Unlike other plan-level issues it does not force TextFallback: only the beats that place or name it degrade (they fail `model.unknown` / `ref.target`).
+
+**Changed from the plan while building.** The plan said sizes in (0, 2]; a size spans the shape, so in a ±2 box it may be up to 4 (the golden fixture's fuselage is 3.2 long). The rule is [0, 4], and `LibraryCheck` still refuses any placed shape that leaves the box, and any zero size a shape actually uses.
+
+**Rejected.**
+- More hand-built library models as the only answer (never enough; kept as the complement, driven by eval misses).
+- Raw meshes or vertices from the model (unbounded, uncheckable, slow).
+- Schematic animations (invented motion is the riskiest content).
+
+**Consequences.**
+- Nothing draws or plans a schematic yet: the planner prompt (10b), the scene window (10c) and the router (10d) follow.
+- Without the collision rule a schematic named like a catalogue model would make the merged catalogue throw. The rule is what keeps the validator from ever throwing on model output here.
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: LS-14 (CI G-13), PL-6 (CI G-16).
+
+## DEC-047 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the App Shell's teaching leg uses the DeepSeek Tutor whenever there is a DeepSeek key, and the Tutor reads that key through the key ring.** Step 9 of the build sequence (SH-17). The owner chose "turn the Tutor on" as a must-have, and option A for TU-8: "Option A, build it". The provider stays as DEC-017 chose it: DeepSeek `deepseek-flash`, the lesson planner's key.
+
+- **Shell:** `CreateTutorClient()` returns `TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { ApiKey = Keys.Reader("deepseek") })` when `HasKey("deepseek")`, and null otherwise.
+  - With no key the leg prints "tutor : skipped — no DeepSeek key …" and the verdict's exit code stands, the same gating as the lesson leg (DEC-027).
+  - The header's `tutor :` line comes from `TutorHeader()`, in step with that gate.
+- **TutorEngine:** `DeepSeekTutorOptions.ApiKey` (`Func<string?>?`) is called per request; null keeps the `DEEPSEEK_API_KEY` read; a source returning nothing is a `TutorAuthenticationException` before any byte is sent.
+- **TU-8 amended (DEC-017's "no credential surface" rule):** `DeepSeekTutorOptions` may carry exactly one key-named property, `ApiKey`, and only typed `Func<string?>`.
+  - It is matched by name and type, and TU-8 now also asserts it, so a stored key (any string or bytes named Key/Secret/Credential) or a handler still fails.
+  - Proven by adding a stored `ApiKeyValue` string beside the source: TU-8 failed.
+- **TU-11** gains the two key-source checks.
+
+**Rejected.**
+- Option B, keeping TU-8 and leaving the Tutor environment-only: a key stored through the app (and the step 11 first-run screen) would give lessons but no prose answers.
+- Copying a stored key into the process environment at startup: every child process (the WebView2 cards included) would inherit it.
+- Routing "explain" turns to a 2D lesson instead: a spoken prose answer is the faster, cheaper reply to "what does this mean?".
+
+**Consequences.**
+- With a DeepSeek key, every turn that does not draw a lesson makes one DeepSeek call. A real spoken answer end to end (SH-17) is live-gated.
+- Without the Fish key the spoken half fails after the printed lesson, with exit 12 (the existing SH-17 mapping).
+
+Plan: [plans/2026-10-30-tutor-on-v1.md](plans/2026-10-30-tutor-on-v1.md). Rows: TU-8, TU-11, SH-27; SH-17 (live).
+
+## DEC-046 — 2026-10-30 — claude-opus-5-5
+
+**Decision — every API client the App Shell composes reads its key through the key ring, per request.** Step 8b of the build sequence (the owner: "Yes, build 8b"). A key stored with `--set-key` is now used.
+
+- **Element Selection, Vision, Voice:**
+  - `SelectionOptions`, `VisionOptions` and `FishTtsOptions` gain `Func<string?>? ApiKey`;
+  - `TypeSafeJevClient`, `DeepSeekVisionClient` and `FishTtsClient` call it per request when given, and otherwise read their environment variable exactly as before;
+  - a source returning null or blank is a missing key (the same authentication fault, before any byte is sent);
+  - no module gains a project reference.
+- **App Shell:**
+  - one static `KeyRing` (`Keys`) hands `Keys.Reader(name)` to the Jev client, Vision and a Fish client it now builds itself (declared before `VoiceService`, so disposed after it);
+  - the lesson model's `ISecretStore` is `KeyRingSecretStore` (it replaced `EnvironmentSecretStore`);
+  - which legs run (router, lesson) is decided by `HasKey` (Credential Manager or environment);
+  - the header's `keys :` line prints `KeyState` ("present (N chars, source)" or "MISSING").
+- **PlannerEval:** `--record` reads through the same ring (`RingKeyStore`), so a stored key works for it; PE-4 uses a ring over an empty store and a dummy environment, so it reads nothing real; PE-5 checks the shell's `new KeyRingSecretStore(Keys, "deepseek")`.
+- **Missing-key messages** now end "(The app reads keys through its key ring, DEC-046: HeyGanesh.App --set-key stores one.)".
+
+**Changed from the plan while building.** The Tutor (`DeepSeekTutorOptions`) is left out. TU-8 deliberately refuses any option whose name contains "Key", "Secret", "Credential" or "Handler" (DEC-017: no credential surface, no transport knob), and the shell does not use the Tutor yet (`CreateTutorClient()` returns null). Whether TU-8 should allow a key *source* (a delegate, never a value) is a decision for step 9, which turns the Tutor on. Until then the Tutor reads `DEEPSEEK_API_KEY` only.
+
+**Rejected.**
+- Renaming the Tutor's option to dodge TU-8's name check: that would defeat the check instead of deciding it.
+- Passing the key ring object itself into the modules (TutorEngine and Voice reference nothing).
+
+**Consequences.**
+- With a key stored in Credential Manager and no environment variable, the shell's legs run and authenticate. This is live-gated: no key here.
+- The Tutor stays environment-only until step 9.
+- The environment fallback is kept, so CI and every documented command still work.
+
+Plan: [plans/2026-10-30-security-proxy-v1.md](plans/2026-10-30-security-proxy-v1.md). Rows: ES-10, V-9, VO-8 (key-source checks), PE-4/PE-5 (updated), CI G-23.
+
+## DEC-045 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the app's provider keys come from one key ring, held in Windows Credential Manager, with the environment variable as a fallback.** Step 8a of the build sequence (the owner: "Yes, build 8a"). It ends DEC-007's "temporary stopgap … pending the API key security proxy" once 8b routes the clients through it.
+
+- **`HeyGanesh.Security.KeyRing`:**
+  - knows `deepseek` (`DEEPSEEK_API_KEY`), `typesafe` (`TYPESAFE_API_KEY`) and `fish` (`FISH_AUDIO_API_KEY`);
+  - reads Credential Manager first (target `HeyGanesh:<name>:api-key`, the existing `CredentialManagerSecretStore`), then the variable;
+  - `Describe` returns presence, length and source, never a value (`KeyState.ToString` is the only report);
+  - `Reader(name)` is a per-request delegate that caches nothing;
+  - `Store` trims, and refuses an empty key or one with a space, line break or control character inside;
+  - a Credential Manager failure falls back to the environment and says "[Credential Manager unavailable]".
+- **App Shell key commands:**
+  - `--keys` shows each key's state;
+  - `--set-key <name>` reads the key with nothing echoed (or one line of piped stdin) and stores it;
+  - `--remove-key <name>` deletes it;
+  - exit codes: 0 done, 1 nothing entered or refused, 2 unknown name, 4 Credential Manager refused.
+- **The header:** the `keys :` line keeps its environment-based text (it still decides which legs run), and adds "(stored in Credential Manager; the clients read it from build step 8b)" when a key is stored but not in the environment.
+
+**Rejected.**
+- A separate proxy process that injects the key into requests: a second process to supervise and a localhost port to lock down, for risks (a key in logs, screenshots, files, history) that Credential Manager plus presence-only reporting already cover. It can sit behind the same delegates later.
+- A new `HeyGanesh.SecurityProxy` assembly: `HeyGanesh.Security` already holds the store.
+- Giving the clients an `ISecretStore`: TutorEngine and Voice deliberately reference nothing. 8b passes delegates instead.
+
+**Consequences.**
+- Until 8b the API clients read only the environment, and the `--keys` note and the header say so.
+- `--assert-keyring-cm` and SecretSmoke's self-test write throwaway credentials, in CI as well.
+- Storing a real key is the owner's action: `--set-key <name>`.
+
+Plan: [plans/2026-10-30-security-proxy-v1.md](plans/2026-10-30-security-proxy-v1.md). Rows: KR-1, KR-2 (CI G-12), SH-24, SH-25 (owner).
+
+## DEC-044 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the evaluation set records live once and replays offline forever; a reviewed recording becomes the baseline CI gates on.** Step 7b of the build sequence (the owner: "For now build all systems with API keys... I will add them later").
+
+- **Record** (`--record [dir] [--cases ...]`, live):
+  - the shell's DeepSeek client (`LiveClient`: `https://api.deepseek.com`, `deepseek-flash`, `Text | Streaming`, `DEEPSEEK_API_KEY`); PE-5 fails if it stops matching `ShellHost.Lesson.cs`;
+  - `RecordingLlmClient` keeps every answer as it streams;
+  - writes `cases/<id>.json`, `summary.json` and `report.txt`, which hold checks, first-beat p50/p90 against 2.5 s, library misses, tokens when reported, and a SHA-256 of the planner prompt;
+  - the key is described as "present (N chars)" only.
+- **Exit codes:**
+  - no key → exit 12 before any client exists;
+  - an auth error stops the run (12), and the cases so far are written;
+  - another provider fault is recorded on its case and the run continues;
+  - Ctrl+C → 13.
+- **Replay** (`--replay <dir> [--baseline <dir>]`, offline):
+  - recorded answers go back through the current planner and checks;
+  - exit 1 when a check that passed in the baseline fails now, or the total drops;
+  - **exit 3 when the prompt hash changed** (frozen answers say nothing about a new prompt; re-record);
+  - cases with a provider error or a cut-short stream keep their recorded result.
+- **The shared case loop:** `EvalRun.RunOneAsync` (PE-2 now uses it too; its output is unchanged).
+- **CI:** G-22 adds PE-4 and PE-5. It replays `tools/PlannerEval/baseline` once the owner commits one, and says "no baseline yet" until then.
+
+**Choices taken without an explicit answer.** The owner was asked "fail or warn on a prompt change" and replied "build all systems", so I took the recommended **fail** (exit 3). Switching to a warning is one line in `RunReplayAsync`.
+
+**Rejected.**
+- A `--base-url` flag (it would send the key wherever it is told).
+- Moving the shell's client factory into a product assembly now (it would change a product module's dependencies; PE-5 guards drift until the Security Proxy replaces both).
+- Several runs per case (the report says "one run" instead).
+
+**Consequences.**
+- Scores, timings and the baseline exist only after the owner's first live run (PE-6).
+- The client sends no `stream_options`, so DeepSeek reports no tokens in streams: the report says "not reported".
+- A follow-up whose previous case could not be replayed is scored without its previous lesson.
+
+Plan: [plans/2026-10-30-planner-eval-v1.md](plans/2026-10-30-planner-eval-v1.md). Rows: PE-4, PE-5 (CI G-22), PE-6 (live, owner), PE-7.
+
+## DEC-043 — 2026-10-30 — claude-opus-5-5
+
+**Decision — lessons are measured on a fixed set of 30 student questions with automatic checks, in a host of their own.** Step 7a of the build sequence (the owner: "Yes, build 7a"). Before this, the planner rows proved the machinery on four golden lessons and said nothing about whether real lessons are usable.
+
+- **The set** (`tools/PlannerEval/eval-set-v1.json`):
+  - E-01..E-06 are the turns of the HeyClicky "introducing real-time graphics" video (2026-10-29), verbatim from its transcript with the wake phrase removed: a tensor taught from the screen, a ChatGPT follow-up, "can an airplane hover?", "draw the jet in 3D", a Raspberry Pi, attaching a camera;
+  - 24 more across math, physics, chemistry, biology, CS and engineering, including one screen-injection case;
+  - screen text is written for the set, never captured; four cases are answered by the golden lessons.
+- **The checks** (`EvalChecks.cs`, pure). Thresholds sit at the top of the file with their reasons.
+  - K-1: valid, with ≤ 25 % degraded beats.
+  - K-2: 3–8 beats of ≤ 45 words.
+  - K-3: required terms said.
+  - K-4: listed misconceptions absent.
+  - K-5: the expected canvas and library model.
+  - K-6: no invented model, part or animation (and a library miss is reported).
+  - K-7: marks only with a grounded target, and at least one when there is one.
+  - K-8: teaches from the screen text.
+  - K-9: the injected word absent.
+  - K-10: a fact check opens with yes / no / partly.
+  - K-11: a follow-up was sent the previous lesson and does not repeat it.
+- **Proof offline:** PE-2 runs the goldens and `seeds.json` (answers built to pass, or to fail exactly one check) through the real `VisualPlanner.PlanStreamingAsync` with the recording fake model. Turning any one check off makes PE-2 fail.
+
+**Changed from the plan while building.**
+- K-6 applies to every case offered the 3D catalogue, not only E-04, and K-5 to every case that expects a canvas: an invented model is a miss wherever it happens.
+- The host is not added to `HeyGanesh.sln` (no tool host is).
+- ARCHITECTURE is unchanged (no product module changed).
+
+**Rejected.**
+- Rows inside LessonPlannerSmoke: that host proves fixed machinery; this set grows to ≥ 100 and gets a baseline.
+- An LLM judge now: a second key and a non-deterministic gate.
+- Hand-written "ideal" answers for all 30: they would measure my writing, not the model.
+
+**Consequences.**
+- The checks catch broken, off-topic, ungrounded and manipulated lessons, not subtle factual errors.
+- Real scores need step 7b (`--record` with `DEEPSEEK_API_KEY`, `--replay`, and a committed baseline that G-22 then gates on).
+- The 24 non-video questions and their terms are my wording, for the owner to review (PE-3).
+
+**Revised after the owner's review (2026-10-30 · claude-opus-5-5, the owner: "Yes, apply all 8").**
+1. K-4 no longer counts a misconception named in order to correct it: a listed phrase counts only in a sentence with no correcting cue ("myth", "not true", "wrong", "isn't", "doesn't", "don't", "can't", "never", …). Bare "no"/"not" are deliberately not cues.
+2. Terms that failed correct answers were widened (M-05 "three out of four", M-02 "two times x").
+3. Terms that proved nothing were replaced (G-02 now needs a small current controlling a larger one; P-05 deflection plus pressure/reaction; E-04 "thrust/downward" instead of "down").
+4. E-06 now requires a power-off step instead of listing "while it's on" phrases.
+5. P-02 is replaced by U-01, "What score did I get on last week's quiz?": the lesson must say it cannot know, and `EvalCase.MinBeats` lets K-2 accept one or two beats there.
+6. E-06 (not E-05: attaching the camera is where pointing at the board matters) has a grounded target, so its lesson must mark the connector.
+7. A "2d" case is never offered the 3D catalogue; it scores the planner, not the decision to draw in 3D (a Turn Router evaluation).
+8. The file header says E-01's slide numbers are a recollection of the lecture, not read from the video.
+
+New seeds prove fixes 1 and 5 (P-01 myth corrected → pass; U-01 abstains in 2 beats → pass; U-01 guesses → fails K-3 only); undoing either fix fails PE-2.
+
+Plan: [plans/2026-10-30-planner-eval-v1.md](plans/2026-10-30-planner-eval-v1.md). Rows: PE-1, PE-2 (CI G-22), PE-3 (owner review, done).
+
+## DEC-042 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a lesson turn opens the cards on the first released beat and plays each beat while the rest of the lesson is still being written.** Step 6b of the build sequence (the owner: "Yes, build 6b"), on top of DEC-041.
+
+- **Player:** `LessonPlayer.PlayStreamAsync(surfaces, beats, outcome, ct)` plays an async sequence of already-validated beats. `PlayAsync` now runs through the same frame and beat loop (its play rows are unchanged: 5, 5, 11, 6, 22).
+- **Turn:** `LessonTurn` always plans through `PlanStreamingAsync`; with a model that cannot stream that is exactly `PlanAsync` and the old whole-plan path runs. When a beat is released first, `PlayStreamedTurnAsync` opens the cards (or reuses the follow-up lease), plays from a queue the planner fills, and, when planning ends, queues any beats of the finished plan that were not released before closing it.
+  - a planner `StreamNote` (dropped stream, or a finished plan that disowns a shown beat) → the turn ends `Stopped` after the shown beats, the note in `Error`;
+  - caller cancellation → `Cancelled`, the stream stopped, cards closed; a fault while playing → planning stopped, cards closed, the fault rethrown (as before);
+  - `LessonTurnReport.FirstBeatShown`: from the start of the turn to the first beat starting on the cards.
+- **App Shell:** the DeepSeek client advertises `Text | Streaming` (`OpenAiCompatLlmClient.StreamAsync` reads server-sent events as they arrive); `PrintLesson` adds `streamed :` (beats released while writing) and `first beat :` (the student's wait, the line the 2.5 s target is measured on).
+- **Measured offline (fake model, 200 ms to the first token, 2,000 characters/s):** first beat drawn at 741 ms, the lesson finished arriving at 1,972 ms. A mutation that always waits for the whole plan moves the first beat to 1,995 ms and fails LT-10.
+
+**Rejected.**
+- A separate streamed turn API: a non-streaming model already degrades to the old path inside the same call, so the shell needs no new switch.
+- Opening the cards before the first beat validates: a lesson that turns out unusable would flash an empty window.
+
+**Consequences.**
+- Live timing is still unmeasured (needs `DEEPSEEK_API_KEY`); SH-19/SH-20 will show `first beat :`.
+- Pause/Skip/Stop controls are not reachable through `LessonTurn` (it creates its player internally), so a student Stop mid-stream is handled in code but not exercised by a row.
+
+Plan: [plans/2026-10-30-lesson-streaming-v1.md](plans/2026-10-30-lesson-streaming-v1.md). Rows: LT-10 (CI G-15).
+
+## DEC-041 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the Lesson Planner can stream a lesson and release each beat as soon as it is safe to teach.** Step 6a of the build sequence (the owner: "Yes, build 6a"); 6b plays the released beats.
+
+- **Why:** the whole VisualPlan used to be generated, validated and only then drawn. On DeepSeek V4.1 Flash's published figures (about 1.1 s to the first token, 206 tokens/s) a 600–1,200-token lesson is roughly 4–7 s before anything appears, against a 2.5 s target.
+- **`PlanStreamScanner`** (pure): fed chunks, it tracks depth, strings and escapes, finds the header (the top-level object before the `"beats"` key) and each complete beat object. The same text split anywhere yields the same beats.
+- **`VisualPlanner.PlanStreamingAsync(request, onBeat, ct)`:** asks exactly as `PlanAsync` asks (shared `Prepare`). For each new beat, "header + beats so far" goes through the existing parser and validator; a beat is released only when that prefix is not Rejected and kept every beat. A released beat is the validator's own output — validation is never skipped, it runs beat by beat.
+  - nothing released before the header and the first beat validate;
+  - nothing released by the end → the finished text becomes the first attempt of the usual repair loop (`RunAttemptsAsync`, shared with `PlanAsync`);
+  - something released → no repair; the finished plan is validated and must contain the released beats (fingerprints compared), otherwise the lesson stops after them;
+  - a provider fault after a release returns the released beats with `StreamNote`; before one it propagates; cancellation always propagates;
+  - a client without `ProviderCapability.Streaming` gets exactly `PlanAsync`.
+- **`PlanResult`** gains `ReleasedBeats`, `FirstBeatLatency` and `StreamNote` (optional, so every existing construction compiles). `StreamedBeat` carries the beat, its index, the validated prefix and the time.
+- **The prompt is unchanged.** Its FORMAT block already puts `beats` last, and the 2D prompt is meant to stay character for character (DEC-032), so the planned "header first" sentence was not needed.
+- **LP-1's source audit** used the needle "Stream" to keep I/O out; the planner now calls `ILlmClient.StreamAsync`, so the needle names the I/O types (`System.IO`, `FileStream`, `MemoryStream`, `NetworkStream`, `StreamReader`, `StreamWriter`) instead. LP-1 still passes 3/3.
+- **Simulated, not measured:** with a fake at 1.1 s to the first token and 824 characters/s, the photosynthesis lesson's first beat was released at 2.41 s and the whole lesson arrived at 6.50 s.
+
+**Rejected.**
+- Playing beats before validating them: it skips what the validator exists for (grounded marks, vetted 3D parts).
+- A short first call then a second for the rest: two round trips and two halves that may not join up.
+- A streaming JSON library: a NuGet dependency.
+- Fixing `ResilientLlmClient.StreamAsync` (it buffers the whole stream before yielding): it is not on the shell's path; logged as an open item.
+
+**Consequences.**
+- Nothing in the App Shell changes yet; `PlanAsync` is still what it calls.
+- Once a beat is shown, a broken later beat can no longer be repaired; the validator degrades it (speech only) or the lesson stops after the shown beats.
+
+Plan: [plans/2026-10-30-lesson-streaming-v1.md](plans/2026-10-30-lesson-streaming-v1.md). Rows: LP-11 (CI G-14).
+
+## DEC-040 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the speech-in leg pre-rolls: the microphone starts at the Ctrl+Alt press and its frames wait in the existing bounded queue until the Gateway's `session.ready`, then go out in order.** Step 5 of the build sequence, changed from "keep the connection warm" before building, because DEC-013 already rejected holding the socket open (Option F: it keeps the operator's own Gateway clients evicted).
+
+- **The bug it fixes, shown first:** VO-11 on the old client, against a stub that answers `session.ready` after 600 ms, got first frame #7. About 700 ms of speech after the press never reached the Gateway, because the microphone only started after the handshake and health check. After the change the first frame is #0, and the stub turn finished in about 1.22 s instead of 1.91 s.
+- **Order at the press:** the endpoint is resolved first (missing or malformed fails at once, not retried, and the microphone is never opened); then the microphone starts; then the connect loop runs as before. The queue (100 × 100 ms, drop-oldest) belongs to the whole listen and survives reconnect attempts; the send pump drains it per attempt and is stopped, not completed, when the attempt ends.
+- **Limits:** the utterance cap counts from the press; the silence window starts at `session.ready`, so a slow handshake is never mistaken for a silent user.
+- **Teardown:** however the listen ends, the microphone is stopped and anything still queued is dropped. Nothing leaves the process before `session.ready`.
+- **Measured:** `UtteranceResult.ConnectDuration` (press to ready) and `BufferedFrames`; the shell prints them as `connect :` under the utterance line.
+- **Unchanged:** one socket per utterance, the release rule (only what has committed is kept), every protocol message.
+
+**Rejected.**
+- A warm socket between presses: DEC-013 Option F, plus unverified idle cost of an upstream realtime session.
+- Shorter timeouts: they fail sooner, they do not connect sooner.
+- Running the health check alongside the handshake: a separate, smaller saving; recorded as an open item.
+
+**Consequences.**
+- The microphone opens slightly earlier, at the press. If connecting fails, it is stopped and the queue discarded (VO-11).
+- A real Gateway receives the pre-roll as a burst faster than real time; whether its speech detection handles that is unverified until a live run.
+- Found while building, not fixed here: the classifier reads the ready payload's version from `protocolVersion`/`protocol`, but upstream's schema names it `protocol_version`, so against a real Gateway the wire-version check may record "not stated" instead of checking it. Logged in HANDOVER.
+
+Plan: [plans/2026-10-30-voice-preroll-v1.md](plans/2026-10-30-voice-preroll-v1.md). Rows: VO-11 (CI G-21), VO-L2 (live).
+
+## DEC-039 — 2026-10-30 — claude-opus-5-5
+
+**Decision — Element Selection offers Jev the screen text the capture read (DEC-038) as extra candidates, next to the UIA controls.** Step 4b of the build sequence; the owner approved it as planned ("Yes, build 4b").
+
+- **The merge** is `TextCandidates.FromScreenText`, a public pure function (ES-8). A line is offered only when its centre is inside the target window and not on a UIA control already offered, it is at most 80 characters after spacing is normalised, and it does not look like a secret (`sk-`/`pk-`/`rk-`, `gh?_`, `AKIA`, `xox?-`, JWT shapes, or any 24+ character run mixing letters and digits). At most 40 lines, in reading order; the same text at the same box is offered once.
+- **Candidates:** type "Text (OCR)", id assigned after ranking like any other, box = the line's box, position hint computed as for controls (`ComputePositionHint` is now internal). They are ranked with the UIA candidates under the same `MaxCandidates` cap. When any is offered, the Jev instruction says they are read text, not controls.
+- **API:** a `SelectAsync(question, target, screenText, ct)` overload; the old signature passes none. `SelectionResult.ScreenTextOffered` counts them. The Context Orchestrator passes `captures[0].TextLines` (the cursor's monitor).
+- **Consequence for the fallback:** a window with no UIA controls but readable text now gets a Jev choice instead of an immediate Vision fallback (the "no interactive candidates" failure now also requires no usable text).
+- **The App Shell** sets `ReadText` on; `--no-ocr` turns it off. The header's `ocr :` line states it and the OCR language.
+- **Privacy:** this is the first time screen text, not just control names, goes to TypeSafe. The window rule, the 80-character limit, the 40-line cap and the secret filter bound it; `--no-ocr` removes it. OCR itself stays local.
+- **Measured here:** the window under the cursor had 3 UIA controls; OCR read 111 lines in 150 ms and 40 became candidates (ES-9).
+
+**Rejected.**
+- Offering every OCR line: paragraphs and other windows' text would crowd the cap and send far more to the cloud.
+- Redacting only the secret part of a line: the rest of the line would still describe it.
+- A separate Jev question for text: one question over one ranked list keeps a single choice and a single hallucination guard.
+
+**Consequences.**
+- The secret filter is a pattern list; it can miss secrets that look like ordinary words. `--no-ocr` is the hard stop.
+- Whether Jev chooses text candidates well is unmeasured until a live run (keys).
+
+Plan: [plans/2026-10-30-screen-text-v1.md](plans/2026-10-30-screen-text-v1.md). Rows: ES-8 (CI G-20), ES-9 (local), SH-23.
+
+## DEC-038 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the Screen Capture module can read the text on the cursor's monitor with `Windows.Media.Ocr`, on the full-size frame, before it is downscaled.** Step 4a of the build sequence; step 4b offers the lines to Jev as Element Selection candidates.
+
+- **Why in the capture:** a spike on this machine (2560×1600) read 110 lines / 391 words at full size and 68 lines / 329 words at the orchestrator's 1280-px size, before JPEG loss. The full-size frame exists only inside the capture, so that is where the text is read.
+- **What:** `ScreenTextReader` (public, WinRT, no NuGet) runs the recogniser from the user's profile languages and returns each line with its box (the union of its words) in global physical pixels: frame pixels plus the monitor's top-left. `ScreenCaptureOptions.ReadText` (default **off**) turns it on; `CaptureAllMonitorsAsync` reads the first capture only (the cursor's monitor), `CaptureMonitorAsync` reads the monitor it was asked for.
+- **Shared types:** `ScreenTextLine(Text, Box)`, and `MonitorCapture` gains init-only `TextLines`, `TextNote` (why there is no text: no language, too large, a failure) and `TextDuration`. Every existing construction compiles unchanged.
+- **Never fails a capture:** no OCR language, a frame over 10,000 px, or a recogniser error becomes a note. Cancellation propagates.
+- **Local only:** nothing in this step sends the text anywhere. Step 4b will put some of it into the Jev request, with caps and a secret filter, and is planned separately.
+- **Measured:** the fixture's three lines read exactly in 20 ms; a live read found 110 lines in 141 ms.
+
+**Rejected.**
+- OCR on the 1280-px JPEG: about 40% of lines lost.
+- A second, full-size capture from Element Selection: two captures per turn, and Element Selection would depend on screen capture.
+- Handing the full-size bitmap across the shared types: a WinRT object of about 16 MB in records that hold plain data.
+- Reading every monitor: about 135 ms each for text the user is not looking at.
+
+**Consequences.**
+- Rows SC-9 and SC-10 need an OCR language and stay local-only; CI's Windows image is not known to have one.
+- Only one monitor was available here, so "other monitors are not read" was checked vacuously.
+
+Plan: [plans/2026-10-30-screen-text-v1.md](plans/2026-10-30-screen-text-v1.md). Rows: SC-9, SC-10.
+
+## DEC-037 — 2026-10-30 — claude-opus-5-5
+
+**Decision — when Element Selection finds an element but its own score is in the Low tier, the Context Orchestrator asks Vision for a second opinion on the same frame.**
+
+- **Supersedes, for the Low tier only:** DEC-010's rejection of Option C ("gate on confidence too") and DEC-009's "ConfidenceLevel stays classification here, not a gate". The fallback on a *failed* result is unchanged. Medium and High are still accepted as-is, because DEC-010's point stands: nothing measured says a Medium choice is worse than a pixel model's. The owner approved this on 2026-10-30 ("Yes, on by default").
+- **When:** `ContextOrchestratorOptions.CheckLowConfidence` (default on) and `LowConfidenceCheck.Applies`: not failed, found, Low (Element Selection's blended score below 0.5). The honest no-match is never checked.
+- **The rule** is `LowConfidenceCheck.Decide`, a public pure function (CO-12):
+  - Vision's centre inside Element Selection's box → "Vision agrees", Element Selection's box kept (it is the exact control);
+  - Vision found it elsewhere at Medium or High → Vision's verdict;
+  - Vision found it elsewhere at Low, not found, failed, or threw → Element Selection's choice kept.
+- **Errors:** the check catches Vision's provider errors (`VisionClientException`, including no `DEEPSEEK_API_KEY`), because a failed second opinion must not lose the first answer. This is the one place the orchestrator does not pass a leg's error up; the fallback still does. Cancellation propagates.
+- **Visible:** `GuidanceResult.ConfidenceCheck` (Abstractions) says what happened; the App Shell prints it as `check :`, and the orchestrator's phase reads `CheckingConfidence` while it runs.
+- **Where:** the orchestrator, because it is the only module that holds both legs (DEC-008). It reads the tier Element Selection already computed; it sets no threshold of its own.
+
+**Rejected.**
+- The check inside Element Selection: the siblings never reference each other (DEC-008).
+- A Jev component or a second Jev call: it does not hold Vision, and Jev's numbers are already in the tier.
+- Checking Medium, or running Vision on every turn: far more screenshots sent to the cloud with nothing measured to justify it.
+- Blending the two legs' scores: a scale neither module defines.
+
+**Consequences.**
+- A Low turn sends one screenshot to DeepSeek and waits for one Vision call, as a fallback does. The `check :` line shows each one.
+- Whether the check improves real answers is unmeasured; it needs keys and the model shoot-out.
+
+Plan: [plans/2026-10-30-low-confidence-check-v1.md](plans/2026-10-30-low-confidence-check-v1.md). Rows: CO-12 (CI G-19), CO-13 (local).
+
+## DEC-036 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the App Shell asks the Turn Router (DEC-035) how to teach each turn, and runs the leg it picks.**
+
+- **When:** the router is composed only with `TYPESAFE_API_KEY` set and neither `--lesson` nor `--no-route`. It starts right after the verdict is printed, so it runs while the highlight is on screen; `TeachAsync` waits for it. A Failed verdict is never routed (nothing is taught from it).
+- **The leg** is `TurnLegs.Choose(route, --lesson, --no-route)`, a pure function in the TurnRouter assembly so every case is checked offline (TR-6):
+  - `--lesson`: a lesson on the full catalogue, the router never asked (the old behaviour);
+  - `--no-route`, no router, a failed router, or "no route": the Tutor leg (the old default);
+  - point: nothing more, the highlight was the answer, exit 0;
+  - explain: the Tutor leg (still clientless until SH-17's flip, so it prints its skip);
+  - lesson: 2D (the planner is offered no 3D) or 3D on the one model Jev picked (a one-model catalogue).
+- **A router fault never fails the turn.** Auth, rate-limit, provider and bad-request errors print a `route : FAILED` line and fall back; cancellation while routing exits 13.
+- **One Jev client.** `TypeSafeJevClient` stays internal; Element Selection gains `JevClients.CreateTypeSafe(SelectionOptions?)` returning an `OwnedJevClient`. The shell builds one, gives the same instance to `ElementSelectionService` and the router, and disposes it after the service.
+- **The lesson seam** is composed whenever a router exists, since a route can choose a lesson; the lesson header says "when the route chooses one".
+- **Header:** a `route :` line states ON, or why it is off (`--lesson`, `--no-route`, key MISSING), presence only.
+
+**Rejected.**
+- Routing before the locate step: the route would lose "a match was found", and lessons need the grounding anyway.
+- Routing after the highlight ends: it would add Jev's whole wait to every turn.
+- Making `TypeSafeJevClient` public, or a second TypeSafe client in the shell.
+- Letting `--lesson` also take the router's model choice: the flag keeps exactly what SH-18..SH-20 verified.
+
+**Consequences.**
+- With keys set and no flag, a turn can now end at the highlight or become a lesson; before, it always went to the (clientless) Tutor. `--no-route` restores that.
+- The shell's application of a route is only provable live (SH-22): the shell carries no fakes (DEC-012). TR-L1 is still open.
+
+Plan: [plans/2026-10-30-turn-router-shell-v1.md](plans/2026-10-30-turn-router-shell-v1.md). Rows: TR-6, SH-21, SH-22 (live).
+
+## DEC-035 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a Turn Router decides how each turn is taught, with one Jev call that answers up to three typed choices.**
+
+- **Where:** new assembly `src/Intelligence/HeyGanesh.TurnRouter/` (`TurnRouter`, `TurnRoute`, `TurnRouterOptions`). Its only reference is Element Selection, for `IJevClient` and its records (DEC-008). It reads no key and opens nothing: the caller hands it a client, so the Security Proxy can later stand behind the same seam.
+- **The questions:** `intent` (point / explain / lesson); when the caller offers models, also `dimension` (2d / 3d) and `model` (the offered ids plus `none`, each described by title and subject). Every instruction quotes the user's question, because question ids are never shown to Jev.
+- **Facts as state:** window title, whether the locate leg found a match ("found", "not found" or "not checked"), the question's word count and the model count. Computed in code, never asked. This is typesafe-computer-use's rule: the classifier picks, code decides facts.
+- **Mapping:**
+  - an intent, dimension or model id that was never offered refuses the whole route, as Element Selection refuses an unknown candidate;
+  - an intent scored below 0.5 is no route; the caller keeps its behaviour without a router (today, `--lesson`);
+  - for a lesson, every unsure step toward 3D (dimension below 0.5, model `none`, model below 0.5) gives a 2D lesson with a reason, because the lesson was wanted and only the canvas was in doubt;
+  - the score is Jev's confidence, else the chosen option's probability, else 0.
+- **0.5** is the Medium tier boundary Element Selection and Vision already share (DEC-009). `TurnRouterOptions.MinScore` moves it.
+- **Provider faults and cancellation pass through unchanged.** The caller decides what a failed router means.
+
+**Rejected.**
+- Putting the router in the Context Orchestrator: it would tie teaching choices to the locate module, against DEC-010's narrow job for it.
+- Three separate Jev calls: three round trips for what one request answers.
+- Letting a lesson's model choice fall back to a guessed id: only offered ids can come out.
+
+**Consequences.**
+- Nothing calls the router yet. Wiring it into the App Shell is step 2 of the build sequence.
+- Not verified: that TypeSafe accepts three choice questions in one request. Element Selection already sends two, and typesafe-computer-use sends three; a live row (TR-L1) checks it once `TYPESAFE_API_KEY` exists.
+
+Plan: [plans/2026-10-30-turn-router-v1.md](plans/2026-10-30-turn-router-v1.md). Rows: TR-1..TR-5 (CI G-18), TR-L1 live.
+
+## DEC-034 — 2026-10-29 — claude-opus-5-5
+
+**Decision — when WebGL is missing, the scene page draws the lesson's 3D models as an isometric SVG with Anatomy's kit, instead of showing only a notice.**
+
+- **Vendored:** `Page/vendor/anatomy-1482e846/` holds `iso-kit.mjs`, `lathe.mjs`, `iso.css` and `LICENSE` (MIT, commit `1482e846`). They are the spike 0d downloads, byte-identical and pinned in `VENDOR.md`; LSU-7 re-hashes them and checks the licence ships.
+- **Module loading:** WebView2's virtual host serves `.mjs` as JavaScript (checked first: the page's `ready` now waits for the module, and every scene row passed), so no renaming was needed.
+- **The renderer** is `Page/scene-svg.js`, an ES module. `scene.js` keeps the drawing's state in its no-WebGL branch and redraws after every message, acking `{ drawing: true }`. The WebGL branch is untouched.
+- **Ops in the drawing:**
+  - drawn: `model`, `label`, `highlight` (orange outline), `explode` (redrawn at the amount), `clear`, and `camera` focus (re-framed);
+  - shown as stills: `animate` draws the rest pose plus an "animation needs 3D" tag, and every `camera` view is drawn isometric;
+  - `picking` stays `skipped`, so `PickAsync` returns null and there's no click-to-ask on the drawing yet.
+- **Axis map:** (x, y, z) → (x, z, y). The kit's projection reflects, so a non-reflecting map would mirror every model. The orientation probe runs on the drawing too: same three markers, front view (azimuth 90°, elevation 0°), found by colour in real pixels.
+- **Painter's order (spike 0d's condition 1)**, built in three passes over what the pictures showed:
+  1. Cylinders and boxes longer than 2.5× their width are cut into pieces about one width long. Cylinder pieces are open bands, with caps only at the true ends. Box pieces get their own outline with the cut edges dropped.
+  2. A piece whose centre lies inside another solid is painted just before that solid's own settled order. Containers nest: the pin is in the piston, which is in the glass cylinder.
+  3. Ties fall back to the item's own depth.
+
+  The first picture had stripes and a pin showing through the piston; the second hid the pin but drew the rod over the piston; the third matches Babylon.
+- **Lesson text never enters an SVG string:** labels are DOM nodes with `textContent`. LSU-7 audits that, and LSU-16 checks a `<b>` label stays literal.
+
+**Measured (this machine; LSU-12, LSU-16).**
+
+| Measure | Result |
+|---|---|
+| Engine | 74 solids, 11–14 ms |
+| DNA | 220 solids, 33–49 ms |
+| Pump | 11 solids, 16–17 ms |
+| CSP violations | 0 |
+| Scene window cold start | 1.89–2.05 s, unchanged from DEC-030's 1.95–2.14 s |
+
+**Rejected.**
+- Porting the kit to C#.
+- Using the drawing for every lesson, which would lose orbit and motion.
+- A full separating-plane sort: buried parts have no correct whole-part order anyway.
+- Pre-rendered PNGs, which can't show the lesson's labels or highlights.
+- `bandsOf`, the kit's band splitter: its one outline over a whole body would paint the buried part of a stem over the head.
+
+**Consequences.**
+- Faint tick marks remain inside the shaded faces of cut parts: the rod, the crankshaft, some DNA bases. They're cosmetic and recorded.
+- Box-against-box overlaps without containment aren't specially handled. The three V1 models show none, but a new model could.
+- Click-to-ask, real views, animation and printable notes from the drawing are each a later step.
+
+Plan: [plans/2026-10-29-svg-fallback-v1.md](plans/2026-10-29-svg-fallback-v1.md). Rows: LSU-7, LSU-12, LSU-16 (LSU-13 gains the drawing PNGs).
+
+## DEC-033 — 2026-10-29 — claude-opus-5-5
+
+**Decision — the App Shell's `--lesson` leg offers the planner the cards' 3D catalogue and runs click-to-ask follow-ups. A new Ctrl+Alt press is still refused while a finished 3D lesson waits for a click.**
+
+- `TeachWithLessonAsync` builds the `PlanRequest` with `Scene3d = CardSurface.Scene3dCatalog`, so the prompt offers 3D (DEC-032) and the validator accepts it. It calls `LessonTurn.RunWithFollowUpsAsync` with `IdleTimeout` 30 s (`LessonPickIdle`). The session default is 60 s.
+- **Output:** each turn is printed with `PrintLesson`. A follow-up is preceded by `follow-up N : the student clicked '<part>' on '<model>'`, and the leg ends with `follow-ups : N, ended <FollowUpEnd>`.
+- **Exit code:** the last turn's outcome, mapped as before. The loop stops at the first turn that didn't play to the end, so that turn is the one that ended it. The exception is `FollowUpEnd.Cancelled` (cancelled while waiting for a click), which exits 13 as a cancel mid-lesson does.
+- **Header:** with a key, the lesson line adds `3D: 3 models, click a part to ask`. The no-key line is unchanged.
+- **Ctrl+Alt during the wait (owner's choice: "Refuse (simple)"):** refused as today. The REFUSED line now adds "If a 3D lesson is waiting for a click, close it with its x button or wait up to 30 s." No new shell state.
+
+**Reasoning.** Refusing keeps the shell's one-turn-at-a-time rule (SH-9) and adds no turn phase that the shell, which carries no fakes (DEC-012), couldn't test offline. 30 s is long enough to look and click, and short enough not to block the next spoken question for long.
+
+**Rejected.**
+- A press that closes the waiting lesson and starts the new voice turn. Better for demos, but it needs a new phase in the shell's turn state machine. It's a later change if the wait gets in the way.
+- Keeping `RunAsync` for 2D-only lessons: `RunWithFollowUpsAsync` already ends at once (`NoScene`) when nothing 3D was drawn.
+
+**Consequences.**
+- `--once --lesson` with a 3D lesson keeps the process alive up to 30 s after the lesson for a click.
+- The live path needs `TYPESAFE_API_KEY`, `DEEPSEEK_API_KEY`, the Gateway, a mic and Fish (SH-20, human-gated). Offline, only the header and skip paths can be checked.
+
+Plan: [plans/2026-10-29-planner-3d-v1.md](plans/2026-10-29-planner-3d-v1.md) (6b). Rows: SH-18 (updated), SH-20.
+
+## DEC-032 — 2026-10-29 — claude-opus-5-5
+
+**Decision — `PlannerPrompt.System(limits, scene3d)` adds a 3D section exactly when `PlanRequest.Scene3d` is set, built from the same `ModelCatalog` the validator checks the answer against.**
+
+- **Without a catalogue** the system prompt is the v1 prompt, byte for byte. Checked by dumping it from HEAD and from the change: 2935 bytes each, identical. A 2D-only caller is never told about schema 1.1 or the 3D ops.
+- **With a catalogue** the FORMAT names `heyganesh.visualplan/1.1`, and a section follows the screen rules. It contains:
+  - the `scene3d` surface, with `MaxScenes`;
+  - the six 3D op shapes (`model`, `label`, `highlight` on `instance.part`, `explode`, `animate`, `camera`);
+  - `MaxModelsPerScene`;
+  - the camera views from `CameraView`;
+  - a CATALOGUE block: every model id with its part and animation ids, sorted so the text is stable;
+  - five 3D rules: a scene only for a catalogue model; place before naming; words stay on cards; `explode` needs a `camera` after it; `say` still explains.
+- `VisualPlanner` passes `request.Scene3d` to both the prompt and `ValidationContext`. The repair turn already carries `model.unknown` / `part.unknown` / `animation.unknown` back to the model.
+- **Size:** +2101 characters for the 3-model V1 catalogue (2925 → 5026), only when 3D is on.
+
+**Reasoning.** The rule this file already follows: ask for exactly what will be accepted. Names come from code, so the prompt can't offer an id or op shape the validator refuses. LP-10 checks every id and parses every shown op line.
+
+**Rejected.**
+- Part titles and descriptions in the catalogue block: that changes `CatalogModel` (DEC-028 keeps it names-only) and makes the prompt about 3× longer. The ids are readable English. Revisit if a live run mislabels parts.
+- Always describing 3D, which would give a 2D-only canvas plans that all degrade.
+- A separate 3D planner: one lesson mixes a scene and cards.
+
+**Consequences.**
+- No product caller passes a catalogue yet. 6b (the App Shell) is the first.
+- Whether a real model plans good 3D lessons is unknown until a live run (LP-8 needs `DEEPSEEK_API_KEY`).
+
+Plan: [plans/2026-10-29-planner-3d-v1.md](plans/2026-10-29-planner-3d-v1.md). Row: LP-10.
+
+## DEC-031 — 2026-10-29 — claude-opus-5-5
+
+**Decision — after a 3D lesson has played, the student can click a part; the click becomes a follow-up lesson about that part, on the same window.**
+
+- **When.** `LessonTurn.RunWithFollowUpsAsync` asks for a pick only once a lesson that drew a `scene3d` surface has played to the end (`Played`). Clicks during playback do nothing. The page shows "Click a part to ask about it" only while a pick is wanted.
+- **The seam.** `IPartPicker.PickAsync(idle, ct)` in VisualLessonEngine.Runtime, optional on an `ILessonCanvas`. `CardSurface` implements it. Null means no click: the student closed the lesson, the idle time passed, or there was no scene with a model on show (including no WebGL).
+- **What crosses the page boundary.** On a click the page posts `{ kind: "part-clicked", instance, part }`: two ids and nothing else (LSU-7 audits that). `CardSurface.OnPartClicked` accepts them only while a pick is in progress, only for an instance this surface drew, and only for a part the catalogue lists for that instance's model. Anything else is counted in `RefusedPicks` and dropped. `ProbePickGuardAsync` is the self-test.
+- **What is clicked.** Lesson meshes are pickable and tagged with their instance and part; warm-up and orientation meshes are not. A part seen through glass or a membrane (finish alpha < 0.5) wins over the see-through surface in front. A see-through part is picked only where nothing solid is behind it.
+- **The question.** `PartQuestion.For(pick)` writes it from the Part Library's own name, title and description: "Tell me more about the connecting rod in the single-cylinder four-stroke engine. The part library describes it as: …". It goes to the planner with the lesson just shown as `PlanRequest.PreviousPlan` (the existing DEC-022 path) and with no screen grounding, so a follow-up can never mark the student's screen.
+- **Same cards.** The follow-up is reset and played on the lease the first lesson opened. The lease is opened at most once and closed on every path. `RunAsync` keeps its old behaviour and is what the App Shell still calls.
+- **Bounds.** `FollowUpOptions`: `MaxFollowUps` 3 and `IdleTimeout` 60 s. `FollowUpEnd` says why the loop stopped.
+- **Planner pass-through.** `PlanRequest.Scene3d` (a `ModelCatalog?`) now reaches `ValidationContext.Scene3d`. Without it the planner refuses every 3D plan, so the loop could not be tested. The prompt does not teach the 3D ops yet, and no caller in the product passes a catalogue (step 6).
+
+**Measured (this machine; LSU-15, LT-8).**
+- A real click on the connecting rod comes back as `PartPick(m, four-stroke-engine, connecting-rod)` in 128–153 ms.
+- 6–8 of the engine's 10 parts have a steady point to click from the iso view. The glass cylinder, the piston pin (inside the piston) and, with the 2 px steadiness check, the thin valve stems have none.
+- Forged clicks: 3 of 3 refused. The close button ends a wait in under 140 ms.
+
+**Reasoning.**
+- Ids checked against what was drawn keep the follow-up question C#-authored. Page text can't become model input, which is the same rule as every other page message.
+- Reusing the window avoids a second ~2 s scene start-up (DEC-030) on every click.
+- Picking only after playback avoids racing the speaker; the player has no stop-then-replan path.
+
+**Rejected.**
+- Clicks during playback that interrupt the lesson (later: stop, then pick).
+- A new window per follow-up.
+- Sending the part's name from the page.
+- Running the loop in the App Shell, which carries no fakes (DEC-012), so the loop couldn't be tested offline.
+
+**Consequences.**
+- Thin parts (valve stems) are hard to hit at this zoom. A screen-space tolerance or a larger hit volume is a later refinement.
+- LSU-15 moves the real cursor. It needs a desktop nobody is using: a hand on the mouse is reported as interference rather than as a wrong part.
+- The App Shell can't reach any of this until step 6 teaches the planner the 3D ops and the shell calls `RunWithFollowUpsAsync` with `CardSurface.Scene3dCatalog`.
+
+Plan: [plans/2026-10-29-part-pick-v1.md](plans/2026-10-29-part-pick-v1.md). Rows: LT-8, LT-9, LSU-15 (and LSU-7, LSU-12 extended).
+
+## DEC-030 — 2026-10-29 — claude-opus-5-5
+
+**Decision — 3D lessons render in one more CardSurface window, built from Part Library data by vendored Babylon.js, with the rotation convention fixed in C# and proven from pixels.**
+
+- **The window.** `CardSurface` (the real `ILessonCanvas`, DEC-025) gets a scene window for a lesson's `scene3d` surface (DEC-028). It's the same `CardWindow`: borderless, NOACTIVATE + TOOLWINDOW + TOPMOST, `WDA_EXCLUDEFROMCAPTURE`, same virtual host, navigation and new-window blocking, no dev tools or accelerator keys. It hosts `Page/scene.html`, whose CSP is identical to `lesson.html`'s (no `unsafe-eval`, no `unsafe-inline`, no network).
+- **The renderer.** `scene.js` builds each model from `SceneMessages`, which resolves geometry from `ModelLibrary` (DEC-029):
+  - per part, an explode node, then a pose node, then the meshes;
+  - labels are Babylon GUI notes on leader lines, with text drawn on a canvas, never as markup;
+  - `HighlightLayer` for highlights, and `AnimationGroup`s from the library's keys.
+- **Rotations.** They leave C# as quaternions computed with `Geometry.Rotate`'s convention: q = qY·qX·qZ, with rotation keys densified to ≤ 45°. The page never interprets Euler angles. `CardSurface.CheckOrientationAsync()` draws markers at +X, at +Y, and on a parent turned 90° about Z, then finds them by colour in the captured page.
+- **Vendored files.** Babylon.js 9.30.0 and babylon.gui 9.30.0 plus the Apache-2.0 licence live under `Page/vendor/`, SHA-256-pinned in `VENDOR.md` (all equal to jsdelivr's published hashes). The folder is `-text` in `.gitattributes`.
+- **Created on demand.** The scene window is created on the first lesson that declares a scene, with a shader warm-up (one hidden mesh per shape × finish), and lives as long as its surface.
+- **Render on demand.** Frames are drawn only while a tween, an animation or a pending op is active.
+- **No WebGL.** The page says so and acknowledges every scene op as skipped; the lesson completes in speech.
+- **Catalogue.** `CardSurface.Scene3dCatalog` is the catalogue a caller passes as `ValidationContext.Scene3d`. No caller passes it yet (step 6).
+
+**Measured (this machine, RTX 3060 Laptop + WARP-capable; LSU-9..LSU-12).**
+
+| Measure | Result |
+|---|---|
+| Scene window cold start (environment page + Babylon parse + warm-up) | 1.95–2.14 s across 5 runs |
+| Warm model beat (engine: meshes + shaders ready + first frame) | 114–120 ms, inside the 300 ms budget |
+| Frames while `stroke-cycle` loops | 168 in 1 s |
+| Frames idle after the non-looping `pump-cycle` | 0 in 2 s |
+| Orientation (+X right, +Y up, Z-turn maps +Y → −X) | correct from real pixels |
+| CSP violations on the scene page | 0 |
+| `--disable-webgl` | the six-beat lesson completes, every sentence spoken |
+
+Memory was not re-measured in this step. Spike 0b's 357–506 MB WebView2 private memory for a 3D page stands.
+
+**Reasoning.**
+- Euler order and handedness are where a renderer silently disagrees with the library while every C# check passes. Quaternions from C# plus a pixel check remove that class of bug. DEC-029 asked for exactly this confirmation.
+- Creating the scene window only for a 3D lesson keeps 2D lessons at their ~143 MB, and keeps every run from paying 360–500 MB for a lesson type the planner can't produce yet. The cost is about 2 s of `ResetAsync` before a 3D lesson's first beat, paid per 3D turn while `CardSurfaceHost` makes a fresh surface each turn.
+
+**Rejected.**
+- Sending Euler angles to Babylon.
+- A transparent full-screen 3D layer (DEC-020 again).
+- 3D inside the card page: every card would carry 8.6 MB of Babylon and GPU memory.
+- Pre-warming at app start: deferred, see Consequences.
+- A tree-shaken ES-module build: it needs npm and a bundler, ruled out by FEATURE-007 §1.5.
+
+**Consequences.**
+- About 9.3 MB of vendored JavaScript is now in the repo and its history.
+- *(2026-10-29 · claude-opus-5-5 update: `NOTICE.md` is now vendored and pinned in `VENDOR.md`; LSU-7 checks it ships.)* `babylonjs@9.30.0`'s 46-byte `NOTICE.md` is **not yet vendored**. It wasn't in the approved download, and Apache-2.0 §4(d) asks redistributions to include it, so it must be added before this branch is pushed or shared.
+- `explode` moves parts but does not re-frame the camera. A lesson that wants the whole exploded view adds a `camera` op.
+- Making a 3D lesson's first beat fast is a later change: keep one `CardSurface` across turns, or pre-warm at app start.
+- Step 5 (click a part to ask) adds input to this window.
+- Step 6 makes `VisualPlanner` pass `Scene3dCatalog`, which is when live lessons can first contain 3D.
+
+Plan: [plans/2026-10-29-scene-renderer-v1.md](plans/2026-10-29-scene-renderer-v1.md). Rows: LSU-7..LSU-14.
+
+## DEC-029 — 2026-10-29 — claude-opus-5-5
+
+**Decision — 3D teaching models are C# code in their own assembly, computed wherever physics defines the shape or motion, and honestly flagged.** New Intelligence assembly `HeyGanesh.PartLibrary` (only reference: VisualLessonEngine). A model is named parts built from a closed primitive kit (box, cylinder, sphere, torus, capsule) with a closed set of finishes, a one-line description per part, an explode offset, and keyframed position/rotation tracks. `ModelLibrary.V1` ships three: `four-stroke-engine` (slider-crank kinematics computed at 49 keys), `dna-helix` (B-DNA: 10.5 bp/turn, 0.34 nm rise, 2.0 nm diameter), and `na-k-pump` (`Schematic = true`; only the 3 Na⁺ out / 2 K⁺ in stoichiometry is a fact). Every model is `Reviewed = false` until the owner reads `PartLibrarySmoke --dump` and records it here. `LibraryCheck` holds each model to 16 parts, 64 primitives (three per scene stay under spike 0b's 200), a ±2 box, and ordered, rest-matching, loop-consistent tracks. `ModelLibrary.ToCatalog()` is the `ModelCatalog` the scene3d contract validates against (DEC-028). One rotation convention (`Geometry.Rotate`: Z, then X, then Y, fixed axes, right-hand rule) is used by the models and the checks alike.
+
+**Reasoning.**
+- FEATURE-007 §3.1 "compute, don't recall": the host checks the shipped tracks against the physics: the rod is exactly L long at all 49 keys, the valves only open in their strokes and never reach the crown, every DNA pair is A-T or G-C at the right rise and twist, and the ions end on the right side. A deliberate sign flip in the rod formula fails that row (worst error 0.4).
+- §3.2 "bind to vetted content": names live in one reviewable place. Saying "vetted" when no person has read them would be false, so the flag says otherwise.
+- The library depends on the contract, not the reverse (DEC-028), so content can grow without touching the validator.
+
+**Rejected.** glTF assets (binary, poorly reviewable, motion not checkable against physics; kept for organic shapes later); JSON data files (no compile-time checking, a second parser, the computed models still need code); putting the models in VisualLessonEngine; shipping ten models now.
+
+**Consequences.** Step 4's renderer must reproduce `Geometry.Rotate`'s convention and confirm it with a snapshot of each model; it is also the first caller to pass `ModelLibrary.ToCatalog()` as `ValidationContext.Scene3d`. Organic models (heart, eye) will need a different source. The DNA model draws the strands 180° apart, so no major/minor groove, and says so in its basis. The engine has no valve overlap or timing advance, also stated. Plan: [plans/2026-10-29-part-library-v1.md](plans/2026-10-29-part-library-v1.md). Rows: PL-1..PL-5.
+
+## DEC-028 — 2026-10-29 — claude-opus-5-5
+
+**Decision — 3D arrives as VisualPlan 1.1: one `scene3d` surface, five ops, names bound to a caller-supplied `ModelCatalog`, and off by default.** Schema `heyganesh.visualplan/1.1` is v1 plus `SurfaceKind.Scene3d` (at most one per plan) and the ops `model` (place catalogue model → instance), `label` (sticky note on an instance or part), `explode` (0..1), `animate` (a catalogue animation of that model) and `camera` (`front`/`side`/`top`/`iso`). `highlight` also takes a part reference `"<instance>.<part>"`. The validator accepts `/1` and `/1.1`; a scene under `/1` is `schema.unsupported`. 3D is accepted only when `ValidationContext.Scene3d` carries a catalogue. With none (every caller today), a scene is plan-level `surface.unsupported` and the lesson is spoken. New codes: `surface.unsupported`, `ref.surface-kind`, `model.unknown`, `part.unknown`, `animation.unknown`, `limit.scenes`, `limit.models` (`MaxModelsPerScene = 3`).
+
+**Reasoning.**
+- DEC-023 already said 3D comes as a schema minor and that ops grow by contract, not by renderer. Nothing in v1 changes meaning, so every v1 fixture and the planner prompt stay valid untouched (all 106 existing LessonSmoke PASS lines unchanged).
+- FEATURE-007 §3.2 "bind to vetted content": a scene can only name models, parts and animations a catalogue lists, so a model cannot invent a part. `part.unknown` is a separate code from `ref.target` so evals can tell "made up a part" from "referred to it too early".
+- The gate is needed now: `CardSurface` lays out one 2D card per declared surface whatever its kind and silently skips op types it doesn't know, so a scene that passed validation would show as an empty card. The catalogue doubles as the capability flag. A host passes one only when its canvas draws 3D (Phase 5 step 4).
+- One scene per plan: spike 0b measured ~360–500 MB of WebView2 memory per 3D page.
+
+**Rejected.** A separate scene document beside the beats (loses beat-by-beat sync with speech, needs a second validator); a static global model list like `LessonVocabulary.Glyphs` (couples contract to content, and cannot say "this host has no 3D"); schema `/2`; parameters on `model` (deferred until a library model or eval needs them).
+
+**Consequences.** Step 3's part library produces a `ModelCatalog` plus geometry; step 4's renderer is the first canvas to pass one; step 6 teaches the planner the 1.1 ops and makes `VisualPlanner` pass the catalogue. Until then live lessons are exactly as before. The `ModelCatalog` constructor throws on malformed ids or duplicates, since it is built by code, never from model output. Plan: [plans/2026-10-29-scene3d-contract-v1.md](plans/2026-10-29-scene3d-contract-v1.md). Rows: LS-13.
+
+## DEC-027 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the lesson leg is wired into the App Shell behind `--lesson`, and its model comes from the environment.** After a produced (non-Failed) verdict, `--lesson` replaces the Tutor's prose leg with one lesson turn: the shell maps the verdict to `ScreenGrounding` (Found → description, resolved box, `Captures[0]` JPEG; honest no-match → no grounding, so every screen mark is refused) and calls `HeyGanesh.LessonSession.LessonTurn.RunAsync` (plan → open cards → play → close) with Voice's `SpeakAsync` as the speaker through `DelegateLessonSpeaker`. `CreateLessonPlanner()` builds `VisualPlanner.FromRegistry` over DeepSeek (`deepseek-flash`, OpenAI-compatible adapter, `DEEPSEEK_API_KEY` read per request by a read-only `EnvironmentSecretStore`) when the key is present and returns null otherwise, in which case the leg prints an honest skip. Exit codes reuse the shell alphabet: 0 played/skip, 1 no usable lesson (Rejected), 12 key, 3 provider/speech, 13 cancelled, 4 shell or card defect.
+
+**Accompanying choices.**
+- **New assembly `src/Experience/HeyGanesh.LessonSession/`** (refs LessonPlanner + LessonSurface + VisualLessonEngine): the turn logic lives where a verification host can reach it, because the shell carries no fakes (DEC-012). It references neither Voice nor ContextOrchestrator (LT-1), so DEC-015/016 hold: the shell is still the only verdict→teaching mapper and Voice still knows only text.
+- **Cards open only after a plan exists** (`ILessonCanvasHost`): a rejected plan or a provider fault costs no window and no WebView2 start-up; the cards are closed on every path once opened.
+- **Provider faults and cancellation become outcomes; everything else propagates** (speaker faults are mapped by the shell, card timeouts are a defect). The report's error string is `ProviderException.ToString()`, which carries no message body.
+- **The App gains a transitive NuGet package** (WebView2, through LessonSession → LessonSurface — the exception DEC-020/025 already accepted). The App csproj still has no direct `PackageReference` (SH-2) and carries the same `DropWebView2Wpf` target.
+- **`--no-speak` with `--lesson`** keeps speech as the clock without the voice: each sentence holds its beat for ~60 ms per character (0.6–8 s).
+
+**Reasoning.** The owner asked that the first real lesson work the moment a key is added, with no code change: that rules out the Tutor's deliberately-untaken flip (DEC-017) for this leg. DeepSeek is the provider the repo already commits to (DEC-017); it is text-only, so the planner sends no image and says so (DEC-024), and a Vision provider is one registry assignment away.
+
+**Rejected.** A `--fake-lesson` flag on the App (breaks DEC-012: product code would ship a test double). Putting the turn directly in the App (no host can reach it — the whole turn would stay untested until a key exists, the SH-15/17 gap). Letting the Tutor call the planner (breaks DEC-015). Mapping `GuidanceResult` inside LessonSession (breaks DEC-016 and needs a ContextOrchestrator reference). Returning null like `CreateTutorClient` (safer on paper, but needs another code change before the first demo — the owner chose the env path).
+
+**Consequences.** The App now builds only where `src/Providers` and `src/Foundation` exist — both still untracked (HANDOVER open item). The full lesson turn is offline-verified by LT-1..LT-6 (fake model; fake and real cards); the shell side is verified up to the key gates (SH-18). SH-19 (a real chord → verdict → drawn, spoken lesson) needs TYPESAFE_API_KEY, DEEPSEEK_API_KEY, a Gateway, Fish and a human.
+
+## DEC-026 — 2026-10-28 — claude-opus-5-5
+
+**Decision — lessons are planned by `HeyGanesh.LessonPlanner.VisualPlanner`.** `PlanAsync(PlanRequest)` sends one request through the `ILlmClient` it was given (by the caller or `FromRegistry` → role Tutor; DEC-021/DEC-024), validates the answer with `ValidationContext { RequireGroundedMarks = true, GroundedTarget = screen box }`, and — if the answer is not Valid — makes exactly one repair call carrying the original question, the first answer and the issue list. The better of the two outcomes is returned (Valid > PartiallyDegraded > TextFallback > Rejected; ties go to the repair). The prompt contract (schema, op shapes, limits, glyph vocabulary, plot grammar) is interpolated from the same code the validator uses. The screen image is attached only when the client advertises `ProviderCapability.Vision` and the JPEG is within `MaxImageBytes`; otherwise the prompt says it is not attached and `PlanResult.ImageNote` records why.
+
+**Grounded marks (new validator rule).** `ValidationContext` lets a caller require that every mark sits inside the grounded target box (+24 px); with no box, marks are refused (`mark.ungrounded`). A model therefore cannot invent coordinates on the student's real screen — it can only point where Element Selection / Vision already found something. The desktop-only `Validate` overload keeps its behaviour for fixtures.
+
+**Reasoning.** Interpolating the contract from code removes a whole class of drift bugs (prompt promises one vocabulary, validator enforces another). One repair turn recovers the common "nearly right" answer for one extra call; a second would double cost for diminishing returns. Grounded marks are the cheapest strong anti-hallucination rule available for screen pointing.
+
+**Rejected.** Structured output (`LlmResponseFormat.JsonSchema`): the Providers adapters disagree on its shape (OpenAI-compatible wraps it as `{name, schema}`, Anthropic sends it raw) and DeepSeek may not support it — fixing the adapters is its own change. Streaming beats: the first-beat latency target cannot be measured without a key (spike 0c), so it waits for one. Putting the planner inside VisualLessonEngine: that module's audit pins Abstractions as its only reference, and the planner needs Providers.Core.
+
+**Final-review fixes (same day).** Untrusted text (screen description, previous lesson, and model-authored values echoed in the repair turn) is flattened to one line, stripped of fence markers and bounded, and sits between `<<<BEGIN …>>>` / `<<<END …>>>` lines — it can no longer forge a `QUESTION` or `GROUNDED TARGET BOX` line. A repair call that fails with `ProviderException` keeps the usable first lesson (`PlanResult.RepairError`). `FromRegistry` planners own and dispose the client the registry built (`VisualPlanner : IDisposable`). Prompt examples are valid as written (non-zero mark) and state truthfully that an unknown op costs the whole beat's drawing.
+
+**Consequences.** Every model the registry can assign is usable unchanged. Repair doubles worst-case cost per lesson (2 calls). Until the adapter mismatch is fixed, JSON adherence rests on the prompt + tolerant parser + repair. Live quality is unmeasured until a key exists (LP-8, eval harness).
+
+## DEC-025 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the first real lesson canvas.** `HeyGanesh.LessonSurface.CardSurface` implements `ILessonCanvas` (DEC-020): one STA UI thread with a WinForms loop; one shared WebView2 environment (profile under `%LOCALAPPDATA%/HeyGanesh/webview2` or `$HEYGANESH_DATA_DIR/webview2`) with one card pre-warmed; one card window per declared surface, laid out top-right on the monitor under the cursor, each capture-excluded before first show (hard error otherwise). The page (`LessonPage/lesson.html|css|js`, virtual host `lesson.heyganesh.invalid`, CSP `default-src 'self'; connect-src 'none'`) builds DOM/SVG from beat messages through `textContent` only and acknowledges each one; an unacknowledged beat fails after `ApplyTimeout` (3 s). Navigation off the virtual host is cancelled and new windows refused. Accompanying choices:
+- **Seam change:** `ILessonCanvas.ClearAsync(ct)` → `ResetAsync(IReadOnlyList<LessonSurface> surfaces, ct)`; a beat does not carry its card's id/title, and the cards must exist before beat 1. `LessonPlayer` passes `plan.Surfaces`.
+- **Plots computed by the app:** `PlotExpression` (closed grammar, implicit multiplication, depth/length caps) evaluates the model's expression in C#; the validator now refuses an unparsable expression (`value.invalid`), so the beat degrades before rendering. The page only draws host-sent points.
+- **No new downloads this phase:** math uses an in-page TeX-lite formatter (fractions, scripts, roots, matrices, arrows, Greek) and strokes are jittered in-page; KaTeX/Rough.js (DEC-020) can replace both later without touching C#. Fonts are Windows' own (Ink Free / Segoe Print).
+- **Marks:** every mark shape is shown as the existing native overlay's box + pointer; a new mark hides the previous one first (the overlay refuses overlap).
+- **Final-review fixes:** exponent notation (`2e3`) is refused instead of read as 2·e·3; finite far outliers become plot gaps so `tan(x)` is not flattened; beats and layout messages have separate budgets (`ApplyTimeout` 3 s, `ControlTimeout` 10 s) and a timeout names the message kind; card height shrinks so every row fits the working area; browser accelerator keys, pinch zoom and swipe navigation are off on cards.
+- **Diagnostics in product code, read-only:** `DescribeCardAsync`, `ProbeIsolationAsync` (also usable as a startup health check) and `CapturePageAsync` (the page itself, not the screen).
+
+**Reasoning.** Opaque WebView2 cards were proven by spike 0a; computing plots in C# is FEATURE-007 §3.1's highest-value accuracy rule; deferring KaTeX keeps the phase free of downloads beyond the already-approved package while the visible demo works today. Reviewing page snapshots found and fixed four pedagogy-affecting layout faults (full-width rings, stub arrows between stacked items, a clipped plot, and a marker band that singled out a matrix's bottom row).
+
+**Rejected.** Letting the page evaluate expressions (moves the accuracy guarantee into JavaScript and widens the page's attack surface); `innerHTML`-based rendering (model text becomes markup); one window for all cards (couples layout and loses per-card dragging); downloading KaTeX/Rough.js now (the owner delegated "quicker and cheaper", and the TeX-lite formatter covers the fixtures).
+
+**Consequences.** `HeyGanesh.LessonSurface` is the only assembly with a PackageReference (LSU-1). Its rows need an interactive desktop. The App Shell wiring (hotkey → planner → player over CardSurface + a Voice speaker) is not done — it needs the Phase 4 planner to have lessons to play.
+
+## DEC-024 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the lesson planner stays multimodal and multi-model.** Refines DEC-021 (owner, 2026-10-28: "I want to keep it multimodal"). (1) *Multi-model:* the planner gets its `ILlmClient` from `ProviderRegistry` by role, never by naming a provider in code; DeepSeek `deepseek-flash` is only the default assignment, and any adapter already in `src/Providers` (OpenAI-compatible family, Anthropic, Gemini once finished) can be assigned by configuration. (2) *Multimodal input:* each planning request carries the question text plus, when the screen was grounded, one bounded screen crop as an `LlmImagePart` (same JPEG caps and untrusted-data labelling as the Tutor, DEC-015). If the assigned model lacks `ProviderCapability.Vision`, the planner takes an explicit text-only path (UIA/element description only) and records that it did — never a silent downgrade, matching Providers.Core's capability rule. (3) *Multimodal output* is already the design: speech + 2D cards + screen marks now, 3D at Phase 5.
+
+**Reasoning.** Providers.Core already models images, a Vision capability flag and role-based mix-and-match assignment, so this costs no new code before Phase 4 — only a constraint on how Phase 4 is written. Keys can be added later without touching the planner.
+
+**Rejected.** Hard-wiring the planner to one provider client (locks the product to one vendor's pricing and quality); text-only planning (loses the screen, which is the point of a screen-aware tutor).
+
+**Consequences.** Phase 4 tests must cover both the image path and the no-Vision text path against fakes, offline. No provider key is needed for any work before Phase 4's live rows.
+
+## DEC-022 — 2026-10-28 — claude-opus-5-5
+
+**Decision — tutor session state is in memory only.** The session keeps the last validated `VisualPlan` and the last 6 question/answer turns so follow-ups ("simpler", "just the combustion part", a clicked part) have context. Cleared after 10 minutes idle and on exit. Nothing is written to disk. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").
+
+**Reasoning.** Follow-ups are the core of HeyClicky's teaching loop and need only the current conversation; persistence, a learner model and cross-day memory are M8 work with their own privacy questions. In-memory state costs nothing to build or secure now and can be replaced behind the same seam.
+
+**Rejected.** SQLite persistence now (D3 is undecided, adds a store before there is anything worth keeping); fully stateless follow-ups (re-describing the whole lesson each turn costs tokens and loses the drawing context).
+
+**Consequences.** Screen-derived text lives only in process memory, never on disk. Restarting the app forgets the conversation — acceptable for the demo, revisited with Notes (M8).
+
+## DEC-021 — 2026-10-28 — claude-opus-5-5
+
+**Decision — the lesson planner calls models through `HeyGanesh.Providers.Core`'s `ILlmClient`**, using its existing structured-output (`JsonSchema`) and streaming paths; default provider DeepSeek `deepseek-flash` through `Providers.OpenAiCompat`, key `DEEPSEEK_API_KEY` (already in use by Vision and Tutor, DEC-007/DEC-017). The Tutor Engine's own `DeepSeekTutorClient` stays as is for plain explanations. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").
+
+**Reasoning.** The provider layer is already built and smoke-verified (ProvidersSmoke/OpenAiCompatSmoke) with streaming, retries and a circuit breaker; reusing it is the cheapest path and lets the planner switch to a stronger model later by configuration, not code. DeepSeek flash is the cheapest model the project already holds a key for.
+
+**Rejected.** Extending `DeepSeekTutorClient` (no streaming, no structured output, and DEC-017 pinned its payload); a new provider (cost and a new key for no demo gain).
+
+**Consequences.** The planner assembly takes a ProjectReference on Providers.Core. Phase 0c (first-beat latency) could not be measured: no provider key is set on this machine — it runs the first time a key is present, before Phase 4 is called done.
+
+## DEC-020 — 2026-10-28 — claude-opus-5-5
+
+**Decision — lessons render in WebView2, as opaque card windows.** One new Experience assembly, `HeyGanesh.LessonSurface`, is the only assembly allowed the `Microsoft.Web.WebView2` package (pinned 1.0.4314.35; the Evergreen runtime ships with Windows 11 — 155.0 here). Each card is a borderless, top-most, `WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW` window with `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)`, PerMonitorV2, positioned in physical pixels. Screen marks (circle/underline/arrow on the student's own screen) stay on the existing native, click-through `ScreenOverlay`. 2D drawing is SVG with vendored KaTeX (math) and Rough.js (hand-drawn strokes); Babylon.js is added only at Phase 5. One WebView2 environment is created hidden at startup and reused. Owner delegated the choice on 2026-10-28 ("choose the path which is quicker to build and demo, is cheaper and is efficient").
+
+**Reasoning — Phase 0a spike (throwaway WinForms host, never committed), 3 runs:**
+- No focus steal: `GetForegroundWindow` never became the card — True on every run.
+- Capture exclusion covers WebView2's out-of-process content: a screen sample saw the cream card before `WDA_EXCLUDEFROMCAPTURE` and did not after — True on every run.
+- Cold start: environment + controller 384–495 ms; first paint 761–872 ms (incl. a 300 ms settle). Warm text update 2.3–2.5 ms.
+- Cost: 6 msedgewebview2 processes, 143 MB private for the first card; host 12 MB.
+- So: pre-warm one environment at startup and the first beat draws in milliseconds instead of ~0.8 s.
+
+Opaque cards are also what HeyClicky shows (paper sheets), they keep WebView2 in its simplest, best-supported hosting mode, and they remove FEATURE-007's top risk (transparent, selectively click-through composition hosting) from the demo path entirely.
+
+**Rejected.** Transparent full-screen WebView2 via composition hosting (the riskiest, slowest path — revisit at Phase 5 if 3D must float over the screen); native GDI/Direct2D cards (no NuGet, but no math typesetting and 3D would need a second renderer later); WPF `WebView2CompositionControl` in a layered window (software-composited full-screen layer, worse for 3D); hand-declared WebView2 COM without the NuGet (+2–3 weeks).
+
+**Consequences.** The zero-NuGet invariant keeps holding for every core module; `HeyGanesh.LessonSurface` is the one documented exception (Experience layer), and its source audit must pin that exactly one PackageReference exists. Memory budget ~150 MB while lessons are available. The page loads only vendored files through a virtual host mapping, blocks navigation, and receives only validated plans (DEC-023).
+
+## DEC-023 — 2026-10-28 — claude-opus-5-5
+
+**Decision — model-authored lessons cross one validated, versioned contract before anything is spoken or drawn.** Schema `heyganesh.visualplan/1`: declared surfaces (cards), then beats of one `say` sentence plus up to 12 ops from a closed set (`write`, `step`, `arrow`, `icon`, `plot`, `highlight`, `mark`, `clear`). `VisualPlanParser` never throws on model text (only a null argument does) and recovers the outermost `{…}` once, so a prose-or-fence wrapper is not fatal. `VisualPlanValidator` enforces the `LessonLimits.Default` bounds, a fixed glyph vocabulary, the id pattern `^[a-z][a-z0-9-]{0,31}$`, plan-wide unique element ids, references only to elements live at that beat (no forward references, `clear` removes), and screen marks inside the caller's virtual desktop in physical pixels. Outcome policy: a beat with any issue keeps its `say` and loses its ops, and what it would have written never exists (dependants cascade); any plan-level issue, or ≥50% degraded beats, gives `TextFallback` with every `say` joined; nothing to say gives `Rejected`. Numbering note: DEC-020..022 are reserved for the owner's rendering-stack, planner-provider and session-state decisions named in FEATURE-007.
+
+**Reasoning.**
+- Accuracy and safety are decided above the renderer (FEATURE-007 §1.1): a closed op set means a renderer implements exactly what can be validated, and a model can only ever produce a wrong-but-valid drawing, never code.
+- Speech is the part a student cannot lose: degrading to speech instead of failing keeps the lesson when the drawing is broken — BUILD-PLAYBOOK M7 S7.1's "malformed model output degrades to plain text with a notice".
+- Time-ordered reference checks plus rollback of degraded beats let a renderer play beats strictly in sequence without ever meeting a dangling id.
+- `PlotOp` carries an expression and range, never points — the app computes curves, so a plotted curve cannot be hallucinated.
+
+**Rejected.** JSON Schema validation library (a NuGet for less than the reference rules need); throwing on bad model output (loses the spoken lesson and dresses model faults as caller bugs); per-code plan-level severity (one rule — an issue without a beat id is plan-level — is auditable); repairing malformed JSON beyond outer-brace extraction (guessing at model intent).
+
+**Consequences.** Every later phase builds on this: the planner must emit it, the runtime plays it, the surface renders only `Valid`/`PartiallyDegraded` plans. New ops or the 3D `scene3d` surface arrive as a schema minor driven by eval failures. An off-contract `mode` string alone forces `TextFallback` — strict by design, revisit if evals show it costs good lessons. Numbers are never silently defaulted: a mark coordinate or plot bound that is missing, non-numeric, fractional or out of int range is `value.invalid` on its beat (integral decimals like 512.0 are accepted). The 400-char `say` limit bounds what is spoken, not only what is drawn: an over-long say is treated as no usable speech — its beat is dropped and it is excluded from `FallbackText` — rather than truncated, because cutting a sentence can change what it teaches.
+
 ## DEC-017 — 2026-10-01 — Cline agent (Pixel Canary)
 
 **Decision — the first live teaching provider is DeepSeek `deepseek-flash`, direct, internal, and factory-fronted.** `DeepSeekTutorClient` (internal) sends one OpenAI-compatible Chat Completions request per turn — `model`, `messages` (system string; user plain string, or the verified `text`+`image_url` content-part array when a `TutorVisual` rides along, as a `data:image/jpeg;base64,` URL of the exact opaque bytes), `max_tokens` from the prompt's budget, `stream:false` — plus the fixed v1 decision `thinking: {"type": "disabled"}`. The bearer key is `DEEPSEEK_API_KEY`, read at call time only (DEC-007's temporary stopgap, extended through a second seam; the same variable Vision reads, which DEC-017 accepts as recorded coupling). `TutorService`, the shell and every other module are untouched; `TutorClientFactory.CreateDeepSeek(DeepSeekTutorOptions?) → ITutorClient` is the only new public construction API, and the shell's flip is that one call.

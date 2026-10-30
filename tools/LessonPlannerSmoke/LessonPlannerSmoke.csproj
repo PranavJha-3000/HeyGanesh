@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Lesson Planner (FEATURE-007 Phase 4).
+
+    Not product code: it proves the planner's prompt contract, multimodal handling, grounded-mark
+    rule, repair turn and error pass-through against a recording fake ILlmClient and recorded model
+    answers — no provider, no key, no network. Fixtures are linked from tools/LessonSmoke so the
+    "recorded model answers" are the same golden lessons every other host checks.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.LessonPlannerSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.LessonPlannerSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
+    <!-- LP-9 checks the 3D prompt against the real catalogue (DEC-032). The planner itself never references it. -->
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

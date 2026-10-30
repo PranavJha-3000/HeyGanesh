@@ -20,7 +20,7 @@ screen data.
 
 ## What landed
 
-- `src/HeyGanesh.TutorEngine/` — `TutorService.ExplainAsync` over `TutorRequest` (question +
+- `src/Intelligence/HeyGanesh.TutorEngine/` — `TutorService.ExplainAsync` over `TutorRequest` (question +
   `TutorContext` snapshot, optional `TutorVisual` JPEG) → `TutorResult`. Service-owned system prompt;
   untrusted-data labelling of all screen content; coordinate ban in answer prose; visual caps;
   deterministic prompt rendering; Voice-mirrored exception families; no `IDisposable` (caller owns

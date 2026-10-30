@@ -1,0 +1,143 @@
+namespace HeyGanesh.Tools.LessonSmoke;
+
+/// <summary>
+/// Verification host for the VisualPlan contract. Every row runs offline against golden fixtures and
+/// in-code mutations of them — no provider, renderer, key or network. Exit codes: 0 pass, 1 failed
+/// check, 2 usage.
+/// </summary>
+internal static partial class LessonSmokeHost
+{
+    private enum Mode
+    {
+        Help,
+        AssertSource,
+        AssertParse,
+        AssertLimits,
+        AssertRefs,
+        AssertDegrade,
+        AssertFixtures,
+        AssertPlay,
+        AssertPlayDegraded,
+        AssertControls,
+        AssertPlot,
+        AssertGrounded,
+        AssertScene3d,
+        AssertSchematic,
+    }
+
+    public static async Task<int> RunAsync(string[] args)
+    {
+        var mode = ParseArgs(args);
+        if (mode is null)
+        {
+            return 2;
+        }
+
+        if (mode == Mode.Help)
+        {
+            return PrintUsage();
+        }
+
+        Console.WriteLine("Visual Lesson Engine verification host (offline fixtures + contract assertions)");
+        Console.WriteLine();
+
+        try
+        {
+            return mode switch
+            {
+                Mode.AssertSource => RunAssertSource(),
+                Mode.AssertParse => RunAssertParse(),
+                Mode.AssertLimits => RunAssertLimits(),
+                Mode.AssertRefs => RunAssertRefs(),
+                Mode.AssertDegrade => RunAssertDegrade(),
+                Mode.AssertFixtures => RunAssertFixtures(),
+                Mode.AssertPlot => RunAssertPlot(),
+                Mode.AssertGrounded => RunAssertGrounded(),
+                Mode.AssertScene3d => RunAssertScene3d(),
+                Mode.AssertSchematic => await RunAssertSchematicAsync(),
+                Mode.AssertPlay => await RunAssertPlayAsync(),
+                Mode.AssertPlayDegraded => await RunAssertPlayDegradedAsync(),
+                Mode.AssertControls => await RunAssertControlsAsync(),
+                _ => PrintUsage(),
+            };
+        }
+        catch (Exception ex)
+        {
+            // The contract under test promises never to throw on model output, so any escape here
+            // is itself a failed row, not a crash to shrug off.
+            Console.WriteLine($"UNEXPECTED: {ex.GetType().Name}: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static Mode? ParseArgs(string[] args)
+    {
+        var mode = Mode.Help;
+        foreach (var arg in args)
+        {
+            switch (arg)
+            {
+                case "--assert-source": mode = Mode.AssertSource; break;
+                case "--assert-parse": mode = Mode.AssertParse; break;
+                case "--assert-limits": mode = Mode.AssertLimits; break;
+                case "--assert-refs": mode = Mode.AssertRefs; break;
+                case "--assert-degrade": mode = Mode.AssertDegrade; break;
+                case "--assert-fixtures": mode = Mode.AssertFixtures; break;
+                case "--assert-plot": mode = Mode.AssertPlot; break;
+                case "--assert-grounded": mode = Mode.AssertGrounded; break;
+                case "--assert-scene3d": mode = Mode.AssertScene3d; break;
+                case "--assert-schematic": mode = Mode.AssertSchematic; break;
+                case "--assert-play": mode = Mode.AssertPlay; break;
+                case "--assert-play-degraded": mode = Mode.AssertPlayDegraded; break;
+                case "--assert-controls": mode = Mode.AssertControls; break;
+                case "--help": case "-h": case "/?": mode = Mode.Help; break;
+                default:
+                    Console.WriteLine($"unknown argument '{arg}' (exit 2)");
+                    return null;
+            }
+        }
+
+        return mode;
+    }
+
+    private static int PrintUsage()
+    {
+        Console.WriteLine("Lesson smoke host");
+        Console.WriteLine("Usage: LessonSmoke <mode>");
+        Console.WriteLine();
+        Console.WriteLine("Offline rows (no provider, no renderer, no network):");
+        Console.WriteLine("  --assert-source               zero NuGet, Abstractions-only reference, no P/Invoke,");
+        Console.WriteLine("                                no network/file/registry access, exit 0");
+        Console.WriteLine("  --assert-parse                fixture parse, json fence, malformed/oversize/deep input, exit 0");
+        Console.WriteLine("  --assert-limits               v1 limits, id rules, closed vocabularies, exit 0");
+        Console.WriteLine("  --assert-refs                 reference integrity over time + physical-pixel mark bounds, exit 0");
+        Console.WriteLine("  --assert-degrade              bad beat -> speech only; mostly bad -> text; silent -> rejected, exit 0");
+        Console.WriteLine("  --assert-fixtures             golden lessons validate clean + deterministic, exit 0");
+        Console.WriteLine("  --assert-plot                 closed-grammar plot expressions, app-computed samples, exit 0");
+        Console.WriteLine("  --assert-grounded             marks only inside the grounded target box, exit 0");
+        Console.WriteLine("  --assert-scene3d              schema 1.1 scene: catalogue-bound models/parts/animations, off without a catalogue, exit 0");
+        Console.WriteLine("  --assert-schematic            schema 1.2 schematics: every rule alone, a refused one costs only its beats, geometry delegate, exit 0");
+        Console.WriteLine();
+        Console.WriteLine("Playback rows (fake canvas + fake speaker, no renderer, no TTS):");
+        Console.WriteLine("  --assert-play                 draw-then-speak per beat, speech is the clock, report, exit 0");
+        Console.WriteLine("  --assert-play-degraded        degraded beat spoken not drawn; fallback notice; rejected silent; replay, exit 0");
+        Console.WriteLine("  --assert-controls             pause/skip/stop, refuse a 2nd play, cancel, TTS fault, idle controls, exit 0");
+        return 0;
+    }
+
+    private static int Check(bool ok, string label, int failures)
+    {
+        Console.WriteLine($"  {(ok ? "PASS" : "FAIL")}  {label}");
+        return ok ? failures : failures + 1;
+    }
+
+    private static int Summarize(int failures, string okLabel)
+    {
+        Console.WriteLine(failures == 0 ? $"{okLabel} (exit 0)" : $"FAILED: {failures} check(s) (exit 1)");
+        return failures == 0 ? 0 : 1;
+    }
+
+    /// <summary>Reads a golden fixture copied next to the EXE by the csproj's fixtures\*.json item.</summary>
+    private static string Fixture(string name) =>
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", name));
+}

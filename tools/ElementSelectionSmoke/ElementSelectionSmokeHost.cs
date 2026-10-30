@@ -17,6 +17,16 @@ internal static partial class ElementSelectionSmokeHost
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--assert-text-merge")
+        {
+            return RunAssertTextMerge();
+        }
+
+        if (args.Length > 0 && args[0] == "--assert-key-source")
+        {
+            return await RunAssertKeySourceAsync();
+        }
+
         var options = ParseArgs(args);
         if (options.Help || string.IsNullOrWhiteSpace(options.Question))
         {
@@ -37,7 +47,7 @@ internal static partial class ElementSelectionSmokeHost
         // --list-only: enumeration + coordinate cross-check without any Jev call (no key needed).
         if (options.ListOnly)
         {
-            return RunListOnly(options);
+            return options.ReadText ? await RunReadTextAsync(options) : RunListOnly(options);
         }
 
         using ElementSelectionService service = new(
@@ -83,7 +93,7 @@ internal static partial class ElementSelectionSmokeHost
     {
         var question = ""; var outDir = Path.Combine(AppContext.BaseDirectory, "out");
         var help = false; var fake = false; var fakeNone = false; var foreground = false;
-        var listOnly = false; var annotate = false; var maxCandidates = 120;
+        var listOnly = false; var annotate = false; var readText = false; var maxCandidates = 120;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -97,12 +107,13 @@ internal static partial class ElementSelectionSmokeHost
                 case "--foreground": foreground = true; break;
                 case "--list-only": listOnly = true; break;
                 case "--annotate": annotate = true; break;
+                case "--read-text": readText = true; break;
                 case "--help": case "-h": case "/?": help = true; break;
                 default: Console.WriteLine($"ignoring unknown argument '{args[i]}'"); break;
             }
         }
 
-        return new HostOptions(question, outDir, help, fake, fakeNone, foreground, listOnly, annotate, maxCandidates);
+        return new HostOptions(question, outDir, help, fake, fakeNone, foreground, listOnly, annotate, maxCandidates, readText);
     }
 
     private static void PrintUsage()
@@ -113,6 +124,8 @@ internal static partial class ElementSelectionSmokeHost
         Console.WriteLine();
         Console.WriteLine("--foreground      : walk the focused window instead of the window under the cursor.");
         Console.WriteLine("--list-only       : enumerate + coordinate cross-check only, no Jev call (no key needed).");
+        Console.WriteLine("--read-text       : with --list-only, also OCR the cursor monitor and merge its text (counts only).");
+        Console.WriteLine("--assert-text-merge (first argument): the screen-text merge rules alone; no window, CI-safe.");
         Console.WriteLine("--fake            : offline fake Jev client (picks the top-ranked real candidate).");
         Console.WriteLine("--fake-none       : with --fake, answer the none escape option instead (not-found path).");
         Console.WriteLine("--annotate        : capture the cursor monitor and draw the chosen box (annotated.jpg).");
@@ -130,5 +143,6 @@ internal static partial class ElementSelectionSmokeHost
         bool Foreground,
         bool ListOnly,
         bool Annotate,
-        int MaxCandidates);
+        int MaxCandidates,
+        bool ReadText);
 }

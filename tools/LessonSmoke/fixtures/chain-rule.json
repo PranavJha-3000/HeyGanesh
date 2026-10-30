@@ -1,0 +1,50 @@
+{
+  "schema": "heyganesh.visualplan/1",
+  "lessonId": "chain-rule-ln",
+  "title": "Differentiating ln(3x^2 - 1)",
+  "mode": "explain",
+  "surfaces": [
+    { "id": "card-main", "kind": "card", "title": "chain rule" }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "say": "First, look at the inside function: three x squared minus one.",
+      "ops": [
+        { "op": "write", "surface": "card-main", "id": "w1", "text": "inside", "style": "heading", "math": "3x^2 - 1" }
+      ]
+    },
+    {
+      "id": "b2",
+      "say": "The natural log's derivative is one over whatever is inside.",
+      "ops": [
+        { "op": "write", "surface": "card-main", "id": "w2", "text": "outer derivative", "style": "body", "math": "\\frac{1}{3x^2 - 1}" },
+        { "op": "highlight", "target": "w1" },
+        { "op": "mark", "shape": "circle", "x": 1240, "y": 860, "width": 96, "height": 32 }
+      ]
+    },
+    {
+      "id": "b3",
+      "say": "The inside's derivative is six x.",
+      "ops": [
+        { "op": "write", "surface": "card-main", "id": "w3", "text": "inner derivative", "style": "body", "math": "6x" },
+        { "op": "arrow", "surface": "card-main", "from": "w1", "to": "w3", "label": "d/dx" }
+      ]
+    },
+    {
+      "id": "b4",
+      "say": "Multiply the two derivatives together.",
+      "ops": [
+        { "op": "write", "surface": "card-main", "id": "w4", "text": "result", "style": "heading", "math": "\\frac{6x}{3x^2 - 1}" },
+        { "op": "highlight", "target": "w4" }
+      ]
+    },
+    {
+      "id": "b5",
+      "say": "Here is that slope for x from one to four.",
+      "ops": [
+        { "op": "plot", "surface": "card-main", "id": "p1", "expr": "6*x/(3*x^2-1)", "xMin": 1, "xMax": 4 }
+      ]
+    }
+  ]
+}

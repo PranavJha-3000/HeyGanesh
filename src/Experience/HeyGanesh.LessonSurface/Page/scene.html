@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Same isolation as the card page (DEC-020/DEC-030): only its own files, no network, no eval, no inline code or style. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>heyganesh 3d lesson</title>
+  <link rel="stylesheet" href="scene.css">
+  <link rel="stylesheet" href="vendor/anatomy-1482e846/iso.css">
+  <link rel="stylesheet" href="scene-svg.css">
+</head>
+<body>
+  <div id="frame">
+    <header id="tab">
+      <span id="title"></span>
+      <span id="tags"></span>
+      <button id="close" type="button" aria-label="Close lesson">×</button>
+    </header>
+    <canvas id="view" aria-label="3D lesson view"></canvas>
+    <div id="drawing" class="iso" data-theme="light" hidden></div>
+    <div id="notice" hidden></div>
+    <div id="hint" hidden>Click a part to ask about it</div>
+  </div>
+  <script src="vendor/babylonjs-9.30.0/babylon.js"></script>
+  <script src="vendor/babylonjs-9.30.0/babylon.gui.min.js"></script>
+  <script src="scene.js"></script>
+  <script type="module" src="scene-svg.js"></script>
+</body>
+</html>

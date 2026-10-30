@@ -71,7 +71,7 @@ The system must support the major LLM providers through one abstraction. Capabil
 |---|---|---|
 | OpenAI, Azure OpenAI | OpenAI-compatible adapter (Azure: endpoint + deployment + api-version variant) | |
 | Anthropic | Dedicated Messages-API adapter | |
-| Google Gemini | Dedicated adapter | |
+| Google Gemini | Dedicated adapter | 2026-10-29 · claude-sonnet-5-5: Gemini adapter removed - it never compiled and nothing referenced it; if Gemini is wanted, point Providers.OpenAiCompat at a different BaseUrl. |
 | DeepSeek, Mistral, xAI, Groq, Together, OpenRouter | OpenAI-compatible adapter with per-provider base URL and quirk flags | |
 | Cohere | Dedicated adapter if chat+embeddings are needed | Optional until needed |
 | Ollama / LM Studio (local) | OpenAI-compatible adapter, **no key** | Enables a fully offline demo path |
@@ -187,6 +187,7 @@ Moving files is high-risk in an agent-driven repo. Do it in small, reversible st
 
 1. **R1** add `HeyGanesh.sln`, `global.json`, `Directory.Build.props`, `.editorconfig`; include all *existing* projects at their *current* paths; build green. (No moves.)
 2. **R2** create new empty folders (`config/`, `prompts/`, `eval/`, `tests/`, `docs/product/`, `docs/architecture/`) each with a README stating its purpose.
+   > 2026-10-29 · claude-sonnet-5-5: R2 placeholder folders removed - they held only aspirational READMEs and no content.
 3. **R3-R6** one layer per step: `git mv` the assemblies of that layer into `src/<Layer>/`. Rules: **assembly names, namespaces and public APIs do not change**; only paths and `ProjectReference` paths change; the build and every key-free verification row must be green before and after; each step gets a `ROLLBACK.md` entry written *first* (it touches more than 3 files).
 4. **R7** update `AGENTS.md`, `ARCHITECTURE.md` path references, and `tools/` host project references.
 
@@ -244,6 +245,7 @@ Milestones are sequential unless stated. Each bullet is **one Cline step**. Exit
 - S2.2 `Providers.Core`: `ILlmClient`, `IEmbeddingClient`, capability model, `ProviderError`, catalog loader, registry, resilience (timeout, bounded retry with jitter, per-provider circuit breaker).
 - S2.3 `Providers.OpenAiCompat` with a loopback stub server for wire-contract tests (the pattern already used for the Tutor provider).
 - S2.4 `Providers.Anthropic`. S2.5 `Providers.Gemini`. (One step each.)
+  > 2026-10-29 · claude-sonnet-5-5: Gemini adapter removed - it never compiled and nothing referenced it; if Gemini is wanted, point Providers.OpenAiCompat at a different BaseUrl.
 - S2.6 Keyless local provider path via the OpenAI-compatible adapter pointed at a local server; documented.
 - S2.7 Key management CLI in `App` (`heyganesh keys set|test|delete|list`). Keys are read from a masked prompt only; never from arguments or environment.
 **Exit:** three adapter families pass wire-contract rows offline; secret-leak rows pass; **no live call has been made by Cline**.

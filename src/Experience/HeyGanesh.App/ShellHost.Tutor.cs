@@ -18,19 +18,27 @@ namespace HeyGanesh.App;
 internal static partial class ShellHost
 {
     /// <summary>
-    /// The single forward-declared point DEC-015 left open: this change wires the leg, not a provider.
-    /// Returns <see langword="null"/> TODAY because no provider, model, endpoint or key name may be
-    /// committed before the owner decides them — so no env var is read and no client type is named
-    /// anywhere in the shell. When the first live ITutorClient lands, THIS method starts returning it
-    /// and no call site changes.
+    /// The point DEC-015 left open, switched on by DEC-047 (the owner chose it; DEC-017 already chose the
+    /// provider): the DeepSeek Tutor (<c>deepseek-flash</c>), reading its key per request through the key
+    /// ring, whenever the ring has the deepseek key. Without one it returns <see langword="null"/> and the
+    /// leg reports an honest skip, as the lesson leg does (DEC-027), rather than failing every turn on auth.
     /// </summary>
     /// <remarks>
     /// Ownership: whatever this returns is shell-owned and disposed by RunAsync's using.
     /// <see cref="TutorService"/> never disposes the seam it was handed (it owns nothing), so the
-    /// composition root is the owner — the same arrangement the composed VoiceService keeps. If this
-    /// line ever stops returning null, keep the header's tutor line in ShellHost.Args.cs in step.
+    /// composition root is the owner — the same arrangement the composed VoiceService keeps. Keep the
+    /// header's tutor line (TutorHeader) in step with this gate.
     /// </remarks>
-    private static ITutorClient? CreateTutorClient() => null;
+    private static ITutorClient? CreateTutorClient() =>
+        HasKey("deepseek")
+            ? TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { ApiKey = Keys.Reader("deepseek") })
+            : null;
+
+    /// <summary>The header's tutor line; keep in step with CreateTutorClient().</summary>
+    private static string TutorHeader() =>
+        HasKey("deepseek")
+            ? $"ON: deepseek-flash explains in prose when no lesson is drawn (DEEPSEEK_API_KEY {Keys.Describe("deepseek")})"
+            : "off: no DeepSeek key, so the teaching leg reports its skip (store one with --set-key deepseek)";
 
     /// <summary>
     /// The scalar-snapshot mapping, written exactly as TutorContext's remarks prescribe. Deliberately
@@ -118,10 +126,10 @@ internal static partial class ShellHost
     {
         if (tutor is null)
         {
-            // The honest null-seam state (DEC-015): the leg is wired, the provider decision is not.
-            // A produced verdict stands on its own — skipping the lesson is not a failure.
-            Console.WriteLine("tutor       : skipped — the teaching seam is wired but has no client yet (DEC-015:");
-            Console.WriteLine("                the provider is the owner's decision). The verdict above stands as-is.");
+            // No DeepSeek key (DEC-047): the leg is skipped honestly. A produced verdict stands on its own —
+            // skipping the explanation is not a failure.
+            Console.WriteLine("tutor       : skipped — no DeepSeek key (store one with --set-key deepseek, or set");
+            Console.WriteLine("                DEEPSEEK_API_KEY). The verdict above stands as-is.");
             return 0;
         }
 

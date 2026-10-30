@@ -35,6 +35,15 @@ public sealed class DeepSeekTutorOptions
     /// </summary>
     public string BaseUrl { get; init; } = "https://api.deepseek.com";
 
+    /// <summary>
+    /// Where the key comes from, per request (DEC-047): the App Shell passes its key ring's reader
+    /// (Windows Credential Manager, then the environment). A source, never a value: this type still holds
+    /// no credential (TU-8 allows exactly this one delegate). Null keeps the client's own DEEPSEEK_API_KEY
+    /// read, so TU-11 and every host that passes nothing behave as before. A source that returns null or
+    /// blank is a missing key: the call fails as an authentication fault before any byte is sent.
+    /// </summary>
+    public Func<string?>? ApiKey { get; init; }
+
     /// <summary>Provider image fidelity flag forwarded as <c>image_url.detail</c> (low | high | original | auto). High keeps the original resolution — teaching legibility wins over token cost.</summary>
     public string ImageDetail { get; init; } = "high";
 

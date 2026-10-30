@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Lesson Session (FEATURE-007 Phase 4.5, DEC-027) - one lesson turn: plan, open cards, play, close.
+
+    Exists so the whole turn is reachable from a verification host. The App Shell carries no fakes
+    (DEC-012), so the code worth testing with a fake model lives here and the shell only composes it.
+    Two things deliberately stay OUT of this assembly:
+      * the verdict -> grounding mapping. The shell is the only mapper between a GuidanceResult and a
+        teaching request (DEC-015/016), so nothing here references ContextOrchestrator;
+      * speech. Voice is reached through a delegate (DelegateLessonSpeaker), so Voice stays text-only
+        and this assembly never references it.
+    No direct PackageReference: WebView2 arrives only through LessonSurface (DEC-020/025). No env,
+    file or network access - the planner's client is the caller's.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.LessonSession</RootNamespace>
+    <AssemblyName>HeyGanesh.LessonSession</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
+    <!-- Part names and descriptions for click-to-ask follow-up questions (PartQuestion, DEC-031). -->
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.VisualLessonEngine\HeyGanesh.VisualLessonEngine.csproj" />
+    <ProjectReference Include="..\HeyGanesh.LessonSurface\HeyGanesh.LessonSurface.csproj" />
+  </ItemGroup>
+
+  <!-- Same MSB3277 trap as LessonSurface: the package's WPF reference flows to every consumer. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

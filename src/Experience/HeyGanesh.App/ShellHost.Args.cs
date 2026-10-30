@@ -12,9 +12,10 @@ internal static partial class ShellHost
     {
         var question = "";
         var help = false; var once = false; var overlay = true; var foreground = false;
-        var retainCaptures = true; var expectDpi = true; var noSpeak = false;
+        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false; var noOcr = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
+        string? keyCommand = null; var keyName = "";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -26,6 +27,9 @@ internal static partial class ShellHost
                 case "--foreground": foreground = true; break;
                 case "--no-retain-captures": retainCaptures = false; break;
                 case "--no-speak": noSpeak = true; break;
+                case "--lesson": lesson = true; break;
+                case "--no-route": noRoute = true; break;
+                case "--no-ocr": noOcr = true; break;
                 case "--no-dpi": expectDpi = false; break;
                 case "--seconds": seconds = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -33,6 +37,10 @@ internal static partial class ShellHost
                 case "--max-dim": maxDim = int.Parse(args[++i]); break;
                 case "--max-candidates": maxCandidates = int.Parse(args[++i]); break;
                 case "--help": case "-h": case "/?": help = true; break;
+                // Key commands (DEC-045) run on their own and exit; the name is checked by RunKeyCommand.
+                case "--keys": keyCommand = "keys"; break;
+                case "--set-key": keyCommand = "set"; keyName = i + 1 < args.Length ? args[++i] : ""; break;
+                case "--remove-key": keyCommand = "remove"; keyName = i + 1 < args.Length ? args[++i] : ""; break;
                 default: Console.WriteLine($"ignoring unknown argument '{args[i]}'"); break;
             }
         }
@@ -44,7 +52,7 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute, noOcr, keyCommand, keyName);
     }
 
     private static void PrintUsage()
@@ -67,12 +75,27 @@ internal static partial class ShellHost
         Console.WriteLine("--no-speak        teach but stay silent: skip the speech-out leg. The lesson (when one is");
         Console.WriteLine("                  produced) is still reported as text — headless scripted runs and anyone");
         Console.WriteLine("                  who does not want the desk speaking should use it.");
+        Console.WriteLine("--lesson          teach with a drawn, spoken visual lesson (cards + voice) instead of the");
+        Console.WriteLine("                  Tutor's prose. Needs DEEPSEEK_API_KEY for the lesson model; without it the");
+        Console.WriteLine("                  lesson leg reports its skip (DEC-027). Combine with --no-speak to pace silently.");
+        Console.WriteLine("                  Without it, and with TYPESAFE_API_KEY set, Jev routes each turn instead: point");
+        Console.WriteLine("                  (the highlight is the answer), explain (the Tutor), or a 2D/3D lesson (DEC-036).");
+        Console.WriteLine("--no-route        never ask Jev how to teach: the Tutor leg, as before the router existed.");
+        Console.WriteLine("--no-ocr          do not read the screen's text. By default the cursor monitor's text is read");
+        Console.WriteLine("                  locally, and up to 40 short lines inside the target window (none that look");
+        Console.WriteLine("                  like a key or token) are offered to Jev with the UI controls (DEC-039).");
         Console.WriteLine("--foreground      walk the foreground window instead of the window under the cursor.");
         Console.WriteLine("--no-retain-captures  drop the captured frames from the verdict (RetainCaptures=false).");
         Console.WriteLine("--max-dim         capture downscale cap in px (default 1280).");
         Console.WriteLine("--max-candidates  candidate cap handed to Element Selection (default 120).");
         Console.WriteLine("--no-dpi          do not claim PerMonitorV2 awareness, so the overlay's refusal to draw on");
         Console.WriteLine("                  a non-aware host can be observed. Nothing in a normal run should use it.");
+        Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish): where it was found and");
+        Console.WriteLine("                  its length, never its value; then exit.");
+        Console.WriteLine("--set-key <name>  store a key in Windows Credential Manager. It is typed or pasted with nothing");
+        Console.WriteLine("                  shown, or piped on stdin; then exit. Every API client reads it from there");
+        Console.WriteLine("                  first, then from the environment variable.");
+        Console.WriteLine("--remove-key <name>  delete a stored key (the environment variable is not touched); then exit.");
     }
 
     private static void PrintFooter()
@@ -84,12 +107,16 @@ internal static partial class ShellHost
         Console.WriteLine("error propagated rather than swallowed | 4 an unexpected fault | 12 a required API key");
         Console.WriteLine("is missing | 13 cancelled. The teach/speak leg after a non-Failed verdict reuses these");
         Console.WriteLine("codes: 12/3 are a key/provider error from the teaching seam or the speaker, 4 is a mapping");
-        Console.WriteLine("fault in the shell; the verdict is always reported (and drawn) before either can fire.");
+        Console.WriteLine("fault in the shell (or a lesson card fault), 1 with --lesson means no usable lesson came");
+        Console.WriteLine("back; the verdict is always reported (and drawn) before any of them can fire.");
+        Console.WriteLine("Key commands (--keys, --set-key, --remove-key): 0 done | 1 nothing was entered, or the key");
+        Console.WriteLine("was refused (a space or line break inside) | 2 unknown key name | 4 Credential Manager refused.");
         Console.WriteLine();
         Console.WriteLine("Live listens need HEYGANESH_QWEN_GATEWAY_URL (the qwen-audio-agent Gateway is a separate");
         Console.WriteLine("process that runs with its own provider key; no key crosses the protocol to HeyGanesh). The");
         Console.WriteLine("resolve legs need TYPESAFE_API_KEY (Element Selection) and DEEPSEEK_API_KEY (Vision, which");
-        Console.WriteLine("only runs as the fallback). The shell prints key presence only, never a value.");
+        Console.WriteLine("only runs as the fallback), stored with --set-key or set in the environment. The shell prints");
+        Console.WriteLine("key presence, length and source only, never a value.");
     }
 
     /// <summary>
@@ -99,10 +126,11 @@ internal static partial class ShellHost
     /// </summary>
     private static void PrintHeader(ShellOptions options)
     {
-        var typesafeKey = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TYPESAFE_API_KEY"));
-        var deepseekKey = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY"));
+        // Keys come from the key ring (DEC-046): Credential Manager first, then the environment variable. The
+        // same answers decide which legs CreateRouter() and CreateLessonPlanner() compose.
+        var typesafeKey = HasKey("typesafe");
+        var deepseekKey = HasKey("deepseek");
         var gatewayUrl = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HEYGANESH_QWEN_GATEWAY_URL"));
-        var fishKey = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FISH_AUDIO_API_KEY"));
 
         var trigger = options.Once
             ? "one turn at startup, hook never installed"
@@ -128,16 +156,39 @@ internal static partial class ShellHost
         Console.WriteLine($"  trigger    : {trigger}");
         Console.WriteLine($"  target     : {(options.Foreground ? "foreground window" : "window under the cursor")}");
         Console.WriteLine($"  overlay    : {(options.Overlay ? $"{options.DurationMs} ms per found verdict" : "disabled (--no-overlay)")}");
-        Console.WriteLine($"  keys       : TYPESAFE_API_KEY={(typesafeKey ? "present (value suppressed)" : "MISSING")}  " +
-                          $"DEEPSEEK_API_KEY={(deepseekKey ? "present (value suppressed)" : "MISSING")}");
+        Console.WriteLine($"  keys       : TYPESAFE_API_KEY={Keys.Describe("typesafe")}  DEEPSEEK_API_KEY={Keys.Describe("deepseek")}");
         Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
-                          $"FISH_AUDIO_API_KEY={(fishKey ? "present (value suppressed)" : "MISSING")} (TTS speaks the lesson when one is produced)");
-        // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
-        // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
-        Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
+                          $"FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
+        Console.WriteLine($"  tutor      : {TutorHeader()}");
+        Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
+        Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");
+        Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), deepseekKey)}");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
     }
+
+    /// <summary>The header's OCR line (DEC-039); keep in step with the capture options in RunAsync.</summary>
+    private static string OcrHeader(bool off)
+    {
+        if (off)
+        {
+            return "off (--no-ocr): only UI controls are offered to Jev";
+        }
+
+        var reader = new HeyGanesh.ScreenCapture.ScreenTextReader();
+        return reader.IsAvailable
+            ? $"ON ({reader.Language}): the cursor monitor's text is read locally; up to 40 short lines in the target window join the Jev request"
+            : "ON but no OCR language is installed for this user, so no text is read";
+    }
+
+    /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027) and CreateRouter() (DEC-036).</summary>
+    private static string LessonHeader(bool on, bool routed, bool key) =>
+        routed ? (key
+            ? "when the route chooses one: lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 2D, or 3D on the one model Jev picked, or a schematic when none fits"
+            : "when the route chooses one: no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip")
+        : !on ? "off (the Tutor leg teaches; --lesson draws instead)"
+        : key ? $"ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 3D: {Scene3dModelCount} models, click a part to ask, or one schematic for anything else"
+        : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
 
     private sealed record ShellOptions(
         string Question,
@@ -152,6 +203,11 @@ internal static partial class ShellHost
         int DurationMs,
         int MaxDim,
         int MaxCandidates,
-        bool NoSpeak);
+        bool NoSpeak,
+        bool Lesson,
+        bool NoRoute,
+        bool NoOcr,
+        string? KeyCommand,
+        string KeyName);
 }
 

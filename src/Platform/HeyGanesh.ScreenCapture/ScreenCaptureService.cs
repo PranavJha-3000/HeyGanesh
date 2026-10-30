@@ -60,6 +60,16 @@ public sealed class ScreenCaptureOptions
     /// should never be handed to a vision model.
     /// </summary>
     public bool ComputeNonBlackRatio { get; init; } = true;
+
+    /// <summary>
+    /// Whether to read the frame's text with Windows' built-in OCR before it is downscaled (DEC-038).
+    /// Off by default. When on, <see cref="ScreenCaptureService.CaptureAllMonitorsAsync"/> reads only
+    /// the first capture — the cursor's monitor, where the user is looking — and
+    /// <see cref="ScreenCaptureService.CaptureMonitorAsync"/> reads the monitor it was asked for.
+    /// About 135 ms on a 2560×1600 screen. A missing OCR language or an OCR failure never fails the
+    /// capture: the frame's <c>TextNote</c> says why there is no text.
+    /// </summary>
+    public bool ReadText { get; init; }
 }
 
 /// <summary>One monitor's still frame, ready to upload.</summary>
@@ -117,6 +127,9 @@ public sealed class ScreenCaptureService : IDisposable
 {
     private readonly ScreenCaptureOptions _options;
     private readonly WgcFrameGrabber _grabber;
+
+    // Created only when ReadText is on, so a capture that never reads text never loads the recogniser.
+    private readonly ScreenTextReader? _textReader;
     private readonly SemaphoreSlim _captureGate = new(1, 1);
     private bool _disposed;
 
@@ -125,6 +138,7 @@ public sealed class ScreenCaptureService : IDisposable
         _options = options ?? ScreenCaptureOptions.Default;
         Validate(_options);
         _grabber = new WgcFrameGrabber(_options);
+        _textReader = _options.ReadText ? new ScreenTextReader() : null;
     }
 
     /// <summary>The options this service was created with.</summary>
@@ -158,7 +172,7 @@ public sealed class ScreenCaptureService : IDisposable
 
         try
         {
-            return await CaptureCoreAsync(monitor, cancellationToken).ConfigureAwait(false);
+            return await CaptureCoreAsync(monitor, readText: true, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -186,9 +200,19 @@ public sealed class ScreenCaptureService : IDisposable
         var ordered = Monitors.OrderForCapture(monitors, Monitors.FindCursorMonitor(monitors));
         var captures = new List<MonitorCapture>(ordered.Count);
 
-        foreach (var monitor in ordered)
+        for (var i = 0; i < ordered.Count; i++)
         {
-            captures.Add(await CaptureMonitorAsync(monitor, cancellationToken).ConfigureAwait(false));
+            // Text is read on the first (cursor) monitor only: the others are context the user is not
+            // looking at, and each read costs about 135 ms.
+            await _captureGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                captures.Add(await CaptureCoreAsync(ordered[i], readText: i == 0, cancellationToken).ConfigureAwait(false));
+            }
+            finally
+            {
+                _captureGate.Release();
+            }
         }
 
         return captures;
@@ -206,7 +230,7 @@ public sealed class ScreenCaptureService : IDisposable
         _captureGate.Dispose();
     }
 
-    private async Task<MonitorCapture> CaptureCoreAsync(MonitorInfo monitor, CancellationToken cancellationToken)
+    private async Task<MonitorCapture> CaptureCoreAsync(MonitorInfo monitor, bool readText, CancellationToken cancellationToken)
     {
         var started = Stopwatch.GetTimestamp();
 
@@ -217,6 +241,11 @@ public sealed class ScreenCaptureService : IDisposable
             var nonBlackRatio = _options.ComputeNonBlackRatio
                 ? CpuFrameReader.ComputeNonBlackRatio(bitmap)
                 : double.NaN;
+
+            // Before encoding, on the full-size frame: the downscaled JPEG loses about 40% of the lines.
+            ScreenTextRead? text = readText && _textReader is not null
+                ? await _textReader.ReadAsync(bitmap, monitor.Bounds, cancellationToken).ConfigureAwait(false)
+                : null;
 
             var (jpeg, outputWidth, outputHeight) = await JpegEncoder
                 .EncodeAsync(bitmap, _options.MaxDimension, _options.JpegQuality, cancellationToken)
@@ -231,7 +260,12 @@ public sealed class ScreenCaptureService : IDisposable
                 jpeg,
                 nonBlackRatio,
                 framesObserved,
-                Stopwatch.GetElapsedTime(started));
+                Stopwatch.GetElapsedTime(started))
+            {
+                TextLines = text?.Lines ?? Array.Empty<ScreenTextLine>(),
+                TextNote = text?.Note,
+                TextDuration = text?.Duration ?? TimeSpan.Zero,
+            };
         }
     }
 

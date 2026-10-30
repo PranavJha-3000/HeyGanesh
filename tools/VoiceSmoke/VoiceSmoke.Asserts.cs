@@ -65,6 +65,9 @@ internal static partial class VoiceSmokeHost
         failures += Check("session.ready -> SessionLifecycle + stated wire version",
             Kind("{\"type\":\"session.ready\",\"protocolVersion\":\"7.0.0\"}", out var ready) == GatewayEventKind.SessionLifecycle &&
             ready.Version == "7.0.0");
+        failures += Check("session.ready as upstream sends it (protocol_version) -> the version is read (BUG-001)",
+            Kind("{\"type\":\"session.ready\",\"event_id\":\"evt_s\",\"request_event_id\":\"evt_c\",\"protocol_version\":\"7.0.0\",\"session_id\":\"s1\",\"capabilities\":[]}", out var upstreamReady) == GatewayEventKind.SessionLifecycle &&
+            upstreamReady.Version == "7.0.0", $"version={upstreamReady.Version ?? "not stated"}");
         failures += Check("transcript.final role=user -> UserFinal (the ONLY question source)",
             Kind("{\"type\":\"transcript.final\",\"role\":\"user\",\"content\":\"where is Save\"}") == GatewayEventKind.UserFinal);
         failures += Check("transcript.final role=assistant -> AssistantFinal (never text)",
@@ -229,6 +232,36 @@ internal static partial class VoiceSmokeHost
             Environment.SetEnvironmentVariable("FISH_AUDIO_API_KEY", saved);
         }
 
+        // Key source (DEC-046): a key source given in the options wins over FISH_AUDIO_API_KEY either way.
+        try
+        {
+            Environment.SetEnvironmentVariable("FISH_AUDIO_API_KEY", "vo-environment-dummy");
+            using var silent = new FishTtsClient(new FishTtsOptions { ApiKey = () => null }, new HttpClient(new StubHandler()));
+            failures += Check("a key source returning nothing is a missing key, even with FISH_AUDIO_API_KEY set",
+                await ThrowsAuth(silent.SynthesizeAsync(new SpeakRequest { Text = "x" }, CancellationToken.None)));
+
+            Environment.SetEnvironmentVariable("FISH_AUDIO_API_KEY", null);
+            var capture = new HeaderCapture();
+            using var given = new FishTtsClient(new FishTtsOptions { ApiKey = () => "vo-delegate-dummy" }, new HttpClient(capture));
+            try
+            {
+                await foreach (var _ in given.SynthesizeAsync(new SpeakRequest { Text = "x" }, CancellationToken.None))
+                {
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // HeaderCapture stops the request after reading its header; no byte leaves the process.
+            }
+
+            failures += Check("a key source's key is the bearer sent, with FISH_AUDIO_API_KEY unset",
+                capture.Authorization is { } auth && auth.EndsWith("vo-delegate-dummy", StringComparison.Ordinal) && auth.StartsWith("Bearer", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("FISH_AUDIO_API_KEY", saved);
+        }
+
         Console.WriteLine(failures == 0 ? "FISH CONTRACT OK (exit 0)" : $"FISH CONTRACT BROKEN ({failures} failures, exit 1)");
         return failures == 0 ? 0 : 1;
     }
@@ -270,6 +303,19 @@ internal static partial class VoiceSmokeHost
     }
 
     /// <summary>An HTTP handler that fails loudly if ever called: offline rows must never do I/O.</summary>
+    /// <summary>Reads the Authorization header of the one request, then refuses it: nothing is ever sent.</summary>
+    private sealed class HeaderCapture : HttpMessageHandler
+    {
+        public string? Authorization { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Authorization = request.Headers.Authorization?.ToString()
+                ?? (request.Headers.TryGetValues("Authorization", out var values) ? string.Join(",", values) : null);
+            throw new InvalidOperationException("header captured; the request goes no further");
+        }
+    }
+
     private sealed class StubHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Lesson Planner (FEATURE-007 Phase 4, DEC-021 / DEC-024 / DEC-026) — question in, validated VisualPlan out.
+
+    It owns the prompt contract that asks a model for a VisualPlan v1 lesson, attaches the student's
+    screen image only to a model that can see (ProviderCapability.Vision), and hands every answer
+    to the VisualLessonEngine validator with grounded-mark rules before anything can be drawn or
+    spoken. One repair call is allowed when an answer fails validation.
+
+    It talks to a model only through ILlmClient (Providers.Core) and is handed that client — by the
+    caller or ProviderRegistry — so it never names a provider, never sees a key, and is multi-model
+    by construction. No P/Invoke, no file/network/environment access; LP-1 audits this.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.LessonPlanner</RootNamespace>
+    <AssemblyName>HeyGanesh.LessonPlanner</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.VisualLessonEngine\HeyGanesh.VisualLessonEngine.csproj" />
+    <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj" />
+  </ItemGroup>
+
+</Project>

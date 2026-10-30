@@ -76,12 +76,12 @@ public sealed class FishTtsClient : ITtsClient
 
         // Read at call time only (DEC-007): nothing cached on `this`, so the key cannot surface in a
         // dump, a ToString() or a result object — and a missing key fails as auth before any I/O.
-        var key = Environment.GetEnvironmentVariable(_options.ApiKeyEnvVar);
+        var key = _options.ApiKey is { } apiKey ? apiKey() : Environment.GetEnvironmentVariable(_options.ApiKeyEnvVar);
         if (string.IsNullOrWhiteSpace(key))
         {
             throw new VoiceAuthenticationException(
-                $"Fish Audio key not found. Set the {_options.ApiKeyEnvVar} environment variable. " +
-                "(This direct-key path is temporary — see DEC-007 pending the API key security proxy.)");
+                $"Fish Audio key not found. Set the {_options.ApiKeyEnvVar} environment variable or store the fish key. " +
+                "(The app reads keys through its key ring, DEC-046: HeyGanesh.App --set-key stores one.)");
         }
 
         var endpoint = new Uri(new Uri(_options.BaseUrl.TrimEnd('/') + "/"), _options.TtsPath.TrimStart('/'));

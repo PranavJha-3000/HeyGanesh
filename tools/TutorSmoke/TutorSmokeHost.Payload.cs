@@ -172,6 +172,36 @@ internal static partial class TutorSmokeHost
                 failures = Check(true, "cancelled provider call propagates as OperationCanceledException, never as text", failures);
             }
 
+            // (5b) Key source (DEC-047): a key source given in the options wins over DEEPSEEK_API_KEY either way.
+            // Only the Authorization header is compared, against the row's own sentinel, never printed.
+            const string delegateKey = "tu11-delegate-dummy-key";
+            stub.EnqueueCompletion("Rebase replays your commits onto the new base.");
+            Environment.SetEnvironmentVariable("DEEPSEEK_API_KEY", null);
+            var delegated = TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { BaseUrl = stub.Prefix, ApiKey = () => delegateKey });
+            var servedBefore = stub.Requests.Count;
+            try
+            {
+                await new TutorService(delegated).ExplainAsync(textRequest);
+            }
+            catch (Exception)
+            {
+                // Only the request's header matters here, not how the stub's canned reply was read.
+            }
+
+            failures = Check(stub.Requests.Count == servedBefore + 1 && stub.Requests[^1].Authorization == $"Bearer {delegateKey}",
+                "a key source's key is the bearer sent, with DEEPSEEK_API_KEY unset (DEC-047)", failures);
+            Environment.SetEnvironmentVariable("DEEPSEEK_API_KEY", StubKey);
+            var silent = TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { BaseUrl = "http://127.0.0.1:1/", ApiKey = () => null });
+            try
+            {
+                await silent.CompleteAsync(PromptFor("anything"), CancellationToken.None);
+                failures = Check(false, "a key source returning nothing was expected to be a missing key", failures);
+            }
+            catch (TutorAuthenticationException)
+            {
+                failures = Check(true, "a key source returning nothing is a missing key, even with DEEPSEEK_API_KEY set (no request attempted)", failures);
+            }
+
             // (6) The visibility pins (reflection): the shell-facing shape DEC-017 promises.
             var concrete = typeof(TutorService).Assembly.GetType("HeyGanesh.TutorEngine.DeepSeekTutorClient", throwOnError: false);
             failures = Check(concrete is { IsPublic: false }, "the concrete client exists but is NOT public — consumers see the seam", failures);

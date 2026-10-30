@@ -23,6 +23,7 @@ internal static partial class ContextOrchestratorSmokeHost
                 case "--fake-none": fakeJevMode = FakeJevMode.None; break;
                 case "--fake-unmapped": fakeJevMode = FakeJevMode.Unmapped; break;
                 case "--fake-error": fakeJevMode = FakeJevMode.Error; break;
+                case "--fake-low": fakeJevMode = FakeJevMode.Low; break;
                 case "--fake-vision-none": visionNotFound = true; break;
                 case "--fake-delay-ms": fakeDelayMs = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -90,6 +91,9 @@ internal static partial class ContextOrchestratorSmokeHost
         Console.WriteLine("--fake-none       : fake ES client answers the none option (honest no-match; must NOT fall back).");
         Console.WriteLine("--fake-unmapped   : fake ES client answers an id never offered -> ES fails -> Vision fallback.");
         Console.WriteLine("--fake-error      : fake ES client throws -> the orchestrator must propagate, not swallow.");
+        Console.WriteLine("--fake-low        : fake ES client answers the top candidate at Low confidence -> Vision checks it once");
+        Console.WriteLine("                    (DEC-037); with --fake-vision-none Element Selection's choice is kept.");
+        Console.WriteLine("--assert-check    : (first argument) the check's rule from made-up results; no window, CI-safe.");
         Console.WriteLine("--fake-vision-none: the fallback answers \"not found\" (implies --fake-unmapped; Vision");
         Console.WriteLine("                    reports a model-side not-found as a Failed result, so expect Failed, Low, no box).");
         Console.WriteLine("--fake-delay-ms   : delay inside the fake ES client, so a session can be caught in flight.");

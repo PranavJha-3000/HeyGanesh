@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    HeyGanesh.Providers.Core — shared provider contracts, capability model, catalog, registry,
+    and resilience (timeout, bounded retry with jitter, per-provider circuit breaker).
+
+    Zero NuGet dependencies. References HeyGanesh.Security (for ISecretStore / SecretHandle)
+    and HeyGanesh.Abstractions (for shared types). No provider SDK, URL, or model name is
+    hardcoded here.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Providers.Core</RootNamespace>
+    <AssemblyName>HeyGanesh.Providers.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+  </ItemGroup>
+
+</Project>

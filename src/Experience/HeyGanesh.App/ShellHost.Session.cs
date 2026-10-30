@@ -6,6 +6,7 @@ using HeyGanesh.ScreenOverlay;
 using HeyGanesh.TutorEngine;
 using HeyGanesh.Vision;
 using HeyGanesh.Voice;
+using Router = HeyGanesh.TurnRouter.TurnRouter;
 
 namespace HeyGanesh.App;
 
@@ -45,6 +46,8 @@ internal static partial class ShellHost
         ScreenOverlayService overlay,
         VoiceService voice,
         TutorService? tutor,
+        LessonLeg? lesson,
+        Router? router,
         ShellOptions options,
         CancellationToken lifetime)
     {
@@ -113,6 +116,10 @@ internal static partial class ShellHost
 
         PrintVerdict(guidance, orchestrator.Phase);
 
+        // DEC-036: the route starts now and runs while the highlight is on screen; TeachAsync waits for it.
+        // Null without a router or on a Failed verdict, which is never taught from.
+        var routing = StartRoute(router, options, guidance, linked.Token);
+
         if (!options.Overlay)
         {
             Console.WriteLine("overlay     : skipped (--no-overlay)");
@@ -122,7 +129,7 @@ internal static partial class ShellHost
             // into the teach/speak leg exactly as the drawn path below does.
             return guidance.Failed
                 ? 1
-                : await TeachAndSpeakAsync(tutor, voice, options, guidance, linked.Token).ConfigureAwait(false);
+                : await TeachAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
         }
 
         try
@@ -154,7 +161,7 @@ internal static partial class ShellHost
         // first sends it here, not to the Tutor.
         return guidance.Failed
             ? 1
-            : await TeachAndSpeakAsync(tutor, voice, options, guidance, linked.Token).ConfigureAwait(false);
+            : await TeachAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -171,6 +178,12 @@ internal static partial class ShellHost
             // DEC-010: the documented fallback triggers are indistinguishable inside the verdict itself,
             // so the primary leg's own words are surfaced rather than letting a fallback look unmotivated.
             Console.WriteLine($"  primary   : {primary}");
+        }
+
+        if (guidance.ConfidenceCheck is { } check)
+        {
+            // DEC-037: Element Selection was unsure, so Vision checked; say what that changed.
+            Console.WriteLine($"  check     : {check}");
         }
 
         Console.WriteLine($"  leg       : {guidance.Source}  confidence={guidance.Confidence}  model={guidance.ModelId}");
@@ -232,6 +245,8 @@ internal static partial class ShellHost
         private readonly ContextOrchestratorService _orchestrator;
         private readonly ScreenOverlayService _overlay;
         private readonly TutorService? _tutor;
+        private readonly LessonLeg? _lesson;
+        private readonly Router? _router;
         private readonly ShellOptions _options;
         private readonly CancellationToken _lifetime;
 
@@ -250,6 +265,8 @@ internal static partial class ShellHost
             ContextOrchestratorService orchestrator,
             ScreenOverlayService overlay,
             TutorService? tutor,
+            LessonLeg? lesson,
+            Router? router,
             ShellOptions options,
             CancellationToken lifetime)
         {
@@ -257,6 +274,8 @@ internal static partial class ShellHost
             _orchestrator = orchestrator;
             _overlay = overlay;
             _tutor = tutor;
+            _lesson = lesson;
+            _router = router;
             _options = options;
             _lifetime = lifetime;
         }
@@ -269,7 +288,8 @@ internal static partial class ShellHost
                 if (_current is { IsCompleted: false })
                 {
                     Console.WriteLine("REFUSED: a voice or guidance turn is already running (or its highlight " +
-                                      "is still on screen); one Ctrl+Alt hold maps to one turn.");
+                                      "is still on screen); one Ctrl+Alt hold maps to one turn. If a 3D lesson is " +
+                                      "waiting for a click, close it with its x button or wait up to 30 s.");
                     return;
                 }
 
@@ -415,6 +435,12 @@ internal static partial class ShellHost
                 // assistant events were suppressed on the way). The transcript is the user's speech —
                 // never a key, never a URL, never the frontend's answer.
                 Console.WriteLine($"utterance   : {utter}");
+                if (utter.ConnectDuration is { } connect)
+                {
+                    // DEC-040: the microphone ran from the press, so this wait no longer cost the user's
+                    // first words; it is printed because it is the only live measure of the handshake.
+                    Console.WriteLine($"  connect   : {connect.TotalMilliseconds:F0} ms to session.ready, {utter.BufferedFrames} frames ({utter.BufferedFrames * 100} ms) of speech pre-rolled");
+                }
 
                 if (utter.Failed)
                 {
@@ -447,6 +473,8 @@ internal static partial class ShellHost
                     _overlay,
                     _voice,
                     _tutor,
+                    _lesson,
+                    _router,
                     _options with { Question = utter.FinalText },
                     _lifetime).ConfigureAwait(false);
             }

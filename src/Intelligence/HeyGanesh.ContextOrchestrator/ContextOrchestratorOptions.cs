@@ -7,10 +7,9 @@ namespace HeyGanesh.ContextOrchestrator;
 /// options types (immutable, set once).
 /// </summary>
 /// <remarks>
-/// Deliberately holds no confidence threshold, no timeout of its own, and no fallback rule: the
-/// 0.8/0.5 tiers belong to the legs, and the decision to fall back is the documented failure contract
-/// of Element Selection, not a policy this module invents (DEC-009). The confidence-gate that will
-/// eventually branch on a tier is a future Jev component and does not exist yet.
+/// Holds no threshold of its own and no timeout: the 0.8/0.5 tiers belong to the legs, and the fallback
+/// is still Element Selection's documented failure contract (DEC-009/DEC-010). The one tier this
+/// module acts on is the legs' own Low, through <see cref="CheckLowConfidence"/> (DEC-037).
 /// </remarks>
 public sealed class ContextOrchestratorOptions
 {
@@ -31,4 +30,11 @@ public sealed class ContextOrchestratorOptions
     /// cares about the verdict alone and wants to avoid handing out a JPEG of the user's desktop.
     /// </summary>
     public bool RetainCaptures { get; init; } = true;
+
+    /// <summary>
+    /// When Element Selection finds an element at Low confidence, ask Vision for a second opinion on the
+    /// same frame (DEC-037). On by default. Off restores the DEC-010 behaviour exactly: a non-failed
+    /// primary verdict is returned as-is, whatever its tier.
+    /// </summary>
+    public bool CheckLowConfidence { get; init; } = true;
 }

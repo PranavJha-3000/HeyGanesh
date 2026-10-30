@@ -1,6 +1,11 @@
 # Build output
 bin/
 obj/
+# The installer package (installer/build.ps1, DEC-055)
+artifacts/
+# graphify knowledge graph: its build output and the GSD copy, rebuilt with /gsd-graphify build
+graphify-out/
+.planning/
 
 # Tool/IDE local state
 *.user

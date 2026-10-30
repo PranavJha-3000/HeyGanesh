@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The tray host (DEC-052): Hey Ganesh as an ordinary desktop app, with an icon in the notification area
+    instead of a console window. It builds nothing of its own: the pipeline is the App Shell's, run through
+    ShellHost.RunAsync(args, stop, hookLive), so the console exe and the tray can never drift apart.
+
+    WinExe, so Windows opens no console. The shell's console lines go to a log file instead (TrayLog).
+    WinForms is a framework reference that ships with the .NET Desktop runtime, not a NuGet package, and
+    LessonSurface already uses it; NotifyIcon and the menu come from it. No PackageReference: WebView2 still
+    arrives only transitively, through the App Shell's lesson leg (DEC-020/DEC-025).
+
+    The App Shell keeps owning the process-global state (DPI, the service graph). The tray only sets the DPI
+    awareness first, exactly as the console's Program.cs does, because it is also the process entry point.
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>HeyGanesh.Tray</RootNamespace>
+    <AssemblyName>HeyGanesh.Tray</AssemblyName>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- The Hey Ganesh mark (DEC-056): the exe's icon, which the installer's shortcut and Apps & features entry show. -->
+    <ApplicationIcon>heyganesh.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.App\HeyGanesh.App.csproj" />
+    <!-- The menu's key lines use Security's KeyRing directly (presence only), so the reference is stated, not inherited. -->
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The same file, embedded, for the notification-area icon and the key screen (TrayIcons). -->
+    <EmbeddedResource Include="heyganesh.ico" LogicalName="HeyGanesh.Tray.heyganesh.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TraySmoke drives the icon, the log and the one-instance rule in-process (TY-2, TY-4). -->
+    <InternalsVisibleTo Include="HeyGanesh.Tools.TraySmoke" />
+  </ItemGroup>
+
+  <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

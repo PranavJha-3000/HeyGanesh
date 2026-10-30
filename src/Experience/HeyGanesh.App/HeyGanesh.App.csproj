@@ -12,7 +12,10 @@
       * DEC-011 — the Screen Overlay reports a failure but "the future shell decides what the user
         sees". The shell is that decision-maker.
 
-    Dependency-free, like every module: zero PackageReference. WinUI 3 / Windows App SDK remains the
+    No direct PackageReference, like every module. One package arrives TRANSITIVELY since DEC-027:
+    Microsoft.Web.WebView2, through LessonSession -> LessonSurface, the single NuGet exception DEC-020/
+    DEC-025 already accepted for the lesson cards. The core modules (hotkey, capture, ES, Vision) stay
+    zero-NuGet; SH-2 still greps this file for a direct reference. WinUI 3 / Windows App SDK remains the
     eventual shell direction (DEC-011) and is deferred again by DEC-012 — nothing in the pipeline
     renders a window today (the overlay already is the UI, and it is Win32), and taking the SDK here
     would mean the repo's first external package plus a packaging story, and would put an
@@ -56,5 +59,43 @@
     <ProjectReference Include="..\..\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj" />
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.TutorEngine\HeyGanesh.TutorEngine.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The lesson leg (DEC-027): LessonSession runs one lesson turn (plan -> cards -> play); the shell
+      only maps the verdict to grounding and hands Voice in as the speaker. OpenAiCompat is the adapter
+      CreateLessonPlanner() builds the lesson model from (DeepSeek, DEEPSEEK_API_KEY via
+      EnvironmentSecretStore); it brings Providers.Core and Security with it.
+    -->
+    <ProjectReference Include="..\HeyGanesh.LessonSession\HeyGanesh.LessonSession.csproj" />
+    <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
+    <!-- The key commands use Security's KeyRing directly (DEC-045), so the reference is stated, not inherited. -->
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught; PartLibrary gives it the
+      models' titles and subjects to offer. Both are pure policy/data with no NuGet.
+    -->
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.TurnRouter\HeyGanesh.TurnRouter.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The tray (DEC-052) runs this same composition through ShellHost.RunAsync(args, stop, hookLive) instead of
+      building the pipeline twice; its verification host drives that seam in-process. The shell stays internal.
+    -->
+    <InternalsVisibleTo Include="HeyGanesh.Tray" />
+    <InternalsVisibleTo Include="HeyGanesh.Tools.TraySmoke" />
+  </ItemGroup>
+
+  <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

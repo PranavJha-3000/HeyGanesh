@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Vendored third-party files are pinned by SHA-256 (Page/vendor/VENDOR.md): never rewrite their line endings.
+src/Experience/HeyGanesh.LessonSurface/Page/vendor/** -text

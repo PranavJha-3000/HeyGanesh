@@ -24,7 +24,7 @@ Wire the existing Voice seam into the App Shell as the production question sourc
 
 - **Tutor Engine** — not implemented, not stubbed. `VoiceService.SpeakAsync` is composed and never
   called; the Tutor inserts between the committed transcript and the resolve in a later change.
-- **The Voice module itself** — untouched this session (no edits to `src/HeyGanesh.Voice/`).
+- **The Voice module itself** — untouched this session (no edits to `src/Experience/HeyGanesh.Voice/`).
 - **Force-commit on release** — needs a Voice-module change; recorded as an accepted limitation in
   DEC-014 instead.
 - **A `ShellSmoke` host** — the shell carries no `--fake` flags (DEC-012) and keystrokes cannot be
@@ -49,7 +49,7 @@ Wire the existing Voice seam into the App Shell as the production question sourc
 
 ## Verification actually run
 
-`dotnet build src\HeyGanesh.App -c Debug` → `Build succeeded. 0 Warning(s) 0 Error(s)`.
+`dotnet build src\Experience\HeyGanesh.App -c Debug` → `Build succeeded. 0 Warning(s) 0 Error(s)`.
 SH-10 (0 `PackageReference`, 4 refs), SH-11, SH-12a, SH-12b, SH-12c, SH-14's `Failed` half — all as
 recorded in TEST-CHECKLIST. Regression sweep: VO rows (`--fake-transcript`, `--fake-nospeech`,
 `--assert-tutor-authority`, `--assert-gcp-events`, `--assert-no-backend`, `--assert-fish-format`,

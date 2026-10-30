@@ -1,4 +1,308 @@
 
+## 2026-10-30 · claude-opus-5-5 (finishing round: push, stale items, logo, schematic click-to-ask, DEC-056/DEC-057)
+
+Did: Pushed the ten step 8b–11d commits to PR #1. Cleared three stale items (1362f72):
+- the CO-6 doc now matches Vision's code;
+- the overlay "layering" item was already fixed by `HeyGanesh.Abstractions`, and only stale text remained;
+- the empty ROLLBACK row is removed.
+
+The Hey Ganesh mark is the tray, exe and installer icon (7da427a, DEC-056). Clicking a lesson schematic's parts asks about them (c300cb6, DEC-057). Recorded the owner's decisions: the log keeps transcribed questions; FEATURE-008 is deferred and its two docs are now committed.
+Left: The owner's own rows: IN-3, TS-3, TK-4, TY-6, SH-17, SH-20, SH-22, SH-25, PE-6/PE-7, the keys, and a re-run of LSU-18 and LSU-15 with nobody using the mouse. Open items still carried: multi-monitor ordering (CO-11), MSIX option B, a version number (still 1.0.0.0). `.planning/` and `graphify-out/` (graphify, owner-run) are untracked, neither committed nor ignored. The commits since 9cc4a75 are not pushed.
+Watch: Windows refused synthetic input partway through this round, so the cursor rows can fail as "0/3 inputs accepted" through no code fault. Never undo a mutation with `git checkout -- <file>` while that file also holds the step's own edit: it happened to LessonTurn.cs here and was caught by its diff. Restore from a copy taken before the mutation.
+Next: The owner pushes, or approves a push, of 1362f72..HEAD; then the hands-on rows with keys set.
+Verified: Local CI: 21 gates, all exit 0 (G-15 46, G-24 38). TraySmoke source 8, tray 10, install 16, plus every other tray row. LT-8 15, LT-10 11. LSU source 20, scene-schematic 10, scene 19, scene-svg 8, render 17. CO-6 exit 0. Mutations, each restored:
+- the generic icon fails TY-1 and TY-4;
+- uncleaned names fail LT-8;
+- dropping the schematics from the turn fails LT-8.
+
+LSU-18: the first run's clicks passed; later runs were refused input by Windows.
+
+## 2026-10-30 · claude-opus-5-5 (the per-user installer, build sequence step 11d, DEC-055)
+
+Did: `installer\build.ps1` (self-contained win-x64 package in git-ignored `artifacts\installer`: 513 files, 198 MB), `install.ps1` (to `%LOCALAPPDATA%\Programs\HeyGanesh`, Start-menu shortcut, HKCU Apps & features entry), `uninstall.ps1` (removes those and this install's start-at-login value; keeps keys and logs). Rows: IN-1 (CI G-25), IN-2 `TraySmoke --assert-install` 15 (local). Step 11, and so the "Must-haves 1–4" wrap-up build list, is complete.
+Left: Owner rows: IN-3 (real install), TS-3, TK-4, TY-6, SH-17, SH-20, SH-22, SH-25, PE-6/PE-7, and the keys themselves. Open decisions: transcribed questions in the log; click-to-ask on schematic parts (DEC-031). Ten local commits unpushed. `docs/ai/features/FEATURE-008.md` and `docs/ai/plans/2026-10-30-papermorph-review.md` appeared untracked during 11b; not mine, left alone.
+Watch: The first publish downloaded three runtime packs (aspnetcore too), not two. In `--assert-install`, a broken running-check half-deletes the temp install (a locked exe): that is the guard's reason. The scripts are ASCII with a BOM and CRLF for Windows PowerShell 5.1; keep them that way.
+Next: Push the ten commits (your go-ahead), then run IN-3 with your keys set.
+Verified: build.ps1 exit 0, PACKAGE OK, 0 warnings. TraySmoke `--assert-install` 15, `--assert-source` 7 (unchanged). The real install folder, shortcut, entry and Run value read the same before and after (all absent). Mutations on the package's scripts: replacing a foreign folder, skipping the running check, and leaving start at login behind each fail IN-2; restored byte for byte from installer\. Local CI runner: 21 gates, all exit 0 (new G-25 builds the package).
+
+## 2026-10-30 · claude-opus-5-5 (start at login, build sequence step 11c, DEC-054)
+
+Did: `StartupEntry` (HKCU Run value `HeyGanesh`, the quoted tray path; its key path injectable) and a "Start at login" menu item: unchecked until chosen, "(set for another copy)" when the value points elsewhere, refusals logged with a balloon. Rows: TS-1 10 (CI G-24, a throwaway HKCU key), TS-2 7 (local); TY-1 now 7.
+Left: 11d installer: you choose A (per-user script, recommended now) or B (MSIX, needs SignTool/MakeAppx and a certificate). TS-3, TK-4 and TY-6 are your hands-on rows. Open decisions: transcribed questions in the log; click-to-ask on schematic parts. Nine local commits unpushed.
+Watch: Task Manager's Startup apps switch is not seen by the menu (DEC-054). In Git Bash, `reg query ... /v` is mangled by path conversion; check the registry from PowerShell. TS-1 and TS-2 delete their test key, and `HKCU\Software\HeyGanesh` was confirmed absent afterwards.
+Next: Choose installer A or B, then build 11d.
+Verified: Tray and TraySmoke build -warnaserror 0/0. TraySmoke source 7, log 7, stop 5, tray 9, run 8, keys-model 13, keys-window 11, keys-pause 3, startup 10, startup-menu 7. The real Run value `HeyGanesh` is absent before and after. Mutations: an unquoted path fails TS-1 (2); a toggle that only turns on fails TS-2 (1); a tray that enables it at start fails TS-2 (3); all restored byte for byte. Local CI runner: 20 gates, all exit 0 (G-24: 37 PASS lines).
+
+## 2026-10-30 · claude-opus-5-5 (the key screen, build sequence step 11b, DEC-053)
+
+Did: `KeyScreenModel` + `KeyScreen` in the tray (masked boxes, Save/Remove through `KeyRing`, status by presence and length); "Keys…" on the menu; it opens by itself when DeepSeek or TypeSafe is missing; `RunAsync(..., triggerPaused)` refuses Ctrl+Alt while it is open. Rows: TK-1 13 (CI G-24), TK-2 11, TK-3 3 (local); TY-1 and TY-4 updated.
+Left: 11c start at login, 11d installer (A or B is yours). TK-4 and TY-6 are your hands-on rows. Open decisions: transcribed questions in the log; click-to-ask on schematic parts. Eight local commits unpushed.
+Watch: TK-3 really presses Ctrl+Alt (injected), so do not run it while typing. Mutation patterns must be unique as written and as reverted: the 'flag' mutation's revert matched a longer line, refused, and left TrayApp mutated until it was restored from the pre-run backup (the 'auto' run after it still failed on its own check).
+Next: Build 11c (start at login) on the owner's go-ahead.
+Verified: App, Tray, TraySmoke build -warnaserror 0/0. TraySmoke source 6, log 7, stop 5, tray 9, run 8, keys-model 13, keys-window 11, keys-pause 3. App `--seconds 3` exit 0, `--once --question "x"` 12. Mutations: a shell that ignores the pause fails TK-3 (2); a tray that never sets the pause fails TK-2 (1); no auto-open fails TK-2 (3); a Save message that echoes the key fails TK-1 (2); all restored byte for byte. Local CI runner: 20 gates, all exit 0 (G-24: 26 PASS lines).
+
+## 2026-10-30 · claude-opus-5-5 (the tray host, build sequence step 11a, DEC-052)
+
+Did: `ShellHost.RunAsync(args, stop, hookLive)` (console path unchanged); new `src/Experience/HeyGanesh.Tray` (WinExe, in the solution): the icon and menu (status, key presence, Open log folder, Quit), `TrayLog` (newest 5), `SingleInstance` (a second launch exits 3), console-only flags refused (exit 2). New `tools/TraySmoke`: TY-1 6, TY-2 7 (CI G-24), TY-3 5, TY-4 9, TY-5 8 (local). Plan step 11 written and committed with this step.
+Left: 11b key screen, 11c start at login, 11d installer (A or B is your call). Your decisions: whether the log keeps transcribed questions (it does today, like the console); whether the key screen opens by itself; click-to-ask on schematic parts. Seven local commits unpushed.
+Watch: Hooked mode blocks the calling thread before its first await, so `RunAsync` must be called through `Task.Run` (the tray does; TY-3 hung until it did). A test that starts `HeyGanesh.Tray.exe` and fails can leave a hook running: TY-5 now kills its own leftovers. Files written by the Write tool come out LF, so convert them to CRLF. Bash heredocs collapse `\\`, so write scripts containing Windows paths with the Write tool.
+Next: Build 11b (the key screen) on the owner's go-ahead.
+Verified: App, Tray, TraySmoke build -warnaserror 0/0. TY-1..TY-5 as above. App `--seconds 4` exit 0 with the hook released, `--once --question "x"` 12, `--help` 0. Mutations: an unregistered stop token fails TY-3 (timeout); a Quit that never cancels fails TY-4 (2); ignoring a taken mutex fails TY-5 (3); no pruning fails TY-2; all restored byte for byte. Local CI runner: 20 gates, all exit 0 (new G-24: 13 PASS lines).
+
+## 2026-10-30 · claude-opus-5-5 (the router can choose a 3D schematic, build sequence step 10d, DEC-051)
+
+Did: `RouteRequest.Schematics` (opt-in) and `TurnRoute.Schematic`: with it, 3D + `none` (both at 0.5 or above) is a 3D schematic route instead of 2D; `LessonCanvas.Schematic`; the shell sets the flag and offers the full catalogue plus `Schematics.Check` for that leg; the routed lesson header says so. Rows: TR-2 15, TR-3 15, TR-6 11.
+Left: Step 10 is complete. Step 11 (tray app, first-run key screen, start at login, installer) needs planning. Your decisions: click-to-ask on schematic parts (relaxes DEC-031); pushing the six local commits (8b, 9, 10a–10d).
+Watch: The shell's `CatalogFor` mapping has no offline row (the App carries no fakes, DEC-012); it is a one-line switch, checked by reading. A real routed schematic turn needs TYPESAFE and DeepSeek keys (SH-22).
+Next: Plan step 11 on the owner's go-ahead.
+Verified: TurnRouter, TurnRouterSmoke and App build -warnaserror 0/0. TR source 3, request 15, map 15, gate 7, errors 5, legs 11. App `--once`, `--once --lesson`, `--once --no-route` exit 12. Mutations: a router that ignores the flag fails TR-3 (2); legs without the schematic case fail TR-6 (1); a request that always promises a drawing fails TR-2 (1); all restored byte for byte. Local CI runner: 19 gates, all exit 0 (G-18 56 PASS lines, was 52).
+
+## 2026-10-30 · claude-opus-5-5 (the scene window draws schematics; the shell asks for them, build sequence step 10c, DEC-050)
+
+Did: `ISchematicCanvas` (optional). `LessonPlayer` hands each lesson's schematics to it before the reset, on both paths, and `LessonTurn` passes the streamed header's. `CardSurface` implements it, converting with `Schematics.ToModel` and resolving `model` ops from them before the library; `SceneMessages.Model(op, model)`. The shell's lesson request carries `Schematics.Check` whenever 3D is offered. Rows: LSU-17 `--assert-scene-schematic` (10, WebGL and SVG), LS-14 +2, LT-10 +1. `--snapshot-3d` writes `f35b-schematic.png`, and I looked at it: a readable top view, tags, labels on the right parts.
+Left: 10d (the router can choose "3D schematic"; today a route with 3D and no model falls back to flat cards, so schematics appear only with `--lesson` or a route that picked a library model). Then step 11. Your decision: allow click-to-ask on schematic parts (it relaxes DEC-031). Five commits are local (8b, 9, 10a, 10b, 10c).
+Watch: A click on a schematic part is refused silently (the click wait continues), by design. The usage limit was hit mid-step; the tree was re-checked afterwards and matched. The SVG draws tall cylinders as several solids, so count shapes, not solids.
+Next: Plan-approved 10d: build on the owner's go-ahead.
+Verified: Every touched project builds -warnaserror 0/0. LSU-17 10, LS-14 22, LT-10 11, PL-6 7, LP-12 7, PE-2 26. LSU source 20, scene-math 7, scene 19, scene-svg 8, scene-nowebgl 8, render 17 (unchanged). LS play 5, play-degraded 5, controls 11, scene3d 22 (unchanged). The other LT rows are unchanged. App `--once --lesson` 12, `--once` 12. A player that never hands schematics over fails LS-14 (2) and LT-10 (1); a surface that ignores them fails LSU-17; both restored. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (the planner offers schematics, build sequence step 10b, DEC-049)
+
+Did: The validator accepts a schematic only when the context carries `SchematicGeometry`. `PlanRequest.SchematicGeometry` feeds that context, and with a catalogue the prompt asks for schema 1.2 and adds a code-drawn SCHEMATICS block (header before beats; one beat must say "simplified drawing, not to scale"; no animations). LP-12 `--assert-prompt-schematic` has 7 checks, including a streamed F-35B that releases all 6 beats. PlannerEval passes `Schematics.Check` on 3D cases and gains K-12 and two E-04 seeds (PE-2 now 26). LS-14 is updated for the new rule.
+Left: 10c (the scene window draws schematics; `CardSurface` keeps the lesson's schematics for drawing and picking; the shell passes the check) and 10d (the router can choose a 3D schematic). Then step 11. Four commits are local (8b, 9, 10a, 10b), ahead of PR #1.
+Watch: The shell passes no geometry check yet, so it never asks for or accepts a schematic. Turn it on in 10c together with the drawing, never before. The 3D prompt is now about 370 tokens longer with schematics.
+Next: Plan-approved 10c: build on the owner's go-ahead.
+Verified: VisualLessonEngine, LessonPlanner, LessonSmoke, LessonPlannerSmoke and PlannerEval build -warnaserror 0/0. LS-14 20, LP-12 7, LP-1..LP-11 unchanged (3, 10, 5, 3, 6, 3, 2, 7, 10, 12), PL-6 7, PE-1 7, PE-2 26, PE-4 9, PE-5 5. Three mutations each fail their row: accepting schematics without a check fails LS-14 and LP-12; dropping the spoken-'simplified' rule fails LP-12; K-12 always passing fails PE-2. All restored byte for byte. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (schematic 3D contract, build sequence step 10a, DEC-048)
+
+Did: VisualPlan 1.2. `VisualPlan.Schematics` (`SchematicModel` / `SchematicPart` / `SchematicShape`) is parsed raw and validated: closed shapes and finishes, limits, the ±2 box, the catalogue-collision rule, and `ValidationContext.SchematicGeometry`. A refused schematic is dropped and costs only its beats (`schematic.*` codes do not force TextFallback). The Part Library gains `Schematics.ToModel` / `Check` (through `LibraryCheck`). New fixture `f35b-schematic.json`. Rows: LS-14 (20) and PL-6 (7), in CI G-13 and G-16.
+Left: 10b (the planner offers schematics, eval K-12), 10c (the scene window draws them, and picking), 10d (the router chooses "3D schematic"). Then step 11. Three commits are local (8b, 9, 10a), ahead of PR #1.
+Watch: The size rule is [0, 4], not the plan's (0, 2]. The streaming scanner's prefix must carry `schematics`, or streamed beats would fail against an empty catalogue: check this in 10b (LP-11 must stream the fixture). Without the collision rule the merged catalogue throws, so keep it.
+Next: Plan-approved 10b: build on the owner's go-ahead.
+Verified: VisualLessonEngine, PartLibrary, LessonSmoke and PartLibrarySmoke build -warnaserror 0/0. LS-14 20 and PL-6 7 PASS. LessonSmoke source 6, parse 9, limits 20, refs 15, degrade 7, fixtures 6, plot 16, grounded 6, scene3d 22, play 5, play-degraded 5, controls 11 (unchanged). Part Library source 5, library 20, physics 19, catalog 6 (unchanged). Four validator mutations (schematic issues cost the drawing, no collision rule, geometry skipped, any shape accepted) each fail LS-14, and the geometry one fails PL-6 too; restored byte for byte. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (the Tutor is on, build sequence step 9, DEC-047)
+
+Did: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key, and null (an honest skip) otherwise. `DeepSeekTutorOptions.ApiKey` is a per-request key source; TU-8 allows exactly that one, by name and type. TU-11 gains the two key-source checks. The header's `tutor :` line and the skip text name the key. SH-27 is a new App row.
+Left: SH-17, a real spoken prose answer end to end, needs the keys. Steps 10 (schematic 3D for objects with no library model) and 11 (tray app and installer) remain. SH-25 is still yours. 8b and 9 are local, ahead of PR #1; not pushed.
+Watch: With a DeepSeek key, each turn that draws no lesson makes a DeepSeek call. A mutation that changes a property's type can break a row's compile and leave a stale EXE "passing", so check the build's error count before trusting the run.
+Next: Plan step 10 (schematic 3D).
+Verified: TutorEngine, TutorSmoke and the App build -warnaserror 0/0. TU source 16, payload 35, prompt 15, grounding 9, parity 3, client-error 5 PASS lines. App: `--help` 0, `--once` 12 (tutor off), `--cancel-ms 60` 13, `--once --lesson` 12; with a dummy key and `--cancel-ms 1`, tutor ON, exit 13, and the dummy not in the output. A stored `ApiKeyValue` string fails TU-8, restored byte for byte. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (every API client reads its key through the key ring, build sequence step 8b, DEC-046)
+
+Did: `SelectionOptions`, `VisionOptions` and `FishTtsOptions` gain an optional `ApiKey` delegate; their clients use it per request and otherwise read the environment as before. The App Shell holds one static `KeyRing` and hands its readers to Jev, Vision and a Fish client it now builds. The lesson model reads through `KeyRingSecretStore` (it replaced `EnvironmentSecretStore`). The router and lesson gates and the header use the ring. PlannerEval records through the same ring (`RingKeyStore`), and PE-4 uses a ring over a dummy. The missing-key messages are updated. Rows: ES-10 (4), V-9 (4) and VO-8 (+2 checks), all in CI gate G-23.
+Left: The Tutor still reads `DEEPSEEK_API_KEY` itself: TU-8 refuses a key-named option (DEC-017), so whether to allow a key source is decided in step 9's plan, together with turning the Tutor on. SH-25, the real credential-slot round trip, is yours. Steps 9–11 remain.
+Watch: A loop that prints `$(...)` before reading `$?` reports the wrong exit code. One verification loop did this, and the rows were re-run with the code captured first. `Keys` is static and never disposed on purpose. The header's keys line now prints the length and source of a present key.
+Next: Plan step 9 (turn the Tutor on, and decide TU-8 for its key source).
+Verified: All touched projects build -warnaserror 0/0. ES-10 4, V-9 4, VO-8 10, VO-6 21, VO-11 13, TU-8 source 15 and TU-11 payload 33 (unchanged); ES-8 exit 0. PlannerEval PE-1 7, PE-2 24, PE-4 9, PE-5 5; `--record` with no key exits 12. App `--help` 0, `--keys` 0, `--once` 12, `--cancel-ms 60` 13, `--once --lesson` 12. A client that ignores its key source fails ES-10 and V-9 (2 checks each), and both were restored. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (one key ring for API keys, build sequence step 8a, DEC-045)
+
+Did: `HeyGanesh.Security.KeyRing` (Credential Manager first, environment fallback, presence/length/source only). The App Shell gains `--keys`, `--set-key <name>` (no echo, or piped stdin) and `--remove-key <name>` in `ShellHost.Keys.cs`, plus an explicit Security reference. The header notes a key stored in Credential Manager. SecretSmoke gains `--assert-keyring` (KR-1, 11) and `--assert-keyring-cm` (KR-2, 4, throwaway `keyring-test.*` targets); CI G-12 runs both. The wrap-up sequence (8 proxy, 9 Tutor on, 10 schematic 3D, 11 tray app + installer) is in the step 8 plan.
+Left: 8b: route the four clients and `EnvironmentSecretStore` / the eval's `EnvKeyStore` through `KeyRing.Reader`. SH-25: the owner runs the real credential-slot round trip (this session's guard refused it). Steps 9–11. Fifteen commits are local, ahead of PR #1; not pushed.
+Watch: Until 8b a key stored only in Credential Manager is NOT used by any client; `--keys` and the header say so. KR-2 and SecretSmoke's self-test write throwaway credentials, in CI too. `KeyRing.Read` returns a string because the header needs one; use it for nothing else.
+Next: Plan-approved 8b: build it on the owner's go-ahead.
+Verified: Security, App and SecretSmoke build -warnaserror 0/0. KR-1 11 PASS; KR-2 4 PASS; SecretSmoke self-test ALL PASS. App `--keys` exit 0; unknown name exit 2; empty line and "two words" exit 1; `--help` 0; `--once --question "x"` exit 12 with an unchanged keys line. Three mutations (env before store, inner spaces accepted, store failure fatal) each fail KR-1, restored byte for byte. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (planner evaluation: record live, replay offline, baseline gate, build sequence step 7b, DEC-044)
+
+Did: `tools/PlannerEval` gains:
+- `LiveClient`, the shell's DeepSeek client with a constant URL;
+- `EnvKeyStore`, `RecordingLlmClient`;
+- `EvalRun` (the shared case loop; PE-2 uses it, output unchanged), `EvalReport`, `StubServer`;
+- modes `--record` (live) and `--replay` (offline, baseline gate: 1 on a regression, 3 when the prompt changed);
+- rows PE-4 `--assert-record-stub` (9) and PE-5 `--assert-drift` (5), both in CI G-22, plus a baseline replay that is skipped while no baseline exists.
+No product code changed.
+Left: PE-6, the first live recording: set `DEEPSEEK_API_KEY`, run `--record` (try `--cases E-01,E-03` first), read `report.txt`. PE-7: on your review, commit that folder as `tools/PlannerEval/baseline/`. Step 8 (the Security Proxy) remains. Fourteen commits are local, ahead of PR #1; not pushed.
+Watch: The prompt-change rule is fail (exit 3); you were asked fail or warn and didn't choose, so I took the recommendation. A prompt edit therefore blocks G-22 until you re-record. DeepSeek reports no tokens in streams (no `stream_options`), so the report says "not reported". `EnvKeyStore` copies the App's internal store; both go away with the Security Proxy.
+Next: Owner: one live `--record` run. Me: plan step 8 (the Security Proxy).
+Verified: PlannerEval builds -warnaserror 0/0; PE-1 7, PE-2 24, PE-4 9, PE-5 5 PASS; `--record` without the key exits 12 and creates nothing. Each of these makes its row fail: changing the base URL (PE-5), writing the key into the report, disabling regressions, disabling the prompt pin (PE-4). All were restored byte for byte. Local CI runner (below).
+
+## 2026-10-30 · claude-opus-5-5 (evaluation set revised after the owner's review, DEC-043)
+
+Did: Applied the owner's eight review fixes to `tools/PlannerEval`. K-4 now ignores a misconception named in order to correct it. `EvalCase.MinBeats` lets the new abstention case U-01 (replacing P-02) pass with 1–2 beats. Terms were widened (M-05, M-02) or tightened (G-02, P-05, E-04). E-06 requires a power-off step and gains a grounded target. The header notes the 2d/3D scope and that E-01's slide is a recollection. Three new seeds; PE-2 is now 24.
+Left: 7b (live record and offline replay; needs `DEEPSEEK_API_KEY`); step 8. Thirteen commits are local, ahead of PR #1; not pushed.
+Watch: The K-4 correction cues include "don't" and "can't", so a lesson that states a myth in the same sentence as an unrelated "don't" slips past K-4. That is accepted for v0, and the live run will show whether it matters. The ROLLBACK entry for this revision was written after the edits, not before: a process slip.
+Next: Plan step 7b.
+Verified: PlannerEval builds -warnaserror 0/0; PE-1 7 PASS, PE-2 24 PASS; undoing the correction rule fails 2 seeds on K-4, undoing the per-case minimum fails both U-01 seeds on K-2, and both were restored byte for byte; the local CI runner (G-22 included).
+
+## 2026-10-30 · claude-opus-5-5 (planner evaluation set, build sequence step 7a, DEC-043)
+
+Did: New host `tools/PlannerEval`. It has `eval-set-v1.json` (30 cases; E-01..E-06 verbatim from the HeyClicky reference video), `EvalSet` (loads the set and refuses a malformed one), pure `EvalChecks` K-1..K-11, and `seeds.json` (16 answers that pass or break exactly one check). Rows: PE-1 `--assert-set` (7), PE-2 `--assert-checks` (21), CI G-22. No product code changed.
+Left: 7b (live `--record` with `DEEPSEEK_API_KEY`, offline `--replay`, a committed baseline that G-22 gates on); PE-3, the owner's review of the 24 non-video questions; step 8. Open item: a Turn Router evaluation over the same set (an expected route per case). Twelve commits are local, ahead of PR #1; not pushed.
+Watch: Seed order matters: a follow-up is sent the lesson last planned for its previous case. A replacement seed must match its golden text exactly once, or the row throws. Term matching is whole-word, so "on" never matches "one". HeyClicky's model is OpenAI GPT-6.1 Sol at the Ultrafast tier; ours is DeepSeek V4.1 Flash. That choice is the owner's, and 7b's live run is the way to compare.
+Next: Plan step 7b (record live, replay offline), or review the set (PE-3).
+Verified: PlannerEval builds -warnaserror 0/0; PE-1 7 PASS, PE-2 21 PASS; turning off each of K-1..K-11 in turn makes PE-2 exit 1 (restored byte for byte); usage exit 2; the local CI runner with 18 gates.
+
+## 2026-10-30 · claude-opus-5-5 (cards open and play as beats arrive, build sequence step 6b, DEC-042)
+
+Did: `LessonTurn` plans through `PlanStreamingAsync`; when a beat is released the cards open and `LessonPlayer.PlayStreamAsync` plays each beat while the rest is written; unreleased beats of the finished plan are queued at the end; a `StreamNote` ends the turn Stopped with the reason. `PlayAsync` shares the same loop (play rows unchanged). `LessonTurnReport.FirstBeatShown`. The shell's DeepSeek client advertises `Streaming` and prints `streamed :` and `first beat :`. LT-10 `--assert-turn-stream` (10, CI G-15).
+Left: The real time to the first beat needs `DEEPSEEK_API_KEY` (SH-19/SH-20 now print it). A student Stop mid-stream is handled but not exercised by a row (the turn's player is internal). Open: `ResilientLlmClient.StreamAsync` still buffers. Steps 7-8 remain. Eleven commits are local, ahead of PR #1; not pushed.
+Watch: In the streamed path the PlaybackReport's Outcome is replaced with the finished plan's outcome at the end. Inside the turn host, `LessonSurface` alone names the namespace, so the surface type is written fully qualified.
+Next: Plan step 7 (the planner evaluation set).
+Verified: VisualLessonEngine, LessonSession, App and LessonTurnSmoke build -warnaserror 0/0; LessonSmoke play 5, play-degraded 5, controls 11, grounded 6, scene3d 22; LT source 4, turn 4, degraded 4, rejected 2, errors 6, followup-pick 12, turn-stream 10, turn-surface 6 (real cards); the whole-plan mutation fails 3 LT-10 checks, restored; App --help 0, --once --lesson 12, --once 12, cancel 13; all 17 CI gates exit 0 locally.
+
+## 2026-10-30 · claude-opus-5-5 (the planner streams, build sequence step 6a, DEC-041)
+
+Did: `VisualPlanner.PlanStreamingAsync` streams the lesson and releases each beat once header + beats-so-far validate (the validator's own output), through the new pure `PlanStreamScanner`. Repair only while nothing was released; a mid-stream fault keeps the released beats (`StreamNote`); no Streaming capability means exactly `PlanAsync`. `PlanAsync` now shares `Prepare` and `RunAttemptsAsync` with it, unchanged in behaviour (LP-1..LP-10 unchanged). `PlanResult` gains `ReleasedBeats`, `FirstBeatLatency`, `StreamNote`. LP-11 `--assert-stream` (12, CI G-14).
+Left: Step 6b (cards open and play as beats arrive; the shell marks DeepSeek `Streaming`, calls the streaming path, prints `first beat :`) is planned in plans/2026-10-30-lesson-streaming-v1.md, not built. Open item: `ResilientLlmClient.StreamAsync` buffers the whole stream before yielding, so anything wrapped in it does not really stream (the shell does not use it). Steps 7-8 remain. Ten commits are local, ahead of PR #1; not pushed.
+Watch: My first "tricky strings" check stayed balanced even with escapes ignored, so it proved nothing until it gained an escaped quote followed by a closing brace; a mutation caught that. LP-1's I/O needle "Stream" was narrowed to the I/O type names because the planner now calls StreamAsync. The new scanner file was created a few minutes before the ROLLBACK entry was written (the entry still preceded every change to an existing file).
+Next: Build step 6b.
+Verified: LessonPlanner and its host build -warnaserror 0/0; LP-11 12 PASS (simulated first beat 2.41 s vs 6.50 s whole); ignoring escapes fails LP-11's strings check, restored; LP source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2, hardening 7, prompt-3d 10; all 17 CI gates exit 0 locally.
+
+## 2026-10-30 · claude-opus-5-5 (BUG-001: session.ready's version field)
+
+Did: `QwenGatewayProtocol.Classify` now reads the ready payload's version from `protocol_version` (upstream's name), with the old camelCase names as fallbacks, so the wire-version check actually runs against a real Gateway. VO-6 gains the upstream-shaped frame (21); the stub sends `protocol_version` and VO-11 gains a major-8 refusal (13). Checked upstream's transcript and audio fields too: they match.
+Left: Closes the open item from the pre-roll entry below. Still open: run the health check alongside the handshake. Steps 6-8 remain. Nine commits are local, ahead of PR #1; not pushed.
+Watch: Offline rows that use field names we wrote ourselves can pass while the real service disagrees; VO-6 now carries one frame shaped from upstream's schema file. The bugs/ folder started empty here, so this is BUG-001.
+Next: Plan step 6 (stream the first lesson beat).
+Verified: Voice and VoiceSmoke build -warnaserror 0/0; VO-6 21 PASS; VO-11 13 PASS; with the old field name restored, VO-6's new check and VO-11's two version checks fail, then pass again once fixed; all 17 CI gates exit 0 locally.
+
+## 2026-10-30 · claude-opus-5-5 (voice pre-roll, build sequence step 5, DEC-040)
+
+Did: The microphone now starts at the press and buffers until the Gateway's session.ready, then the buffer goes out in order (the socket is still per utterance; "warm connection" was dropped because DEC-013 Option F rejected it). A missing Gateway URL fails before the microphone opens. `UtteranceResult.ConnectDuration`/`BufferedFrames`, printed by the shell as `connect :`. VO-11 `--assert-preroll` against a new loopback Gateway stub (CI G-21): it failed on the old client (first frame #7, ~700 ms of speech lost) and passes after.
+Left: VO-L2 (real Gateway: the first words survive, the real wait) needs the Gateway and a human. Open item, not fixed: `QwenGatewayProtocol.Classify` reads the ready payload's version from `protocolVersion`/`protocol`, but upstream's schema (gateway-client-protocol.mjs) names it `protocol_version`, so the wire-version check may never run against a real Gateway. Follow-up: run the health check alongside the handshake. Steps 6-8 remain. Eight commits are local, ahead of PR #1; not pushed.
+Watch: A missing URL is no longer retried three times (it never succeeds), so `--once` without a Gateway fails at once. The stub listens on http://localhost:<free port>/ through HttpListener; if a machine refuses that prefix, VO-11 fails saying so rather than passing.
+Next: Plan step 6 (stream the first lesson beat), or fix the protocol_version field first.
+Verified: Voice, VoiceSmoke, App build -warnaserror 0/0; VO-11 11 PASS on three runs (first frame #0, connect 687 ms, 6 frames pre-rolled, stub turn ~1.22 s vs 1.91 s before); VO-3..VO-10 offline rows exits 0/0/12/13/0 and asserts 20/7/4/8 PASS; App --once (no URL) 1, --once --question 12, --seconds 3 0, cancel 13; all 17 CI gates exit 0 locally.
+
+## 2026-10-30 · claude-opus-5-5 (Element Selection offers screen text to Jev, build sequence step 4b, DEC-039)
+
+Did: `TextCandidates.FromScreenText` turns the capture's OCR lines into "Text (OCR)" candidates (inside the target window, off every UIA control, at most 80 characters, no secret-looking lines, at most 40, reading order), ranked with the UIA controls. New `SelectAsync` overload, `SelectionResult.ScreenTextOffered`; the orchestrator passes `captures[0].TextLines`; the shell turns `ReadText` on, adds `--no-ocr` and an `ocr :` header line. ES-8 `--assert-text-merge` (CI G-20), ES-9 `--list-only --read-text` (local), SH-23.
+Left: Whether Jev picks text candidates well is unmeasured (keys). Screen text now reaches TypeSafe; the secret filter is a pattern list and can miss secrets that look like words, so `--no-ocr` is the hard stop. Steps 5-8 remain. Seven commits are local, ahead of PR #1; not pushed.
+Watch: A window with no UIA controls but readable text no longer falls back to Vision at once: it gets a Jev choice among text lines. The shell's key-gate rows now run OCR (about 150 ms) before stopping at the key gate. Test strings shaped like real keys live in ElementSelectionSmokeHost.Text.cs; the secret scan (G-11) passes with them, but a stricter scanner may need an allowlist.
+Next: Plan step 5 (keep the voice Gateway connection warm between presses).
+Verified: ElementSelection, ContextOrchestrator, App and both hosts build -warnaserror 0/0; ES-8 16 PASS, and removing the secret filter fails 6 of them; ES-9 3 PASS live (3 UIA controls, 111 lines in 150 ms, 40 offered, 43-candidate manifest); ES --fake and --fake-none exit 0; CO --fake/--fake-none/--fake-unmapped/--fake-low PASS, CO-12 exit 0; App --help lists --no-ocr, key-gate rows 12 with the right ocr line, cancel 13; all 16 CI gates exit 0 locally (G-20 16 PASS lines).
+
+## 2026-10-30 · claude-opus-5-5 (the capture can read screen text, build sequence step 4a, DEC-038)
+
+Did: `ScreenCaptureOptions.ReadText` (default off) reads the cursor monitor's text with Windows' built-in OCR on the full-size frame, before the JPEG, into `MonitorCapture.TextLines` (global physical pixels) with `TextNote`/`TextDuration`. New `ScreenTextReader`, `ScreenTextLine`. SC-9 `--assert-ocr` (fixture PNG) and SC-10 `--read-text`, both local-only. Nothing consumes the text yet.
+Left: Step 4b (Element Selection offers the lines to Jev, with caps and a secret filter; shell `--no-ocr`; G-20) is planned in plans/2026-10-30-screen-text-v1.md, not built. Steps 5-8 remain. Six commits are local, ahead of PR #1; not pushed.
+Watch: An XML comment in a csproj cannot contain "--" (MSB4025), so flag names are spelled out in project-file comments. A pipe into tail hides the EXE's exit code; take it from a separate run or PIPESTATUS. The default ScreenCaptureSmoke run opens a white probe window briefly; that is the existing EX row.
+Next: Build step 4b (it is already planned).
+Verified: Abstractions, ScreenCapture and ScreenCaptureSmoke build -warnaserror 0/0; SC-9 17 PASS (fixture read exactly, 20 ms); SC-10 4 PASS (110 lines, OCR 141 ms); default ScreenCaptureSmoke run all checks passed; all 15 CI gates exit 0 locally (G-1 solution build included).
+
+## 2026-10-30 · claude-opus-5-5 (a Low-confidence choice is checked by Vision, build sequence step 3, DEC-037)
+
+Did: When Element Selection finds an element in the Low tier, the orchestrator asks Vision on the same frame (`CheckLowConfidence`, on by default, owner's call): Vision's box replaces it only when Vision is Medium+ and elsewhere; agreement, an unsure, missing, failed or erroring check keep Element Selection's choice. `GuidanceResult.ConfidenceCheck` carries the note; the shell prints `check :`. Supersedes DEC-010 Option C's rejection and DEC-009's "not a gate" for Low only; the AGENTS.md invariant sentence now says so. CO-12 `--assert-check` (CI G-19), CO-13 `--fake-low` (local).
+Left: Whether the check helps real answers is unmeasured (keys + the model shoot-out). Steps 4-8 of the sequence remain. Commits bcd8fff, 78cbefe and this one are local, ahead of PR #1; not pushed.
+Watch: Vision reports a model-side not-found as a Failed result, so a check with Vision not finding it prints "Vision's check failed (…could not locate…)". The orchestrator host's expectations are per mode and checked in order; a new fake mode needs its own rows before the generic not-found rows. One run of the CO rows in a shell loop mislabelled `--fake-error`; run individually it exits 3 every time, and the rerun loop agreed.
+Next: Plan step 4 (OCR text boxes as Element Selection candidates).
+Verified: ContextOrchestrator, its host and the App build -warnaserror 0/0; CO-12 13 PASS; a box-edge mutation failed CO-12 and was reverted; CO-3..CO-11 rerun (exits 0, 0, 0, 0, 13, 3, 0, 0 with PASS expectations); CO-13 both forms PASS; App help 0, three key-gate rows 12, cancel 1/60 13; all 15 CI gates exit 0 locally (G-19 13 PASS lines).
+
+## 2026-10-30 · claude-opus-5-5 (the App Shell uses the Turn Router, build sequence step 2, DEC-036)
+
+Did: With `TYPESAFE_API_KEY` set and no `--lesson`, the shell routes each turn after the verdict (while the highlight shows): point ends at the highlight, explain goes to the Tutor, a lesson is 2D or 3D on the one model Jev picked. `--lesson` is unchanged; new `--no-route` keeps the old Tutor leg; router faults fall back. One Jev client (`JevClients.CreateTypeSafe`, new in Element Selection) serves Element Selection and the router. `TurnLegs.Choose` holds the decision (TR-6). New header line `route :`.
+Left: SH-22 (a routed turn end to end) and TR-L1 need both keys and a human. The Tutor is still clientless (SH-17), so "explain" prints its skip. Steps 3-8 of the sequence remain. Commits bcd8fff and this one are local, ahead of PR #1; not pushed.
+Watch: A bash heredoc after `python -` opened the looping REPL again (stopped at once, 19-byte log); write every script with the Write tool and run it as a file. The lesson seam is now composed whenever a router exists, so the lesson header has a third state.
+Next: Plan step 3 (a low-confidence Element Selection choice falls back to Vision).
+Verified: ElementSelection, TurnRouter, TurnRouterSmoke and App build -warnaserror 0/0; TR source 3, request 14, map 13, gate 7, errors 5, legs 10; App --help exit 0, --once --question / --lesson / --no-route exit 12 with the right route line, --cancel-ms 1 and 60 exit 13, hooked --seconds 2 with a dummy key shows route ON and prints the dummy 0 times; ElementSelectionSmoke --fake runs; all 14 CI gates exit 0 locally (G-18 52 PASS lines).
+
+## 2026-10-30 · claude-opus-5-5 (Jev turn router, build sequence step 1, DEC-035)
+
+Did: New assembly `HeyGanesh.TurnRouter`: one Jev call per turn answers intent (point / explain / lesson), 2D or 3D, and which catalogue model; an id never offered or an intent below 0.5 is "no route", an unsure canvas is a 2D lesson. Host `tools/TurnRouterSmoke` (TR-1..TR-5), CI G-18. Patterns from typesafe-computer-use; qwen-audio-agent's protocol is still 7.0.0, so the voice client needs no change.
+Left: Nothing calls the router yet (step 2 wires it into the App Shell). TR-L1 (TypeSafe accepts three questions in one call) needs `TYPESAFE_API_KEY`. Steps 3-8 of the sequence are in the plan. These commits are local, ahead of PR #1; not pushed.
+Watch: The namespace and the class are both `TurnRouter`; inside `HeyGanesh.*` code, `TurnRouter` alone names the namespace, so callers write `TurnRouter.TurnRouter` or an alias. Bash heredocs holding Python with triple quotes failed to parse here; write scratchpad scripts with the Write tool.
+Next: Plan step 2 (the App Shell uses the router).
+Verified: TurnRouter and host build -warnaserror 0/0; TR-1 3, TR-2 14, TR-3 13, TR-4 7, TR-5 5 PASS; gate and guard mutations each failed their row and were reverted; all 14 CI gates exit 0 locally (G-18 42 PASS lines).
+
+## 2026-10-29 · claude-opus-5-5 (no-WebGL 3D drawing, DEC-034)
+
+Did: Without WebGL the scene page now draws the lesson's models as an isometric SVG with Anatomy's vendored MIT kit (`Page/vendor/anatomy-1482e846/`, pinned): models, labels, highlight, explode and focus; animation and views as stills; no click-to-ask on it yet. Painter's order: long cylinders and boxes are cut into pieces, and buried pieces are painted before their (nested) container. LSU-12 reworked (8), LSU-16 new (8), LSU-7 20.
+Left: Click-to-ask, real views and animation on the drawing; faint tick marks inside cut parts' shading (cosmetic). Owner: review the drawing PNGs (LSU-13) with the Babylon ones. These commits are local, ahead of PR #1; not pushed.
+Watch: `scene.css` styles `#view` with `display:block`, which overrides `hidden`, so anything hidden by attribute there needs an explicit `[hidden]` rule. `sed -i` patterns with `\r` don't match here; use the scratchpad edit scripts.
+Next: Push these commits to PR #1 (owner's call), or plan click-to-ask on the drawing.
+Verified: sln -warnaserror 0/0; LessonSurfaceSmoke source 20, window 9, render 17, security 4, marks 2, scene-math 7, scene 19, idle 4, orientation 3, nowebgl 8, scene-svg 8, pick 9; LT source 4, turn 4, turn-surface 6, followup-pick 12; piece-splitting mutation fails LSU-16 and was reverted; cold start 1.89-2.05 s; six drawing PNGs reviewed; all 13 CI gates exit 0 locally (G-17 27 PASS lines).
+
+## 2026-10-29 · claude-opus-5-5 (spike 0d: Part Library as isometric SVG)
+
+Did: Ran spike 0d in the scratchpad: Anatomy's iso-kit + lathe (MIT, 1482e846, 4 files / 92 KB, owner-approved download) drew all three Part Library models from the exact Babylon `model` messages in 9.9–16.2 ms each, poses matching the Babylon snapshots, 0 CSP violations and 0 JS errors under the scene page's CSP. GO with two conditions (FEATURE-007 "Spike 0d results"). Only docs changed in the repo.
+Left: A product step (its own plan): fix painter's order for parts that pass through others (the intake-valve stem hides behind the cylinder head), confirm `.mjs` MIME in WebView2's virtual host, vendor with VENDOR.md pins. PR #1 is green and unmerged; these docs are committed locally, not pushed.
+Watch: The axis map into kit space must reflect, (x, y, z) -> (x, z, y), or models come out mirrored. Never type `python -` in Bash (a fourth slip today hung the shell); run script files only.
+Next: Plan the product step for the no-WebGL SVG fallback, or merge PR #1 first.
+Verified: kit downloads byte-identical to the copies read earlier, SHA-256s recorded; timings, CSP and error counts read from the page; side-by-side with `--snapshot-3d` PNGs reviewed.
+
+## 2026-10-29 · claude-opus-5-5 (Babylon NOTICE.md vendored)
+
+Did: Downloaded babylonjs@9.30.0 `NOTICE.md` (46 B, owner-approved) from cdn.jsdelivr.net; its SHA-256 `225463ef…5823` equals jsdelivr's published hash. Vendored at `Page/vendor/babylonjs-9.30.0/NOTICE.md`, pinned in `VENDOR.md`; LSU-7 now expects 4 pins and checks that the licence and NOTICE ship. The pre-push licensing item is closed.
+Left: Live 3D run (SH-20, LP-8) needs the keys and a human. Owner: PL-5 / LSU-13 reviews; merge/push decision. Branch not pushed.
+Watch: An empty `python -` heredoc in a Bash command opens a looping REPL (happened 3 times today, up to 790 MB of log); write scripts to files and run them with `< /dev/null`.
+Next: Owner decides on merging `feat/lesson-shell-wiring-v1`, or sets keys for the live 3D run.
+Verified: LessonSurfaceSmoke --assert-source 14 PASS (4 pins, licence + NOTICE), also from a fresh checkout of the commit.
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 6b: --lesson turns 3D on)
+
+Did: The App Shell's `--lesson` leg passes `CardSurface.Scene3dCatalog` and calls `LessonTurn.RunWithFollowUpsAsync` (30 s click wait), prints each turn and each click, exits with the last turn's code (13 if cancelled while waiting); the header says `3D: 3 models, click a part to ask`; Ctrl+Alt stays refused while a lesson waits, with a hint (DEC-033). Phase 5 (3D) is code-complete.
+Left: Live verification of a 3D lesson (SH-20, LP-8) needs TYPESAFE_API_KEY + DEEPSEEK_API_KEY + Gateway + Fish + a human. BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md (Apache-2.0 §4(d)). Owner: PL-5 / LSU-13 reviews; merge decision. Branch not pushed.
+Watch: `--once --lesson` with a 3D lesson keeps the process up to 30 s for a click. A bare `python -` in a Bash command opens a looping REPL; always pass a script file and `< /dev/null`.
+Next: Vendor NOTICE.md (needs the owner's OK for the download), then a live 3D run once keys are set.
+Verified: App -warnaserror 0/0; SH-3 0, SH-4 12, SH-7 13, SH-18 12/12/12 (dummy key 0 occurrences, 3D header line), `--lesson --seconds 3` 0; all 13 CI gates exit 0 locally; LT source/followup-pick rerun after the last comment edit.
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 6a: the planner learns 3D)
+
+Did: `PlannerPrompt.System(limits, scene3d)` adds a 3D section (schema 1.1, six 3D op shapes, 3D limits, camera views, the CATALOGUE of model/part/animation ids, five 3D rules) only when `PlanRequest.Scene3d` is set; `VisualPlanner` passes the same catalogue to the prompt and the validator (DEC-032). New row LP-10 (`--assert-prompt-3d`, CI G-14).
+Left: 6b, the App Shell: pass `CardSurface.Scene3dCatalog`, call `RunWithFollowUpsAsync` (30 s idle), and decide what Ctrl+Alt does while a 3D lesson waits for a click. BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md. Owner: PL-5 / LSU-13 reviews; merge decision. Branch not pushed.
+Watch: The 3D prompt is untested against a real model (LP-8 needs DEEPSEEK_API_KEY). A bare `python -` in a Bash command opens an interactive REPL that loops on an error and writes hundreds of MB of output; always pass a script file.
+Next: Build 6b after the owner picks the Ctrl+Alt behaviour.
+Verified: LessonPlannerSmoke: source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2, hardening 7, prompt-3d 10, all exit 0; no-catalogue prompt byte-identical to HEAD (2935 bytes); planner and smoke build -warnaserror 0/0; LT-8 12 unchanged; all 13 CI gates exit 0 locally (G-14 49 PASS lines).
+
+## 2026-10-29 · claude-opus-5-5 (FEATURE-007 Phase 5 step 5: click a 3D part to ask)
+
+Did: After a 3D lesson has played, the student can click a part and a follow-up lesson about it plays in the same window (DEC-031). `IPartPicker`/`PartPick` (VisualLessonEngine), scene-page picking + `CardSurface` id checks (LessonSurface), `LessonTurn.RunWithFollowUpsAsync` + `PartQuestion` + `FollowUpOptions` (LessonSession), `PlanRequest.Scene3d` pass-through (LessonPlanner). New rows LT-8, LT-9, LSU-15; LSU-7/LSU-12 extended; CI G-15 gains `--assert-followup-pick`.
+Left: Step 6 (planner prompt learns the 3D ops; the App Shell passes `CardSurface.Scene3dCatalog` and calls `RunWithFollowUpsAsync`). BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md (Apache-2.0 §4(d)). Owner: PL-5 / LSU-13 reviews; merge decision. Branch not pushed.
+Watch: `--assert-pick` moves the real cursor; run it with nobody on the mouse (2 of 3 runs failed while the mouse was in use, before the single-SendInput fix). Thin parts (valve stems) and parts inside others (piston pin) have no click point. Don't use `sed -i` on source files here: it rewrote CardWindow.cs to LF.
+Next: Plan step 6 (teach VisualPlanner the scene3d ops, then wire `--lesson` to RunWithFollowUpsAsync with the catalogue).
+Verified: sln -warnaserror 0/0; LT-8 12 PASS; LSU-15 9 PASS on 5 of 5 runs; a guard mutation (accept any part) fails LSU-15 and was reverted; every other LessonTurnSmoke and LessonSurfaceSmoke row unchanged and exit 0 (LSU-7 now 13, LSU-12 5); `--demo-pick --voice timed` exit 0; all 13 CI gates exit 0 locally.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 4.5: lesson shell wiring)
+
+Did: Added `HeyGanesh.LessonSession` (LessonTurn: plan → open cards only once a plan exists → play → always close; provider faults/cancel as outcomes; DelegateLessonSpeaker; CardSurfaceHost) and `tools/LessonTurnSmoke` (LT-1..LT-7, fake model + fake/real cards). The App Shell gains `--lesson`: after a produced verdict it maps the verdict to ScreenGrounding and runs one lesson turn with Voice as the speaker. The planner is built from DEEPSEEK_API_KEY (DeepSeek via OpenAiCompat + a read-only EnvironmentSecretStore), or the leg prints its skip (DEC-027).
+Left: SH-19, the live lesson end to end, needs TYPESAFE_API_KEY + DEEPSEEK_API_KEY + Gateway + Fish + a human. The SAPI demo audio is still not heard by a person. LP-8, streaming and the eval harness still wait for a key. Branch not merged and not pushed.
+Watch: OPEN ITEM (2026-10-29 update): src/Providers + src/Foundation are now committed (d7eb05f; the uncompilable, unreferenced Gemini provider and tools/GeminiSmoke were then DELETED on 2026-10-29 along with stray root files, and the six README-only placeholder folders from BUILD-PLAYBOOK R2 (config/, docs/architecture/, docs/product/, eval/, prompts/, tests/) were deleted too, see ROLLBACK.md; the older S2.5 Gemini entries below are history). The CI workflow (.github/workflows) is now tracked and matches docs/ai/CI.md: its 11 gates all exit 0 locally under Windows PowerShell 5.1, but it has NEVER run on a GitHub runner; G-4/G-5 are local-only now (their fake Jev reads the live foreground window's UIA tree, so they flip with what is on screen). AGENTS.md and TEST-CHECKLIST.md now name modules by their layer folder (src/Platform|Perception|Intelligence|Experience/...); the 41 pre-restructure paths are gone (261a816). src/Perception (ElementSelection + Vision) is now committed too (58b00c4; 0463613 on origin had dropped it from tracking), and a clean-worktree `dotnet build HeyGanesh.sln` of HEAD succeeds with 0 warnings, 0 errors. origin/main stays broken for fresh clones until this branch is merged and pushed. The App receives WebView2 transitively; every consumer of LessonSurface needs the `DropWebView2Wpf` target or MSB3277 returns. With `--lesson`, exit 1 also means "no usable lesson came back".
+Next: FEATURE-007 Phase 5 step 5 (click a 3D part -> follow-up question). Step 4 (3D renderer, DEC-030) BUILT 2026-10-29: LSU-7..LSU-12 green; cold start ~2 s per 3D turn, warm model beat ~115 ms. BEFORE PUSHING: vendor babylonjs@9.30.0 NOTICE.md (46 B, Apache-2.0 §4(d)) - not in the approved download. Step 3 (part library v1, DEC-029) BUILT 2026-10-29: PL-1..PL-4 green (5/20/19/6 PASS), three models, none Reviewed: owner to read `PartLibrarySmoke --dump all` (PL-5). Step 2 (scene3d contract, VisualPlan 1.1, DEC-028) BUILT 2026-10-29: LS-13 22 PASS, 3D off unless a caller passes ValidationContext.Scene3d. Spike 0b ran 2026-10-29: Babylon.js 9.30.0 GO with three conditions (pre-warm shaders, render on demand, ~360-500 MB memory needs a DEC), see FEATURE-007 Phase 0 results. Merging feat/lesson-shell-wiring-v1 into main still awaits the owner.
+Verified: sln -warnaserror 0/0; LessonTurnSmoke source 4, turn 4, degraded 4, rejected 2, errors 6, surface 6 — all exit 0, demo (timed) exit 0; all 11 LessonSmoke, 5 LessonSurfaceSmoke and 8 LessonPlannerSmoke rows exit 0; App --help 0, SH-4 12, SH-7 13, SH-16 12/12, SH-18 12/12 (dummy key never echoed), hooked --lesson 0; scan-forbidden + scan-secrets pass.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 4: Lesson Planner v1, offline)
+
+Did: Built `HeyGanesh.LessonPlanner` (VisualPlanner over any ILlmClient / ProviderRegistry; prompt contract interpolated from validator code; image only to Vision models with an explicit note otherwise; one repair turn keeping the better answer) and a grounded-mark rule in the validator (`ValidationContext`, `mark.ungrounded`). `tools/LessonPlannerSmoke` LP-1..LP-7 against a recording fake. DEC-026. Branch `feat/lesson-planner-v1`.
+Left: LP-8 (live plan + first-beat latency, spike 0c), streaming beats, the eval harness and the App Shell wiring (hotkey → grounding → planner → player over CardSurface + a speech adapter) — all but the wiring need a provider key.
+Watch: OPEN ITEM — src/Providers (as well as src/Foundation) is untracked, and HeyGanesh.LessonPlanner references Providers.Core: a fresh clone cannot build the planner until the owner commits those folders. OPEN ITEM — Providers adapters disagree on `LlmResponseFormat.JsonSchema` (OpenAiCompat expects `{name, schema}`, Anthropic the raw schema); the planner avoids structured output until that is fixed. Repair means up to 2 model calls per lesson. Marks from a model require a grounded box.
+Next: App Shell wiring of the lesson path behind a flag, verified offline with a fake ILlmClient (no key), so a real hotkey press can draw a planned lesson the moment a key is added.
+Verified: LessonSmoke --assert-grounded 6/6 + all 10 earlier rows; LessonPlannerSmoke source 3, prompt 10, multimodal 5, plan 3, repair 6, errors 3, followup 2, hardening 7 — all exit 0 (after the final-review fix pass); sln -warnaserror 0/0.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 3: Lesson Surface v1)
+
+Did: Built `HeyGanesh.LessonSurface` (CardSurface: WebView2 opaque cards, text-only page, acked beats, native overlay marks, read-only diagnostics + page snapshots), `PlotExpression` (C#-computed plots; validator refuses bad expressions), seam ClearAsync→ResetAsync, and `tools/LessonSurfaceSmoke` (LSU-1..LSU-6 incl. an offline demo with the Windows SAPI voice). DEC-025. Branch `feat/lesson-surface-v1`.
+Left: Not wired into the App Shell (needs Phase 4's planner to produce lessons). KaTeX/Rough.js not vendored (TeX-lite stand-in). Mark shapes all render as the overlay's box. SAPI voice in the demo not yet heard by a human.
+Watch: LessonSurfaceSmoke rows need an interactive desktop. Cards are capture-excluded, so screenshots never show them — use `--snapshot`. WinForms `Activated` fires on cards (thread-local); the real guarantee is "never foreground" (LSU-2). The WebView2 package's WPF reference is removed by a build target (MSB3277).
+Next: Phase 4 — the lesson planner (ProviderRegistry, multimodal per DEC-024) against recorded model answers, offline; live rows wait for a key.
+Verified: LessonSmoke --assert-plot 16/16 + all 10 rows; LessonSurfaceSmoke source 4, window 9, render 17, security 4, marks 2 — all exit 0 (after the final-review fix pass); demo + 4 page snapshots reviewed; sln -warnaserror 0/0; scans pass.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 2: Lesson Runtime v1)
+
+Did: Built `Runtime/` in HeyGanesh.VisualLessonEngine — ILessonCanvas/ILessonSpeaker seams, LessonPlayer (draw-then-speak per beat, speech is the clock, degraded/fallback/rejected branches, pause/resume/skip/stop, burst refusal, cancel + fault propagation) and PlaybackReport (replay log); LessonSmoke rows LS-8..LS-10 with gated fake speaker. DEC-024: planner multimodal (screen crop as image part when the model has Vision, explicit text-only otherwise) and multi-model (ProviderRegistry, no hard-wired provider). Branch `feat/lesson-runtime-v1`.
+Left: Not wired into the App Shell — no real canvas (Phase 3) or speaker adapter yet. No provider key needed until Phase 4's live rows.
+Watch: Pause only takes effect at a beat boundary (never cuts a sentence). Stop vs. caller cancel are distinct: Stop returns Stopped, the shell's token throws OCE. Do not name Runtime members with audit needles (e.g. `Process…`) — LS-1 scans all subfolders.
+Next: Phase 3 — HeyGanesh.LessonSurface (WebView2 opaque cards per DEC-020) implementing ILessonCanvas, with an offline demo host playing the golden fixtures on screen.
+Verified: LessonSmoke --assert-play 5/5, --assert-play-degraded 5/5, --assert-controls 11/11 (3 runs, after the final-review fix pass), plus all Phase 1 rows; library + host + sln 0 warnings; scans pass.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 0: decisions + spikes)
+
+Did: Merged Phase 1 to main (fast-forward, branch deleted). Took DEC-020 (WebView2 opaque card windows, one NuGet in a new HeyGanesh.LessonSurface; marks stay native; Babylon at Phase 5), DEC-021 (planner via Providers.Core ILlmClient, deepseek-flash), DEC-022 (in-memory session, 6 turns) by owner delegation. Ran spike 0a (throwaway, scratchpad, not committed): GO.
+Left: Spike 0c needs DEEPSEEK_API_KEY (absent here); 0b deferred to Phase 5. Phase 2 (Lesson Runtime) is next and needs no key. main is 9 commits ahead of origin, not pushed.
+Watch: WebView2's 143 MB / 6 processes per environment — create ONE hidden at startup and reuse it. LessonSurface will be the only assembly with a PackageReference; its audit must pin exactly one. src/Foundation is still untracked, so a fresh clone does not build.
+Next: Write and run the Phase 2 plan (Lesson Runtime: beat clock, speech-duration sync with fake TTS, replay log).
+Verified: Spike 0a 3/3 runs — no focus steal, capture hidden after WDA_EXCLUDEFROMCAPTURE, env 384–495 ms, first paint 761–872 ms, warm update 2.3–2.5 ms, 143 MB delta. Docs-only change on main; no product code touched.
+
+## 2026-10-28 · claude-opus-5-5 (FEATURE-007 Phase 1: VisualPlan contract v1)
+
+Did: Wrote FEATURE-007 (visual-lesson strategy/roadmap) and its Phase 1 plan; built `HeyGanesh.VisualLessonEngine` (VisualPlan v1 records, never-throw parser, validator with limits/vocabulary/time-ordered refs/mark bounds, degrade-to-speech and text-fallback policy) + `tools/LessonSmoke` with 3 golden fixtures; DEC-023; LS-1..LS-7. Branch `feat/visualplan-contract-v1`, not merged.
+Left: Owner decisions DEC-020 (rendering stack / WebView2 NuGet), DEC-021 (planner via Providers seam), DEC-022 (tutor session state) are open; Phase 0 spikes and Phases 2–8 not started. Nothing renders or speaks a plan yet.
+Watch: src/Foundation (Abstractions, the module's one reference) is still untracked on main — the branch builds only in this checkout. Build library then host sequentially (CS2012). A degraded beat's elements never exist, so one bad early beat can cascade the plan into TextFallback (LS-5, by design). Any issue without a beat id (incl. an unknown `mode`) forces TextFallback.
+Next: Owner decides DEC-020/021/022; then Phase 0a spike (transparent, capture-excluded, region-click-through WebView2 window).
+Verified: `dotnet build` library + host `-warnaserror` → 0/0; LessonSmoke --assert-source 6/6, --assert-parse 9/9, --assert-limits 20/20, --assert-refs 15/15, --assert-degrade 7/7, --assert-fixtures 6/6, all exit 0 (after the final-review fix pass); `dotnet build HeyGanesh.sln -warnaserror` 0/0; scan-forbidden / scan-secrets / zero-nuget pass.
+
 ## 2026-10-28 · Cline agent (S2.5 Gemini provider - Phase 1)
 
 Did: Implemented text-only Gemini GenerateContent adapter skeleton with core skeleton, constructor, properties, and interface implementation. Build passes but full provider not yet complete.

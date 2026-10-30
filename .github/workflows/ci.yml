@@ -1,0 +1,241 @@
+﻿name: HeyGanesh CI
+
+# Runs the gates in docs/ai/CI.md, in that file's order; keep the two in step.
+# Every gate is offline and key-free. Gates that need a live desktop (G-4, G-5, part of G-6, G-8, G-9) are local-only and not run here.
+# A pwsh `run:` step only fails on the LAST command's exit code, so every multi-command step
+# checks $LASTEXITCODE itself after each command.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-verify:
+    name: Build + offline verification on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK (pinned by global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: G-1 Build solution (zero warnings, zero errors)
+        shell: pwsh
+        run: dotnet build -c Debug -warnaserror
+
+      - name: G-2 Zero-NuGet guard over the core projects
+        shell: pwsh
+        run: pwsh -File .github/workflows/scan-secrets.ps1 -ZeroNuGet
+
+      # Build only: running ScreenCaptureSmoke takes real captures, which needs a live desktop (SC rows are local-only).
+      - name: G-3 Screen Capture smoke host builds clean
+        shell: pwsh
+        run: dotnet build tools\ScreenCaptureSmoke -c Debug -warnaserror
+
+      # G-4/G-5 are local-only: their fake Jev still chooses from the REAL foreground window's UIA tree, so the
+      # verdict depends on what is on screen. G-6 runs only --no-match here: --found / --assert-clickthrough draw windows.
+      - name: G-6 Screen Overlay no-match path (creates no window)
+        shell: pwsh
+        run: dotnet run --project tools\OverlaySmoke -c Debug -- --no-match
+
+      - name: G-7 Tutor Engine offline
+        shell: pwsh
+        run: |
+          dotnet run --project tools\TutorSmoke -c Debug -- --fake-explain "what does git rebase actually do"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($mode in @('--assert-prompt', '--assert-grounding', '--assert-parity', '--assert-source', '--assert-client-error')) {
+            dotnet run --project tools\TutorSmoke -c Debug -- $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-10 Forbidden-API scan
+        shell: pwsh
+        run: pwsh -File .github/workflows/scan-forbidden.ps1
+
+      - name: G-11 Secret scan
+        shell: pwsh
+        run: pwsh -File .github/workflows/scan-secrets.ps1
+
+      # G-12: the secret store, and the key ring over it (DEC-045). --assert-keyring-cm writes and removes
+      # throwaway keyring-test.* credentials only, never the app's own targets.
+      - name: G-12 Security offline
+        shell: pwsh
+        run: |
+          dotnet build tools\SecretSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($m in @('--self-test', '--assert-keyring', '--assert-keyring-cm')) {
+            & 'tools\SecretSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.SecretSmoke.exe' $m
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      # G-13..G-15: the lesson hosts are read from the built EXE, as TEST-CHECKLIST does. All three use
+      # fake canvases / fake models; LessonSurfaceSmoke and LT-6/LT-7/LT-9 draw real cards and stay local-only.
+      - name: G-13 Visual Lesson Engine offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-parse', '--assert-limits', '--assert-refs', '--assert-degrade', '--assert-fixtures',
+                              '--assert-play', '--assert-play-degraded', '--assert-controls', '--assert-plot', '--assert-grounded', '--assert-scene3d', '--assert-schematic')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-14 Lesson Planner offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonPlannerSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonPlannerSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonPlannerSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-prompt', '--assert-multimodal', '--assert-plan', '--assert-repair',
+                              '--assert-errors', '--assert-followup', '--assert-hardening', '--assert-prompt-3d', '--assert-stream', '--assert-prompt-schematic')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-15 Lesson Turn offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonTurnSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonTurnSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonTurnSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-turn', '--assert-turn-degraded', '--assert-turn-rejected', '--assert-turn-errors', '--assert-followup-pick', '--assert-turn-stream')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: G-16 Part Library offline
+        shell: pwsh
+        run: |
+          dotnet build tools\PartLibrarySmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\PartLibrarySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PartLibrarySmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-library', '--assert-physics', '--assert-catalog', '--assert-schematic')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      # G-17: the Lesson Surface rows that need no desktop. The scene/window rows (LSU-2..LSU-6, LSU-9..LSU-15) create
+      # real windows and stay local-only.
+      - name: G-17 Lesson Surface offline
+        shell: pwsh
+        run: |
+          dotnet build tools\LessonSurfaceSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\LessonSurfaceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSurfaceSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-scene-math')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      # G-18: the Turn Router (DEC-035) is pure policy over a fake Jev client, so every row runs here.
+      - name: G-18 Turn Router offline
+        shell: pwsh
+        run: |
+          dotnet build tools\TurnRouterSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\TurnRouterSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TurnRouterSmoke.exe'
+          foreach ($mode in @('--assert-source', '--assert-request', '--assert-map', '--assert-gate', '--assert-errors', '--assert-legs')) {
+            & $exe $mode
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      # G-19: the Low-confidence check's rule (DEC-037) from made-up results. The other orchestrator rows walk a
+      # real window and stay local-only.
+      - name: G-19 Context Orchestrator check rule
+        shell: pwsh
+        run: |
+          dotnet build tools\ContextOrchestratorSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\ContextOrchestratorSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ContextOrchestratorSmoke.exe' --assert-check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-20: the screen-text merge rules (DEC-039) from made-up lines. The other Element Selection rows walk a
+      # real window and stay local-only.
+      - name: G-20 Element Selection text merge
+        shell: pwsh
+        run: |
+          dotnet build tools\ElementSelectionSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\ElementSelectionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ElementSelectionSmoke.exe' --assert-text-merge
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-21: voice pre-roll (DEC-040) - the real Gateway client against a loopback stub; no microphone, device or
+      # network. The other voice rows that need a device or a Gateway stay local-only.
+      - name: G-21 Voice pre-roll
+        shell: pwsh
+        run: |
+          dotnet build tools\VoiceSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-preroll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-23: key sources (DEC-046) - each API client the App Shell composes takes its key from the key ring's
+      # reader when given one, and otherwise reads its environment variable exactly as before. Unroutable
+      # loopback URLs and a refusing HTTP handler: no request leaves the machine, no real key is read.
+      - name: G-23 Key sources
+        shell: pwsh
+        run: |
+          foreach ($p in @('ElementSelectionSmoke', 'VisionSmoke', 'VoiceSmoke')) {
+            dotnet build "tools\$p" -c Debug -warnaserror
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          & 'tools\ElementSelectionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ElementSelectionSmoke.exe' --assert-key-source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\VisionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VisionSmoke.exe' --assert-key-source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-fish-format
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-24: the tray (DEC-052..DEC-054) - its source audit, its log file, the key screen's rules, and start at login
+      # against a throwaway HKCU\Software\HeyGanesh\Test-<id> key (deleted after; the real Run key is only read). The icon, the key
+      # window, the stop seam and the pause with a real keyboard hook, and the real HeyGanesh.Tray.exe need an
+      # interactive desktop and stay local (TY-3..TY-5, TK-2, TK-3, TS-2).
+      - name: G-24 Tray offline
+        shell: pwsh
+        run: |
+          dotnet build tools\TraySmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\TraySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TraySmoke.exe'
+          foreach ($m in @('--assert-source', '--assert-log', '--assert-keys-model', '--assert-startup')) {
+            & $exe $m
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      # G-25: the installer package (DEC-055) - a self-contained win-x64 publish of the tray plus the scripts, and the
+      # files a package needs in order to run. Windows PowerShell 5.1, as on a user's PC. The install round trip
+      # (IN-2) runs the installed tray and stays local.
+      - name: G-25 Installer package
+        shell: pwsh
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-22: the planner evaluation set (DEC-043/DEC-044) - the set is well formed; every automatic check both passes
+      # and fails; the recording path works through the real client against a loopback stub with no key in any file;
+      # the live client matches the App Shell's. Once the owner commits a reviewed live recording as
+      # tools\PlannerEval\baseline, it is replayed too: a check that passed there and fails now exits 1, a changed
+      # planner prompt exits 3 (re-record with --record). No key is used here.
+      - name: G-22 Planner evaluation set
+        shell: pwsh
+        run: |
+          dotnet build tools\PlannerEval -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\PlannerEval\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PlannerEval.exe'
+          foreach ($m in @('--assert-set', '--assert-checks', '--assert-record-stub', '--assert-drift')) {
+            & $exe $m
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          if (Test-Path 'tools\PlannerEval\baseline\summary.json') {
+            & $exe --replay 'tools\PlannerEval\baseline'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } else {
+            Write-Output 'no baseline yet: tools\PlannerEval\baseline is committed after the first reviewed live recording'
+          }

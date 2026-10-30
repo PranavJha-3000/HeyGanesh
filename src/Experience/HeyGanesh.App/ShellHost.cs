@@ -1,8 +1,10 @@
 using HeyGanesh.ContextOrchestrator;
 using HeyGanesh.ElementSelection;
+using HeyGanesh.LessonPlanner;
 using HeyGanesh.ScreenCapture;
 using HeyGanesh.ScreenOverlay;
 using HeyGanesh.TutorEngine;
+using HeyGanesh.TurnRouter;
 using HeyGanesh.Vision;
 using HeyGanesh.Voice;
 
@@ -11,6 +13,7 @@ using HeyGanesh.Voice;
 // fully qualified at every use (the module hosts can use the bare name only because they sit in the
 // global namespace).
 using HotkeyMonitor = HeyGanesh.GlobalHotkeyMonitor.GlobalHotkeyMonitor;
+using Router = HeyGanesh.TurnRouter.TurnRouter;
 
 namespace HeyGanesh.App;
 
@@ -62,7 +65,16 @@ internal static partial class ShellHost
     /// </summary>
     private static readonly TimeSpan DrainGrace = TimeSpan.FromSeconds(5);
 
-    public static async Task<int> RunAsync(string[] args)
+    public static Task<int> RunAsync(string[] args) => RunAsync(args, CancellationToken.None, null);
+
+    /// <summary>
+    /// The same run, for a host with no console (the tray, DEC-052). <paramref name="stop"/> ends hooked mode the
+    /// way Ctrl+C does, with the same ordered teardown; <paramref name="hookLive"/> is called once, when the
+    /// keyboard hook is installed. While <paramref name="triggerPaused"/> returns true, a Ctrl+Alt press starts
+    /// no turn (the tray's key screen is open, DEC-053: AltGr is Ctrl+Alt on many keyboards). All three are
+    /// ignored by every other mode.
+    /// </summary>
+    public static async Task<int> RunAsync(string[] args, CancellationToken stop, Action? hookLive, Func<bool>? triggerPaused = null)
     {
         var options = ParseArgs(args);
 
@@ -71,6 +83,11 @@ internal static partial class ShellHost
             PrintUsage();
             PrintFooter();
             return 0;
+        }
+
+        if (options.KeyCommand is not null)
+        {
+            return RunKeyCommand(options.KeyCommand, options.KeyName);
         }
 
         // The question source is mode-dependent now that Voice exists (DEC-014): hooked mode is the
@@ -99,10 +116,19 @@ internal static partial class ShellHost
         // selection, capture. That ordering is load-bearing — the trigger source stops first so no new
         // session can start against services being torn down, and the overlay is released before the
         // capture service it borrows for monitor topology.
-        using var capture = new ScreenCaptureService(new ScreenCaptureOptions { MaxDimension = options.MaxDim });
-        using var selection = new ElementSelectionService(
-            options: new SelectionOptions { MaxCandidates = options.MaxCandidates });
-        using var vision = new VisionService();
+        // ReadText (DEC-038/DEC-039): the cursor monitor's text is read locally at full size, and a
+        // filtered handful of its lines is offered to Jev alongside the UIA controls. --no-ocr turns it off.
+        using var capture = new ScreenCaptureService(new ScreenCaptureOptions { MaxDimension = options.MaxDim, ReadText = !options.NoOcr });
+
+        // One Jev client for both decisions Jev makes in a turn — which element (Element Selection) and
+        // how to teach (the router, DEC-036). The shell owns it: a service handed a client never disposes
+        // it, and declaring it before the selection service disposes it after.
+        // Every API client reads its key per request through the key ring (DEC-046): Credential Manager
+        // first, then the environment variable.
+        var selectionOptions = new SelectionOptions { MaxCandidates = options.MaxCandidates, ApiKey = Keys.Reader("typesafe") };
+        using var jev = JevClients.CreateTypeSafe(selectionOptions);
+        using var selection = new ElementSelectionService(jev, selectionOptions);
+        using var vision = new VisionService(options: new VisionOptions { ApiKey = Keys.Reader("deepseek") });
         using var orchestrator = new ContextOrchestratorService(
             capture,
             selection,
@@ -119,21 +145,35 @@ internal static partial class ShellHost
             monitors: capture);
 
         // The teaching seam, composed like the speech one — and, like it, harmless at rest.
-        // CreateTutorClient() returns null today (DEC-015 keeps the provider decision the owner's),
-        // so the tutor leg reports its skip after every verdict and costs nothing. When a live
-        // client lands, only CreateTutorClient changes. The using covers the (currently absent)
-        // client, which the shell owns because TutorService never disposes the seam it was handed;
+        // CreateTutorClient() returns the DeepSeek Tutor when the key ring has the deepseek key (DEC-047)
+        // and null otherwise, so without a key the tutor leg reports its skip after every verdict and
+        // costs nothing. The using covers the client (absent without a key), which the shell owns
+        // because TutorService never disposes the seam it was handed;
         // declared before voice so in teardown the speaker outlives the teacher — a lesson can
         // always finish being read aloud after its call completed.
         using ITutorClient? tutorClient = CreateTutorClient();
         var tutor = tutorClient is null ? null : new TutorService(tutorClient);
+
+        // The lesson seam (DEC-027), composed only when --lesson asks for it. Unlike the Tutor's, its
+        // client is built from the environment: no key -> no planner -> the leg reports its skip. The
+        // planner owns the client it resolved, and this using disposes it. The overlay is handed in for
+        // screen marks: by the time a lesson plays, the verdict's highlight has already left the screen.
+        // The router (DEC-036) can choose a lesson too, so the lesson seam is also composed whenever a
+        // router exists; without --lesson it only runs on the turns the router sends to it.
+        var router = CreateRouter(options, jev);
+        var lessonWanted = options.Lesson || router is not null;
+        using VisualPlanner? lessonPlanner = lessonWanted ? CreateLessonPlanner() : null;
+        var lesson = lessonWanted ? new LessonLeg(lessonPlanner, overlay) : null;
 
         // The speech seam, composed with the default real legs (Qwen Gateway in, Fish/WAV out). The
         // constructor opens no devices: the microphone is taken per listen and released when the listen
         // ends, so sitting idle here costs nothing. Declaration order still sets teardown order — voice
         // is disposed after the hotkey (no new turn can start) and before the overlay (a turn that was
         // draining has already been awaited by RunHookedAsync, so nothing speaks into a dead service).
-        using var voice = new VoiceService();
+        // The Fish client is built here only to hand it the key ring's reader; declared before voice, so it
+        // is disposed after the service that speaks through it (a service never disposes a client it was given).
+        using var tts = new FishTtsClient(new FishTtsOptions { ApiKey = Keys.Reader("fish") });
+        using var voice = new VoiceService(tts: tts);
 
         using var hotkey = new HotkeyMonitor();
 
@@ -149,7 +189,7 @@ internal static partial class ShellHost
                 // chord's voice turn feeds, one question source swapped for the other.
                 Console.WriteLine("resolving once at startup (the hook is never installed)...");
                 Console.WriteLine();
-                return await RunSessionAsync(orchestrator, overlay, voice, tutor, options, lifetime.Token).ConfigureAwait(false);
+                return await RunSessionAsync(orchestrator, overlay, voice, tutor, lesson, router, options, lifetime.Token).ConfigureAwait(false);
             }
 
             // --once without a question: one live listen instead of one canned text — the scripted
@@ -158,11 +198,11 @@ internal static partial class ShellHost
                               "microphone is the question source)...");
             Console.WriteLine("speak now — the turn ends on its own at the silence timeout; Ctrl+C cancels.");
             Console.WriteLine();
-            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, options, lifetime.Token);
+            var oncePump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, router, options, lifetime.Token);
             return await oncePump.RunDirectAsync().ConfigureAwait(false);
         }
 
-        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, options, lifetime).ConfigureAwait(false);
+        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, router, options, lifetime, stop, hookLive, triggerPaused).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -181,16 +221,31 @@ internal static partial class ShellHost
         ScreenOverlayService overlay,
         VoiceService voice,
         TutorService? tutor,
+        LessonLeg? lesson,
+        Router? router,
         ShellOptions options,
-        CancellationTokenSource lifetime)
+        CancellationTokenSource lifetime,
+        CancellationToken stopToken,
+        Action? hookLive,
+        Func<bool>? triggerPaused)
     {
-        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, options, lifetime.Token);
+        var pump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, router, options, lifetime.Token);
 
         // Press starts the utterance; release ends it. Both handlers only flip state under the pump's
         // gate and hand work to the pool — the hook callback and the monitor's worker thread are never
         // blocked by a microphone, a Gateway socket, or a capture (DEC-012's non-blocking stance, now
         // spanning a whole voice turn instead of one session).
-        hotkey.Pressed += (_, _) => pump.OnPressed();
+        hotkey.Pressed += (_, _) =>
+        {
+            // DEC-053: while the tray's key screen is open, typing there (AltGr is Ctrl+Alt) must not start a turn.
+            if (triggerPaused?.Invoke() == true)
+            {
+                Console.WriteLine("REFUSED: the key screen is open; close it to ask with Ctrl+Alt.");
+                return;
+            }
+
+            pump.OnPressed();
+        };
         hotkey.Released += (_, _) => pump.OnReleased();
 
         try
@@ -208,6 +263,7 @@ internal static partial class ShellHost
         Console.WriteLine($"hook live: IsRunning={hotkey.IsRunning} (installed), chord state={hotkey.State} (nothing held).");
         Console.WriteLine("Hold Ctrl+Alt to speak, release to submit the utterance; Ctrl+C here to stop.");
         Console.WriteLine();
+        hookLive?.Invoke();
 
         var stop = new ManualResetEventSlim(false);
         Console.CancelKeyPress += (_, e) =>
@@ -215,6 +271,9 @@ internal static partial class ShellHost
             e.Cancel = true; // stay alive long enough to tear down in order and report hook health
             stop.Set();
         };
+
+        // The tray's Quit (DEC-052): the same stop as Ctrl+C, so the teardown below is the same either way.
+        using var stopRegistration = stopToken.Register(stop.Set);
 
         if (options.Seconds > 0)
         {

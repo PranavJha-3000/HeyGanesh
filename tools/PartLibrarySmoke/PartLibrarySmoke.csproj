@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the Part Library (FEATURE-007 Phase 5 step 3, DEC-029).
+
+    Not product code: it proves offline that every shipped 3D model meets the structural rules, that
+    the computed geometry and motion obey the physics they claim (slider-crank, B-DNA, pump
+    stoichiometry), and that the library's catalogue is what the scene3d contract validates lessons
+    against. - -dump prints each model as plain text for the owner's review. Same PASS/FAIL row
+    pattern and dependency-free stance as tools/LessonSmoke; it reuses LessonSmoke's engine-3d.json.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.PartLibrarySmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.PartLibrarySmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LessonSmoke\fixtures\engine-3d.json" Link="fixtures\engine-3d.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\LessonSmoke\fixtures\f35b-schematic.json" Link="fixtures\f35b-schematic.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -233,11 +233,13 @@ public static class LessonTurn
         var beats = Channel.CreateUnbounded<LessonBeat>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
         var firstReleased = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         IReadOnlyList<HeyGanesh.VisualLessonEngine.LessonSurface>? surfaces = null;
+        IReadOnlyList<SchematicModel>? schematics = null;
         var released = 0;
         var planning = planner.PlanStreamingAsync(request, beat =>
         {
             // Runs on the planner's reading loop: hand the beat over and return at once.
             surfaces ??= beat.Prefix.Plan!.Surfaces;
+            schematics ??= beat.Prefix.Plan!.Schematics;
             released++;
             beats.Writer.TryWrite(beat.Beat);
             firstReleased.TrySetResult();
@@ -246,7 +248,7 @@ public static class LessonTurn
         await Task.WhenAny(planning, firstReleased.Task).ConfigureAwait(false);
         if (firstReleased.Task.IsCompleted)
         {
-            return await PlayStreamedTurnAsync(planning, beats, surfaces!, () => released, planCts, canvases, lease, speaker, startedAt, cancellationToken).ConfigureAwait(false);
+            return await PlayStreamedTurnAsync(planning, beats, surfaces!, schematics!, () => released, planCts, canvases, lease, speaker, startedAt, cancellationToken).ConfigureAwait(false);
         }
 
         PlanResult plan;
@@ -308,6 +310,7 @@ public static class LessonTurn
         Task<PlanResult> planning,
         Channel<LessonBeat> beats,
         IReadOnlyList<HeyGanesh.VisualLessonEngine.LessonSurface> surfaces,
+        IReadOnlyList<SchematicModel> schematics,
         Func<int> released,
         CancellationTokenSource planCts,
         ILessonCanvasHost canvases,
@@ -322,7 +325,7 @@ public static class LessonTurn
         {
             lease ??= await canvases.OpenAsync(cancellationToken).ConfigureAwait(false);
             var playback = await new LessonPlayer(lease.Canvas, speaker)
-                .PlayStreamAsync(surfaces, beats.Reader.ReadAllAsync(cancellationToken), LessonOutcome.Valid, cancellationToken)
+                .PlayStreamAsync(surfaces, beats.Reader.ReadAllAsync(cancellationToken), LessonOutcome.Valid, cancellationToken, schematics)
                 .ConfigureAwait(false);
 
             if (playback.Status == PlaybackStatus.Stopped && !planning.IsCompleted)

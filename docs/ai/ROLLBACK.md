@@ -499,3 +499,16 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `db3f2e0` (the commit before this step).
 - **Files to restore:** `git checkout db3f2e0 -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Intelligence/HeyGanesh.LessonPlanner tools/LessonSmoke tools/LessonPlannerSmoke tools/PlannerEval .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** LessonSmoke `--assert-schematic` 20, LessonPlannerSmoke `--assert-prompt-3d` 10, PlannerEval `--assert-checks` 24; the local CI runner reports 19 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the scene window draws schematics, and the shell asks for them, build sequence step 10c, DEC-050)
+
+- **Change:**
+  - VisualLessonEngine Runtime: `ISchematicCanvas`; `LessonPlayer` hands a lesson's schematics to such a canvas before each play (`PlayAsync`, and `PlayStreamAsync` with a new optional argument).
+  - LessonSession: the streamed turn passes the released header's schematics.
+  - LessonSurface: `CardSurface` implements it and resolves a `model` op from the lesson's schematics before the library; `SceneMessages.Model(op, model)`. Clicks on schematic parts stay refused (DEC-031's vetted-names rule).
+  - App Shell: the lesson request carries `Schematics.Check` whenever it offers 3D; the header says so.
+  - Rows: LessonSmoke LS-14 (+2), LessonTurnSmoke LT-10 (+1), LessonSurfaceSmoke `--assert-scene-schematic` (WebGL and SVG).
+  - Docs: DEC-050, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `c327bdc` (the commit before this step).
+- **Files to restore:** `git checkout c327bdc -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Experience/HeyGanesh.LessonSession src/Experience/HeyGanesh.LessonSurface src/Experience/HeyGanesh.App tools/LessonSmoke tools/LessonTurnSmoke tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** LessonSmoke `--assert-schematic` 20, LessonTurnSmoke `--assert-turn-stream` 10, LessonSurfaceSmoke `--assert-scene` 19; App `--once --lesson --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.

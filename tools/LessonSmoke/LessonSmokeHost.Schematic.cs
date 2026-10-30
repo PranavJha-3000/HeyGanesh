@@ -1,4 +1,5 @@
 using HeyGanesh.VisualLessonEngine;
+using HeyGanesh.VisualLessonEngine.Runtime;
 
 namespace HeyGanesh.Tools.LessonSmoke;
 
@@ -10,7 +11,7 @@ namespace HeyGanesh.Tools.LessonSmoke;
 /// </summary>
 internal static partial class LessonSmokeHost
 {
-    private static int RunAssertSchematic()
+    private static async Task<int> RunAssertSchematicAsync()
     {
         var failures = 0;
         var json = Fixture("f35b-schematic.json");
@@ -81,7 +82,57 @@ internal static partial class LessonSmokeHost
         failures = Check(Has(Run(animated), LessonIssueCodes.AnimationUnknown, "b5") && Has(Run(invented), LessonIssueCodes.PartUnknown, "b2"),
             "animate on a schematic -> animation.unknown; a part it does not have -> part.unknown", failures);
 
+        // 7. The player hands a schematic canvas the lesson's schematics before the reset, on both paths (DEC-050).
+        var canvas = new SchematicCanvas();
+        var player = new LessonPlayer(canvas, new SilentSpeaker());
+        await player.PlayAsync(golden);
+        var afterPlay = string.Join(" ", canvas.Log);
+        await player.PlayAsync(Run(VisualPlanParser.Parse(Fixture("chain-rule.json")).Plan!));
+        var afterFlat = string.Join(" ", canvas.Log);
+        failures = Check(afterPlay.StartsWith("schematics:f35b clear draw:b1", StringComparison.Ordinal) && afterFlat.Contains("schematics: clear", StringComparison.Ordinal),
+            "PlayAsync hands the lesson's schematics before the reset, and the next lesson replaces them (here with none)", failures);
+        var streamed = new SchematicCanvas();
+        await new LessonPlayer(streamed, new SilentSpeaker()).PlayStreamAsync(golden.Plan!.Surfaces, Each(golden.Plan.Beats), LessonOutcome.Valid, CancellationToken.None, golden.Plan.Schematics);
+        failures = Check(string.Join(" ", streamed.Log).StartsWith("schematics:f35b clear draw:b1", StringComparison.Ordinal) && streamed.Log.Count(e => e.StartsWith("draw:", StringComparison.Ordinal)) == 6,
+            "PlayStreamAsync hands the header's schematics the same way, then draws all 6 beats", failures);
+
         return Summarize(failures, "SCHEMATIC OK");
+    }
+
+    private static async IAsyncEnumerable<LessonBeat> Each(IEnumerable<LessonBeat> beats)
+    {
+        foreach (var beat in beats)
+        {
+            await Task.Yield();
+            yield return beat;
+        }
+    }
+
+    /// <summary>A canvas that also draws schematics: it logs what it was handed, then each reset and beat.</summary>
+    private sealed class SchematicCanvas : ILessonCanvas, ISchematicCanvas
+    {
+        public List<string> Log { get; } = new();
+
+        public void UseSchematics(IReadOnlyList<SchematicModel> schematics) => Log.Add("schematics:" + string.Join(",", schematics.Select(s => s.Id)));
+
+        public Task ApplyBeatAsync(LessonBeat beat, CancellationToken cancellationToken)
+        {
+            Log.Add("draw:" + beat.Id);
+            return Task.CompletedTask;
+        }
+
+        public Task ShowNoticeAsync(string notice, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task ResetAsync(IReadOnlyList<LessonSurface> surfaces, CancellationToken cancellationToken)
+        {
+            Log.Add("clear");
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class SilentSpeaker : ILessonSpeaker
+    {
+        public Task SpeakAsync(string text, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private static LessonBeat CardBeat(string id) =>

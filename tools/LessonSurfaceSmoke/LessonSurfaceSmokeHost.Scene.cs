@@ -307,6 +307,14 @@ internal static partial class LessonSurfaceSmokeHost
             await SnapAsync(surface, Path.Combine(dir, $"{model.Id}-exploded{suffix}.png"));
         }
 
+        // The golden schematic (DEC-050), at the end of its lesson, for a person to look at.
+        await player.PlayAsync(SchematicLesson());
+        await Task.Delay(500);
+        await using (var file = File.Create(Path.Combine(dir, $"f35b-schematic{suffix}.png")))
+        {
+            await surface.CapturePageAsync("scene-jet", file);
+        }
+
         return 0;
     }
 

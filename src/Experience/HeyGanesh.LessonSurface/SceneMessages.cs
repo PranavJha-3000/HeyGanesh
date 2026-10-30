@@ -35,10 +35,16 @@ public static class SceneMessages
         return new Vec3(r[0], r[1], r[2]);
     }
 
-    public static object Model(ModelOp op)
+    public static object Model(ModelOp op) =>
+        Model(op, ModelLibrary.Find(op.Model)
+            ?? throw new InvalidOperationException($"model '{op.Model}' passed validation but is not in the part library"));
+
+    /// <summary>
+    /// The model message for an already-resolved model: a shipped one, or a lesson's schematic built by
+    /// <c>Schematics.ToModel</c> (DEC-050). The page draws both the same way and tags a schematic.
+    /// </summary>
+    public static object Model(ModelOp op, LibraryModel model)
     {
-        var model = ModelLibrary.Find(op.Model)
-            ?? throw new InvalidOperationException($"model '{op.Model}' passed validation but is not in the part library");
         var parts = model.Parts.Select(p => new
         {
             id = p.Id,

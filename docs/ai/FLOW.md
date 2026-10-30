@@ -326,7 +326,7 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 
-## Schematic models (VisualPlan 1.2, DEC-048; offered by the planner since DEC-049; scene and router follow in 10c–10d)
+## Schematic models (VisualPlan 1.2, DEC-048; planner DEC-049; drawn and requested by the shell DEC-050; router 10d)
 
 ```
 model JSON header: "schematics": [ { id, title, parts: [ { id, name, shapes: [ { shape, size, at, turn, finish } ] } ] } ]
@@ -344,6 +344,14 @@ Planner (DEC-049): PlanRequest { Scene3d = catalogue, SchematicGeometry = Schema
   → ValidationContext.SchematicGeometry = the same check (no check → every schematic schematic.unavailable)
   streaming: PlanStreamScanner.Header is everything before "beats", so a schematic written first is in
   every prefix the released beats are checked against
+Shell (DEC-050): RunLessonAsync's PlanRequest gets SchematicGeometry = Schematics.Check whenever Scene3d is offered
+Drawing (DEC-050):
+  LessonTurn: streamed → schematics = first released beat's Prefix.Plan.Schematics → PlayStreamAsync(..., schematics)
+              whole plan → PlayAsync(lesson) → lesson.Plan.Schematics
+  LessonPlayer.PlayBeatsAsync → ISchematicCanvas.UseSchematics(schematics) → ResetAsync → beats
+  CardSurface.UseSchematics → id → Schematics.ToModel (replaced per play)
+  ModelOp → the lesson's schematic, else ModelLibrary.Find → SceneMessages.Model(op, model) → scene.js / scene-svg.js
+  part click → OnPartClicked checks the library catalogue only → a schematic part is refused (DEC-031)
 ```
 
 ## Keys (KeyRing, DEC-045; the shell's API clients read through it, DEC-046)

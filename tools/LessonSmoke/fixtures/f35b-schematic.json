@@ -73,7 +73,7 @@
       "say": "Pulled apart, you can see each place where air is pushed down.",
       "ops": [
         { "op": "explode", "target": "jet", "amount": 0.5 },
-        { "op": "camera", "surface": "scene-jet", "focus": "jet", "view": "side" }
+        { "op": "camera", "surface": "scene-jet", "focus": "jet", "view": "top" }
       ]
     },
     {

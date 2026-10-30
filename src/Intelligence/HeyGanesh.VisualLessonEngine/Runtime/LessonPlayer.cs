@@ -59,7 +59,7 @@ public sealed class LessonPlayer
                 return true;
             }
 
-            await PlayBeatsAsync(lesson.Plan.Surfaces, Each(lesson.Plan.Beats), records, token);
+            await PlayBeatsAsync(lesson.Plan.Surfaces, lesson.Plan.Schematics, Each(lesson.Plan.Beats), records, token);
             return false;
         }, cancellationToken);
     }
@@ -69,19 +69,21 @@ public sealed class LessonPlayer
     /// beat from <paramref name="beats"/> is drawn and spoken exactly as <see cref="PlayAsync"/> would, the
     /// next one waiting for the sequence. Every beat must already be validated (the streaming planner
     /// releases only validated beats). <paramref name="outcome"/> is reported as-is; the caller knows the
-    /// lesson's final outcome only once the sequence has ended.
+    /// lesson's final outcome only once the sequence has ended. <paramref name="schematics"/> are the
+    /// header's (DEC-050), handed to an <see cref="ISchematicCanvas"/> before the first beat.
     /// </summary>
     public Task<PlaybackReport> PlayStreamAsync(
         IReadOnlyList<LessonSurface> surfaces,
         IAsyncEnumerable<LessonBeat> beats,
         LessonOutcome outcome,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<SchematicModel>? schematics = null)
     {
         ArgumentNullException.ThrowIfNull(surfaces);
         ArgumentNullException.ThrowIfNull(beats);
         return PlayCoreAsync(outcome, spokenOnly: false, async (token, records) =>
         {
-            await PlayBeatsAsync(surfaces, beats, records, token);
+            await PlayBeatsAsync(surfaces, schematics ?? Array.Empty<SchematicModel>(), beats, records, token);
             return false;
         }, cancellationToken);
     }
@@ -214,9 +216,16 @@ public sealed class LessonPlayer
     }
 
     /// <summary>Reset the cards, then draw and speak each beat in turn — from a finished plan or a live stream.</summary>
-    private async Task PlayBeatsAsync(IReadOnlyList<LessonSurface> surfaces, IAsyncEnumerable<LessonBeat> beats, List<BeatRecord> records, CancellationToken token)
+    private async Task PlayBeatsAsync(IReadOnlyList<LessonSurface> surfaces, IReadOnlyList<SchematicModel> schematics, IAsyncEnumerable<LessonBeat> beats, List<BeatRecord> records, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        // Before the reset, so the canvas knows this lesson's own models before any beat names one (and an
+        // earlier lesson's are gone). A canvas without the interface is never given a lesson that has any.
+        if (_canvas is ISchematicCanvas schematicCanvas)
+        {
+            schematicCanvas.UseSchematics(schematics);
+        }
+
         await _canvas.ResetAsync(surfaces, token);
         var index = 0;
         await foreach (var beat in beats.WithCancellation(token))

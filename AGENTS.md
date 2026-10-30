@@ -146,7 +146,7 @@ dotnet build src/Intelligence/HeyGanesh.VisualLessonEngine -c Debug
 dotnet build tools/LessonSmoke -c Debug
 tools/LessonSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSmoke.exe --assert-source
 #   -> 6 PASS, exit 0   (also: --assert-parse 9, --assert-limits 20, --assert-refs 15, --assert-degrade 7, --assert-fixtures 6)
-#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 16, --assert-grounded 6, --assert-scene3d 22 (schema 1.1 3D contract, DEC-028), --assert-schematic 20 (schema 1.2 schematics, DEC-048)
+#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 16, --assert-grounded 6, --assert-scene3d 22 (schema 1.1 3D contract, DEC-028), --assert-schematic 22 (schema 1.2 schematics, DEC-048/DEC-050)
 
 # Lesson Surface host (real WebView2 cards on the desktop; needs an interactive session, no key).
 # Build library then host SEQUENTIALLY. Cards are capture-excluded: use --snapshot to see them as PNGs.
@@ -155,7 +155,7 @@ dotnet build tools/LessonSurfaceSmoke -c Debug
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --assert-render
 #   -> 17 PASS, exit 0   (also: --assert-source 20, --assert-window 9, --assert-security 4, --assert-marks 2)
 #   3D scene window (DEC-030): --assert-scene-math 7 (offline), --assert-scene 19, --assert-scene-idle 4,
-#   --assert-orientation 3, --assert-scene-nowebgl 8, --assert-scene-svg 8 (no-WebGL drawing, DEC-034);
+#   --assert-orientation 3, --assert-scene-nowebgl 8, --assert-scene-svg 8 (no-WebGL drawing, DEC-034), --assert-scene-schematic 10 (a lesson's schematic, DEC-050);
 #   manual: --snapshot-3d <dir> [--no-webgl], --demo-3d --voice sapi
 #   click a part to ask (DEC-031): --assert-pick 9 -- MOVES THE REAL CURSOR; run with nobody using the mouse
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --demo all --voice sapi
@@ -172,7 +172,7 @@ tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Experience/HeyGanesh.LessonSession -c Debug
 dotnet build tools/LessonTurnSmoke -c Debug
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --assert-turn
-#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 12, --assert-turn-stream 10)
+#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 12, --assert-turn-stream 11)
 #   manual: --demo-pick --voice sapi   (the engine lesson, then click parts to ask about them, same window; LT-9)
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --demo-turn --voice sapi
 #   -> the whole turn drawn and spoken on screen (manual row LT-7)

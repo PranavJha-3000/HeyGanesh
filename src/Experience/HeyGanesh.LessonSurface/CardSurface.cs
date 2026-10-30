@@ -16,7 +16,7 @@ namespace HeyGanesh.LessonSurface;
 /// every id it is given exists — but every string is still treated as untrusted text by the page.
 /// After a 3D lesson it can also let the student click a part (<see cref="IPartPicker"/>, DEC-031).
 /// </summary>
-public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
+public sealed class CardSurface : ILessonCanvas, IPartPicker, ISchematicCanvas, IAsyncDisposable
 {
     private readonly UiThread _ui = new();
     private readonly CardSurfaceOptions _options;
@@ -35,6 +35,12 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
     private string? _sceneSurfaceId;
     private readonly HashSet<string> _sceneOwned = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _sceneInstances = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The current lesson's schematics as drawable models (DEC-050), replaced as a whole by each play. Set
+    /// from the player's thread and read on the UI thread, so it is only ever swapped, never mutated.
+    /// </summary>
+    private volatile IReadOnlyDictionary<string, PartLibrary.LibraryModel> _schematics = new Dictionary<string, PartLibrary.LibraryModel>(StringComparer.Ordinal);
     // Picking (DEC-031), UI-thread state: the one wait in flight, if any. A click is accepted only
     // while it exists and only for an instance this surface drew and a part the catalogue has.
     private TaskCompletionSource<PartPick?>? _pickWait;
@@ -197,7 +203,8 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
                 case ModelOp model:
                     _sceneOwned.Add(model.Id);
                     _sceneInstances[model.Id] = model.Model;
-                    sceneOps.Add(SceneMessages.Model(model));
+                    // The lesson's own schematic first (DEC-050), then the library; the validator allowed nothing else.
+                    sceneOps.Add(_schematics.TryGetValue(model.Model, out var schematic) ? SceneMessages.Model(model, schematic) : SceneMessages.Model(model));
                     break;
                 case LabelOp label:
                     _sceneOwned.Add(label.Id);
@@ -644,6 +651,17 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, IAsyncDisposable
         }
 
         Interlocked.Increment(ref _refusedPicks);
+    }
+
+    /// <summary>
+    /// The lesson's schematics, converted once per play. A click on a schematic's part stays refused
+    /// (<see cref="OnPartClicked"/> checks the library catalogue only): a follow-up question is written
+    /// from vetted library text (DEC-031), and a schematic's names come from the model.
+    /// </summary>
+    public void UseSchematics(IReadOnlyList<SchematicModel> schematics)
+    {
+        ArgumentNullException.ThrowIfNull(schematics);
+        _schematics = schematics.ToDictionary(s => s.Id, s => PartLibrary.Schematics.ToModel(s), StringComparer.Ordinal);
     }
 
     private bool IsSceneTarget(string target) => target.Contains('.', StringComparison.Ordinal) || _sceneOwned.Contains(target);

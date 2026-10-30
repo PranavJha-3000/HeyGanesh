@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the scene window draws schematics; the shell asks for them, build sequence step 10c, DEC-050)
+
+Did: `ISchematicCanvas` (optional). `LessonPlayer` hands each lesson's schematics to it before the reset, on both paths, and `LessonTurn` passes the streamed header's. `CardSurface` implements it, converting with `Schematics.ToModel` and resolving `model` ops from them before the library; `SceneMessages.Model(op, model)`. The shell's lesson request carries `Schematics.Check` whenever 3D is offered. Rows: LSU-17 `--assert-scene-schematic` (10, WebGL and SVG), LS-14 +2, LT-10 +1. `--snapshot-3d` writes `f35b-schematic.png`, and I looked at it: a readable top view, tags, labels on the right parts.
+Left: 10d (the router can choose "3D schematic"; today a route with 3D and no model falls back to flat cards, so schematics appear only with `--lesson` or a route that picked a library model). Then step 11. Your decision: allow click-to-ask on schematic parts (it relaxes DEC-031). Five commits are local (8b, 9, 10a, 10b, 10c).
+Watch: A click on a schematic part is refused silently (the click wait continues), by design. The usage limit was hit mid-step; the tree was re-checked afterwards and matched. The SVG draws tall cylinders as several solids, so count shapes, not solids.
+Next: Plan-approved 10d: build on the owner's go-ahead.
+Verified: Every touched project builds -warnaserror 0/0. LSU-17 10, LS-14 22, LT-10 11, PL-6 7, LP-12 7, PE-2 26. LSU source 20, scene-math 7, scene 19, scene-svg 8, scene-nowebgl 8, render 17 (unchanged). LS play 5, play-degraded 5, controls 11, scene3d 22 (unchanged). The other LT rows are unchanged. App `--once --lesson` 12, `--once` 12. A player that never hands schematics over fails LS-14 (2) and LT-10 (1); a surface that ignores them fails LSU-17; both restored. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (the planner offers schematics, build sequence step 10b, DEC-049)
 
 Did: The validator accepts a schematic only when the context carries `SchematicGeometry`. `PlanRequest.SchematicGeometry` feeds that context, and with a catalogue the prompt asks for schema 1.2 and adds a code-drawn SCHEMATICS block (header before beats; one beat must say "simplified drawing, not to scale"; no animations). LP-12 `--assert-prompt-schematic` has 7 checks, including a streamed F-35B that releases all 6 beats. PlannerEval passes `Schematics.Check` on 3D cases and gains K-12 and two E-04 seeds (PE-2 now 26). LS-14 is updated for the new rule.

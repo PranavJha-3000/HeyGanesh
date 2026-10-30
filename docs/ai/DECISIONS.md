@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-050](#dec-050--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The scene window draws a lesson's schematic (optional `ISchematicCanvas`, handed the schematics by `LessonPlayer`) and the shell asks for them whenever it offers 3D; a click on a schematic part stays refused, because follow-ups use vetted library text only | accepted |
 | [DEC-049](#dec-049--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner offers one schematic only when the request carries a catalogue and the Part Library's geometry check; the validator accepts none without that check; the eval gains K-12 (a schematic lesson must say it is simplified) | accepted |
 | [DEC-048](#dec-048--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | VisualPlan 1.2: a lesson may define one schematic model (closed shapes and finishes, ≤ 12 parts / 40 shapes, ±2 box) for an object the catalogue lacks; the engine checks structure, the Part Library's `Schematics.Check` checks geometry through a delegate; a refused schematic costs only its beats | accepted |
 | [DEC-047](#dec-047--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Tutor is on: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key (null and an honest skip otherwise); TU-8 allows exactly one key-named option, `DeepSeekTutorOptions.ApiKey` typed `Func<string?>` (amends DEC-017) | accepted |
@@ -60,6 +61,24 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-050 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the cards draw a lesson's schematic like any model, and the shell asks for one whenever it offers 3D.** Step 10c of the build sequence (the owner: "Yes, build 10c").
+
+- **Seam:** `ISchematicCanvas.UseSchematics` (VisualLessonEngine Runtime) is optional, like `IPartPicker`, so `ILessonCanvas` and every fake canvas are unchanged.
+  - `LessonPlayer` calls it before each reset, with the validated plan's schematics on `PlayAsync` and with a new optional argument on `PlayStreamAsync`. A later lesson's call replaces an earlier one's.
+  - `LessonTurn` passes the first released beat's header schematics on the streamed path.
+- **Surface:** `CardSurface` converts them with `Schematics.ToModel` and resolves a `model` op from them before `ModelLibrary`. `SceneMessages.Model(op, model)` is the shared message, so `scene.js` and `scene-svg.js` draw it unchanged, with the existing "schematic" and "not yet reviewed" tags.
+- **Shell:** `PlanRequest.SchematicGeometry = Schematics.Check` whenever `Scene3d` is offered (`--lesson`, or a route that chose 3D). The `--lesson` header line adds "or one schematic for anything else".
+
+**Not done, deliberately: click-to-ask on a schematic.** `PartQuestion` writes a follow-up only from the Part Library's vetted names and descriptions (DEC-031: "never from anything the page or a model said"), and a schematic's part names come from the model. `CardSurface.OnPartClicked` checks the library catalogue only, so a click on a schematic part is counted and refused, and the 30 s wait for a click continues. Allowing it means relaxing DEC-031 (for example a question built from the part's model-written name, filtered and fenced as untrusted). That decision is the owner's.
+
+**Changed from the plan while building.** The fixture's exploded-view camera is `top` instead of `side`: `side` looks straight down the fuselage, nose-on, and the labels piled up in the snapshot.
+
+**Rejected.** Adding a schematics argument to `ILessonCanvas.ResetAsync` (it would change every canvas and fake for a feature only one canvas has).
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: LSU-17 (local), LS-14 (+2), LT-10 (+1).
+
 ## DEC-049 — 2026-10-30 — claude-opus-5-5
 
 **Decision — schematics are offered, and accepted, only where they can be drawn: a request that carries both the catalogue and the geometry check.** Step 10b of the build sequence (the owner: "Yes, build 10b").

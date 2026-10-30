@@ -54,7 +54,7 @@ internal static partial class LessonSmokeHost
                 Mode.AssertPlot => RunAssertPlot(),
                 Mode.AssertGrounded => RunAssertGrounded(),
                 Mode.AssertScene3d => RunAssertScene3d(),
-                Mode.AssertSchematic => RunAssertSchematic(),
+                Mode.AssertSchematic => await RunAssertSchematicAsync(),
                 Mode.AssertPlay => await RunAssertPlayAsync(),
                 Mode.AssertPlayDegraded => await RunAssertPlayDegradedAsync(),
                 Mode.AssertControls => await RunAssertControlsAsync(),

@@ -187,7 +187,7 @@ internal static partial class ShellHost
             ? "when the route chooses one: lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 2D, or 3D on the one model Jev picked"
             : "when the route chooses one: no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip")
         : !on ? "off (the Tutor leg teaches; --lesson draws instead)"
-        : key ? $"ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 3D: {Scene3dModelCount} models, click a part to ask"
+        : key ? $"ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 3D: {Scene3dModelCount} models, click a part to ask, or one schematic for anything else"
         : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
 
     private sealed record ShellOptions(

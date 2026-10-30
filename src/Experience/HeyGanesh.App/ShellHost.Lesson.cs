@@ -172,6 +172,8 @@ internal static partial class ShellHost
                     VirtualDesktop = NativeFns.VirtualDesktop(),
                     // The whole catalogue on --lesson, one model or none when the route chose (DEC-036).
                     Scene3d = scene3d,
+                    // With 3D on, the cards can also draw one schematic for an object the library lacks (DEC-050).
+                    SchematicGeometry = scene3d is null ? null : PartLibrary.Schematics.Check,
                 },
                 new FollowUpOptions { IdleTimeout = LessonPickIdle },
                 ct).ConfigureAwait(false);

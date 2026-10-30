@@ -30,6 +30,17 @@ public interface ILessonSpeaker
 }
 
 /// <summary>
+/// Optional (DEC-050): a canvas that draws a lesson's own schematic models. The player hands it the
+/// validated lesson's schematics before every play, so a <c>model</c> op naming one can be drawn; a new
+/// play replaces the previous lesson's. Only a caller whose canvas implements this passes the geometry
+/// check that lets a lesson carry schematics at all (DEC-049).
+/// </summary>
+public interface ISchematicCanvas
+{
+    void UseSchematics(IReadOnlyList<SchematicModel> schematics);
+}
+
+/// <summary>
 /// One part the student clicked in a 3D scene: the scene instance id the lesson placed, the catalogue
 /// model it is, and the part id within that model. Every id was checked by the canvas against what it
 /// drew and the catalogue before this record exists (DEC-031).

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using HeyGanesh.LessonPlanner;
 using HeyGanesh.LessonSession;
+using HeyGanesh.PartLibrary;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.VisualLessonEngine;
 using HeyGanesh.VisualLessonEngine.Runtime;
@@ -93,6 +94,16 @@ internal static partial class LessonTurnSmokeHost
                 $"cancelling after the first beat returns Cancelled at once, closes the cards and stops the stream ({report.Outcome}, {clock.ElapsedMilliseconds} ms)", failures);
         }
 
+        // 7. A lesson with its own schematic (DEC-050): the streamed turn hands the header's schematic to the canvas.
+        {
+            var host = new TimedCanvasHost();
+            var planner = new VisualPlanner(new FakeLlm(StreamingText, Fixture("f35b-schematic.json")) { ChunkChars = 16 });
+            var report = await LessonTurn.RunAsync(planner, host, new RecordingSpeaker(),
+                Request("can you draw the full jet in 3D?") with { Scene3d = ModelLibrary.ToCatalog(), SchematicGeometry = Schematics.Check });
+            failures = Check(report.Outcome == LessonTurnOutcome.Played && report.Plan!.ReleasedBeats == 6 && host.Canvas.Schematics == "f35b" && host.Canvas.Beats.Count == 6,
+                $"a streamed lesson with a schematic hands it to the canvas before drawing all 6 beats ({report.Outcome}, schematics '{host.Canvas.Schematics}')", failures);
+        }
+
         return Summarize(failures, "TURN STREAM OK");
     }
 
@@ -113,8 +124,13 @@ internal static partial class LessonTurnSmokeHost
     }
 
     /// <summary>Records each beat it draws and when, measured from the start of the turn's planning.</summary>
-    private sealed class TimedCanvas : ILessonCanvas, IAsyncDisposable
+    private sealed class TimedCanvas : ILessonCanvas, ISchematicCanvas, IAsyncDisposable
     {
+        /// <summary>The ids of the schematics the player last handed over (DEC-050), comma-joined.</summary>
+        public string? Schematics { get; private set; }
+
+        public void UseSchematics(IReadOnlyList<SchematicModel> schematics) => Schematics = string.Join(",", schematics.Select(s => s.Id));
+
         private readonly Stopwatch _sinceCreated = Stopwatch.StartNew();
 
         public Stopwatch Clock { get; } = new();

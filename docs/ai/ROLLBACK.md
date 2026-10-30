@@ -411,3 +411,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `ea61e61` (the commit before this step).
 - **Files to restore:** `git checkout ea61e61 -- src/Intelligence/HeyGanesh.VisualLessonEngine/Runtime src/Experience/HeyGanesh.LessonSession src/Experience/HeyGanesh.App tools/LessonTurnSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new smoke file (`git status` lists them).
 - **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` -> 0/0; LessonSmoke play rows, LessonTurnSmoke offline modes with their old counts (G-15 32 PASS lines); the local CI runner reports 17 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (planner evaluation set, 30 cases + automatic checks, build sequence step 7a, DEC-043)
+
+- **Change:** new verification host `tools/PlannerEval` (not in the product, not in `HeyGanesh.sln`, like every other host): `eval-set-v1.json` (30 cases, six verbatim from the HeyClicky reference video), `EvalSet.cs` (load + refuse a malformed set), `EvalChecks.cs` (pure checks K-1..K-11 over a `PlanResult`), `seeds.json` (answers built to fail one check each, plus passing answers), rows PE-1 `--assert-set` and PE-2 `--assert-checks`; CI gate G-22. Docs: DEC-043, TEST-CHECKLIST, CI.md, AGENTS.md, ARCHITECTURE, FEATURE-007, HANDOVER, plan. No product code changes.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `72c3de1` (the commit before this step).
+- **Files to restore:** delete `tools/PlannerEval/`; `git checkout 72c3de1 -- .github/workflows/ci.yml AGENTS.md docs/ai`; delete `docs/ai/plans/2026-10-30-planner-eval-v1.md` only if the plan is abandoned too.
+- **Re-check after revert:** LessonPlannerSmoke `--assert-stream` exit 0; the local CI runner reports 17 gates, all exit 0.

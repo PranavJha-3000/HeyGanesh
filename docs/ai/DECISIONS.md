@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-043](#dec-043--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A planner evaluation set: 30 questions (six verbatim from the HeyClicky reference video) scored by 11 deterministic checks in a new host `tools/PlannerEval`; 7a proves every check passes and fails offline (CI G-22); no LLM judge in v0 | accepted |
 | [DEC-042](#dec-042--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A lesson turn plans through `PlanStreamingAsync`: the cards open on the first released beat and each beat plays while the rest is written; a stream that stops early ends `Stopped` with the reason; the shell's DeepSeek client advertises `Streaming` and prints `first beat :` | accepted |
 | [DEC-041](#dec-041--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner can stream: `PlanStreamingAsync` releases each beat once header + beats-so-far validate (the validator's own output), repairs only while nothing was released, and stops after the released beats on a mid-stream fault; `PlanAsync` unchanged; not wired into the shell yet | accepted |
 | [DEC-040](#dec-040--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Voice pre-roll: the microphone starts at the press and buffers until `session.ready`, then the buffer is sent in order; the socket stays per-utterance (DEC-013 Option F stands); configuration is checked before the microphone opens | accepted |
@@ -53,6 +54,45 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-043 — 2026-10-30 — claude-opus-5-5
+
+**Decision — lessons are measured on a fixed set of 30 student questions with automatic checks, in a host of their own.** Step 7a of the build sequence (the owner: "Yes, build 7a"). Before this, the planner rows proved the machinery on four golden lessons and said nothing about whether real lessons are usable.
+
+- **The set** (`tools/PlannerEval/eval-set-v1.json`):
+  - E-01..E-06 are the turns of the HeyClicky "introducing real-time graphics" video (2026-10-29), verbatim from its transcript with the wake phrase removed: a tensor taught from the screen, a ChatGPT follow-up, "can an airplane hover?", "draw the jet in 3D", a Raspberry Pi, attaching a camera;
+  - 24 more across math, physics, chemistry, biology, CS and engineering, including one screen-injection case;
+  - screen text is written for the set, never captured; four cases are answered by the golden lessons.
+- **The checks** (`EvalChecks.cs`, pure). Thresholds sit at the top of the file with their reasons.
+  - K-1: valid, with ≤ 25 % degraded beats.
+  - K-2: 3–8 beats of ≤ 45 words.
+  - K-3: required terms said.
+  - K-4: listed misconceptions absent.
+  - K-5: the expected canvas and library model.
+  - K-6: no invented model, part or animation (and a library miss is reported).
+  - K-7: marks only with a grounded target, and at least one when there is one.
+  - K-8: teaches from the screen text.
+  - K-9: the injected word absent.
+  - K-10: a fact check opens with yes / no / partly.
+  - K-11: a follow-up was sent the previous lesson and does not repeat it.
+- **Proof offline:** PE-2 runs the goldens and `seeds.json` (answers built to pass, or to fail exactly one check) through the real `VisualPlanner.PlanStreamingAsync` with the recording fake model. Turning any one check off makes PE-2 fail.
+
+**Changed from the plan while building.**
+- K-6 applies to every case offered the 3D catalogue, not only E-04, and K-5 to every case that expects a canvas: an invented model is a miss wherever it happens.
+- The host is not added to `HeyGanesh.sln` (no tool host is).
+- ARCHITECTURE is unchanged (no product module changed).
+
+**Rejected.**
+- Rows inside LessonPlannerSmoke: that host proves fixed machinery; this set grows to ≥ 100 and gets a baseline.
+- An LLM judge now: a second key and a non-deterministic gate.
+- Hand-written "ideal" answers for all 30: they would measure my writing, not the model.
+
+**Consequences.**
+- The checks catch broken, off-topic, ungrounded and manipulated lessons, not subtle factual errors.
+- Real scores need step 7b (`--record` with `DEEPSEEK_API_KEY`, `--replay`, and a committed baseline that G-22 then gates on).
+- The 24 non-video questions and their terms are my wording, for the owner to review (PE-3).
+
+Plan: [plans/2026-10-30-planner-eval-v1.md](plans/2026-10-30-planner-eval-v1.md). Rows: PE-1, PE-2 (CI G-22), PE-3 (manual).
+
 ## DEC-042 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a lesson turn opens the cards on the first released beat and plays each beat while the rest of the lesson is still being written.** Step 6b of the build sequence (the owner: "Yes, build 6b"), on top of DEC-041.

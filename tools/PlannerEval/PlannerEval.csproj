@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Planner evaluation set (build sequence step 7a, DEC-043).
+
+    Not product code: 30 student questions (eval-set-v1.json) and the automatic checks every planned
+    lesson is scored on. 7a proves the checks offline: golden lessons pass, answers built to break one
+    check fail exactly that check (seeds.json). The answers come from the planner host's recording
+    FakeLlmClient (linked, not copied); live recording and replay are step 7b.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.PlannerEval</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.PlannerEval</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
+    <!-- 3D cases are offered the real catalogue, as the App Shell offers it. The planner itself never references it. -->
+    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\LessonPlannerSmoke\FakeLlmClient.cs" Link="FakeLlmClient.cs" />
+    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="eval-set-v1.json;seeds.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

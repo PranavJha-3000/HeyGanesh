@@ -191,6 +191,11 @@ dotnet build tools/TurnRouterSmoke -c Debug
 tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnRouterSmoke.exe --assert-request
 #   -> 14 PASS, exit 0   (also: --assert-source 3, --assert-map 13, --assert-gate 7, --assert-errors 5, --assert-legs 10)
 
+# Planner evaluation set (DEC-043 -- 30 questions + automatic checks K-1..K-11; offline, recording fake model, no key).
+dotnet build tools/PlannerEval -c Debug
+tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --assert-checks
+#   -> 21 PASS, exit 0   (also: --assert-set 7)
+
 # App Shell lesson leg (DEC-027): --lesson teaches with drawn, spoken cards instead of the Tutor's prose.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --lesson --question "x"
 #   keys unset -> header 'lesson : ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING ...', KEY ERROR (Element Selection), exit 12 (SH-18)

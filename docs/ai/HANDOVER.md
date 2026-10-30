@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (planner evaluation set, build sequence step 7a, DEC-043)
+
+Did: New host `tools/PlannerEval`. It has `eval-set-v1.json` (30 cases; E-01..E-06 verbatim from the HeyClicky reference video), `EvalSet` (loads the set and refuses a malformed one), pure `EvalChecks` K-1..K-11, and `seeds.json` (16 answers that pass or break exactly one check). Rows: PE-1 `--assert-set` (7), PE-2 `--assert-checks` (21), CI G-22. No product code changed.
+Left: 7b (live `--record` with `DEEPSEEK_API_KEY`, offline `--replay`, a committed baseline that G-22 gates on); PE-3, the owner's review of the 24 non-video questions; step 8. Open item: a Turn Router evaluation over the same set (an expected route per case). Twelve commits are local, ahead of PR #1; not pushed.
+Watch: Seed order matters: a follow-up is sent the lesson last planned for its previous case. A replacement seed must match its golden text exactly once, or the row throws. Term matching is whole-word, so "on" never matches "one". HeyClicky's model is OpenAI GPT-6.1 Sol at the Ultrafast tier; ours is DeepSeek V4.1 Flash. That choice is the owner's, and 7b's live run is the way to compare.
+Next: Plan step 7b (record live, replay offline), or review the set (PE-3).
+Verified: PlannerEval builds -warnaserror 0/0; PE-1 7 PASS, PE-2 21 PASS; turning off each of K-1..K-11 in turn makes PE-2 exit 1 (restored byte for byte); usage exit 2; the local CI runner with 18 gates.
+
 ## 2026-10-30 · claude-opus-5-5 (cards open and play as beats arrive, build sequence step 6b, DEC-042)
 
 Did: `LessonTurn` plans through `PlanStreamingAsync`; when a beat is released the cards open and `LessonPlayer.PlayStreamAsync` plays each beat while the rest is written; unreleased beats of the finished plan are queued at the end; a `StreamNote` ends the turn Stopped with the reason. `PlayAsync` shares the same loop (play rows unchanged). `LessonTurnReport.FirstBeatShown`. The shell's DeepSeek client advertises `Streaming` and prints `streamed :` and `first beat :`. LT-10 `--assert-turn-stream` (10, CI G-15).

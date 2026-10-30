@@ -168,3 +168,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-preroll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-22: the planner evaluation set (DEC-043) - the set is well formed, and every automatic check both passes
+      # and fails on golden and seed answers through the real planner and a recording fake model; no key.
+      - name: G-22 Planner evaluation set
+        shell: pwsh
+        run: |
+          dotnet build tools\PlannerEval -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($m in @('--assert-set', '--assert-checks')) {
+            & 'tools\PlannerEval\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PlannerEval.exe' $m
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }

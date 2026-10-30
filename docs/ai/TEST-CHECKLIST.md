@@ -260,6 +260,14 @@ Verification host: `tools/PartLibrarySmoke` (offline; reuses `tools/LessonSmoke/
 | PL-4 | `ModelLibrary.ToCatalog()` holds exactly the V1 ids/parts/animations; `engine-3d.json` on `four-stroke-engine` → Valid against it; `engine.flux-capacitor` → `part.unknown`; `engine-test` → `model.unknown`; no model `Reviewed` | `--assert-catalog` → 6 PASS, `CATALOG OK`, exit **0** | ✅ automated (verified 2026-10-29, exit 0) |
 | PL-5 | Review dump: every model's basis, parts, descriptions, primitive counts and animations as plain text | `--dump all` (or `--dump <model>`; unknown model → exit **2**) | 🧑 manual — the owner reads it before any model is marked `Reviewed` |
 
+## Planner evaluation checks
+
+| ID | What it proves | Command → expected | Status |
+|---|---|---|---|
+| PE-1 | The evaluation set (DEC-043) is scoreable: 30 cases in `eval-set-v1` with no problems; six subjects; six cases from the reference video, three of them follow-ups; four cases answered by golden files that exist; 3D cases plus a library miss and an injection case. A set with a duplicate id, a follow-up to a later case and an invented model is refused with exactly those three problems | `PlannerEval --assert-set` → 7 PASS, `EVAL SET OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0; CI G-22) |
+| PE-2 | Every automatic check K-1..K-11 is real: the four golden lessons pass their cases; 16 seed answers, run through the real streaming planner and a recording fake model, each pass or fail exactly the one check they were built to break; every check is seen both passing and failing | `PlannerEval --assert-checks` → 21 PASS, `EVAL CHECKS OK`, exit **0** | ✅ automated (verified 2026-10-30, exit 0; turning any one check off fails it; CI G-22) |
+| PE-3 | Owner review of the set: the 24 non-video questions, their required terms and misconceptions read as fair to a student | read `tools/PlannerEval/eval-set-v1.json` | ⏳ manual, not done |
+
 ## Turn Router checks
 
 Verification host: `tools/TurnRouterSmoke` (offline; recording fake `IJevClient`, scripted answers, no key). Build library then host sequentially (CS2012); read exit codes from `tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnRouterSmoke.exe`.

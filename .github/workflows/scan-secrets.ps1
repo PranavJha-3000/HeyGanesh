@@ -25,6 +25,7 @@ if ($ZeroNuGet) {
         "src\Platform\HeyGanesh.ScreenOverlay\HeyGanesh.ScreenOverlay.csproj",
         "src\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj",
         "src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj",
+        "src\Foundation\HeyGanesh.Notes\HeyGanesh.Notes.csproj",
         "src\Providers\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj",
         "src\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj",
         "src\Providers\HeyGanesh.Providers.Anthropic\HeyGanesh.Providers.Anthropic.csproj"

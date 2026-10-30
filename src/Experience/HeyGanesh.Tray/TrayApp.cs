@@ -31,6 +31,8 @@ internal sealed class TrayApp : ApplicationContext
     private readonly RegisteredWaitHandle? _showWait;
     private readonly StartupEntry? _startup;
     private readonly ToolStripMenuItem? _startupItem;
+    private readonly RecentLessonsSource? _recentSource;
+    private RecentLessons? _recent;
     private KeyScreen? _keyScreen;
     private volatile bool _keyScreenOpen;
     private bool _quitting;
@@ -40,10 +42,11 @@ internal sealed class TrayApp : ApplicationContext
     /// <param name="showRequested">Set by a second launch (SingleInstance); null when nothing can signal.</param>
     /// <param name="openKeysIfMissing">Open the key screen at start when a required key is missing (the product: true).</param>
     /// <param name="startup">The start-at-login entry; null shows no such item (the product passes this user's Run key).</param>
-    public TrayApp(Func<CancellationToken, Action, Func<bool>, Task<int>> runShell, KeyRing keys, string logFolder, WaitHandle? showRequested, bool openKeysIfMissing = false, StartupEntry? startup = null)
+    public TrayApp(Func<CancellationToken, Action, Func<bool>, Task<int>> runShell, KeyRing keys, string logFolder, WaitHandle? showRequested, bool openKeysIfMissing = false, StartupEntry? startup = null, RecentLessonsSource? recent = null)
     {
         _keys = keys;
         _startup = startup;
+        _recentSource = recent;
         _logFolder = logFolder;
         _ = _ui.Handle; // creates the window BeginInvoke posts to, on this (the UI) thread
 
@@ -58,6 +61,11 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         menu.Items.Add(new ToolStripMenuItem("Keys…", null, (_, _) => OpenKeys()));
+        if (_recentSource is not null)
+        {
+            menu.Items.Add(new ToolStripMenuItem("Recent lessons…", null, (_, _) => OpenRecent()));
+        }
+
         if (_startup is not null)
         {
             _startupItem = new ToolStripMenuItem("Start at login", null, (_, _) => ToggleStartup());
@@ -90,7 +98,7 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         Console.WriteLine("tray: icon shown; the shell is starting");
-        var run = Task.Run(() => runShell(_stop.Token, () => Post(OnHookLive), () => _keyScreenOpen));
+        var run = Task.Run(() => runShell(_stop.Token, () => Post(OnHookLive), () => TriggerPaused));
         if (openKeysIfMissing && new KeyScreenModel(_keys).NeedsSetup)
         {
             Console.WriteLine("tray: a required key is missing; opening the key screen");
@@ -113,7 +121,51 @@ internal sealed class TrayApp : ApplicationContext
     internal KeyScreen? OpenKeyScreen => _keyScreen;
 
     /// <summary>What the shell is told before each Ctrl+Alt turn. For TK-2.</summary>
-    internal bool TriggerPaused => _keyScreenOpen;
+    internal bool TriggerPaused => _keyScreenOpen || (_recent?.Replaying ?? false);
+
+    /// <summary>The open Recent lessons window, or null. For RL-4.</summary>
+    internal RecentLessons? OpenRecentLessons => _recent;
+
+    /// <summary>
+    /// The menu's Recent lessons… (DEC-060): one window at a time; a second click brings it forward. The window opens
+    /// its own connection to the notes store (WAL lets the shell keep writing). A store that cannot open is said in a
+    /// balloon and the log, never thrown.
+    /// </summary>
+    internal void OpenRecent()
+    {
+        if (_quitting || _recentSource is null)
+        {
+            return;
+        }
+
+        if (_recent is not null)
+        {
+            _recent.Activate();
+            return;
+        }
+
+        RecentLessonsModel model;
+        try
+        {
+            model = new RecentLessonsModel(_recentSource.Open());
+        }
+        catch (Exception ex) when (ex is Notes.NotesException or IOException or UnauthorizedAccessException)
+        {
+            Console.WriteLine($"tray: recent lessons unavailable ({ex.Message})");
+            _icon.ShowBalloonTip(4000, "Hey Ganesh", "Saved lessons cannot be opened right now. The details are in the log.", ToolTipIcon.Warning);
+            return;
+        }
+
+        _recent = new RecentLessons(model, plan => _recentSource.Replay(plan, _stop.Token));
+        _recent.FormClosed += (_, _) =>
+        {
+            _recent.Dispose();
+            _recent = null;
+        };
+        Console.WriteLine("tray: recent lessons open");
+        _recent.Show();
+        _recent.Activate();
+    }
 
     /// <summary>The "Start at login" item's text and check mark. For TS-2.</summary>
     internal (string Text, bool Checked)? StartupItem => _startupItem is null ? null : (_startupItem.Text ?? string.Empty, _startupItem.Checked);
@@ -244,6 +296,7 @@ internal sealed class TrayApp : ApplicationContext
 
         _icon.Visible = false;
         _keyScreen?.Close();
+        _recent?.Close();
         if (!_quitting && ExitCode != 0)
         {
             MessageBox.Show($"Hey Ganesh stopped (exit {ExitCode}). The details are in the log:\n{_logFolder}", "Hey Ganesh", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -278,3 +331,6 @@ internal sealed class TrayApp : ApplicationContext
         base.Dispose(disposing);
     }
 }
+
+/// <summary>Where the Recent lessons window gets its notes and how it replays one (DEC-060). Null: no menu item.</summary>
+internal sealed record RecentLessonsSource(Func<Notes.NotesStore> Open, Func<string, CancellationToken, Task<string>> Replay);

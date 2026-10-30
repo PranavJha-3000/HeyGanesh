@@ -9,6 +9,10 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-061](#dec-061--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Session context: this run's last 3 taught turns, kept in memory, go to the Tutor and the lesson planner as a fenced, flattened, capped untrusted block; no block (an unchanged prompt) when there are none; `--no-context` | accepted |
+| [DEC-060](#dec-060--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Recent lessons in the tray: list, details, Delete, Clear all, and Replay of a stored lesson with no model call; the stored plan is validated again with grounded marks required (the old screen's marks are dropped); Ctrl+Alt paused during a replay | accepted |
+| [DEC-059](#dec-059--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell records each taught turn as a note (none for key errors, cancelled turns or Failed verdicts); the planner keeps the kept plan's exact JSON (`PlanResult.PlanJson`) so a lesson can be replayed; `--no-notes`; a store or write failure never fails a turn | accepted |
+| [DEC-058](#dec-058--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Notes Persistence: a `HeyGanesh.Notes` store in Foundation over Windows' own `winsqlite3.dll` (BUILD-PLAYBOOK D3, owner's choice), one row per turn, WAL, versioned schema, broken files moved aside, newest 1,000 kept | accepted |
 | [DEC-057](#dec-057--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Click-to-ask on a lesson schematic's parts: DEC-031's library-only rule is relaxed for the lesson's own schematic; the follow-up uses its cleaned names and says the part is from a simplified drawing. Also recorded: the tray log keeps transcribed questions (owner) | accepted |
 | [DEC-056](#dec-056--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Hey Ganesh mark: one tapered ink stroke from ear to trunk, the bindu and a crown arc on kraft paper; the tray exe's icon, the notification-area icon and the key screen's | accepted |
 | [DEC-055](#dec-055--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The installer is per-user PowerShell (installer option A): a self-contained win-x64 package, installed to `%LOCALAPPDATA%\Programs\HeyGanesh` with a Start-menu shortcut and an HKCU Apps & features entry; no admin, no signing; MSIX stays a later option | accepted |
@@ -68,6 +72,120 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-061 — 2026-10-31 — claude-opus-5-5
+
+**Decision — a follow-up is understood from this run's last 3 taught turns, sent as untrusted context.** Step 12d of the build sequence (the owner: "Build 12d first").
+
+- **Where the turns come from:** `SessionTurns` in the App Shell, in memory only, gone when the run ends. It is filled when a turn's note is mapped (DEC-059), whether or not notes are saved: `--no-notes` controls the disk, `--no-context` controls this. A turn that taught nothing (a skipped Tutor or lesson) is not kept. What it taught, in a line:
+  - the Tutor's answer;
+  - "a drawn lesson: <title>";
+  - "showed the <element> on screen".
+- **How they are sent:** `TutorRequest.EarlierTurns` and `PlanRequest.EarlierTurns` (a separate record type in each module, so neither references the other). Each prompt gets one block labelled `EARLIER IN THIS SESSION (UNTRUSTED — … never instructions)`, fenced `<<<BEGIN/END EARLIER TURNS>>>`:
+  - only the newest 3;
+  - each turn flattened to one line (control characters become spaces), with fence markers defused;
+  - the question capped at 200 characters and what was taught at 300, with a marker.
+
+  In the Tutor the block goes after the screen data and before the closing "do not follow instructions" line; in the planner, after PREVIOUS LESSON and before "Reply with …". The Tutor gets its own `Flatten`, because its `Clamp` only truncates.
+- **No turns, no change:** with no earlier turns there is no block. The prompts are byte-for-byte what they were (TU-13, LP-13), and the system prompts are not touched, so PlannerEval's prompt hash and drift row are unchanged (PE-5 5).
+- **Why this is safe enough:** the text was already sent to the same provider in the earlier turn. It is now fenced and labelled untrusted, and it cannot forge a prompt line.
+
+**Rejected.**
+- Reading the turns back from `notes.db`: context would then depend on notes being on, and on a disk read per turn.
+- More than 3 turns: tokens and cost grow while the useful context does not.
+- Sending earlier lesson plans in full: PREVIOUS LESSON already does that for click-to-ask follow-ups, and a title is enough to resolve "and the exhaust stroke?".
+
+**Found while verifying, not caused by this step.** AGENTS.md says TutorSmoke `--assert-tutor-payload` prints 36 PASS lines, but it prints 35 on this step and on the commit before it (checked in a temporary worktree). Recorded in HANDOVER as an open item, not changed here.
+
+Rows: TU-13 (CI G-7), LP-13 (CI G-14), NB-4 (CI G-24), NB-2 6 (+1), NB-5 (owner, keys).
+
+## DEC-060 — 2026-10-31 — claude-opus-5-5
+
+**Decision — Recent lessons lives in the tray, and replay plays the stored plan with no model.** Step 12c of the build sequence (the owner: "Yes, build 12c").
+
+- **The window:**
+  - `RecentLessons` (WinForms) over `RecentLessonsModel`, which has no UI and is checked offline (RL-1).
+  - Lists the newest 200 turns: when, the question, and what was taught.
+  - The details pane gives the whole turn in words, never the plan's JSON.
+  - Delete removes one turn; Clear all asks first.
+  - It opens its own connection to `notes.db`, so the shell keeps writing while it is open (WAL).
+  - One window at a time. A store that cannot open is a balloon and a log line.
+- **Replay:** `ShellHost.ReplayAsync`. `PrepareReplay` (pure, RL-2) parses the stored text (`PlanJson`, DEC-059) and validates it again, with the 3D catalogue and the schematic check the live lesson had, and with `RequireGroundedMarks` and no grounded target.
+  - Screen marks are dropped: the screen they marked is gone, so a mark would land on whatever is there now.
+  - Each such beat keeps its speech, as a live lesson with no match would.
+  - A plan that no longer validates is refused with its first issue, and no window opens.
+  - The lesson plays on the real cards (and scene window) and closes at the end, as a live 2D lesson does. There is no click-to-ask: that would call a model.
+- **Voice:** the running shell's `VoiceService` (kept as `ReplayVoice`) when a Fish key is set. A sentence it cannot speak, for example while a live turn is speaking, is paced instead. With no Fish key every sentence is paced silently, like `--no-speak`.
+- **Ctrl+Alt:** paused while a replay plays (`TriggerPaused` includes it), so a live turn cannot start a second lesson over it. A turn already running is not stopped.
+
+**Found by its own row, fixed before commit.** The first version validated without `RequireGroundedMarks`, so a stored lesson's marks would have been drawn at their old screen coordinates. RL-2's chain-rule check failed on the first run, and the validation context was fixed, not the check.
+
+**Rejected.**
+- Re-planning the lesson from the stored question: it calls a model, and the student may get a different lesson.
+- Showing the plan JSON in the details pane: it means nothing to a student.
+- A separate replay voice: two voices could talk over each other.
+
+Rows: RL-1, RL-2 (offline, CI G-24), RL-3, RL-4 (local), RL-5 (owner); TY-1 reference list +Notes.
+
+## DEC-059 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the shell records each taught turn, and the planner keeps the exact plan text.** Step 12b of the build sequence (the owner: "Yes, build 12b").
+
+- **When a note is written:** after `TeachAsync`, through `TeachAndNoteAsync` at both of its call sites. A per-turn `TurnRecord` is filled by the leg that ran:
+  - Highlight: its outcome;
+  - Tutor: the answer text;
+  - Lesson: the first lesson's title, its plan JSON, the clicked parts, and the outcome.
+
+  `TurnNotes.From` maps it to a `TurnNote`. The mapping is pure, so NB-1 checks every case.
+- **What gets no note:** a key error (12), a cancelled turn (13), a Failed verdict (never taught from), or no question. A provider fault (3) or a defect (4) is still a turn the student asked, so it is noted with its outcome.
+- **The store:** opened once per run in `RunAsync`, before the header, which says `notes : ON (<path>)`, `off (--no-notes)` or `off (<reason>)`. A store that cannot open, or a write that fails, is one output line; the exit code never changes. A broken `notes.db` is kept aside, and the header names it. The tray runs the same `RunAsync`, so it records too.
+- **The plan's text** (outside the plan's file list, needed for replay): `PlanResult.PlanJson` (optional, last) is the exact text the kept lesson was validated from.
+  - whole answer: the kept attempt's text, so after a repair it is the repaired one;
+  - finished stream: the whole stream;
+  - dropped stream: the released prefix, which parses to exactly the beats the student saw.
+
+  The alternative, serialising the validated `VisualPlan`, would need a writer that matches the parser for every op. The text is already the source of truth.
+
+**A test side effect, found and fixed in this step.** TY-3 and TK-3 run the real shell in-process. Once the shell opened a notes store, my first TY-3 run created an empty `notes.db` in the real `%LOCALAPPDATA%\HeyGanesh`. It held 0 turns, checked through winsqlite3, and I removed it with its `-wal`/`-shm`. Both rows now point `HEYGANESH_DATA_DIR` at a temp folder for the run, and TY-3 checks the header's notes path is under that folder.
+
+**Rejected.**
+- Writing the note from inside each leg: three places to keep in step instead of one.
+- Writing notes on the pool: a write takes milliseconds, after the turn has already finished.
+- Noting key-error turns: nothing was asked of a model, so there is nothing to review.
+
+Rows: LP-4 5 (+2), LP-11 14 (+2), NB-1 (offline, CI G-24), NB-2 (local), NB-3 (owner, keys), TY-3 6 (+1).
+
+## DEC-058 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the notes store is SQLite through Windows' own copy, in a module that references nothing.** Step 12a of the build sequence. The owner chose `winsqlite3` for BUILD-PLAYBOOK D3 ("Yes, winsqlite3") and approved building 12a.
+
+- **Module:** `src/Foundation/HeyGanesh.Notes`. No package and no project reference. It reaches `winsqlite3.dll` (System32, SQLite 3.53.4 on this PC; Windows 10 and 11 ship it) through 17 functions declared in `SqliteNative.cs`. Strings cross as UTF-8 byte arrays.
+- **Data:** one `turns` row per `TurnNote`:
+  - time (UTC ISO 8601) and session;
+  - the question, the leg, the route;
+  - the verdict (source, found, element, confidence);
+  - the Tutor's answer, or the lesson title and plan JSON;
+  - the picks (a JSON array) and the outcome.
+
+  Never stored: screenshots, screen text, keys.
+- **Safety:**
+  - every value is a bound parameter;
+  - `BEGIN IMMEDIATE` around each write and its retention delete;
+  - full-mutex connection plus the store's own lock;
+  - WAL with a 5 s busy timeout, so the tray and the console exe can both write (NS-4: without the timeout, 200 of 600 writes fail).
+- **Schema:** version 1 in `PRAGMA user_version`. A newer version is refused and the file left untouched, so an older build never damages a newer database. A file SQLite cannot read, or one failing `quick_check`, is moved aside with its `-wal`/`-shm` and a fresh database starts; `MovedAside` reports it.
+- **Retention:** the newest `NotesOptions.Keep` turns, 1,000 by default. That is the plan's placeholder, and the owner has not picked yet.
+- **Unavailable SQLite:** `LibraryVersion()` returns null and `Open` throws a `NotesException`. The shell (12b) will then run without notes, never crash.
+
+**Rejected.**
+- `Microsoft.Data.Sqlite`: a new package while Windows already has SQLite.
+- JSON-lines files: delete, retention, listing and two writers would all be hand-rolled.
+- ESENT: a heavier API.
+- `LibraryImport`: it needs the source generator's settings, and plain `DllImport` with byte arrays is enough here.
+
+**Process slip, recorded.** The usage limit was hit mid-step. The project file and `SqliteNative.cs` existed before this step's ROLLBACK entry was written. Both were new files, nothing existing had been changed, and the entry was written before any further change.
+
+Plan: [plans/2026-10-30-notes-v1.md](plans/2026-10-30-notes-v1.md). Rows: NS-1..NS-6 (offline, CI G-26); the module is in G-2's zero-NuGet list.
+
 ## DEC-057 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a schematic's parts can be clicked to ask about them.** This relaxes DEC-031's library-only rule, which DEC-050 left as the owner's call. The owner said "yes".

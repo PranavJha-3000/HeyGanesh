@@ -32,6 +32,8 @@
     <ProjectReference Include="..\HeyGanesh.App\HeyGanesh.App.csproj" />
     <!-- The menu's key lines use Security's KeyRing directly (presence only), so the reference is stated, not inherited. -->
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+    <!-- Recent lessons (DEC-060) reads the notes store directly, so this reference is stated too. -->
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Notes\HeyGanesh.Notes.csproj" />
   </ItemGroup>
 
   <ItemGroup>

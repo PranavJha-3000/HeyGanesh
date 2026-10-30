@@ -103,6 +103,9 @@ internal static partial class ShellHost
             Console.WriteLine();
         }
 
+        // DEC-059: the notes store is opened before the header so the header can say where notes go (or why not).
+        using var notes = OpenNotes(options);
+        Notes = notes;
         PrintHeader(options);
 
         if (!ScreenCaptureService.IsCaptureSupported())
@@ -174,6 +177,8 @@ internal static partial class ShellHost
         // is disposed after the service that speaks through it (a service never disposes a client it was given).
         using var tts = new FishTtsClient(new FishTtsOptions { ApiKey = Keys.Reader("fish") });
         using var voice = new VoiceService(tts: tts);
+        // DEC-060: a replay from the tray speaks through this same voice.
+        ReplayVoice = voice;
 
         using var hotkey = new HotkeyMonitor();
 

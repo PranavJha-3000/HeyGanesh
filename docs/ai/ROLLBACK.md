@@ -599,3 +599,49 @@
   - Docs: DEC-057, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, HANDOVER.
 - **Rollback point:** `7da427a`. `git checkout 7da427a -- src/Experience/HeyGanesh.LessonSurface src/Experience/HeyGanesh.LessonSession tools/LessonTurnSmoke tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** LessonTurnSmoke `--assert-followup-pick` 12; LessonSurfaceSmoke `--assert-pick` 9 and `--assert-scene-schematic` 10.
+
+## 2026-10-30 · claude-opus-5-5 (the notes store, build sequence step 12a, DEC-058)
+
+- **Change:**
+  - New `src/Foundation/HeyGanesh.Notes`: `NotesStore` over Windows' own `winsqlite3.dll` (P/Invoke, no package).
+  - New `tools/NotesSmoke` (NS-1..NS-6, all offline, temp folders); CI gate G-26; the module is added to G-2's zero-NuGet list (`scan-secrets.ps1`) and to the solution.
+  - Docs: DEC-058, ARCHITECTURE, FLOW, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+  - Nothing calls the store yet (12b wires the shell), so no existing behaviour changes.
+- **Rollback point:** branch `feat/notes-v1` at `e776699` (the commit before this step).
+- **Files to restore:** `git checkout e776699 -- HeyGanesh.sln .github/workflows AGENTS.md docs/ai`; delete `src/Foundation/HeyGanesh.Notes` and `tools/NotesSmoke`.
+- **Re-check after revert:** `dotnet build -c Debug -warnaserror` 0/0; the local CI runner reports 21 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the shell records each turn, build sequence step 12b, DEC-059)
+
+- **Change:**
+  - LessonPlanner: `PlanResult.PlanJson` (optional, last), the exact JSON text the kept plan was validated from, on both the whole and the streamed path.
+  - App Shell: references `HeyGanesh.Notes`; opens the store once per run (header line `notes :`, `--no-notes`); a per-turn `TurnRecord` filled by the legs; `TurnNotes.From` maps a finished turn to a `TurnNote` (none for a key error or a cancelled turn); a failed write is a log line, never a failed turn.
+  - Rows: LessonPlannerSmoke (PlanJson checks), TraySmoke `--assert-notes-map` (offline, CI G-24) and `--assert-notes-shell` (local, the real exe).
+  - Docs: DEC-059, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/notes-v1` at `09d4747` (the commit before this step).
+- **Files to restore:** `git checkout 09d4747 -- src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **If notes were recorded and you want them gone:** delete `%LOCALAPPDATA%\HeyGanesh\notes.db` (and its `-wal`/`-shm`).
+- **Re-check after revert:** App `--once --question "x"` exit 12; TraySmoke `--assert-source` 8; the local CI runner reports 22 gates, all exit 0.
+
+## 2026-10-31 · claude-opus-5-5 (Recent lessons and replay in the tray, build sequence step 12c, DEC-060)
+
+- **Change:**
+  - App Shell: `ShellHost.PrepareReplay` (pure: parse and validate a stored plan, or say why not) and `ShellHost.ReplayAsync` (play it on the cards with the shell's voice, or paced silently without a Fish key; no model call). The running shell's `VoiceService` is kept for it.
+  - Tray: `RecentLessonsModel` (no UI) and the `RecentLessons` window (list, details, Replay, Delete, Clear all); a "Recent lessons…" menu item; Ctrl+Alt is paused while a replay plays.
+  - TraySmoke: RL-1 and RL-2 (offline, CI G-24), RL-3 and RL-4 (local); the lesson fixtures are linked in.
+  - Docs: DEC-060, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/notes-v1` at `7d5ea59` (the commit before this step).
+- **Files to restore:** `git checkout 7d5ea59 -- src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** TraySmoke `--assert-tray` 10, `--assert-notes-map` 6; the local CI runner reports 22 gates, all exit 0.
+
+## 2026-10-31 · claude-opus-5-5 (earlier turns as context for follow-ups, build sequence step 12d, DEC-061)
+
+- **Change:**
+  - TutorEngine: `TutorRequest.EarlierTurns` and an "EARLIER IN THIS SESSION" block in the user prompt, fenced, flattened and capped; absent when there are none (the prompt is then byte-for-byte as before).
+  - LessonPlanner: `PlanRequest.EarlierTurns` and the same block, same rules.
+  - App Shell: `SessionTurns` keeps this run's last 3 taught turns in memory (not from the database) and hands them to the Tutor and the planner; header line `context :`, `--no-context` turns it off.
+  - Rows: TutorSmoke `--assert-earlier`, LessonPlannerSmoke `--assert-earlier`, TraySmoke `--assert-session` (CI); the PlannerEval rows re-run for drift.
+  - Docs: DEC-061, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/notes-v1` at `79d6a92` (the commit before this step).
+- **Files to restore:** `git checkout 79d6a92 -- src/Intelligence/HeyGanesh.TutorEngine src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/TutorSmoke tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** TutorSmoke `--assert-prompt`, LessonPlannerSmoke `--assert-prompt` 10, PlannerEval `--assert-drift` 5; the local CI runner reports 22 gates, all exit 0.

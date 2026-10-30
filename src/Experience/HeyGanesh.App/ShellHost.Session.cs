@@ -129,7 +129,7 @@ internal static partial class ShellHost
             // into the teach/speak leg exactly as the drawn path below does.
             return guidance.Failed
                 ? 1
-                : await TeachAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
+                : await TeachAndNoteAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
         }
 
         try
@@ -161,7 +161,7 @@ internal static partial class ShellHost
         // first sends it here, not to the Tutor.
         return guidance.Failed
             ? 1
-            : await TeachAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
+            : await TeachAndNoteAsync(tutor, lesson, routing, voice, options, guidance, linked.Token).ConfigureAwait(false);
     }
 
     /// <summary>

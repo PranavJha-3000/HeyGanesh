@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for Notes Persistence (DEC-058). Not product code. Every row runs offline against a database
+    in a temporary folder (never the real %LOCALAPPDATA%/HeyGanesh/notes.db), through Windows' own winsqlite3.dll.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.NotesSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.NotesSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Notes\HeyGanesh.Notes.csproj" />
+  </ItemGroup>
+
+</Project>

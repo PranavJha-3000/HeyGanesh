@@ -158,6 +158,9 @@ internal static partial class TraySmokeHost
     private static async Task<int> RunAssertKeysPauseAsync()
     {
         var failures = 0;
+        // The shell opens its notes store (DEC-059): never let a test run reach the real data folder.
+        var savedData = Environment.GetEnvironmentVariable("HEYGANESH_DATA_DIR");
+        Environment.SetEnvironmentVariable("HEYGANESH_DATA_DIR", TempFolder("keys-pause-data"));
         var original = Console.Out;
         var captured = new StringWriter();
         Console.SetOut(TextWriter.Synchronized(captured));
@@ -179,6 +182,7 @@ internal static partial class TraySmokeHost
         finally
         {
             Console.SetOut(original);
+            Environment.SetEnvironmentVariable("HEYGANESH_DATA_DIR", savedData);
         }
 
         failures = Check(output.Contains("REFUSED: the key screen is open", StringComparison.Ordinal), "a Ctrl+Alt press while paused is refused, and says why", failures);

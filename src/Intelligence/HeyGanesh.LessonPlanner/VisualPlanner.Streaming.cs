@@ -39,6 +39,7 @@ public sealed partial class VisualPlanner
         var scanner = new PlanStreamScanner();
         var clock = Stopwatch.StartNew();
         LessonValidationResult? lastPrefix = null;
+        string? lastPrefixJson = null;
         var released = 0;
         TimeSpan? firstBeat = null;
         int input = 0, output = 0;
@@ -71,6 +72,7 @@ public sealed partial class VisualPlanner
                 }
 
                 lastPrefix = prefix;
+                lastPrefixJson = scanner.PrefixJson(scanner.Beats.Count);
                 for (; released < prefix.Plan.Beats.Count; released++)
                 {
                     firstBeat ??= clock.Elapsed;
@@ -82,7 +84,7 @@ public sealed partial class VisualPlanner
         {
             return new PlanResult(lastPrefix!, 1, prepared.Image is not null, prepared.ImageNote, _client.ModelId, input, output,
                 clock.Elapsed, lastPrefix!.Issues, null, released, firstBeat,
-                $"{ex.Kind}: the stream failed after {released} beat(s); the lesson stops there");
+                $"{ex.Kind}: the stream failed after {released} beat(s); the lesson stops there", lastPrefixJson);
         }
 
         var answer = new LlmResponse
@@ -102,6 +104,7 @@ public sealed partial class VisualPlanner
         }
 
         var final = _validator.Validate(VisualPlanParser.Parse(scanner.Text), prepared.Context);
+        var finalJson = scanner.Text;
         string? note = null;
         var agrees = final.Plan is { } plan && plan.Beats.Count >= released
             && Enumerable.Range(0, released).All(i => StreamedBeat.Fingerprint(plan.Beats[i]) == StreamedBeat.Fingerprint(lastPrefix!.Plan!.Beats[i]));
@@ -111,9 +114,10 @@ public sealed partial class VisualPlanner
             // plan disowns a beat the user already saw, the lesson stops after what was shown.
             note = "the finished plan disagrees with the beats already released; the lesson stops after them";
             final = lastPrefix!;
+            finalJson = lastPrefixJson;
         }
 
         return new PlanResult(final, 1, prepared.Image is not null, prepared.ImageNote, _client.ModelId, input, output,
-            clock.Elapsed, final.Issues, null, released, firstBeat, note);
+            clock.Elapsed, final.Issues, null, released, firstBeat, note, finalJson);
     }
 }

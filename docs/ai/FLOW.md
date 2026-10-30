@@ -356,6 +356,44 @@ Drawing (DEC-050):
       schematic part → its cleaned name and title, "a part of the simplified drawing in the last lesson"; neither → UnknownPart
 ```
 
+## Notes store (DEC-058; the shell records each taught turn since DEC-059)
+
+```
+NotesStore.Open(path = NotesStore.DefaultPath(), options)         src/Foundation/HeyGanesh.Notes/NotesStore.cs
+  LibraryVersion() null (no winsqlite3) → NotesException, "notes are off"
+  TryOpenHealthy: sqlite3_open_v2 (create, full mutex) → busy_timeout → user_version
+    > 1 → refused, file untouched (NotesException "written by a newer Hey Ganesh")
+    quick_check != ok, or NOTADB/CORRUPT on the way → MoveAside (notes.db[-wal,-shm] → .broken-<stamp>) → open fresh
+    journal_mode=WAL; version 0 → CREATE TABLE turns + index → user_version = 1
+Record(note): BEGIN IMMEDIATE → INSERT (every value bound ?1..?14) → DELETE all but the newest Keep → COMMIT
+Recent(n) / Get(id): SELECT ... ORDER BY id DESC → TurnNote (picks as a JSON array)
+Delete(id) / Clear() / Count()
+
+Shell (DEC-059):
+  RunAsync → OpenNotes (--no-notes → off; NotesException/IO → off with the reason) → Notes → header "notes : ..."
+  RunSessionAsync → verdict not Failed → TeachAndNoteAsync:
+    record = new TurnRecord → TeachAsync(..., record): route = leg.Why;
+      Highlight → leg, outcome · Tutor → TeachAndSpeakAsync fills Answer, outcome ·
+      Lesson → TeachWithLessonAsync fills title, PlanJson (first lesson's PlanResult.PlanJson), picks, outcome
+    → TurnNotes.From(question, session, now, verdict, record, exit code): null for 12 / 13 / Failed / no question
+    → Notes.Record(note) → "notes : saved #N"   (a failure is "notes : not saved (...)", the exit code unchanged)
+    (before the store: !--no-context → Session.Add(note): kept only if it taught something, the newest 3)   (DEC-061)
+  each later turn: TeachAndSpeakAsync → TutorRequest.EarlierTurns = Session.Snapshot()
+                   TeachWithLessonAsync → PlanRequest.EarlierTurns = Session.Snapshot()
+    → TutorService.RenderPrompt / PlannerPrompt.User: "EARLIER IN THIS SESSION (UNTRUSTED ...)" <<<BEGIN/END EARLIER TURNS>>>,
+      the last 3, each "n. asked: <q, 200> | taught: <t, 300>", flattened, fences defused; none → no block, prompt unchanged
+
+Recent lessons (DEC-060), in the tray:
+  menu "Recent lessons…" → TrayApp.OpenRecent → RecentLessonsModel(NotesStore.Open(default path)) → RecentLessons window
+    rows = Recent(200), newest first; details = the turn in words; Delete / Clear all (Clear all asks first)
+    Replay (a lesson with a stored plan) → paused = true (Ctrl+Alt refused) →
+      ShellHost.ReplayAsync(plan): PrepareReplay = Parse + Validate(desktop, RequireGroundedMarks, Scene3d, Schematics.Check)
+        Rejected → the reason, no window opened
+        else CardSurfaceHost.OpenAsync → LessonPlayer.PlayAsync(lesson, speaker) → close the cards
+          speaker = the shell's VoiceService when a Fish key is set (a failure paces that sentence), else silent pacing
+    → status line ("replayed "<title>": Completed, N beat(s)") → paused = false
+```
+
 ## Installer (DEC-055)
 
 ```

@@ -122,10 +122,12 @@ internal static partial class ShellHost
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
+        TurnRecord record,
         CancellationToken ct)
     {
         if (tutor is null)
         {
+            record.Outcome = "skipped: no DeepSeek key";
             // No DeepSeek key (DEC-047): the leg is skipped honestly. A produced verdict stands on its own —
             // skipping the explanation is not a failure.
             Console.WriteLine("tutor       : skipped — no DeepSeek key (store one with --set-key deepseek, or set");
@@ -136,11 +138,19 @@ internal static partial class ShellHost
         try
         {
             var result = await tutor.ExplainAsync(
-                new TutorRequest { Question = options.Question, Context = MapGuidanceToContext(guidance) },
+                new TutorRequest
+                {
+                    Question = options.Question,
+                    Context = MapGuidanceToContext(guidance),
+                    // DEC-061: this run's earlier turns, so a follow-up question can be understood.
+                    EarlierTurns = options.NoContext ? Array.Empty<TutorEarlierTurn>() : Session.Snapshot().Select(t => new TutorEarlierTurn(t.Question, t.Taught)).ToArray(),
+                },
                 ct).ConfigureAwait(false);
 
             Console.WriteLine($"tutor       : {result}");
             Console.WriteLine($"  lesson      : {result.ExplanationText}");
+            record.Answer = result.ExplanationText;
+            record.Outcome = options.NoSpeak ? "explained (not spoken, --no-speak)" : "explained";
 
             if (options.NoSpeak)
             {

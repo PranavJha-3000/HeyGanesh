@@ -1,4 +1,77 @@
 
+## 2026-10-31 · claude-opus-5-5 (earlier turns as context for follow-ups, build sequence step 12d, DEC-061)
+
+Did: `SessionTurns` keeps this run's last 3 taught turns in memory. They go to the Tutor (`TutorRequest.EarlierTurns`) and the planner (`PlanRequest.EarlierTurns`) as a fenced, flattened, capped untrusted block. With none, the prompts are unchanged byte for byte. Header line `context :`, `--no-context`. Rows: TU-13 7 (G-7), LP-13 7 (G-14), NB-4 5 (G-24), NB-2 6. Step 12 (Notes Persistence) is complete.
+Left:
+- Owner rows: NB-3, NB-5, RL-5, and the earlier ones.
+- The retention number (1,000 placeholder).
+- `feat/notes-v1` (plan, 12a–12d) is local only.
+- **Open item:** AGENTS.md says `TutorSmoke --assert-tutor-payload` prints 36 PASS lines, but it prints 35, on the commit before this step too (not caused here, not changed).
+Watch: The shell's wiring of `EarlierTurns` into the two requests is not covered offline (the App has no fakes); NB-5 is its live check. `git worktree remove` can hit Windows' path-length limit in the scratchpad; remove with a `\\?\` path from PowerShell, then `git worktree prune`.
+Next: Push `feat/notes-v1` and open its PR, on the owner's go-ahead.
+Verified:
+- The whole solution builds -warnaserror 0/0.
+- TU: all offline rows, prompt 15, earlier 7, auth-error exit 12.
+- LP: all 12 rows, earlier 7. PE: set 7, checks 26, record-stub 9, drift 5 (unchanged).
+- TY: notes-shell 6, session 5.
+- Mutations, each restored from a pre-run copy: unflattened Tutor turns fail TU-13; all turns sent fail LP-13; no trimming fails NB-4.
+- Local CI runner: 22 gates, all exit 0 (G-7 55, G-14 79, G-24 61, G-22 47 unchanged).
+
+## 2026-10-31 · claude-opus-5-5 (Recent lessons and replay in the tray, build sequence step 12c, DEC-060)
+
+Did:
+- Tray "Recent lessons…":
+  - `RecentLessonsModel` + `RecentLessons` window: list, details, Delete, Clear all;
+  - Replay through `ShellHost.ReplayAsync`, with `PrepareReplay` re-validating the stored plan (marks dropped), on the real cards, with the shell's voice or silent pacing, and no model call;
+  - Ctrl+Alt is paused during a replay.
+- Rows: RL-1 8, RL-2 4 (CI G-24), RL-3 4, RL-4 11 (local).
+
+Left: 12d (optional session context, your decision); retention number; RL-5, NB-3 and the other owner rows. `feat/notes-v1` (plan, 12a, 12b, 12c) is local only.
+Watch:
+- RL-3 opens real lesson windows for a few seconds.
+- A mutation whose changed text contains the original cannot be reverted by text swap: restore from the pre-run copy, as done here for `ShellHost.Replay.cs`.
+- Bash heredocs still collapse `\\\\` (TraySmoke.csproj got a form feed, fixed).
+Next: Push `feat/notes-v1` and open its PR on the owner's go-ahead; then 12d if wanted.
+Verified:
+- Tray and TraySmoke build -warnaserror 0/0.
+- RL-1 8, RL-2 4, RL-3 4, RL-4 11; TY source 8, tray 10, stop 6; keys-window 11, notes-map 6.
+- The real data folder has no notes.db after every run.
+- RL-2 caught replay keeping stale marks (fixed). Mutations, all restored: no pause during a replay fails RL-4; Replay for every lesson fails RL-1; opening cards before validating fails RL-3.
+- Local CI runner: 22 gates, all exit 0 (G-24 56).
+
+## 2026-10-30 · claude-opus-5-5 (the shell records each turn, build sequence step 12b, DEC-059)
+
+Did:
+- The App Shell, and so the tray, opens the notes store per run (header `notes :`, `--no-notes`) and records each taught turn through `TurnNotes.From` after `TeachAsync`. No note for a key error, a cancelled turn or a Failed verdict.
+- `PlanResult.PlanJson` keeps the exact plan text for replay.
+- Rows: NB-1 6 (CI G-24), NB-2 5 (local), LP-4 5, LP-11 14, TY-3 6.
+
+Left:
+- 12c (Recent lessons window with replay) and 12d (optional session context).
+- Owner: NB-3 (a real recorded turn, with keys), the retention number, 12d.
+- `feat/notes-v1` is local only.
+
+Watch: Any test that runs the real shell in-process must point `HEYGANESH_DATA_DIR` at a temp folder, or it writes the real `notes.db` (it happened once here; the empty file was removed). The Microsoft Store Python cannot see `%LOCALAPPDATA%` (it is redirected), so inspect the real data folder from PowerShell.
+Next: Build 12c on the owner's go-ahead.
+Verified:
+- The whole solution builds -warnaserror 0/0.
+- NB-1 6, NB-2 5, LP all 11 rows (plan 5, stream 14), TY source 8, log 7, stop 6, tray 10, run 8, keys-model 13, keys-pause 3, startup 10, LT all 7 rows.
+- App `--help` 0, `--once` 12, `--once --lesson` 12, `--once --no-route` 12, `--seconds 3` 0.
+- Mutations, all restored byte for byte: noting key errors fails NB-1; an ignored `--no-notes` fails NB-2; a planner that drops `PlanJson` fails LP-4.
+- Local CI runner: 22 gates, all exit 0 (G-14 72, G-24 44, G-26 24).
+
+## 2026-10-30 · claude-opus-5-5 (the notes store, build sequence step 12a, DEC-058)
+
+Did: Merged PR #1 into main (30e018a) after its CI passed on 4d3d616; ignored `graphify-out/` and `.planning/`. On the new branch `feat/notes-v1`: the Notes plan (D3 = winsqlite3), then `src/Foundation/HeyGanesh.Notes`:
+- `NotesStore` over Windows' own `winsqlite3.dll`: record, recent, get, delete, clear, retention;
+- WAL with a busy timeout, schema version 1, a broken file moved aside, a newer schema refused.
+
+`tools/NotesSmoke` holds NS-1..NS-6; CI gate G-26; the module is in G-2's zero-NuGet list and in the solution.
+Left: 12b (the shell records each turn, a `notes :` header line, `--no-notes`), 12c (Recent lessons window with replay), 12d (optional session context). Owner decisions: retention (1,000 placeholder) and 12d. `feat/notes-v1` is local only.
+Watch: The usage limit hit mid-step: two new files existed before the ROLLBACK entry (recorded in DEC-058). `pwsh` is not on Git Bash's path, so run the G-2 guard through the local CI runner. `NotesStore.Open` throws when winsqlite3 is missing; 12b must catch that and run without notes.
+Next: Build 12b on the owner's go-ahead.
+Verified: Notes and NotesSmoke build -warnaserror 0/0; the whole solution 0/0. NS-1 4, NS-2 8, NS-3 4, NS-4 3, NS-5 2, NS-6 3. Mutations: no retention delete fails NS-6; deleting a broken file fails NS-5; opening a newer schema fails NS-3; no busy timeout fails NS-4 (200 of 600 writes refused). All restored byte for byte. Local CI runner: 22 gates, all exit 0 (new G-26: 24 PASS lines; G-2 covers the module).
+
 ## 2026-10-30 · claude-opus-5-5 (finishing round: push, stale items, logo, schematic click-to-ask, DEC-056/DEC-057)
 
 Did: Pushed the ten step 8b–11d commits to PR #1. Cleared three stale items (1362f72):

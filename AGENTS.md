@@ -26,8 +26,8 @@ Subsystems, and the seams between them are load-bearing:
 | Visual Lesson Engine | `src/Intelligence/HeyGanesh.VisualLessonEngine/` + `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.LessonSurface/` + `src/Experience/HeyGanesh.LessonSession/` + `src/Intelligence/HeyGanesh.PartLibrary/` | VisualPlan v1 contract (parse/validate/degrade, DEC-023), `PlotExpression`, `LessonPlayer` runtime, the WebView2 card surface (DEC-020/DEC-025), the `VisualPlanner` (DEC-026) and `LessonTurn` (plan → cards → play, DEC-027); the 3D scene contract (VisualPlan 1.1, DEC-028), the Part Library of computed 3D teaching models (DEC-029), the Babylon.js scene window (DEC-030), click-a-part follow-ups (DEC-031) and a planner prompt that offers 3D (DEC-032). Wired into the App Shell behind `--lesson`, 3D included (DEC-033); the lesson model is built from `DEEPSEEK_API_KEY` or the leg reports its skip (FEATURE-007). |
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
-| Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
-| Tray | `src/Experience/HeyGanesh.Tray/` | Hey Ganesh as a desktop app (DEC-052): a notification-area icon with no console. It runs the App Shell's own composition through `ShellHost.RunAsync(args, stop, hookLive)`; Quit stops it like Ctrl+C. The shell's lines go to `logs/shell-<stamp>.log` (newest 5 kept); one tray per session (a second launch exits 3). Console-only flags (`--once`, `--help`, key commands) stay on `HeyGanesh.App.exe`. The key screen (DEC-053, "Keys…", and by itself when the DeepSeek or TypeSafe key is missing) stores keys through the key ring; Ctrl+Alt is refused while it is open. "Start at login" (DEC-054) writes or removes the per-user Run value `HeyGanesh`, only when chosen. |
+| Notes Persistence | `src/Foundation/HeyGanesh.Notes/` | The notes store (DEC-058): one row per turn (question, leg, route, verdict in words, the Tutor's answer or the lesson plan's JSON, follow-up picks, outcome) in `%LOCALAPPDATA%/HeyGanesh/notes.db`, through Windows' own `winsqlite3.dll` by P/Invoke (zero NuGet). Never screenshots, screen text or keys. WAL + busy timeout so the tray and the console exe can both write; schema in `user_version`; an unreadable file is moved aside, a newer schema refused. Since step 12b (DEC-059) the App Shell, and so the tray, records each taught turn (not key errors or cancelled turns), with the lesson's exact plan JSON (`PlanResult.PlanJson`) for replay; header line `notes :`, `--no-notes` turns it off; a store that cannot open or a failed write is a line, never a failed turn. |
+| Tray | `src/Experience/HeyGanesh.Tray/` | Hey Ganesh as a desktop app (DEC-052): a notification-area icon with no console. It runs the App Shell's own composition through `ShellHost.RunAsync(args, stop, hookLive)`; Quit stops it like Ctrl+C. The shell's lines go to `logs/shell-<stamp>.log` (newest 5 kept); one tray per session (a second launch exits 3). Console-only flags (`--once`, `--help`, key commands) stay on `HeyGanesh.App.exe`. The key screen (DEC-053, "Keys…", and by itself when the DeepSeek or TypeSafe key is missing) stores keys through the key ring; Ctrl+Alt is refused while it is open. "Start at login" (DEC-054) writes or removes the per-user Run value `HeyGanesh`, only when chosen. "Recent lessons…" (DEC-060) lists saved turns and replays a stored lesson with no model call (validated again, screen marks dropped); Ctrl+Alt is paused while it plays. |
 | API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045/DEC-046): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The shell's Jev, Vision, Fish, lesson and router clients read through it per request; the Tutor still reads `DEEPSEEK_API_KEY` until step 9. |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
@@ -88,6 +88,8 @@ src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.
 #   -> usage + exit-code contract (incl. "1 = ... or no transcript was produced"), exit 0
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --question "where is the Save button"
 #   keys unset -> header, real capture, KEY ERROR (Element Selection), exit 12  (legacy scripted path)
+#   the header's notes line says where taught turns are kept (DEC-059); --no-notes keeps none
+#   the header's context line: this run's last 3 taught turns go to the Tutor and planner (DEC-061); --no-context turns it off
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --seconds 4
 #   -> no flag needed now: hook live: IsRunning=True; auto-stops, health block, exit 0
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --question "x" --seconds 4
@@ -133,6 +135,8 @@ dotnet run --project tools/TutorSmoke -c Debug -- --assert-grounding
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-parity
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-client-error
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-source
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-earlier
+#   -> 7 PASS: this run's earlier turns reach the Tutor fenced, flattened and capped (DEC-061)
 # TU-11: the live provider's wire contract, offline -- the factory-built client's BaseUrl points at
 # a loopback stub (no key, no real network; pins deepseek-flash payload + thinking:disabled).
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-tutor-payload
@@ -167,7 +171,7 @@ tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Intelligence/HeyGanesh.LessonPlanner -c Debug
 dotnet build tools/LessonPlannerSmoke -c Debug
 tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonPlannerSmoke.exe --assert-prompt
-#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 3, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 12, --assert-prompt-schematic 7)
+#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 5, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 14, --assert-prompt-schematic 7, --assert-earlier 7)
 
 # Lesson Turn host (one lesson turn: fake model + fake or REAL cards, no key; LT-6/LT-7 need an interactive desktop).
 # Build library then host SEQUENTIALLY (CS2012). The App Shell carries no fakes (DEC-012): this host is where the turn is tested.
@@ -214,8 +218,9 @@ dotnet run --project tools/SecretSmoke -c Debug -- --assert-keyring
 # Tray (DEC-052): the app with no console. Build the host (it builds the tray and the shell first), read its exit codes.
 dotnet build tools/TraySmoke -c Debug -warnaserror
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-source
-#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key) offline; local-only, real hook for a few seconds: --assert-stop 5, --assert-tray 10, --assert-run 8,
-#   --assert-keys-window 11 (shows the key window), --assert-keys-pause 3 (PRESSES Ctrl+Alt once), --assert-startup-menu 7)
+#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key), --assert-notes-map 6, --assert-session 5, --assert-recent-model 8, --assert-replay-prepare 4 offline; --assert-notes-shell 6 (the real console exe, no keys); local-only, real hook for a few seconds: --assert-stop 6, --assert-tray 10, --assert-run 8,
+#   --assert-keys-window 11 (shows the key window), --assert-keys-pause 3 (PRESSES Ctrl+Alt once), --assert-startup-menu 7,
+#   --assert-replay 4 (shows the lesson windows), --assert-recent-window 11)
 #   by hand: src/Experience/HeyGanesh.Tray/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tray.exe  (icon menu: status, keys, Open log folder, Quit)
 # Installer (DEC-055): per-user, no admin. Build the package, then install it on a PC (or run the round trip locally).
 powershell -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
@@ -223,6 +228,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-install
 #   -> 16 PASS, exit 0 (temp folders and throwaway HKCU keys; starts the installed tray once)
 #   real install (owner): powershell -NoProfile -ExecutionPolicy Bypass -File artifacts\installer\install.ps1
+# Notes store (DEC-058): offline, temporary databases, Windows' own winsqlite3. Build library then host SEQUENTIALLY (CS2012).
+dotnet build src/Foundation/HeyGanesh.Notes -c Debug
+dotnet build tools/NotesSmoke -c Debug
+tools/NotesSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.NotesSmoke.exe --assert-store
+#   -> 8 PASS, exit 0   (also: --assert-source 4, --assert-migrate 4, --assert-concurrent 3, --assert-corrupt 2, --assert-retention 3)
 # Turn routing (DEC-036): without --lesson and with TYPESAFE_API_KEY set, Jev picks point / explain / 2D or 3D lesson per turn.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-route --question "x"
 #   keys unset -> header 'route : off (--no-route ...)', KEY ERROR (Element Selection), exit 12 (SH-21); with keys: routed turns -- live row SH-22

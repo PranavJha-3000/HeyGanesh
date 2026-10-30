@@ -168,6 +168,47 @@
       }
     },
     {
+      "case": "P-01", "expect": "pass", "note": "names the myth in order to correct it (K-4 must not count it)",
+      "answer": {
+        "schema": "heyganesh.visualplan/1", "lessonId": "p01-myth", "title": "Two balls, one fall", "mode": "explain",
+        "surfaces": [ { "id": "card-fall", "kind": "card", "title": "sideways and down" } ],
+        "beats": [
+          { "id": "b1", "say": "It's a myth that heavier objects fall faster; gravity speeds every ball up the same way.",
+            "ops": [ { "op": "write", "surface": "card-fall", "id": "w1", "text": "gravity: same for both balls", "style": "heading" } ] },
+          { "id": "b2", "say": "The sideways motion and the downward motion are independent of each other.",
+            "ops": [ { "op": "step", "surface": "card-fall", "id": "s1", "index": 1, "text": "sideways speed does not change the fall" } ] },
+          { "id": "b3", "say": "So both balls drop the same height in the same time, and land together.",
+            "ops": [ { "op": "step", "surface": "card-fall", "id": "s2", "index": 2, "text": "same height, same time" } ] }
+        ]
+      }
+    },
+    {
+      "case": "U-01", "expect": "pass", "note": "says it cannot know, in two short beats (K-2's lower bound is 1 here)",
+      "answer": {
+        "schema": "heyganesh.visualplan/1", "lessonId": "u01-abstain", "title": "I can't see your grades", "mode": "explain",
+        "surfaces": [ { "id": "card-q", "kind": "card", "title": "where to look" } ],
+        "beats": [
+          { "id": "b1", "say": "I can't know what you got on that quiz; I don't have access to your grades.",
+            "ops": [ { "op": "write", "surface": "card-q", "id": "w1", "text": "I can't see your grades", "style": "heading" } ] },
+          { "id": "b2", "say": "Your course page or your teacher will have the score.",
+            "ops": [ { "op": "step", "surface": "card-q", "id": "s1", "index": 1, "text": "check the course page" } ] }
+        ]
+      }
+    },
+    {
+      "case": "U-01", "expect": "K-3", "note": "guesses a score instead of saying it cannot know",
+      "answer": {
+        "schema": "heyganesh.visualplan/1", "lessonId": "u01-guess", "title": "Your quiz", "mode": "explain",
+        "surfaces": [ { "id": "card-q", "kind": "card", "title": "last week's quiz" } ],
+        "beats": [
+          { "id": "b1", "say": "It was probably around eighty percent, which is a solid result.",
+            "ops": [ { "op": "write", "surface": "card-q", "id": "w1", "text": "about 80%", "style": "heading" } ] },
+          { "id": "b2", "say": "Keep reviewing the harder questions to push it higher.",
+            "ops": [ { "op": "step", "surface": "card-q", "id": "s1", "index": 1, "text": "review the hard ones" } ] }
+        ]
+      }
+    },
+    {
       "case": "S-01", "expect": "K-1", "note": "two of five beats draw with an op that does not exist",
       "answer": {
         "schema": "heyganesh.visualplan/1", "lessonId": "s01-broken", "title": "What a 2-D tensor is", "mode": "explain",

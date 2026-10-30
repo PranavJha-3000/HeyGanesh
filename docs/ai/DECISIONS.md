@@ -91,7 +91,19 @@
 - Real scores need step 7b (`--record` with `DEEPSEEK_API_KEY`, `--replay`, and a committed baseline that G-22 then gates on).
 - The 24 non-video questions and their terms are my wording, for the owner to review (PE-3).
 
-Plan: [plans/2026-10-30-planner-eval-v1.md](plans/2026-10-30-planner-eval-v1.md). Rows: PE-1, PE-2 (CI G-22), PE-3 (manual).
+**Revised after the owner's review (2026-10-30 · claude-opus-5-5, the owner: "Yes, apply all 8").**
+1. K-4 no longer counts a misconception named in order to correct it: a listed phrase counts only in a sentence with no correcting cue ("myth", "not true", "wrong", "isn't", "doesn't", "don't", "can't", "never", …). Bare "no"/"not" are deliberately not cues.
+2. Terms that failed correct answers were widened (M-05 "three out of four", M-02 "two times x").
+3. Terms that proved nothing were replaced (G-02 now needs a small current controlling a larger one; P-05 deflection plus pressure/reaction; E-04 "thrust/downward" instead of "down").
+4. E-06 now requires a power-off step instead of listing "while it's on" phrases.
+5. P-02 is replaced by U-01, "What score did I get on last week's quiz?": the lesson must say it cannot know, and `EvalCase.MinBeats` lets K-2 accept one or two beats there.
+6. E-06 (not E-05: attaching the camera is where pointing at the board matters) has a grounded target, so its lesson must mark the connector.
+7. A "2d" case is never offered the 3D catalogue; it scores the planner, not the decision to draw in 3D (a Turn Router evaluation).
+8. The file header says E-01's slide numbers are a recollection of the lecture, not read from the video.
+
+New seeds prove fixes 1 and 5 (P-01 myth corrected → pass; U-01 abstains in 2 beats → pass; U-01 guesses → fails K-3 only); undoing either fix fails PE-2.
+
+Plan: [plans/2026-10-30-planner-eval-v1.md](plans/2026-10-30-planner-eval-v1.md). Rows: PE-1, PE-2 (CI G-22), PE-3 (owner review, done).
 
 ## DEC-042 — 2026-10-30 — claude-opus-5-5
 

@@ -21,12 +21,19 @@ public static class EvalChecks
 
     // K-2: three beats is the least that still shows a step; past eight a spoken lesson outlasts a
     // student's attention (FEATURE-007 §3.7, segmenting). 45 words is about 15 s of speech: one idea.
+    // A case may lower the minimum (EvalCase.MinBeats), as the "I can't know that" case does.
     public const int MinBeats = 3;
     public const int MaxBeats = 8;
     public const int MaxWordsPerBeat = 45;
 
     private static readonly string[] VettedCodes = { LessonIssueCodes.ModelUnknown, LessonIssueCodes.PartUnknown, LessonIssueCodes.AnimationUnknown };
     private static readonly Regex AnswerFirst = new(@"^\W*(yes|no|partly)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // K-4: a misconception named in order to correct it ("it's a myth that heavier objects fall faster") is good
+    // teaching, not a slip. A listed phrase only counts in a sentence with none of these cues. Bare "no" and
+    // "not" are left out on purpose: they are in too many sentences that do state the myth.
+    private static readonly Regex Corrects = new(@"\b(myth|misconception|not true|false|wrong|isn't|doesn't|don't|can't|cannot|never)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public static IReadOnlyList<CheckResult> Score(EvalCase c, PlanResult result, VisualPlan? previous, string? sentPrompt)
     {
@@ -43,15 +50,16 @@ public static class EvalChecks
             $"{lesson.Outcome}, {degraded} of {beats.Count} beats degraded"));
 
         var longest = beats.Count == 0 ? 0 : beats.Max(b => Words(b.Say));
-        checks.Add(new("K-2", beats.Count is >= MinBeats and <= MaxBeats && longest <= MaxWordsPerBeat,
-            $"{beats.Count} beats, longest {longest} words"));
+        var minBeats = c.MinBeats ?? MinBeats;
+        checks.Add(new("K-2", beats.Count >= minBeats && beats.Count <= MaxBeats && longest <= MaxWordsPerBeat,
+            $"{beats.Count} beats (at least {minBeats}), longest {longest} words"));
 
         var missing = c.Mention.Where(group => !group.Any(t => Has(spoken, t))).Select(g => string.Join("|", g)).ToList();
         checks.Add(new("K-3", missing.Count == 0, missing.Count == 0 ? $"all {c.Mention.Length} groups said" : $"never said: {string.Join("; ", missing)}"));
 
         if (c.Avoid.Length > 0)
         {
-            var found = c.Avoid.Where(t => Has(everything, t)).ToList();
+            var found = c.Avoid.Where(t => Sentences(everything).Any(s => Has(s, t) && !Corrects.IsMatch(s))).ToList();
             checks.Add(new("K-4", found.Count == 0, found.Count == 0 ? "no listed misconception" : $"says: {string.Join("; ", found)}"));
         }
 
@@ -130,6 +138,8 @@ public static class EvalChecks
 
         return string.Join("\n", parts);
     }
+
+    private static IEnumerable<string> Sentences(string text) => Regex.Split(text, @"(?<=[.!?])\s+|\n");
 
     private static int Words(string text) => text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 

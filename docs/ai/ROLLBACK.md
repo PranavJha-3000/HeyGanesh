@@ -418,3 +418,10 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `72c3de1` (the commit before this step).
 - **Files to restore:** delete `tools/PlannerEval/`; `git checkout 72c3de1 -- .github/workflows/ci.yml AGENTS.md docs/ai`; delete `docs/ai/plans/2026-10-30-planner-eval-v1.md` only if the plan is abandoned too.
 - **Re-check after revert:** LessonPlannerSmoke `--assert-stream` exit 0; the local CI runner reports 17 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (evaluation set revised after the owner's review, DEC-043)
+
+- **Change:** `tools/PlannerEval` only: K-4 ignores a misconception named in order to correct it; `EvalCase.MinBeats`; eight case edits (P-02 replaced by U-01, E-06 target and power-off step, widened/tightened terms, header notes); three seeds. Docs: DEC-043, TEST-CHECKLIST, AGENTS.md, HANDOVER, plan. Written after the edits, not before (a slip, noted in HANDOVER); every edit is in files this entry restores.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `0c70070` (step 7a as first built).
+- **Files to restore:** `git checkout 0c70070 -- tools/PlannerEval AGENTS.md docs/ai`.
+- **Re-check after revert:** PlannerEval `--assert-set` 7 PASS and `--assert-checks` 21 PASS, exit 0.

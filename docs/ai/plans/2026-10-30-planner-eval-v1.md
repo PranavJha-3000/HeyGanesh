@@ -3,6 +3,7 @@
 2026-10-30 · claude-opus-5-5 · STATUS: 7a BUILT 2026-10-30 (owner: "Yes, build 7a"): PE-1 7 PASS, PE-2 21 PASS; DEC-043.
 Changed while building: K-5/K-6 apply to every case that expects a canvas / is offered the catalogue; PE-1 also proves a
 broken set is refused; the host is not in `HeyGanesh.sln` (no tool host is); ARCHITECTURE unchanged. 7b is not built.
+Revised 2026-10-30 after the owner's review ("Yes, apply all 8"): see DEC-043; PE-2 is now 24 PASS; P-02 became U-01.
 
 ## What the reference video shows (HeyClicky "introducing real-time graphics", 2026-10-29, 2:27)
 

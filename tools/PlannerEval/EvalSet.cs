@@ -62,6 +62,12 @@ public sealed record EvalCase
     /// <summary>K-10: a fact check; the first beat must open with yes / no / partly.</summary>
     public bool AnswerFirst { get; init; }
 
+    /// <summary>
+    /// K-2's lower bound for this case, when it differs from <see cref="EvalChecks.MinBeats"/>: a question the
+    /// tutor cannot answer is best met by one or two short beats saying so, not three padded ones.
+    /// </summary>
+    public int? MinBeats { get; init; }
+
     /// <summary>The golden lesson in tools/LessonSmoke/fixtures that answers this case, if any.</summary>
     public string? Golden { get; init; }
 

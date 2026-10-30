@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (evaluation set revised after the owner's review, DEC-043)
+
+Did: Applied the owner's eight review fixes to `tools/PlannerEval`. K-4 now ignores a misconception named in order to correct it. `EvalCase.MinBeats` lets the new abstention case U-01 (replacing P-02) pass with 1–2 beats. Terms were widened (M-05, M-02) or tightened (G-02, P-05, E-04). E-06 requires a power-off step and gains a grounded target. The header notes the 2d/3D scope and that E-01's slide is a recollection. Three new seeds; PE-2 is now 24.
+Left: 7b (live record and offline replay; needs `DEEPSEEK_API_KEY`); step 8. Thirteen commits are local, ahead of PR #1; not pushed.
+Watch: The K-4 correction cues include "don't" and "can't", so a lesson that states a myth in the same sentence as an unrelated "don't" slips past K-4. That is accepted for v0, and the live run will show whether it matters. The ROLLBACK entry for this revision was written after the edits, not before: a process slip.
+Next: Plan step 7b.
+Verified: PlannerEval builds -warnaserror 0/0; PE-1 7 PASS, PE-2 24 PASS; undoing the correction rule fails 2 seeds on K-4, undoing the per-case minimum fails both U-01 seeds on K-2, and both were restored byte for byte; the local CI runner (G-22 included).
+
 ## 2026-10-30 · claude-opus-5-5 (planner evaluation set, build sequence step 7a, DEC-043)
 
 Did: New host `tools/PlannerEval`. It has `eval-set-v1.json` (30 cases; E-01..E-06 verbatim from the HeyClicky reference video), `EvalSet` (loads the set and refuses a malformed one), pure `EvalChecks` K-1..K-11, and `seeds.json` (16 answers that pass or break exactly one check). Rows: PE-1 `--assert-set` (7), PE-2 `--assert-checks` (21), CI G-22. No product code changed.

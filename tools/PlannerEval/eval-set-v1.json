@@ -2,8 +2,11 @@
   // Planner evaluation set v1 (DEC-043). 30 student questions; every check field is optional (see EvalSet.cs).
   // E-01..E-06 are the turns of the HeyClicky reference video "introducing real-time graphics" (2026-10-29),
   // taken verbatim from its transcript with the wake phrase "Hey Clicky" removed. Screen text is written for
-  // the set, never captured from a machine. The rest is ordinary coursework, worded by claude-opus-5-5 for the
-  // owner to review.
+  // the set, never captured from a machine. E-01's slide (the [18, 47, 56, ...] output and 1115394) is
+  // claude-opus-5-5's recollection of Karpathy's nanoGPT lecture, not read from the video's frames. The rest is
+  // ordinary coursework, worded by claude-opus-5-5 and revised after the owner's review (2026-10-30).
+  // A "2d" case is never offered the 3D catalogue: it scores the planner, not the decision to draw in 3D (that
+  // belongs to a Turn Router evaluation).
   "version": "eval-set-v1",
   "cases": [
     {
@@ -34,7 +37,7 @@
       "id": "E-04", "subject": "engineering", "previous": "E-03",
       "question": "Can you draw the full jet for me in 3D and really explain how the engines work?",
       "canvas": "either", "libraryMiss": "a jet with its lift system (F-35B)",
-      "mention": [ ["engine", "fan", "nozzle", "exhaust"], ["down", "downward", "thrust"] ]
+      "mention": [ ["engine", "fan", "nozzle", "exhaust"], ["thrust", "downward", "straight down"] ]
     },
     {
       "id": "E-05", "subject": "engineering",
@@ -46,10 +49,9 @@
     {
       "id": "E-06", "subject": "engineering", "previous": "E-05",
       "question": "How do I attach a camera to a Raspberry Pi? Can you show me exactly how?",
-      "screen": { "description": "A product page: Raspberry Pi 5, 4GB. Broadcom BCM2712 quad-core Arm Cortex-A76 processor at 2.4GHz. 2 x micro HDMI ports. 40-pin GPIO header. 2 x 4-lane MIPI camera/display connectors. microSD card slot.", "target": null },
+      "screen": { "description": "A product page: Raspberry Pi 5, 4GB. Broadcom BCM2712 quad-core Arm Cortex-A76 processor at 2.4GHz. 2 x micro HDMI ports. 40-pin GPIO header. 2 x 4-lane MIPI camera/display connectors. microSD card slot. The board photo shows the CAM/DISP 0 connector at the grounded target.", "target": [ 1480, 900, 240, 80 ] },
       "canvas": "either",
-      "mention": [ ["latch", "clip", "lock"], ["cable", "ribbon"], ["connector", "port", "socket"] ],
-      "avoid": [ "while it is powered on", "while it's on", "plug it in while running" ]
+      "mention": [ ["power off", "turn off", "turned off", "switch off", "unplug", "unplugged", "shut down"], ["latch", "clip", "lock"], ["cable", "ribbon"], ["connector", "port", "socket"] ]
     },
 
     {
@@ -63,7 +65,7 @@
       "id": "M-02", "subject": "math",
       "question": "What's the derivative of sin of x squared?",
       "canvas": "2d",
-      "mention": [ ["chain rule", "chain"], ["cos", "cosine"], ["2x", "two x"] ]
+      "mention": [ ["chain rule", "chain"], ["cos", "cosine"], ["2x", "two x", "two times x", "2 times x"] ]
     },
     {
       "id": "M-03", "subject": "math",
@@ -81,7 +83,7 @@
       "id": "M-05", "subject": "math",
       "question": "If I flip a coin twice, what's the chance of getting at least one head?",
       "canvas": "2d",
-      "mention": [ ["three quarters", "three in four", "3/4", "0.75", "75%", "75 percent"] ],
+      "mention": [ ["three quarters", "three in four", "three out of four", "3 out of 4", "3/4", "0.75", "75%", "75 percent"] ],
       "avoid": [ "two thirds", "2/3" ]
     },
 
@@ -93,10 +95,11 @@
       "avoid": [ "heavier objects fall faster" ]
     },
     {
-      "id": "P-02", "subject": "physics",
-      "question": "If I push on a wall, why does it push me back?",
+      "id": "U-01", "subject": "general", "minBeats": 1,
+      "question": "What score did I get on last week's quiz?",
       "canvas": "2d",
-      "mention": [ ["equal"], ["opposite"] ]
+      "mention": [ ["can't know", "cannot know", "don't know", "not sure", "no way to know", "can't see", "don't have access", "do not have access"] ],
+      "avoid": [ "you scored", "your score was", "you got" ]
     },
     {
       "id": "P-03", "subject": "physics",
@@ -115,7 +118,7 @@
       "id": "P-05", "subject": "physics",
       "question": "How does a plane's wing make lift?",
       "canvas": "2d",
-      "mention": [ ["air"], ["pressure", "downward", "deflects", "pushes air down"] ],
+      "mention": [ ["deflect", "deflects", "deflected", "downward", "pushes air down", "turns the air down"], ["pressure", "third law", "reaction"] ],
       "avoid": [ "equal transit time", "meet at the trailing edge", "meet again at the back" ]
     },
 
@@ -199,7 +202,7 @@
       "id": "G-02", "subject": "engineering",
       "question": "How does a transistor work as a switch?",
       "canvas": "2d",
-      "mention": [ ["current"], ["gate", "base"], ["on", "off"] ]
+      "mention": [ ["gate", "base"], ["small", "tiny", "little"], ["larger current", "bigger current", "large current", "main current", "much more current"] ]
     },
 
     {

@@ -8,7 +8,7 @@ namespace HeyGanesh.Tools.PlannerEval;
 public sealed record CheckResult(string Id, bool Passed, string Detail);
 
 /// <summary>
-/// The automatic checks K-1..K-11 (DEC-043). Pure: a case, the planner's result, the previous lesson
+/// The automatic checks K-1..K-12 (DEC-043; K-12 DEC-049). Pure: a case, the planner's result, the previous lesson
 /// and the prompt that was sent in; no model, file or clock. They are rules on structure and words, so
 /// they catch broken, off-topic, ungrounded and manipulated lessons, not subtle factual errors (no LLM
 /// judge in v0). Only the checks a case asks for are returned.
@@ -27,6 +27,10 @@ public static class EvalChecks
     public const int MaxWordsPerBeat = 45;
 
     private static readonly string[] VettedCodes = { LessonIssueCodes.ModelUnknown, LessonIssueCodes.PartUnknown, LessonIssueCodes.AnimationUnknown };
+
+    // K-12: what a lesson must say when it draws a schematic (DEC-049): that it is a simplified sketch, so the
+    // student never takes invented shapes for a real design.
+    private static readonly string[] SchematicWords = { "simplified", "schematic", "not to scale", "rough sketch", "sketch" };
     private static readonly Regex AnswerFirst = new(@"^\W*(yes|no|partly)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     // K-4: a misconception named in order to correct it ("it's a myth that heavier objects fall faster") is good
@@ -110,6 +114,12 @@ public static class EvalChecks
                        && sentPrompt.Contains("PREVIOUS LESSON", StringComparison.Ordinal) && sentPrompt.Contains(previous.Title, StringComparison.Ordinal);
             var repeated = previous is not null && previous.Beats.Select(b => b.Say).SequenceEqual(beats.Select(b => b.Say));
             checks.Add(new("K-11", sent && !repeated, $"previous lesson {(sent ? "sent" : "NOT sent")}; {(repeated ? "a word-for-word repeat" : "a new lesson")}"));
+        }
+
+        if (plan is { Schematics.Count: > 0 })
+        {
+            var said = SchematicWords.Where(w => Has(spoken, w)).ToList();
+            checks.Add(new("K-12", said.Count > 0, said.Count > 0 ? $"says it is {said[0]} ({plan.Schematics[0].Id})" : $"draws schematic '{plan.Schematics[0].Id}' without saying it is simplified"));
         }
 
         return checks;

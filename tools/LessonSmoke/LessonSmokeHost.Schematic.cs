@@ -15,7 +15,7 @@ internal static partial class LessonSmokeHost
         var failures = 0;
         var json = Fixture("f35b-schematic.json");
         var plan = VisualPlanParser.Parse(json).Plan!;
-        var ctx = new ValidationContext(Desktop1440) { Scene3d = TestCatalog };
+        var ctx = new ValidationContext(Desktop1440) { Scene3d = TestCatalog, SchematicGeometry = _ => Array.Empty<string>() };
         LessonValidationResult Run(VisualPlan p, ValidationContext? c = null) =>
             new VisualPlanValidator().Validate(new ParseResult(p, Array.Empty<LessonIssue>()), c ?? ctx);
 
@@ -31,8 +31,9 @@ internal static partial class LessonSmokeHost
         var golden = Run(plan);
         failures = Check(golden.Outcome == LessonOutcome.Valid && golden.Issues.Count == 0 && golden.Plan!.Schematics.Single().Id == "f35b",
             $"with a catalogue -> Valid, zero issues, the schematic kept in the validated plan ({golden.Outcome}, {golden.Issues.Count} issues{string.Concat(golden.Issues.Take(3).Select(i => $"; {i.Code} {i.BeatId}: {i.Message}"))})", failures);
-        var withGeometry = Run(plan, ctx with { SchematicGeometry = _ => Array.Empty<string>() });
-        failures = Check(withGeometry.Outcome == LessonOutcome.Valid, "a geometry check that finds nothing changes nothing", failures);
+        var unchecked3d = Run(plan, ctx with { SchematicGeometry = null });
+        failures = Check(Has(unchecked3d, LessonIssueCodes.SchematicUnavailable) && (unchecked3d.Plan is null || unchecked3d.Plan.Schematics.Count == 0),
+            "no geometry check (a canvas that does not draw schematics) -> schematic.unavailable, never accepted (DEC-049)", failures);
 
         // 3. A refused schematic costs only the beats that use it: here 1 of 3 beats, so the lesson still plays.
         var oneUse = plan with { Schema = VisualPlanValidator.Schema11, Beats = new[] { plan.Beats[0], CardBeat("b7"), CardBeat("b8") } };

@@ -54,7 +54,7 @@ public sealed record ValidationContext(PixelRect VirtualDesktop)
     /// The geometry check for a lesson's schematics (DEC-048): the Part Library's <c>Schematics.Check</c>,
     /// passed in by the caller so this assembly never references the Part Library. It returns the reasons
     /// a schematic cannot be drawn (out of the ±2 box, a zero-size shape, a budget), empty when it can.
-    /// Null: only the structural rules here apply.
+    /// It is also the caller's statement that its canvas draws schematics: null refuses every one (DEC-049).
     /// </summary>
     public Func<SchematicModel, IReadOnlyList<string>>? SchematicGeometry { get; init; }
 }
@@ -182,6 +182,14 @@ public sealed class VisualPlanValidator
                 continue;
             }
 
+            // DEC-049: a caller that passes no geometry check has not said it can draw schematics, so it
+            // never receives one, even when the model sends one unasked.
+            if (context.SchematicGeometry is null)
+            {
+                issues.Add(Plan(LessonIssueCodes.SchematicUnavailable, $"schematic '{s.Id}': this canvas does not draw schematics"));
+                continue;
+            }
+
             if (n >= _limits.MaxSchematics)
             {
                 issues.Add(Plan(LessonIssueCodes.SchematicInvalid, $"schematic '{s.Id}': at most {_limits.MaxSchematics} per lesson"));
@@ -201,7 +209,7 @@ public sealed class VisualPlanValidator
                 continue;
             }
 
-            var geometry = context.SchematicGeometry?.Invoke(s) ?? Array.Empty<string>();
+            var geometry = context.SchematicGeometry(s);
             if (geometry.Count > 0)
             {
                 issues.Add(Plan(LessonIssueCodes.SchematicGeometry, $"schematic '{s.Id}': {string.Join("; ", geometry.Take(5))}{(geometry.Count > 5 ? $" (+{geometry.Count - 5} more)" : string.Empty)}"));

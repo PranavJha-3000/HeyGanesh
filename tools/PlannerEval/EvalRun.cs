@@ -69,6 +69,8 @@ internal static class EvalRun
         VirtualDesktop = Desktop,
         PreviousPlan = previous,
         Scene3d = c.OffersScene3d ? ModelLibrary.ToCatalog() : null,
+        // A 3D case may also get a schematic for an object the library lacks (DEC-049), as the shell's 3D canvas will.
+        SchematicGeometry = c.OffersScene3d ? Schematics.Check : null,
     };
 
     /// <summary>

@@ -79,6 +79,7 @@ public sealed partial class VisualPlanner : IDisposable
             GroundedTarget = request.Screen?.TargetBox,
             GroundedMarginPx = _options.MarkMarginPx,
             Scene3d = request.Scene3d,
+            SchematicGeometry = request.SchematicGeometry,
         };
 
         var user = new LlmMessage
@@ -88,7 +89,7 @@ public sealed partial class VisualPlanner : IDisposable
             Images = image is null ? null : new[] { image },
         };
         // Prompt and validator see the same catalogue (DEC-032): 3D is offered exactly when it would be accepted.
-        var system = PlannerPrompt.System(LessonLimits.Default, request.Scene3d);
+        var system = PlannerPrompt.System(LessonLimits.Default, request.Scene3d, schematics: request.Scene3d is not null && request.SchematicGeometry is not null);
         return new Prepared(context, image, imageNote, system, user);
     }
 

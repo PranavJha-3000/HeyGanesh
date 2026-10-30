@@ -326,7 +326,7 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 
-## Schematic models (VisualPlan 1.2, DEC-048 — contract only; planner, scene and router follow in 10b–10d)
+## Schematic models (VisualPlan 1.2, DEC-048; offered by the planner since DEC-049; scene and router follow in 10c–10d)
 
 ```
 model JSON header: "schematics": [ { id, title, parts: [ { id, name, shapes: [ { shape, size, at, turn, finish } ] } ] } ]
@@ -339,6 +339,11 @@ model JSON header: "schematics": [ { id, title, parts: [ { id, name, shapes: [ {
     CheckBeats over catalogue ∪ accepted schematics (parts addressable, no animations)
     Decide: schematic.* issues do not force TextFallback; only the beats that used it degrade
   → validated plan carries only the accepted schematics
+Planner (DEC-049): PlanRequest { Scene3d = catalogue, SchematicGeometry = Schematics.Check }
+  → PlannerPrompt.System(limits, catalogue, schematics: true): schema 1.2 + 3D section + SCHEMATICS block
+  → ValidationContext.SchematicGeometry = the same check (no check → every schematic schematic.unavailable)
+  streaming: PlanStreamScanner.Header is everything before "beats", so a schematic written first is in
+  every prefix the released beats are checked against
 ```
 
 ## Keys (KeyRing, DEC-045; the shell's API clients read through it, DEC-046)

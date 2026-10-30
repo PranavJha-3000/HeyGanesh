@@ -165,7 +165,7 @@ tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Intelligence/HeyGanesh.LessonPlanner -c Debug
 dotnet build tools/LessonPlannerSmoke -c Debug
 tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonPlannerSmoke.exe --assert-prompt
-#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 3, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 12)
+#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 3, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 12, --assert-prompt-schematic 7)
 
 # Lesson Turn host (one lesson turn: fake model + fake or REAL cards, no key; LT-6/LT-7 need an interactive desktop).
 # Build library then host SEQUENTIALLY (CS2012). The App Shell carries no fakes (DEC-012): this host is where the turn is tested.
@@ -191,10 +191,10 @@ dotnet build tools/TurnRouterSmoke -c Debug
 tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnRouterSmoke.exe --assert-request
 #   -> 14 PASS, exit 0   (also: --assert-source 3, --assert-map 13, --assert-gate 7, --assert-errors 5, --assert-legs 10)
 
-# Planner evaluation set (DEC-043 -- 30 questions + automatic checks K-1..K-11; offline, recording fake model, no key).
+# Planner evaluation set (DEC-043 -- 30 questions + automatic checks K-1..K-12; offline, recording fake model, no key).
 dotnet build tools/PlannerEval -c Debug
 tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --assert-checks
-#   -> 24 PASS, exit 0   (also: --assert-set 7, --assert-record-stub 9, --assert-drift 5)
+#   -> 26 PASS, exit 0   (also: --assert-set 7, --assert-record-stub 9, --assert-drift 5)
 # Live recording (DEC-044, owner): needs DEEPSEEK_API_KEY (presence/length only); without it: KEY MISSING, exit 12.
 tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --record --cases E-01,E-03
 #   -> per-case lines + report.txt under %LOCALAPPDATA%/HeyGanesh/eval/<stamp>; then --replay <dir> [--baseline <dir>] offline

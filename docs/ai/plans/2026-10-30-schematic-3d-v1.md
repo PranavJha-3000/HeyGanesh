@@ -1,7 +1,9 @@
 # Plan: 3D for objects with no library model, as clearly tagged schematics (build sequence step 10)
 
 2026-10-30 · claude-opus-5-5 · STATUS: 10a BUILT 2026-10-30 (owner: "Yes, build 10a"): LS-14 20 PASS, PL-6 7 PASS; DEC-048.
-Changed while building: sizes are [0, 4] (a size spans the shape), not (0, 2]. 10b–10d are not built.
+Changed while building: sizes are [0, 4] (a size spans the shape), not (0, 2]. 10b BUILT 2026-10-30 (owner: "Yes, build
+10b"): LP-12 7 PASS, PE-2 26 with K-12; DEC-049. Changed: no geometry check now means no schematic at all (the
+validator, not just the prompt), so the shell cannot receive one before 10c draws it. 10c–10d are not built.
 
 ## Problem, restated
 

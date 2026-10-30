@@ -32,6 +32,14 @@ public sealed record PlanRequest
     /// yet (FEATURE-007 Phase 5 step 6).
     /// </summary>
     public ModelCatalog? Scene3d { get; init; }
+
+    /// <summary>
+    /// The geometry check for lesson-defined schematics (DEC-048/DEC-049): the Part Library's
+    /// <c>Schematics.Check</c>, passed by a caller whose canvas draws schematics. With it and a
+    /// <see cref="Scene3d"/> catalogue, the prompt offers one schematic for an object the catalogue lacks
+    /// and the validator checks it; without it schematics are neither offered nor accepted.
+    /// </summary>
+    public Func<SchematicModel, IReadOnlyList<string>>? SchematicGeometry { get; init; }
 }
 
 /// <summary>

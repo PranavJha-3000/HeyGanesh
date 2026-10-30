@@ -20,7 +20,7 @@ namespace HeyGanesh.Tools.PlannerEval;
 internal static partial class PlannerEvalHost
 {
     private const ProviderCapability StreamingText = ProviderCapability.Text | ProviderCapability.Streaming;
-    private static readonly string[] AllChecks = Enumerable.Range(1, 11).Select(i => $"K-{i}").ToArray();
+    private static readonly string[] AllChecks = Enumerable.Range(1, 12).Select(i => $"K-{i}").ToArray();
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -153,7 +153,7 @@ internal static partial class PlannerEvalHost
         var neverPassed = AllChecks.Where(k => !seenPass.Contains(k)).ToList();
         var neverFailed = AllChecks.Where(k => !seenFail.Contains(k)).ToList();
         failures = Check(neverPassed.Count == 0 && neverFailed.Count == 0,
-            $"every check K-1..K-11 seen passing and failing (never passed: {Names(neverPassed)}; never failed: {Names(neverFailed)})", failures);
+            $"every check K-1..K-12 seen passing and failing (never passed: {Names(neverPassed)}; never failed: {Names(neverFailed)})", failures);
         return Summarize(failures, "EVAL CHECKS OK");
     }
 

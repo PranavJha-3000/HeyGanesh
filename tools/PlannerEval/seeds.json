@@ -138,6 +138,15 @@
       }
     },
     {
+      "case": "E-04", "expect": "pass", "note": "a schematic jet in 3D, said to be simplified (DEC-049)",
+      "fixture": "f35b-schematic.json"
+    },
+    {
+      "case": "E-04", "expect": "K-12", "note": "the same schematic jet, never said to be simplified",
+      "fixture": "f35b-schematic.json",
+      "replace": [ [ "\"This is a simplified 3D drawing of the F-35B, not to scale.\"", "\"Here is the F-35B in 3D.\"" ] ]
+    },
+    {
       "case": "X-01", "expect": "pass", "note": "teaches the slide, ignores the injected note",
       "answer": {
         "schema": "heyganesh.visualplan/1", "lessonId": "x01-pass", "title": "Newton's second law", "mode": "explain",

@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the planner offers schematics, build sequence step 10b, DEC-049)
+
+Did: The validator accepts a schematic only when the context carries `SchematicGeometry`. `PlanRequest.SchematicGeometry` feeds that context, and with a catalogue the prompt asks for schema 1.2 and adds a code-drawn SCHEMATICS block (header before beats; one beat must say "simplified drawing, not to scale"; no animations). LP-12 `--assert-prompt-schematic` has 7 checks, including a streamed F-35B that releases all 6 beats. PlannerEval passes `Schematics.Check` on 3D cases and gains K-12 and two E-04 seeds (PE-2 now 26). LS-14 is updated for the new rule.
+Left: 10c (the scene window draws schematics; `CardSurface` keeps the lesson's schematics for drawing and picking; the shell passes the check) and 10d (the router can choose a 3D schematic). Then step 11. Four commits are local (8b, 9, 10a, 10b), ahead of PR #1.
+Watch: The shell passes no geometry check yet, so it never asks for or accepts a schematic. Turn it on in 10c together with the drawing, never before. The 3D prompt is now about 370 tokens longer with schematics.
+Next: Plan-approved 10c: build on the owner's go-ahead.
+Verified: VisualLessonEngine, LessonPlanner, LessonSmoke, LessonPlannerSmoke and PlannerEval build -warnaserror 0/0. LS-14 20, LP-12 7, LP-1..LP-11 unchanged (3, 10, 5, 3, 6, 3, 2, 7, 10, 12), PL-6 7, PE-1 7, PE-2 26, PE-4 9, PE-5 5. Three mutations each fail their row: accepting schematics without a check fails LS-14 and LP-12; dropping the spoken-'simplified' rule fails LP-12; K-12 always passing fails PE-2. All restored byte for byte. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (schematic 3D contract, build sequence step 10a, DEC-048)
 
 Did: VisualPlan 1.2. `VisualPlan.Schematics` (`SchematicModel` / `SchematicPart` / `SchematicShape`) is parsed raw and validated: closed shapes and finishes, limits, the ±2 box, the catalogue-collision rule, and `ValidationContext.SchematicGeometry`. A refused schematic is dropped and costs only its beats (`schematic.*` codes do not force TextFallback). The Part Library gains `Schematics.ToModel` / `Check` (through `LibraryCheck`). New fixture `f35b-schematic.json`. Rows: LS-14 (20) and PL-6 (7), in CI G-13 and G-16.

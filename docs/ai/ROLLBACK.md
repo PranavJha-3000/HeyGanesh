@@ -486,3 +486,16 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `9bde849` (the commit before this step).
 - **Files to restore:** `git checkout 9bde849 -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Intelligence/HeyGanesh.PartLibrary tools/LessonSmoke tools/PartLibrarySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Intelligence/HeyGanesh.PartLibrary/Schematics.cs`, `tools/LessonSmoke/fixtures/f35b-schematic.json` and the new smoke files (`git status` lists them).
 - **Re-check after revert:** LessonSmoke `--assert-scene3d` 22 and `--assert-fixtures` 6; PartLibrarySmoke `--assert-catalog` 6; the local CI runner reports 19 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the planner offers schematics, build sequence step 10b, DEC-049)
+
+- **Change:**
+  - VisualLessonEngine: a schematic is accepted only when the caller passes `SchematicGeometry`, so a canvas that cannot check (and so cannot draw) one never receives one. LS-14 is updated.
+  - LessonPlanner: `PlanRequest.SchematicGeometry` (into the validation context); with a catalogue and that check, the system prompt asks for schema 1.2 and adds a SCHEMATICS block. Without it the prompt is unchanged character for character.
+  - LessonPlannerSmoke `--assert-prompt-schematic` (LP-12).
+  - PlannerEval: 3D cases pass the Part Library's check, K-12 "a schematic is said to be simplified", and two E-04 seeds.
+  - CI G-14 runs LP-12.
+  - Docs: DEC-049, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `db3f2e0` (the commit before this step).
+- **Files to restore:** `git checkout db3f2e0 -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Intelligence/HeyGanesh.LessonPlanner tools/LessonSmoke tools/LessonPlannerSmoke tools/PlannerEval .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** LessonSmoke `--assert-schematic` 20, LessonPlannerSmoke `--assert-prompt-3d` 10, PlannerEval `--assert-checks` 24; the local CI runner reports 19 gates, all exit 0.

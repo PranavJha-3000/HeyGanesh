@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-049](#dec-049--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner offers one schematic only when the request carries a catalogue and the Part Library's geometry check; the validator accepts none without that check; the eval gains K-12 (a schematic lesson must say it is simplified) | accepted |
 | [DEC-048](#dec-048--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | VisualPlan 1.2: a lesson may define one schematic model (closed shapes and finishes, ≤ 12 parts / 40 shapes, ±2 box) for an object the catalogue lacks; the engine checks structure, the Part Library's `Schematics.Check` checks geometry through a delegate; a refused schematic costs only its beats | accepted |
 | [DEC-047](#dec-047--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Tutor is on: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key (null and an honest skip otherwise); TU-8 allows exactly one key-named option, `DeepSeekTutorOptions.ApiKey` typed `Func<string?>` (amends DEC-017) | accepted |
 | [DEC-046](#dec-046--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell's API clients (Jev, Vision, Fish, the lesson and router models) read their keys through the key ring per request; `SelectionOptions`, `VisionOptions`, `FishTtsOptions` gain an optional `Func<string?> ApiKey` that defaults to the old environment read; the Tutor waits for step 9 because TU-8 forbids a key-named option | accepted |
@@ -59,6 +60,33 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-049 — 2026-10-30 — claude-opus-5-5
+
+**Decision — schematics are offered, and accepted, only where they can be drawn: a request that carries both the catalogue and the geometry check.** Step 10b of the build sequence (the owner: "Yes, build 10b").
+
+- **Engine:** `ValidationContext.SchematicGeometry` is now also the caller's statement that its canvas draws schematics. Null refuses every schematic with `schematic.unavailable`, even one the model sends unasked. 10a accepted structurally-valid ones without a check; that would have let a schematic reach the shell's scene window before it can draw one (10c), which would throw.
+- **Planner:**
+  - `PlanRequest.SchematicGeometry` flows into the validation context;
+  - with a catalogue and the check, `PlannerPrompt.System` asks for schema 1.2 and appends a SCHEMATICS block drawn from the code (shapes, finishes, every limit, the ±2 model space, what each size means), with three rules: catalogue models first, one beat must say it is a simplified drawing, not to scale, and no animations;
+  - it also asks for the header before the beats, so streamed beats are checked against the schematic (the scanner's header is everything before `beats`);
+  - without the check the prompt is unchanged character for character (LP-10 and LP-11 unchanged).
+- **Eval:**
+  - 3D cases pass `Schematics.Check`;
+  - K-12: when the validated lesson draws a schematic, its speech must say simplified, schematic, not to scale or sketch;
+  - E-04 gains a pass seed (the F-35B fixture) and a fail seed (the same lesson without that sentence).
+
+**Measured.** The 3D prompt grows from 5,026 to 6,498 characters (about 370 tokens). Its effect on the first beat shows only in the live run (PE-6).
+
+**Rejected.**
+- Offering schematics whenever a catalogue is passed (the shell would then receive them before it can draw them).
+- Scoring the drawing's quality offline (no honest offline measure; the live E-04 run and a human look are the measure).
+
+**Consequences.**
+- The shell does not pass the check yet, so it still never asks for or accepts a schematic: 10c (the scene window) and 10d (the router) turn it on.
+- Any baseline recorded later must be re-recorded if this prompt changes again (the prompt-hash gate).
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: LP-12 (CI G-14), LS-14 (updated), PE-2 (K-12).
+
 ## DEC-048 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a lesson may define one simplified 3D model of its own, a schematic, for an object the Part Library does not have.** Step 10a of the build sequence (the owner: "Yes, build 10a"). FEATURE-007 §3.2 already allowed free-form composition "rendered with a visible schematic tag"; this is its contract.

@@ -65,7 +65,14 @@ internal static partial class ShellHost
     /// </summary>
     private static readonly TimeSpan DrainGrace = TimeSpan.FromSeconds(5);
 
-    public static async Task<int> RunAsync(string[] args)
+    public static Task<int> RunAsync(string[] args) => RunAsync(args, CancellationToken.None, null);
+
+    /// <summary>
+    /// The same run, for a host with no console (the tray, DEC-052). <paramref name="stop"/> ends hooked mode the
+    /// way Ctrl+C does, with the same ordered teardown; <paramref name="hookLive"/> is called once, when the
+    /// keyboard hook is installed. Both are ignored by every other mode.
+    /// </summary>
+    public static async Task<int> RunAsync(string[] args, CancellationToken stop, Action? hookLive)
     {
         var options = ParseArgs(args);
 
@@ -193,7 +200,7 @@ internal static partial class ShellHost
             return await oncePump.RunDirectAsync().ConfigureAwait(false);
         }
 
-        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, router, options, lifetime).ConfigureAwait(false);
+        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, router, options, lifetime, stop, hookLive).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -215,7 +222,9 @@ internal static partial class ShellHost
         LessonLeg? lesson,
         Router? router,
         ShellOptions options,
-        CancellationTokenSource lifetime)
+        CancellationTokenSource lifetime,
+        CancellationToken stopToken,
+        Action? hookLive)
     {
         var pump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, router, options, lifetime.Token);
 
@@ -241,6 +250,7 @@ internal static partial class ShellHost
         Console.WriteLine($"hook live: IsRunning={hotkey.IsRunning} (installed), chord state={hotkey.State} (nothing held).");
         Console.WriteLine("Hold Ctrl+Alt to speak, release to submit the utterance; Ctrl+C here to stop.");
         Console.WriteLine();
+        hookLive?.Invoke();
 
         var stop = new ManualResetEventSlim(false);
         Console.CancelKeyPress += (_, e) =>
@@ -248,6 +258,9 @@ internal static partial class ShellHost
             e.Cancel = true; // stay alive long enough to tear down in order and report hook health
             stop.Set();
         };
+
+        // The tray's Quit (DEC-052): the same stop as Ctrl+C, so the teardown below is the same either way.
+        using var stopRegistration = stopToken.Register(stop.Set);
 
         if (options.Seconds > 0)
         {

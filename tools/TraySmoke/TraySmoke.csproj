@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the tray (DEC-052).
+
+    Not product code. TY-1 and TY-2 are offline (source audit, the log file) and run in CI. TY-3..TY-5 need an
+    interactive desktop and stay local: the real stop seam with a real keyboard hook, the real icon in the
+    notification area, and the real HeyGanesh.Tray.exe run twice. No key and no network: the planted
+    environment keys in TY-5 are made up, and nothing is asked while they are set.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>HeyGanesh.Tools.TraySmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.TraySmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.Tray\HeyGanesh.Tray.csproj" />
+  </ItemGroup>
+
+  <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

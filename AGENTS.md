@@ -27,6 +27,7 @@ Subsystems, and the seams between them are load-bearing:
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
 | Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
+| Tray | `src/Experience/HeyGanesh.Tray/` | Hey Ganesh as a desktop app (DEC-052): a notification-area icon with no console. It runs the App Shell's own composition through `ShellHost.RunAsync(args, stop, hookLive)`; Quit stops it like Ctrl+C. The shell's lines go to `logs/shell-<stamp>.log` (newest 5 kept); one tray per session (a second launch exits 3). Console-only flags (`--once`, `--help`, key commands) stay on `HeyGanesh.App.exe`. |
 | API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045/DEC-046): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The shell's Jev, Vision, Fish, lesson and router clients read through it per request; the Tutor still reads `DEEPSEEK_API_KEY` until step 9. |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
@@ -209,6 +210,11 @@ src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.
 #   store one yourself: HeyGanesh.App.exe --set-key deepseek  (typed or pasted, nothing shown); --remove-key deepseek
 dotnet run --project tools/SecretSmoke -c Debug -- --assert-keyring
 #   -> 11 PASS, exit 0   (also: --assert-keyring-cm 4, throwaway keyring-test.* credentials only)
+# Tray (DEC-052): the app with no console. Build the host (it builds the tray and the shell first), read its exit codes.
+dotnet build tools/TraySmoke -c Debug -warnaserror
+tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-source
+#   -> 6 PASS, exit 0   (also: --assert-log 7 offline; local-only, real hook for a few seconds: --assert-stop 5, --assert-tray 9, --assert-run 8)
+#   by hand: src/Experience/HeyGanesh.Tray/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tray.exe  (icon menu: status, keys, Open log folder, Quit)
 # Turn routing (DEC-036): without --lesson and with TYPESAFE_API_KEY set, Jev picks point / explain / 2D or 3D lesson per turn.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-route --question "x"
 #   keys unset -> header 'route : off (--no-route ...)', KEY ERROR (Element Selection), exit 12 (SH-21); with keys: routed turns -- live row SH-22

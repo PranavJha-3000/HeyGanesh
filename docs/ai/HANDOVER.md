@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the tray host, build sequence step 11a, DEC-052)
+
+Did: `ShellHost.RunAsync(args, stop, hookLive)` (console path unchanged); new `src/Experience/HeyGanesh.Tray` (WinExe, in the solution): the icon and menu (status, key presence, Open log folder, Quit), `TrayLog` (newest 5), `SingleInstance` (a second launch exits 3), console-only flags refused (exit 2). New `tools/TraySmoke`: TY-1 6, TY-2 7 (CI G-24), TY-3 5, TY-4 9, TY-5 8 (local). Plan step 11 written and committed with this step.
+Left: 11b key screen, 11c start at login, 11d installer (A or B is your call). Your decisions: whether the log keeps transcribed questions (it does today, like the console); whether the key screen opens by itself; click-to-ask on schematic parts. Seven local commits unpushed.
+Watch: Hooked mode blocks the calling thread before its first await, so `RunAsync` must be called through `Task.Run` (the tray does; TY-3 hung until it did). A test that starts `HeyGanesh.Tray.exe` and fails can leave a hook running: TY-5 now kills its own leftovers. Files written by the Write tool come out LF, so convert them to CRLF. Bash heredocs collapse `\\`, so write scripts containing Windows paths with the Write tool.
+Next: Build 11b (the key screen) on the owner's go-ahead.
+Verified: App, Tray, TraySmoke build -warnaserror 0/0. TY-1..TY-5 as above. App `--seconds 4` exit 0 with the hook released, `--once --question "x"` 12, `--help` 0. Mutations: an unregistered stop token fails TY-3 (timeout); a Quit that never cancels fails TY-4 (2); ignoring a taken mutex fails TY-5 (3); no pruning fails TY-2; all restored byte for byte. Local CI runner: 20 gates, all exit 0 (new G-24: 13 PASS lines).
+
 ## 2026-10-30 · claude-opus-5-5 (the router can choose a 3D schematic, build sequence step 10d, DEC-051)
 
 Did: `RouteRequest.Schematics` (opt-in) and `TurnRoute.Schematic`: with it, 3D + `none` (both at 0.5 or above) is a 3D schematic route instead of 2D; `LessonCanvas.Schematic`; the shell sets the flag and offers the full catalogue plus `Schematics.Check` for that leg; the routed lesson header says so. Rows: TR-2 15, TR-3 15, TR-6 11.

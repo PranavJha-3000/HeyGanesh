@@ -82,6 +82,15 @@
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The tray (DEC-052) runs this same composition through ShellHost.RunAsync(args, stop, hookLive) instead of
+      building the pipeline twice; its verification host drives that seam in-process. The shell stays internal.
+    -->
+    <InternalsVisibleTo Include="HeyGanesh.Tray" />
+    <InternalsVisibleTo Include="HeyGanesh.Tools.TraySmoke" />
+  </ItemGroup>
+
   <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>

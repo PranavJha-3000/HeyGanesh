@@ -354,6 +354,26 @@ Drawing (DEC-050):
   part click → OnPartClicked checks the library catalogue only → a schematic part is refused (DEC-031)
 ```
 
+## Tray (DEC-052)
+
+```
+HeyGanesh.Tray.exe Main [STAThread]                                   src/Experience/HeyGanesh.Tray/Program.cs
+  NativeFns.SetProcessDpiAwarenessContext(PerMonitorV2)                (as the console's Program.cs)
+  SingleInstance.TryAcquire: mutex Local\HeyGanesh.Tray
+    taken → SignalFirst (sets Local\HeyGanesh.Tray.Show) → exit 3
+  TrayLog.Open(DefaultFolder, now): prune to the newest 4, open shell-<stamp>.log → Console.SetOut / SetError
+  a console-only flag (--once, --help, --keys, --set-key, --remove-key) → log line, exit 2
+  TrayApp (ApplicationContext): hidden marshal control, NotifyIcon + menu (status, key presence, Open log folder, Quit)
+    Task.Run(ShellHost.RunAsync(args, stop, hookLive))                 the App Shell's own path, unchanged
+      RunHookedAsync: hotkey.Start → "hook live" → hookLive() → status "Listening…"
+                      stop.Wait() ends on Ctrl+C, --seconds, or the stop token (Register → stop.Set)
+                      → hotkey.Stop → lifetime.Cancel → pump.DrainAsync → hook health → exit code
+    Show event set (a second launch) → balloon + log line
+    Quit → stop.Cancel()  ·  shell returned → Finish: exit code (1 if it threw), icon hidden,
+           a failure not caused by Quit → message box naming the log folder → ExitThread
+  Application.Run returns → "tray: exit N" → exit N
+```
+
 ## Keys (KeyRing, DEC-045; the shell's API clients read through it, DEC-046)
 
 ```

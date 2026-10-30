@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-052](#dec-052--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A tray host (`HeyGanesh.Tray`, WinExe, WinForms `NotifyIcon`) runs the App Shell's own composition through a new `RunAsync(args, stop, hookLive)`; the console exe is unchanged; output goes to a log file (newest 5); one tray per session | accepted |
 | [DEC-051](#dec-051--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The router can choose a 3D schematic: with `RouteRequest.Schematics` set (the shell sets it), "3D, no listed model fits" is a schematic lesson on the full catalogue instead of 2D cards; off by default | accepted |
 | [DEC-050](#dec-050--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The scene window draws a lesson's schematic (optional `ISchematicCanvas`, handed the schematics by `LessonPlayer`) and the shell asks for them whenever it offers 3D; a click on a schematic part stays refused, because follow-ups use vetted library text only | accepted |
 | [DEC-049](#dec-049--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner offers one schematic only when the request carries a catalogue and the Part Library's geometry check; the validator accepts none without that check; the eval gains K-12 (a schematic lesson must say it is simplified) | accepted |
@@ -62,6 +63,29 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-052 — 2026-10-30 — claude-opus-5-5
+
+**Decision — Hey Ganesh gets a tray host that runs the App Shell's own composition; the console exe stays as it is.** Step 11a of the build sequence (the owner: "Yes, build 11a").
+
+- **Seam:** `ShellHost.RunAsync(args, stop, hookLive)`. In hooked mode, `stop` ends the wait the way Ctrl+C does (`stopToken.Register(stop.Set)`), so the teardown is the same code; `hookLive` is called once the hook is installed. `RunAsync(args)` passes neither, so every console row and exit code is unchanged. `InternalsVisibleTo` lets the tray and its host use the internal shell.
+- **Host:** `src/Experience/HeyGanesh.Tray`, `OutputType=WinExe`, `UseWindowsForms` (a framework reference that ships with the Desktop runtime and LessonSurface already uses; no PackageReference). The shell runs on the pool, because hooked mode blocks its thread before any await; the icon's message loop owns the STA main thread. Every UI change goes through a hidden control's `BeginInvoke`.
+- **Menu:** status, one line per key saying present or missing (not even a length), Open log folder, Quit. Keys… and Start at login are not there yet: 11b and 11c add them, so the menu has no item that does nothing.
+- **Log:** the shell's console lines, unchanged, in `logs/shell-<stamp>.log` under the data folder; the newest 5 kept. The shell already prints keys only as "present (N chars, source)", and TY-5 checks the real exe with planted keys. Transcribed questions are logged as the console shows them. The owner has not decided this yet (plan decision 2), so the default is the console's behaviour.
+- **One instance:** a `Local\` mutex; a second launch sets a `Local\` event, the first shows a balloon, and the second exits 3. The console exe does not take the mutex.
+- **Console-only flags** (`--once`, `--help`, key commands) are refused with exit 2 and a log line: key entry reads hidden keystrokes, and a WinExe has no console to read them from.
+
+**Rejected.**
+- A `--tray` flag on the console exe: a console app always opens a console window.
+- Raw `Shell_NotifyIcon`: no dependency either way, but hundreds of lines WinForms already has.
+- WinUI 3: the reasons DEC-012 gives still hold.
+- Building the pipeline again in the tray: the two would drift.
+
+**Known gaps.**
+- The icon is the generic application icon; there is no Hey Ganesh artwork in the repo yet.
+- A shell that fails at start (exit 2, e.g. no capture support) shows a message box. That is the one place the tray takes focus, and only when it is about to exit.
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: TY-1..TY-5 (TY-1/TY-2 in CI G-24), TY-6 manual.
+
 ## DEC-051 — 2026-10-30 — claude-opus-5-5
 
 **Decision — "3D, but no listed model fits" becomes a schematic lesson when the caller can draw one.** Step 10d of the build sequence (the owner: "Yes, build 10d").

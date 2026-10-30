@@ -523,3 +523,14 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `3de8935` (the commit before this step).
 - **Files to restore:** `git checkout 3de8935 -- src/Intelligence/HeyGanesh.TurnRouter src/Experience/HeyGanesh.App tools/TurnRouterSmoke AGENTS.md docs/ai`.
 - **Re-check after revert:** TurnRouterSmoke `--assert-request` 14, `--assert-map` 13, `--assert-legs` 10; App `--once --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the tray host, build sequence step 11a, DEC-052)
+
+- **Change:**
+  - App Shell: `ShellHost.RunAsync(args, stop, hookLive)`. Hooked mode's wait also ends on the `stop` token, and `hookLive` is called once the hook is installed. `RunAsync(args)` is unchanged for the console. `InternalsVisibleTo` for `HeyGanesh.Tray` and `HeyGanesh.Tools.TraySmoke`.
+  - New `src/Experience/HeyGanesh.Tray` (WinExe, in the solution): the notification-area icon, menu (status, Open log folder, Quit), the log file (last 5 kept), one instance per user session.
+  - New `tools/TraySmoke` (rows TY-1..TY-5); CI gate G-24 runs the offline rows.
+  - Docs: DEC-052, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `3e95da8` (the commit before this step).
+- **Files to restore:** `git checkout 3e95da8 -- src/Experience/HeyGanesh.App HeyGanesh.sln .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.Tray` and `tools/TraySmoke`.
+- **Re-check after revert:** App `--seconds 4` exit 0 with the hook released; App `--once --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.

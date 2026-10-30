@@ -28,6 +28,7 @@ internal static partial class TraySmokeHost
                 "--assert-startup-menu" => RunAssertStartupMenu(),
                 "--assert-install" => RunAssertInstall(args.Length > 1 ? args[1] : null),
                 "--assert-notes-map" => RunAssertNotesMap(),
+                "--assert-session" => RunAssertSession(),
                 "--assert-notes-shell" => RunAssertNotesShell(),
                 "--assert-recent-model" => RunAssertRecentModel(),
                 "--assert-replay-prepare" => RunAssertReplayPrepare(),
@@ -65,6 +66,7 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-startup-menu LOCAL: the tray's Start at login item over a throwaway key; exit 0");
         Console.WriteLine("  --assert-install [package]  LOCAL: install.ps1 / uninstall.ps1 from a built package into temp folders and throwaway HKCU keys; exit 0");
         Console.WriteLine("  --assert-notes-map    the shell's turn-to-note mapping, every case, through a real temporary store (DEC-059); exit 0");
+        Console.WriteLine("  --assert-session      the shell's memory of this run: only taught turns, the newest 3, a line each (DEC-061); exit 0");
         Console.WriteLine("  --assert-recent-model   what Recent lessons lists and says: newest first, replayable only with a stored plan, details, delete, clear (DEC-060); exit 0");
         Console.WriteLine("  --assert-replay-prepare a stored plan is validated again before it may play; bad ones refused with a reason; exit 0");
         Console.WriteLine("  --assert-replay         LOCAL: a stored lesson replays on the real cards with no model; a bad one opens nothing; exit 0");

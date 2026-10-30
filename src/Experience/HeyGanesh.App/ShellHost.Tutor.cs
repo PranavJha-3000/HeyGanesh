@@ -138,7 +138,13 @@ internal static partial class ShellHost
         try
         {
             var result = await tutor.ExplainAsync(
-                new TutorRequest { Question = options.Question, Context = MapGuidanceToContext(guidance) },
+                new TutorRequest
+                {
+                    Question = options.Question,
+                    Context = MapGuidanceToContext(guidance),
+                    // DEC-061: this run's earlier turns, so a follow-up question can be understood.
+                    EarlierTurns = options.NoContext ? Array.Empty<TutorEarlierTurn>() : Session.Snapshot().Select(t => new TutorEarlierTurn(t.Question, t.Taught)).ToArray(),
+                },
                 ct).ConfigureAwait(false);
 
             Console.WriteLine($"tutor       : {result}");

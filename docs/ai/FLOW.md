@@ -377,6 +377,11 @@ Shell (DEC-059):
       Lesson → TeachWithLessonAsync fills title, PlanJson (first lesson's PlanResult.PlanJson), picks, outcome
     → TurnNotes.From(question, session, now, verdict, record, exit code): null for 12 / 13 / Failed / no question
     → Notes.Record(note) → "notes : saved #N"   (a failure is "notes : not saved (...)", the exit code unchanged)
+    (before the store: !--no-context → Session.Add(note): kept only if it taught something, the newest 3)   (DEC-061)
+  each later turn: TeachAndSpeakAsync → TutorRequest.EarlierTurns = Session.Snapshot()
+                   TeachWithLessonAsync → PlanRequest.EarlierTurns = Session.Snapshot()
+    → TutorService.RenderPrompt / PlannerPrompt.User: "EARLIER IN THIS SESSION (UNTRUSTED ...)" <<<BEGIN/END EARLIER TURNS>>>,
+      the last 3, each "n. asked: <q, 200> | taught: <t, 300>", flattened, fences defused; none → no block, prompt unchanged
 
 Recent lessons (DEC-060), in the tray:
   menu "Recent lessons…" → TrayApp.OpenRecent → RecentLessonsModel(NotesStore.Open(default path)) → RecentLessons window

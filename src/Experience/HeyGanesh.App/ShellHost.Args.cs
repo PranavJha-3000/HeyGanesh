@@ -12,7 +12,7 @@ internal static partial class ShellHost
     {
         var question = "";
         var help = false; var once = false; var overlay = true; var foreground = false;
-        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false; var noOcr = false; var noNotes = false;
+        var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false; var noOcr = false; var noNotes = false; var noContext = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
         string? keyCommand = null; var keyName = "";
@@ -31,6 +31,7 @@ internal static partial class ShellHost
                 case "--no-route": noRoute = true; break;
                 case "--no-ocr": noOcr = true; break;
                 case "--no-notes": noNotes = true; break;
+                case "--no-context": noContext = true; break;
                 case "--no-dpi": expectDpi = false; break;
                 case "--seconds": seconds = int.Parse(args[++i]); break;
                 case "--cancel-ms": cancelMs = int.Parse(args[++i]); break;
@@ -53,7 +54,7 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute, noOcr, keyCommand, keyName, noNotes);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute, noOcr, keyCommand, keyName, noNotes, noContext);
     }
 
     private static void PrintUsage()
@@ -85,6 +86,8 @@ internal static partial class ShellHost
         Console.WriteLine("--no-ocr          do not read the screen's text. By default the cursor monitor's text is read");
         Console.WriteLine("                  locally, and up to 40 short lines inside the target window (none that look");
         Console.WriteLine("                  like a key or token) are offered to Jev with the UI controls (DEC-039).");
+        Console.WriteLine("--no-context      do not show the Tutor or the lesson planner this run's earlier turns. By default the last");
+        Console.WriteLine("                  3 taught turns (in memory only) go with each question, so a follow-up is understood (DEC-061).");
         Console.WriteLine("--no-notes        keep no note of this run's turns. By default each taught turn (question, verdict in");
         Console.WriteLine("                  words, the answer or the lesson) is kept in notes.db under the data folder (DEC-059).");
         Console.WriteLine("--foreground      walk the foreground window instead of the window under the cursor.");
@@ -166,6 +169,7 @@ internal static partial class ShellHost
         Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
         Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");
         Console.WriteLine($"  notes      : {NotesState}");
+        Console.WriteLine($"  context    : {(options.NoContext ? "off (--no-context)" : $"ON: the last {SessionTurns.Keep} taught turns of this run go with each question (memory only)")}");
         Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), deepseekKey)}");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
@@ -213,6 +217,7 @@ internal static partial class ShellHost
         bool NoOcr,
         string? KeyCommand,
         string KeyName,
-        bool NoNotes);
+        bool NoNotes,
+        bool NoContext);
 }
 

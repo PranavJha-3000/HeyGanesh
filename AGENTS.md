@@ -89,6 +89,7 @@ src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --question "where is the Save button"
 #   keys unset -> header, real capture, KEY ERROR (Element Selection), exit 12  (legacy scripted path)
 #   the header's notes line says where taught turns are kept (DEC-059); --no-notes keeps none
+#   the header's context line: this run's last 3 taught turns go to the Tutor and planner (DEC-061); --no-context turns it off
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --seconds 4
 #   -> no flag needed now: hook live: IsRunning=True; auto-stops, health block, exit 0
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --question "x" --seconds 4
@@ -134,6 +135,8 @@ dotnet run --project tools/TutorSmoke -c Debug -- --assert-grounding
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-parity
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-client-error
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-source
+dotnet run --project tools/TutorSmoke -c Debug -- --assert-earlier
+#   -> 7 PASS: this run's earlier turns reach the Tutor fenced, flattened and capped (DEC-061)
 # TU-11: the live provider's wire contract, offline -- the factory-built client's BaseUrl points at
 # a loopback stub (no key, no real network; pins deepseek-flash payload + thinking:disabled).
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-tutor-payload
@@ -168,7 +171,7 @@ tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Intelligence/HeyGanesh.LessonPlanner -c Debug
 dotnet build tools/LessonPlannerSmoke -c Debug
 tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonPlannerSmoke.exe --assert-prompt
-#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 5, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 14, --assert-prompt-schematic 7)
+#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 5, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 14, --assert-prompt-schematic 7, --assert-earlier 7)
 
 # Lesson Turn host (one lesson turn: fake model + fake or REAL cards, no key; LT-6/LT-7 need an interactive desktop).
 # Build library then host SEQUENTIALLY (CS2012). The App Shell carries no fakes (DEC-012): this host is where the turn is tested.
@@ -215,7 +218,7 @@ dotnet run --project tools/SecretSmoke -c Debug -- --assert-keyring
 # Tray (DEC-052): the app with no console. Build the host (it builds the tray and the shell first), read its exit codes.
 dotnet build tools/TraySmoke -c Debug -warnaserror
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-source
-#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key), --assert-notes-map 6, --assert-recent-model 8, --assert-replay-prepare 4 offline; --assert-notes-shell 5 (the real console exe, no keys); local-only, real hook for a few seconds: --assert-stop 6, --assert-tray 10, --assert-run 8,
+#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key), --assert-notes-map 6, --assert-session 5, --assert-recent-model 8, --assert-replay-prepare 4 offline; --assert-notes-shell 6 (the real console exe, no keys); local-only, real hook for a few seconds: --assert-stop 6, --assert-tray 10, --assert-run 8,
 #   --assert-keys-window 11 (shows the key window), --assert-keys-pause 3 (PRESSES Ctrl+Alt once), --assert-startup-menu 7,
 #   --assert-replay 4 (shows the lesson windows), --assert-recent-window 11)
 #   by hand: src/Experience/HeyGanesh.Tray/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tray.exe  (icon menu: status, keys, Open log folder, Quit)

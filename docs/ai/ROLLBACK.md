@@ -633,3 +633,15 @@
 - **Rollback point:** branch `feat/notes-v1` at `7d5ea59` (the commit before this step).
 - **Files to restore:** `git checkout 7d5ea59 -- src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** TraySmoke `--assert-tray` 10, `--assert-notes-map` 6; the local CI runner reports 22 gates, all exit 0.
+
+## 2026-10-31 · claude-opus-5-5 (earlier turns as context for follow-ups, build sequence step 12d, DEC-061)
+
+- **Change:**
+  - TutorEngine: `TutorRequest.EarlierTurns` and an "EARLIER IN THIS SESSION" block in the user prompt, fenced, flattened and capped; absent when there are none (the prompt is then byte-for-byte as before).
+  - LessonPlanner: `PlanRequest.EarlierTurns` and the same block, same rules.
+  - App Shell: `SessionTurns` keeps this run's last 3 taught turns in memory (not from the database) and hands them to the Tutor and the planner; header line `context :`, `--no-context` turns it off.
+  - Rows: TutorSmoke `--assert-earlier`, LessonPlannerSmoke `--assert-earlier`, TraySmoke `--assert-session` (CI); the PlannerEval rows re-run for drift.
+  - Docs: DEC-061, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/notes-v1` at `79d6a92` (the commit before this step).
+- **Files to restore:** `git checkout 79d6a92 -- src/Intelligence/HeyGanesh.TutorEngine src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/TutorSmoke tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** TutorSmoke `--assert-prompt`, LessonPlannerSmoke `--assert-prompt` 10, PlannerEval `--assert-drift` 5; the local CI runner reports 22 gates, all exit 0.

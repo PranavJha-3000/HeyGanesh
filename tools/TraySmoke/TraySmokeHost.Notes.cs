@@ -59,6 +59,35 @@ internal static partial class TraySmokeHost
         return Summarize(failures, "NOTES MAP OK");
     }
 
+    // NB-4 (DEC-061): the shell's memory of this run's turns: only taught turns, the newest 3, said in a line each.
+    private static int RunAssertSession()
+    {
+        var failures = 0;
+        var at = new DateTimeOffset(2026, 10, 31, 10, 0, 0, TimeSpan.Zero);
+        TurnNote Turn(string q, NoteLeg leg, string? answer = null, string? title = null, string? element = null) =>
+            new() { At = at, Session = "s", Question = q, Leg = leg, Answer = answer, LessonTitle = title, Element = element, Outcome = "x" };
+
+        var session = new SessionTurns();
+        failures = Check(session.Snapshot().Count == 0 && SessionTurns.Keep == 3, "a new run remembers nothing, and keeps at most 3", failures);
+
+        session.Add(null);
+        session.Add(Turn("skipped tutor", NoteLeg.Tutor));
+        session.Add(Turn("skipped lesson", NoteLeg.Lesson));
+        failures = Check(session.Snapshot().Count == 0, "no note (a key error, a cancelled turn) and a turn that taught nothing are not kept", failures);
+
+        session.Add(Turn("what is entropy?", NoteLeg.Tutor, answer: "A count of arrangements."));
+        session.Add(Turn("where is Save?", NoteLeg.Highlight, element: "Save button"));
+        session.Add(Turn("how does an engine work?", NoteLeg.Lesson, title: "How a four-stroke engine works"));
+        session.Add(Turn("and the exhaust stroke?", NoteLeg.Tutor, answer: "The piston pushes the burnt gas out."));
+        var kept = session.Snapshot();
+        failures = Check(kept.Select(k => k.Question).SequenceEqual(new[] { "where is Save?", "how does an engine work?", "and the exhaust stroke?" }),
+            $"after four taught turns the newest 3 are kept, oldest first ({string.Join(" / ", kept.Select(k => k.Question))})", failures);
+        failures = Check(kept[0].Taught == "showed the Save button on screen" && kept[1].Taught == "a drawn lesson: How a four-stroke engine works" && kept[2].Taught == "The piston pushes the burnt gas out.",
+            "each says what it taught: the highlight, the lesson's title, the Tutor's answer", failures);
+        failures = Check(SessionTurns.TaughtLine(Turn("where?", NoteLeg.Highlight)) == "showed something on screen", "a highlight with no element name still counts", failures);
+        return Summarize(failures, "SESSION OK");
+    }
+
     // NB-2 (DEC-059): the real HeyGanesh.App.exe with temporary data folders. Local: --once captures the real screen.
     // It never runs with a key stored, so it can never make a live (billed) call.
     private static int RunAssertNotesShell()
@@ -73,21 +102,24 @@ internal static partial class TraySmokeHost
         }
 
         var (help, usage) = App(exe, TempFolder("notes-help"), "--help");
-        failures = Check(help == 0 && usage.Contains("--no-notes", StringComparison.Ordinal), "--help lists --no-notes", failures);
+        failures = Check(help == 0 && usage.Contains("--no-notes", StringComparison.Ordinal) && usage.Contains("--no-context", StringComparison.Ordinal), "--help lists --no-notes and --no-context", failures);
 
         var on = TempFolder("notes-on");
         var (onCode, onOut) = App(exe, on, "--once", "--question", "where is the Save button");
         var db = Path.Combine(on, "notes.db");
         failures = Check(onCode == 12 && onOut.Contains($"notes      : ON ({db})", StringComparison.Ordinal), $"the header says where notes go; with no keys the turn stops at KEY ERROR (exit {onCode})", failures);
+        failures = Check(onOut.Contains("context    : ON: the last 3 taught turns of this run go with each question (memory only)", StringComparison.Ordinal),
+            "the header says earlier turns go with each question (DEC-061)", failures);
         using (var store = NotesStore.Open(db))
         {
             failures = Check(store.Count() == 0 && !onOut.Contains("notes       : saved", StringComparison.Ordinal), "a key-error turn leaves no note (the store exists and is empty)", failures);
         }
 
         var off = TempFolder("notes-off");
-        var (offCode, offOut) = App(exe, off, "--once", "--question", "where is the Save button", "--no-notes");
-        failures = Check(offCode == 12 && offOut.Contains("notes      : off (--no-notes)", StringComparison.Ordinal) && !File.Exists(Path.Combine(off, "notes.db")),
-            "--no-notes: the header says off, and no notes.db is created", failures);
+        var (offCode, offOut) = App(exe, off, "--once", "--question", "where is the Save button", "--no-notes", "--no-context");
+        failures = Check(offCode == 12 && offOut.Contains("notes      : off (--no-notes)", StringComparison.Ordinal) && !File.Exists(Path.Combine(off, "notes.db"))
+            && offOut.Contains("context    : off (--no-context)", StringComparison.Ordinal),
+            "--no-notes and --no-context: the header says both are off, and no notes.db is created", failures);
 
         var broken = TempFolder("notes-broken");
         File.WriteAllText(Path.Combine(broken, "notes.db"), new string('x', 4096));

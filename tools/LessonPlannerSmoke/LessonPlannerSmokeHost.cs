@@ -36,6 +36,7 @@ internal static partial class LessonPlannerSmokeHost
                 "--assert-prompt-3d" => await RunAssertPrompt3dAsync(),
                 "--assert-stream" => await RunAssertStreamAsync(),
                 "--assert-prompt-schematic" => await RunAssertPromptSchematicAsync(),
+                "--assert-earlier" => await RunAssertEarlierAsync(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -67,6 +68,7 @@ internal static partial class LessonPlannerSmokeHost
         Console.WriteLine("  --assert-prompt-3d   3D offered only with a catalogue; every name and op shape from the code; repair of an invented part, exit 0");
         Console.WriteLine("  --assert-stream      beats released as they validate, for every golden lesson at every chunk size; faults, repair, fallback, timing, exit 0");
         Console.WriteLine("  --assert-prompt-schematic  schematics offered only with a catalogue and the geometry check; block from the code; the F-35B answer plans and streams, exit 0");
+        Console.WriteLine("  --assert-earlier         earlier turns: fenced, flattened, capped, the last 3; none = unchanged prompt (DEC-061), exit 0");
         return 0;
     }
 

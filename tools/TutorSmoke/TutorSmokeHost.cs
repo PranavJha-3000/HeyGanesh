@@ -20,6 +20,7 @@ internal static partial class TutorSmokeHost
         AssertClientError,
         AssertAuthError,
         AssertTutorPayload,
+        AssertEarlier,
         LiveExplain,
         Cancel,
     }
@@ -52,6 +53,7 @@ internal static partial class TutorSmokeHost
                 Mode.AssertClientError => await RunAssertClientErrorAsync(),
                 Mode.AssertAuthError => await RunAssertAuthErrorAsync(),
                 Mode.AssertTutorPayload => await RunAssertTutorPayloadAsync(),
+                Mode.AssertEarlier => await RunAssertEarlierAsync(),
                 Mode.LiveExplain => await RunLiveExplainAsync(options.Text),
                 Mode.Cancel => await RunCancelAsync(options.CancelMs),
                 _ => PrintUsage(),
@@ -100,6 +102,7 @@ internal static partial class TutorSmokeHost
 
                     break;
                 case "--assert-prompt": mode = Mode.AssertPrompt; break;
+                case "--assert-earlier": mode = Mode.AssertEarlier; break;
                 case "--assert-grounding": mode = Mode.AssertGrounding; break;
                 case "--assert-parity": mode = Mode.AssertParity; break;
                 case "--assert-source": mode = Mode.AssertSource; break;
@@ -131,6 +134,7 @@ internal static partial class TutorSmokeHost
         Console.WriteLine("Offline rows (no provider, no key, no network):");
         Console.WriteLine("  --fake-explain [\"<q>\"]        recorded lesson -> TutorResult, exit 0");
         Console.WriteLine("  --assert-prompt               prompt contract + visual carry + caps, exit 0");
+        Console.WriteLine("  --assert-earlier              earlier turns: fenced, flattened, capped, the last 3; none = unchanged prompt (DEC-061), exit 0");
         Console.WriteLine("  --assert-grounding            untrusted labeling + grounded lesson + generic");
         Console.WriteLine("                                lesson without screen data, exit 0");
         Console.WriteLine("  --assert-parity               text-only prompts byte-identical across runs, exit 0");

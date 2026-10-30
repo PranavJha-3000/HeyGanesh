@@ -18,6 +18,9 @@ internal static partial class ShellHost
     /// <summary>What the header's notes line says; kept in step with <see cref="OpenNotes"/>.</summary>
     private static string NotesState = "off";
 
+    /// <summary>This run's last taught turns, in memory only (DEC-061): what the Tutor and the planner see as context.</summary>
+    private static readonly SessionTurns Session = new();
+
     /// <summary>One id per run, so a run's turns can be listed together.</summary>
     private static readonly string NotesSession = $"{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}";
 
@@ -64,6 +67,12 @@ internal static partial class ShellHost
     private static void RecordNote(ShellOptions options, GuidanceResult guidance, TurnRecord record, int code)
     {
         var note = TurnNotes.From(options.Question, NotesSession, DateTimeOffset.Now, guidance, record, code);
+        if (!options.NoContext)
+        {
+            // Kept whether or not notes are on: context is this run's memory, notes are what is saved to disk.
+            Session.Add(note);
+        }
+
         if (Notes is null || note is null)
         {
             return;
@@ -133,4 +142,52 @@ internal static class TurnNotes
             Outcome = record.Outcome ?? $"exit {exitCode}",
         };
     }
+}
+
+/// <summary>
+/// This run's last <see cref="Keep"/> taught turns (DEC-061), so the Tutor and the planner can understand a follow-up
+/// ("and the exhaust stroke?"). In memory only, gone when the run ends; a turn that taught nothing (a skipped leg) is
+/// not kept. Pure apart from its lock, so every rule is checked offline (TraySmoke --assert-session).
+/// </summary>
+internal sealed class SessionTurns
+{
+    public const int Keep = 3;
+
+    private readonly object _gate = new();
+    private readonly List<(string Question, string Taught)> _turns = new();
+
+    /// <summary>Keeps a finished turn's question and what it taught; ignores a turn with no note or nothing taught.</summary>
+    public void Add(TurnNote? note)
+    {
+        if (note is null || TaughtLine(note) is not { } taught)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            _turns.Add((note.Question, taught));
+            while (_turns.Count > Keep)
+            {
+                _turns.RemoveAt(0);
+            }
+        }
+    }
+
+    /// <summary>The kept turns, oldest first.</summary>
+    public IReadOnlyList<(string Question, string Taught)> Snapshot()
+    {
+        lock (_gate)
+        {
+            return _turns.ToArray();
+        }
+    }
+
+    /// <summary>What a turn taught, in a line; null when it taught nothing (a skipped Tutor or lesson).</summary>
+    internal static string? TaughtLine(TurnNote note) => note.Leg switch
+    {
+        NoteLeg.Tutor => note.Answer,
+        NoteLeg.Lesson => note.LessonTitle is { } title ? $"a drawn lesson: {title}" : null,
+        _ => note.Element is { } element ? $"showed the {element} on screen" : "showed something on screen",
+    };
 }

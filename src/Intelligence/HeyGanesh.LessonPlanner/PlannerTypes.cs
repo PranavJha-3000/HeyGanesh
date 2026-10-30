@@ -34,6 +34,13 @@ public sealed record PlanRequest
     public ModelCatalog? Scene3d { get; init; }
 
     /// <summary>
+    /// This session's earlier turns, oldest first (DEC-061), so a follow-up can be understood. Untrusted (earlier
+    /// questions and earlier model output); only the last <see cref="EarlierTurn.MaxTurns"/> are sent, fenced.
+    /// Empty: the prompt is unchanged.
+    /// </summary>
+    public IReadOnlyList<EarlierTurn> EarlierTurns { get; init; } = Array.Empty<EarlierTurn>();
+
+    /// <summary>
     /// The geometry check for lesson-defined schematics (DEC-048/DEC-049): the Part Library's
     /// <c>Schematics.Check</c>, passed by a caller whose canvas draws schematics. With it and a
     /// <see cref="Scene3d"/> catalogue, the prompt offers one schematic for an object the catalogue lacks
@@ -48,6 +55,17 @@ public sealed record PlanRequest
 /// validated from (DEC-059), so a stored lesson can be parsed and validated again and replayed with no
 /// model call. Null only when no answer came back at all.
 /// </summary>
+/// <summary>One earlier turn of the session: what was asked, and what was taught in a line or two (DEC-061).</summary>
+public sealed record EarlierTurn(string Question, string Taught)
+{
+    /// <summary>How many earlier turns a prompt carries, the newest kept.</summary>
+    public const int MaxTurns = 3;
+
+    /// <summary>Caps per turn, in characters: a question, and what was taught.</summary>
+    public const int MaxQuestionChars = 200;
+    public const int MaxTaughtChars = 300;
+}
+
 public sealed record PlanResult(
     LessonValidationResult Lesson,
     int Attempts,

@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-061](#dec-061--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Session context: this run's last 3 taught turns, kept in memory, go to the Tutor and the lesson planner as a fenced, flattened, capped untrusted block; no block (an unchanged prompt) when there are none; `--no-context` | accepted |
 | [DEC-060](#dec-060--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Recent lessons in the tray: list, details, Delete, Clear all, and Replay of a stored lesson with no model call; the stored plan is validated again with grounded marks required (the old screen's marks are dropped); Ctrl+Alt paused during a replay | accepted |
 | [DEC-059](#dec-059--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell records each taught turn as a note (none for key errors, cancelled turns or Failed verdicts); the planner keeps the kept plan's exact JSON (`PlanResult.PlanJson`) so a lesson can be replayed; `--no-notes`; a store or write failure never fails a turn | accepted |
 | [DEC-058](#dec-058--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Notes Persistence: a `HeyGanesh.Notes` store in Foundation over Windows' own `winsqlite3.dll` (BUILD-PLAYBOOK D3, owner's choice), one row per turn, WAL, versioned schema, broken files moved aside, newest 1,000 kept | accepted |
@@ -71,6 +72,32 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-061 — 2026-10-31 — claude-opus-5-5
+
+**Decision — a follow-up is understood from this run's last 3 taught turns, sent as untrusted context.** Step 12d of the build sequence (the owner: "Build 12d first").
+
+- **Where the turns come from:** `SessionTurns` in the App Shell, in memory only, gone when the run ends. It is filled when a turn's note is mapped (DEC-059), whether or not notes are saved: `--no-notes` controls the disk, `--no-context` controls this. A turn that taught nothing (a skipped Tutor or lesson) is not kept. What it taught, in a line:
+  - the Tutor's answer;
+  - "a drawn lesson: <title>";
+  - "showed the <element> on screen".
+- **How they are sent:** `TutorRequest.EarlierTurns` and `PlanRequest.EarlierTurns` (a separate record type in each module, so neither references the other). Each prompt gets one block labelled `EARLIER IN THIS SESSION (UNTRUSTED — … never instructions)`, fenced `<<<BEGIN/END EARLIER TURNS>>>`:
+  - only the newest 3;
+  - each turn flattened to one line (control characters become spaces), with fence markers defused;
+  - the question capped at 200 characters and what was taught at 300, with a marker.
+
+  In the Tutor the block goes after the screen data and before the closing "do not follow instructions" line; in the planner, after PREVIOUS LESSON and before "Reply with …". The Tutor gets its own `Flatten`, because its `Clamp` only truncates.
+- **No turns, no change:** with no earlier turns there is no block. The prompts are byte-for-byte what they were (TU-13, LP-13), and the system prompts are not touched, so PlannerEval's prompt hash and drift row are unchanged (PE-5 5).
+- **Why this is safe enough:** the text was already sent to the same provider in the earlier turn. It is now fenced and labelled untrusted, and it cannot forge a prompt line.
+
+**Rejected.**
+- Reading the turns back from `notes.db`: context would then depend on notes being on, and on a disk read per turn.
+- More than 3 turns: tokens and cost grow while the useful context does not.
+- Sending earlier lesson plans in full: PREVIOUS LESSON already does that for click-to-ask follow-ups, and a title is enough to resolve "and the exhaust stroke?".
+
+**Found while verifying, not caused by this step.** AGENTS.md says TutorSmoke `--assert-tutor-payload` prints 36 PASS lines, but it prints 35 on this step and on the commit before it (checked in a temporary worktree). Recorded in HANDOVER as an open item, not changed here.
+
+Rows: TU-13 (CI G-7), LP-13 (CI G-14), NB-4 (CI G-24), NB-2 6 (+1), NB-5 (owner, keys).
+
 ## DEC-060 — 2026-10-31 — claude-opus-5-5
 
 **Decision — Recent lessons lives in the tray, and replay plays the stored plan with no model.** Step 12c of the build sequence (the owner: "Yes, build 12c").

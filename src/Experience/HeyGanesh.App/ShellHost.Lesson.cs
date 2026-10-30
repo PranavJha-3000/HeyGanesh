@@ -177,6 +177,8 @@ internal static partial class ShellHost
                 new PlanRequest
                 {
                     Question = options.Question,
+                    // DEC-061: this run's earlier turns, so a follow-up question can be understood.
+                    EarlierTurns = options.NoContext ? Array.Empty<EarlierTurn>() : Session.Snapshot().Select(t => new EarlierTurn(t.Question, t.Taught)).ToArray(),
                     Screen = MapGuidanceToGrounding(guidance),
                     VirtualDesktop = NativeFns.VirtualDesktop(),
                     // The whole catalogue on --lesson, one model or none when the route chose (DEC-036).

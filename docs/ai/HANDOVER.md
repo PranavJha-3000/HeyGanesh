@@ -1,4 +1,22 @@
 
+## 2026-10-31 · claude-opus-5-5 (earlier turns as context for follow-ups, build sequence step 12d, DEC-061)
+
+Did: `SessionTurns` keeps this run's last 3 taught turns in memory. They go to the Tutor (`TutorRequest.EarlierTurns`) and the planner (`PlanRequest.EarlierTurns`) as a fenced, flattened, capped untrusted block. With none, the prompts are unchanged byte for byte. Header line `context :`, `--no-context`. Rows: TU-13 7 (G-7), LP-13 7 (G-14), NB-4 5 (G-24), NB-2 6. Step 12 (Notes Persistence) is complete.
+Left:
+- Owner rows: NB-3, NB-5, RL-5, and the earlier ones.
+- The retention number (1,000 placeholder).
+- `feat/notes-v1` (plan, 12a–12d) is local only.
+- **Open item:** AGENTS.md says `TutorSmoke --assert-tutor-payload` prints 36 PASS lines, but it prints 35, on the commit before this step too (not caused here, not changed).
+Watch: The shell's wiring of `EarlierTurns` into the two requests is not covered offline (the App has no fakes); NB-5 is its live check. `git worktree remove` can hit Windows' path-length limit in the scratchpad; remove with a `\\?\` path from PowerShell, then `git worktree prune`.
+Next: Push `feat/notes-v1` and open its PR, on the owner's go-ahead.
+Verified:
+- The whole solution builds -warnaserror 0/0.
+- TU: all offline rows, prompt 15, earlier 7, auth-error exit 12.
+- LP: all 12 rows, earlier 7. PE: set 7, checks 26, record-stub 9, drift 5 (unchanged).
+- TY: notes-shell 6, session 5.
+- Mutations, each restored from a pre-run copy: unflattened Tutor turns fail TU-13; all turns sent fail LP-13; no trimming fails NB-4.
+- Local CI runner: 22 gates, all exit 0 (G-7 55, G-14 79, G-24 61, G-22 47 unchanged).
+
 ## 2026-10-31 · claude-opus-5-5 (Recent lessons and replay in the tray, build sequence step 12c, DEC-060)
 
 Did:

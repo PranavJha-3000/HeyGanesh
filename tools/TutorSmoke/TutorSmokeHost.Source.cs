@@ -76,8 +76,14 @@ internal static partial class TutorSmokeHost
         failures = Check(credentialProps.Length == 0, "TutorOptions has no field a credential could live in", failures);
 
         // The provider's own options: no key/secret, no exposed transport (TU-11's stub works via
-        // BaseUrl precisely because there is no handler knob to reach for).
+        // BaseUrl precisely because there is no handler knob to reach for). One exception since DEC-047:
+        // ApiKey typed Func<string?>, a source the client calls per request, never a stored value. It is
+        // matched by name AND type, so an ApiKey string (a place a key could live) still fails here.
+        var keySource = typeof(DeepSeekTutorOptions).GetProperty("ApiKey");
+        failures = Check(keySource is not null && keySource.PropertyType == typeof(Func<string?>),
+            "DeepSeekTutorOptions.ApiKey is a key source (Func<string?>), never a value (DEC-047)", failures);
         var providerProps = typeof(DeepSeekTutorOptions).GetProperties()
+            .Where(p => !(p.Name == "ApiKey" && p.PropertyType == typeof(Func<string?>)))
             .Where(p => p.Name.Contains("Key", StringComparison.OrdinalIgnoreCase)
                      || p.Name.Contains("Secret", StringComparison.OrdinalIgnoreCase)
                      || p.Name.Contains("Credential", StringComparison.OrdinalIgnoreCase)
@@ -85,7 +91,7 @@ internal static partial class TutorSmokeHost
                      || p.PropertyType.Name.Contains("HttpMessageHandler", StringComparison.Ordinal))
             .Select(p => p.Name)
             .ToArray();
-        failures = Check(providerProps.Length == 0, "DeepSeekTutorOptions carries no credential and no handler — BaseUrl is the only redirect seam", failures);
+        failures = Check(providerProps.Length == 0, "DeepSeekTutorOptions carries no credential and no handler — BaseUrl is the only redirect seam (ApiKey source aside)", failures);
 
         var factoryCtor = typeof(TutorClientFactory).GetConstructors();
         failures = Check(factoryCtor.Length == 0, "TutorClientFactory is not instantiable — it is one method, not a service", failures);

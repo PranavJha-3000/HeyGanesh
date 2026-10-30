@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-047](#dec-047--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Tutor is on: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key (null and an honest skip otherwise); TU-8 allows exactly one key-named option, `DeepSeekTutorOptions.ApiKey` typed `Func<string?>` (amends DEC-017) | accepted |
 | [DEC-046](#dec-046--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell's API clients (Jev, Vision, Fish, the lesson and router models) read their keys through the key ring per request; `SelectionOptions`, `VisionOptions`, `FishTtsOptions` gain an optional `Func<string?> ApiKey` that defaults to the old environment read; the Tutor waits for step 9 because TU-8 forbids a key-named option | accepted |
 | [DEC-045](#dec-045--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The "API key security proxy" is `HeyGanesh.Security.KeyRing`: three known keys, Windows Credential Manager first and the environment variable as fallback, described by presence/length/source only; the App Shell gains `--keys`, `--set-key`, `--remove-key`; clients read through it from step 8b | accepted |
 | [DEC-044](#dec-044--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The evaluation set records live (`--record`, the shell's DeepSeek client, key presence only) and replays offline (`--replay`); a committed baseline gates CI: a check that passed there and fails now exits 1, a changed planner prompt exits 3 | accepted |
@@ -57,6 +58,30 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-047 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the App Shell's teaching leg uses the DeepSeek Tutor whenever there is a DeepSeek key, and the Tutor reads that key through the key ring.** Step 9 of the build sequence (SH-17). The owner chose "turn the Tutor on" as a must-have, and option A for TU-8: "Option A, build it". The provider stays as DEC-017 chose it: DeepSeek `deepseek-flash`, the lesson planner's key.
+
+- **Shell:** `CreateTutorClient()` returns `TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { ApiKey = Keys.Reader("deepseek") })` when `HasKey("deepseek")`, and null otherwise.
+  - With no key the leg prints "tutor : skipped — no DeepSeek key …" and the verdict's exit code stands, the same gating as the lesson leg (DEC-027).
+  - The header's `tutor :` line comes from `TutorHeader()`, in step with that gate.
+- **TutorEngine:** `DeepSeekTutorOptions.ApiKey` (`Func<string?>?`) is called per request; null keeps the `DEEPSEEK_API_KEY` read; a source returning nothing is a `TutorAuthenticationException` before any byte is sent.
+- **TU-8 amended (DEC-017's "no credential surface" rule):** `DeepSeekTutorOptions` may carry exactly one key-named property, `ApiKey`, and only typed `Func<string?>`.
+  - It is matched by name and type, and TU-8 now also asserts it, so a stored key (any string or bytes named Key/Secret/Credential) or a handler still fails.
+  - Proven by adding a stored `ApiKeyValue` string beside the source: TU-8 failed.
+- **TU-11** gains the two key-source checks.
+
+**Rejected.**
+- Option B, keeping TU-8 and leaving the Tutor environment-only: a key stored through the app (and the step 11 first-run screen) would give lessons but no prose answers.
+- Copying a stored key into the process environment at startup: every child process (the WebView2 cards included) would inherit it.
+- Routing "explain" turns to a 2D lesson instead: a spoken prose answer is the faster, cheaper reply to "what does this mean?".
+
+**Consequences.**
+- With a DeepSeek key, every turn that does not draw a lesson makes one DeepSeek call. A real spoken answer end to end (SH-17) is live-gated.
+- Without the Fish key the spoken half fails after the printed lesson, with exit 12 (the existing SH-17 mapping).
+
+Plan: [plans/2026-10-30-tutor-on-v1.md](plans/2026-10-30-tutor-on-v1.md). Rows: TU-8, TU-11, SH-27; SH-17 (live).
+
 ## DEC-046 — 2026-10-30 — claude-opus-5-5
 
 **Decision — every API client the App Shell composes reads its key through the key ring, per request.** Step 8b of the build sequence (the owner: "Yes, build 8b"). A key stored with `--set-key` is now used.

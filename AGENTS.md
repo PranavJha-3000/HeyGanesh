@@ -96,10 +96,10 @@ src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --cancel-ms 60 --question "x"
 #   -> CANCELLED, phase Idle, exit 13
 # --no-speak skips the speech-out leg only. The teach/speak leg (DEC-016) runs only AFTER a produced
-# non-Failed verdict, so the offline key gates are unchanged. A live ITutorClient EXISTS since
-# DEC-017 (TutorClientFactory.CreateDeepSeek), but the shell's CreateTutorClient() still returns
-# null -- the one-line flip is deliberately not taken -- so the leg reports its skip after every
-# verdict and teach-and-speak end to end is still gated on that flip (SH-17).
+# non-Failed verdict, so the offline key gates are unchanged. Since DEC-047 the shell's
+# CreateTutorClient() returns the DeepSeek Tutor (TutorClientFactory.CreateDeepSeek, deepseek-flash)
+# whenever the key ring has the deepseek key, reading it per request; without one the header says
+# "tutor : off: no DeepSeek key" and the leg reports its skip. Teach-and-speak end to end is live-gated (SH-17).
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-speak --question "x"
 #   -> flag accepted; keys unset -> same KEY ERROR (Element Selection), exit 12
 #   Gateway running + keys + mic: hold Ctrl+Alt, speak, release -> utterance line, verdict, highlight
@@ -135,7 +135,7 @@ dotnet run --project tools/TutorSmoke -c Debug -- --assert-source
 # TU-11: the live provider's wire contract, offline -- the factory-built client's BaseUrl points at
 # a loopback stub (no key, no real network; pins deepseek-flash payload + thinking:disabled).
 dotnet run --project tools/TutorSmoke -c Debug -- --assert-tutor-payload
-#   -> 34 PASS, exit 0
+#   -> 36 PASS, exit 0   (two of them the key-source checks, DEC-047)
 # TU-12: one real lesson. WITHOUT DEEPSEEK_API_KEY this prints KEY ERROR and exits 12 BY DESIGN
 # (the offline shape); with the key it prints the live TutorResult and exits 0.
 dotnet run --project tools/TutorSmoke -c Debug -- --live-explain "what does git rebase actually do"

@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the Tutor is on, build sequence step 9, DEC-047)
+
+Did: `CreateTutorClient()` returns the DeepSeek Tutor whenever the key ring has the deepseek key, and null (an honest skip) otherwise. `DeepSeekTutorOptions.ApiKey` is a per-request key source; TU-8 allows exactly that one, by name and type. TU-11 gains the two key-source checks. The header's `tutor :` line and the skip text name the key. SH-27 is a new App row.
+Left: SH-17, a real spoken prose answer end to end, needs the keys. Steps 10 (schematic 3D for objects with no library model) and 11 (tray app and installer) remain. SH-25 is still yours. 8b and 9 are local, ahead of PR #1; not pushed.
+Watch: With a DeepSeek key, each turn that draws no lesson makes a DeepSeek call. A mutation that changes a property's type can break a row's compile and leave a stale EXE "passing", so check the build's error count before trusting the run.
+Next: Plan step 10 (schematic 3D).
+Verified: TutorEngine, TutorSmoke and the App build -warnaserror 0/0. TU source 16, payload 35, prompt 15, grounding 9, parity 3, client-error 5 PASS lines. App: `--help` 0, `--once` 12 (tutor off), `--cancel-ms 60` 13, `--once --lesson` 12; with a dummy key and `--cancel-ms 1`, tutor ON, exit 13, and the dummy not in the output. A stored `ApiKeyValue` string fails TU-8, restored byte for byte. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (every API client reads its key through the key ring, build sequence step 8b, DEC-046)
 
 Did: `SelectionOptions`, `VisionOptions` and `FishTtsOptions` gain an optional `ApiKey` delegate; their clients use it per request and otherwise read the environment as before. The App Shell holds one static `KeyRing` and hands its readers to Jev, Vision and a Fish client it now builds. The lesson model reads through `KeyRingSecretStore` (it replaced `EnvironmentSecretStore`). The router and lesson gates and the header use the ring. PlannerEval records through the same ring (`RingKeyStore`), and PE-4 uses a ring over a dummy. The missing-key messages are updated. Rows: ES-10 (4), V-9 (4) and VO-8 (+2 checks), all in CI gate G-23.

@@ -463,3 +463,14 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `31c2bbd` (the commit before this step).
 - **Files to restore:** `git checkout 31c2bbd -- src/Perception src/Experience/HeyGanesh.Voice src/Experience/HeyGanesh.App tools AGENTS.md docs/ai .github/workflows/ci.yml`, then delete any new file `git status` lists.
 - **Re-check after revert:** the local CI runner reports 18 gates, all exit 0; App `--once --question "x"` exit 12.
+
+## 2026-10-30 · claude-opus-5-5 (the Tutor is on, reading its key through the key ring, build sequence step 9, DEC-047)
+
+- **Change:**
+  - `DeepSeekTutorOptions` gains `Func<string?>? ApiKey`, and `DeepSeekTutorClient` calls it per request.
+  - TU-8 allows exactly that one property, typed `Func<string?>`; TU-11 gains two key-source checks.
+  - The App Shell's `CreateTutorClient()` returns the DeepSeek Tutor when the key ring has the deepseek key (null otherwise). The header's tutor line and the skip text follow.
+  - Docs: DEC-047, FLOW, ARCHITECTURE, PLATFORM, AGENTS.md, TEST-CHECKLIST, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `ae9442c` (the commit before this step).
+- **Files to restore:** `git checkout ae9442c -- src/Intelligence/HeyGanesh.TutorEngine src/Experience/HeyGanesh.App tools/TutorSmoke AGENTS.md docs/ai`.
+- **Re-check after revert:** TutorSmoke `--assert-source` 15 and `--assert-tutor-payload` 33 PASS lines; App `--once --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.

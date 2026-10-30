@@ -159,9 +159,7 @@ internal static partial class ShellHost
         Console.WriteLine($"  keys       : TYPESAFE_API_KEY={Keys.Describe("typesafe")}  DEEPSEEK_API_KEY={Keys.Describe("deepseek")}");
         Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
                           $"FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
-        // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
-        // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
-        Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
+        Console.WriteLine($"  tutor      : {TutorHeader()}");
         Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
         Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");
         Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), deepseekKey)}");

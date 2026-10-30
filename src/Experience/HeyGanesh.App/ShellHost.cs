@@ -136,10 +136,10 @@ internal static partial class ShellHost
             monitors: capture);
 
         // The teaching seam, composed like the speech one — and, like it, harmless at rest.
-        // CreateTutorClient() returns null today (DEC-015 keeps the provider decision the owner's),
-        // so the tutor leg reports its skip after every verdict and costs nothing. When a live
-        // client lands, only CreateTutorClient changes. The using covers the (currently absent)
-        // client, which the shell owns because TutorService never disposes the seam it was handed;
+        // CreateTutorClient() returns the DeepSeek Tutor when the key ring has the deepseek key (DEC-047)
+        // and null otherwise, so without a key the tutor leg reports its skip after every verdict and
+        // costs nothing. The using covers the client (absent without a key), which the shell owns
+        // because TutorService never disposes the seam it was handed;
         // declared before voice so in teardown the speaker outlives the teacher — a lesson can
         // always finish being read aloud after its call completed.
         using ITutorClient? tutorClient = CreateTutorClient();

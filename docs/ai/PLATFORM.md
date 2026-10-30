@@ -88,7 +88,7 @@ by either module; the finer confidence-tier gate stays a future Jev component.
 | Voice pipeline | DONE-UNVERIFIED | VO-1..VO-10 green offline (fakes + recorded frames). **Every live path is NOT VERIFIED**: a real Gateway listen, real microphone capture and a real Fish synthesis have not been run. |
 | Tutor Engine | DONE-UNVERIFIED | TU-1..TU-11 green offline, including the provider's wire contract over a loopback stub. **TU-12's live half is NOT VERIFIED** - it needs `DEEPSEEK_API_KEY`. |
 | App Shell | DONE-UNVERIFIED | SH-1..SH-16 automated offline; the shell carries no `--fake` flags, so coverage stops at the real key gates. SH-9, SH-13 and SH-14 are human-gated; SH-17 is blocked on the one-line `CreateTutorClient()` flip. |
-| Teaching leg (shell -> Tutor -> speaker) | DONE-UNVERIFIED | Wired end to end and mapped (DEC-016), but the shell's `CreateTutorClient()` still returns null, so the leg reports its honest skip after every verdict. |
+| Teaching leg (shell -> Tutor -> speaker) | DONE-UNVERIFIED | Wired end to end and mapped (DEC-016); since DEC-047 the shell creates the DeepSeek Tutor whenever the key ring has the deepseek key. A real spoken answer (SH-17) needs the keys. |
 | Jev intent/routing component | PLANNED | No `src/HeyGanesh.Jev/` assembly exists. Today Jev is only the Element Selection choice model behind `IJevClient`. The confidence-gate and the intent classifier are both unbuilt. |
 | Visual Lesson Engine | PLANNED | No `src/Intelligence/HeyGanesh.VisualLessonEngine/` assembly exists. |
 | Notes persistence | PLANNED | No `src/HeyGanesh.Notes/` assembly exists; no lesson is stored anywhere today. |

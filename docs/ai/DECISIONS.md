@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-054](#dec-054--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Start at login is the per-user HKCU `Run` value `HeyGanesh` (the quoted tray path), toggled only by the tray's menu item, off by default; `StartupEntry` is the tray's only registry use | accepted |
 | [DEC-053](#dec-053--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The tray's key screen: one masked box per key, Save/Remove through the key ring, presence and length only; it opens by itself when DeepSeek or TypeSafe is missing; Ctrl+Alt is refused while it is open, through a new optional `triggerPaused` on `RunAsync` | accepted |
 | [DEC-052](#dec-052--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A tray host (`HeyGanesh.Tray`, WinExe, WinForms `NotifyIcon`) runs the App Shell's own composition through a new `RunAsync(args, stop, hookLive)`; the console exe is unchanged; output goes to a log file (newest 5); one tray per session | accepted |
 | [DEC-051](#dec-051--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The router can choose a 3D schematic: with `RouteRequest.Schematics` set (the shell sets it), "3D, no listed model fits" is a schematic lesson on the full catalogue instead of 2D cards; off by default | accepted |
@@ -64,6 +65,28 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-054 — 2026-10-30 — claude-opus-5-5
+
+**Decision — start at login is one per-user Run value, changed only by the menu.** Step 11c of the build sequence (the owner: "Yes, build 11c").
+
+- **Where it lives:** `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `HeyGanesh`, holding the tray exe's path in quotes (a folder with spaces must still start the right file). Per user: no admin rights, no other account affected.
+- **Who changes it:** only a click on "Start at login". Nothing is written at start or by default, which TS-2 checks.
+- **The check mark** is read from the registry each time the menu opens. Three states:
+  - On: the value points at this copy;
+  - Off: no value;
+  - Elsewhere: the value points at another copy, such as an older build folder. The item reads "(set for another copy)", and a click points it here.
+- **Errors:** a registry refusal is a log line and a balloon, never a crash.
+- **Code:** `StartupEntry` is the only class in the tray that touches the registry (TY-1). Its key path is injectable, so the rows use a throwaway `HKCU\Software\HeyGanesh\Test-<id>` key and only read the real one.
+
+**Not handled, said instead.** Task Manager's "Startup apps" can switch the entry off without touching the value (it records that elsewhere, under `StartupApproved`). The menu would then show it checked while Windows skips it. Reading that undocumented key was left out; TS-3 says so.
+
+**Rejected.**
+- A shortcut in the Startup folder: it needs COM (`WScript.Shell`) to create, and is easier to break by moving files.
+- A Scheduled Task: more privilege and harder to remove.
+- MSIX's StartupTask: only for a packaged app, which is installer option B (11d).
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: TS-1 (CI G-24), TS-2 (local), TS-3 (owner); TY-1 +1.
+
 ## DEC-053 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a key screen in the tray, writing only through the key ring.** Step 11b of the build sequence (the owner: "Yes, build 11b").

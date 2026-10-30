@@ -14,7 +14,8 @@ namespace HeyGanesh.Tray;
 /// is marshalled through <see cref="_ui"/>, a hidden control, because the shell calls back on its own threads.
 /// The menu shows each key's presence only, never a value or a length. "Keys…" opens the key screen (DEC-053),
 /// which also opens by itself at start when a required key is missing; while it is open the shell is told to
-/// refuse Ctrl+Alt.
+/// refuse Ctrl+Alt. "Start at login" (DEC-054) is shown only when the host hands in a <see cref="StartupEntry"/>;
+/// its check mark is read from the registry each time the menu opens, and only a click changes it.
 /// </remarks>
 internal sealed class TrayApp : ApplicationContext
 {
@@ -27,6 +28,8 @@ internal sealed class TrayApp : ApplicationContext
     private readonly ToolStripMenuItem _quit;
     private readonly List<(string Name, ToolStripMenuItem Item)> _keyLines = new();
     private readonly RegisteredWaitHandle? _showWait;
+    private readonly StartupEntry? _startup;
+    private readonly ToolStripMenuItem? _startupItem;
     private KeyScreen? _keyScreen;
     private volatile bool _keyScreenOpen;
     private bool _quitting;
@@ -35,9 +38,11 @@ internal sealed class TrayApp : ApplicationContext
     /// function before each Ctrl+Alt turn whether the trigger is paused. The product passes ShellHost.RunAsync.</param>
     /// <param name="showRequested">Set by a second launch (SingleInstance); null when nothing can signal.</param>
     /// <param name="openKeysIfMissing">Open the key screen at start when a required key is missing (the product: true).</param>
-    public TrayApp(Func<CancellationToken, Action, Func<bool>, Task<int>> runShell, KeyRing keys, string logFolder, WaitHandle? showRequested, bool openKeysIfMissing = false)
+    /// <param name="startup">The start-at-login entry; null shows no such item (the product passes this user's Run key).</param>
+    public TrayApp(Func<CancellationToken, Action, Func<bool>, Task<int>> runShell, KeyRing keys, string logFolder, WaitHandle? showRequested, bool openKeysIfMissing = false, StartupEntry? startup = null)
     {
         _keys = keys;
+        _startup = startup;
         _logFolder = logFolder;
         _ = _ui.Handle; // creates the window BeginInvoke posts to, on this (the UI) thread
 
@@ -52,12 +57,23 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         menu.Items.Add(new ToolStripMenuItem("Keys…", null, (_, _) => OpenKeys()));
+        if (_startup is not null)
+        {
+            _startupItem = new ToolStripMenuItem("Start at login", null, (_, _) => ToggleStartup());
+            menu.Items.Add(_startupItem);
+        }
+
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Open log folder", null, (_, _) => OpenLogFolder()));
         _quit = new ToolStripMenuItem("Quit", null, (_, _) => Quit());
         menu.Items.Add(_quit);
-        menu.Opening += (_, _) => RefreshKeys();
+        menu.Opening += (_, _) =>
+        {
+            RefreshKeys();
+            RefreshStartup();
+        };
         RefreshKeys();
+        RefreshStartup();
 
         _icon = new NotifyIcon
         {
@@ -97,6 +113,40 @@ internal sealed class TrayApp : ApplicationContext
 
     /// <summary>What the shell is told before each Ctrl+Alt turn. For TK-2.</summary>
     internal bool TriggerPaused => _keyScreenOpen;
+
+    /// <summary>The "Start at login" item's text and check mark. For TS-2.</summary>
+    internal (string Text, bool Checked)? StartupItem => _startupItem is null ? null : (_startupItem.Text ?? string.Empty, _startupItem.Checked);
+
+    /// <summary>The menu's "Start at login": on turns it off; off, or set for another copy, points it at this one.</summary>
+    internal void ToggleStartup()
+    {
+        if (_startup is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var turnOn = _startup.State != StartupState.On;
+            if (turnOn)
+            {
+                _startup.Enable();
+            }
+            else
+            {
+                _startup.Disable();
+            }
+
+            Console.WriteLine($"tray: start at login turned {(turnOn ? "on" : "off")}");
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            Console.WriteLine($"tray: start at login could not be changed ({ex.GetType().Name})");
+            _icon.ShowBalloonTip(4000, "Hey Ganesh", "Start at login could not be changed. The details are in the log.", ToolTipIcon.Warning);
+        }
+
+        RefreshStartup();
+    }
 
     /// <summary>The menu's Keys…: one screen at a time; a second click brings it forward.</summary>
     internal void OpenKeys()
@@ -159,6 +209,18 @@ internal sealed class TrayApp : ApplicationContext
         {
             item.Text = $"{name} key: {(_keys.Describe(name).Source == KeySource.Missing ? "missing" : "present")}";
         }
+    }
+
+    private void RefreshStartup()
+    {
+        if (_startup is null || _startupItem is null)
+        {
+            return;
+        }
+
+        var state = _startup.State;
+        _startupItem.Checked = state == StartupState.On;
+        _startupItem.Text = state == StartupState.Elsewhere ? "Start at login (set for another copy)" : "Start at login";
     }
 
     private void OpenLogFolder()

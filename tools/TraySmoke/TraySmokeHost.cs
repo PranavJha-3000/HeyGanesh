@@ -24,6 +24,8 @@ internal static partial class TraySmokeHost
                 "--assert-keys-model" => RunAssertKeysModel(),
                 "--assert-keys-window" => RunAssertKeysWindow(),
                 "--assert-keys-pause" => await RunAssertKeysPauseAsync(),
+                "--assert-startup" => RunAssertStartup(),
+                "--assert-startup-menu" => RunAssertStartupMenu(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -52,6 +54,8 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-keys-model   the key screen's rules over an in-memory store: save, refuse, remove, no value in any text; exit 0");
         Console.WriteLine("  --assert-keys-window  LOCAL: the real key screen (masked, writes only on Save) and the tray opening it; exit 0");
         Console.WriteLine("  --assert-keys-pause   LOCAL: PRESSES Ctrl+Alt once: while paused the real shell starts no turn; exit 0");
+        Console.WriteLine("  --assert-startup      start at login against a throwaway HKCU key (deleted after); the real Run key only read; exit 0");
+        Console.WriteLine("  --assert-startup-menu LOCAL: the tray's Start at login item over a throwaway key; exit 0");
         return 0;
     }
 
@@ -106,6 +110,8 @@ internal static partial class TraySmokeHost
         failures = Check(sources["Program.cs"].Contains("ShellHost.RunAsync(args, stop, hookLive, paused)", StringComparison.Ordinal), "runs the App Shell's own composition through RunAsync(args, stop, hookLive, paused)", failures);
         failures = Check(found.Length == 0, $"no key value read, no console input, no P/Invoke, network, focus stealing or pipeline built here ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
         failures = Check(shell.Contains("RunAsync(string[] args) => RunAsync(args, CancellationToken.None, null);", StringComparison.Ordinal), "the console's RunAsync(args) passes no stop token and no callback, so it is unchanged", failures);
+        var registry = sources.Where(s => s.Value.Contains("Registry", StringComparison.Ordinal)).Select(s => s.Key).ToArray();
+        failures = Check(registry.SequenceEqual(new[] { "StartupEntry.cs" }), $"the registry is touched only by StartupEntry (DEC-054) ({string.Join(", ", registry)})", failures);
         return Summarize(failures, "SOURCE AUDIT OK");
     }
 }

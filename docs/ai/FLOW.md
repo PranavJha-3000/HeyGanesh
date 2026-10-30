@@ -371,6 +371,9 @@ HeyGanesh.Tray.exe Main [STAThread]                                   src/Experi
     Keys… / OpenKeys → one KeyScreen (a second click activates it); open → paused; FormClosed → not paused, menu refreshed
       KeyScreen Save → KeyScreenModel.Save → KeyRing.Store (trim, refuse) → message by length; box cleared
       KeyScreen Remove → KeyScreenModel.Remove → KeyRing.Remove (an environment variable is said, not touched)
+    menu opening → RefreshStartup: StartupEntry.State (HKCU Run value HeyGanesh) → ✓ On | "(set for another copy)" Elsewhere | Off
+    Start at login click → ToggleStartup: On → Disable (delete the value) · else → Enable (write "\"<exe>\"")   (DEC-054)
+      registry refused → log line + balloon; nothing is written at start
                       stop.Wait() ends on Ctrl+C, --seconds, or the stop token (Register → stop.Set)
                       → hotkey.Stop → lifetime.Cancel → pump.DrainAsync → hook health → exit code
     Show event set (a second launch) → balloon + log line

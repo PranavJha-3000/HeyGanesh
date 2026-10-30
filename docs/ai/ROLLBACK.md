@@ -545,3 +545,14 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `e6bab31` (the commit before this step).
 - **Files to restore:** `git checkout e6bab31 -- src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** TraySmoke `--assert-source` 6, `--assert-tray` 9; App `--seconds 4` exit 0; the local CI runner reports 20 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (start at login, build sequence step 11c, DEC-054)
+
+- **Change:**
+  - Tray: `StartupEntry` (the per-user `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` value `HeyGanesh`, its key path injectable); a "Start at login" menu item, unchecked until you choose it. Nothing is written at start.
+  - TraySmoke: TS-1 (a throwaway `HKCU\Software\HeyGanesh\Test-<id>\Run` key, deleted after; CI G-24), TS-2 (the menu item, local); TY-1 gains "the registry is touched only in StartupEntry".
+  - Docs: DEC-054, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `20be2ce` (the commit before this step).
+- **Files to restore:** `git checkout 20be2ce -- src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **If you turned it on and want it gone:** untick "Start at login" in the tray menu, or `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v HeyGanesh /f`.
+- **Re-check after revert:** TraySmoke `--assert-source` 6, `--assert-tray` 9, `--assert-keys-window` 11; the local CI runner reports 20 gates, all exit 0.

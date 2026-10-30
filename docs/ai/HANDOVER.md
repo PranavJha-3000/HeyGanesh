@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (start at login, build sequence step 11c, DEC-054)
+
+Did: `StartupEntry` (HKCU Run value `HeyGanesh`, the quoted tray path; its key path injectable) and a "Start at login" menu item: unchecked until chosen, "(set for another copy)" when the value points elsewhere, refusals logged with a balloon. Rows: TS-1 10 (CI G-24, a throwaway HKCU key), TS-2 7 (local); TY-1 now 7.
+Left: 11d installer: you choose A (per-user script, recommended now) or B (MSIX, needs SignTool/MakeAppx and a certificate). TS-3, TK-4 and TY-6 are your hands-on rows. Open decisions: transcribed questions in the log; click-to-ask on schematic parts. Nine local commits unpushed.
+Watch: Task Manager's Startup apps switch is not seen by the menu (DEC-054). In Git Bash, `reg query ... /v` is mangled by path conversion; check the registry from PowerShell. TS-1 and TS-2 delete their test key, and `HKCU\Software\HeyGanesh` was confirmed absent afterwards.
+Next: Choose installer A or B, then build 11d.
+Verified: Tray and TraySmoke build -warnaserror 0/0. TraySmoke source 7, log 7, stop 5, tray 9, run 8, keys-model 13, keys-window 11, keys-pause 3, startup 10, startup-menu 7. The real Run value `HeyGanesh` is absent before and after. Mutations: an unquoted path fails TS-1 (2); a toggle that only turns on fails TS-2 (1); a tray that enables it at start fails TS-2 (3); all restored byte for byte. Local CI runner: 20 gates, all exit 0 (G-24: 37 PASS lines).
+
 ## 2026-10-30 · claude-opus-5-5 (the key screen, build sequence step 11b, DEC-053)
 
 Did: `KeyScreenModel` + `KeyScreen` in the tray (masked boxes, Save/Remove through `KeyRing`, status by presence and length); "Keys…" on the menu; it opens by itself when DeepSeek or TypeSafe is missing; `RunAsync(..., triggerPaused)` refuses Ctrl+Alt while it is open. Rows: TK-1 13 (CI G-24), TK-2 11, TK-3 3 (local); TY-1 and TY-4 updated.

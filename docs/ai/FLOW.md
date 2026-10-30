@@ -351,7 +351,9 @@ Drawing (DEC-050):
   LessonPlayer.PlayBeatsAsync → ISchematicCanvas.UseSchematics(schematics) → ResetAsync → beats
   CardSurface.UseSchematics → id → Schematics.ToModel (replaced per play)
   ModelOp → the lesson's schematic, else ModelLibrary.Find → SceneMessages.Model(op, model) → scene.js / scene-svg.js
-  part click → OnPartClicked checks the library catalogue only → a schematic part is refused (DEC-031)
+  part click → OnPartClicked: a drawn instance, and a part of its catalogue model or of the lesson's schematic (DEC-057)
+    → LessonTurn: PartQuestion.For(pick, shown.Schematics): library part → library name + description;
+      schematic part → its cleaned name and title, "a part of the simplified drawing in the last lesson"; neither → UnknownPart
 ```
 
 ## Installer (DEC-055)

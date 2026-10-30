@@ -159,6 +159,7 @@ tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 #   --assert-orientation 3, --assert-scene-nowebgl 8, --assert-scene-svg 8 (no-WebGL drawing, DEC-034), --assert-scene-schematic 10 (a lesson's schematic, DEC-050);
 #   manual: --snapshot-3d <dir> [--no-webgl], --demo-3d --voice sapi
 #   click a part to ask (DEC-031): --assert-pick 9 -- MOVES THE REAL CURSOR; run with nobody using the mouse
+#   a lesson schematic's parts too (DEC-057): --assert-pick-schematic 4 -- MOVES THE REAL CURSOR
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --demo all --voice sapi
 #   -> the three golden lessons drawn and spoken on screen (manual row LSU-6)
 
@@ -173,7 +174,7 @@ tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Le
 dotnet build src/Experience/HeyGanesh.LessonSession -c Debug
 dotnet build tools/LessonTurnSmoke -c Debug
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --assert-turn
-#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 12, --assert-turn-stream 11)
+#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 15, --assert-turn-stream 11)
 #   manual: --demo-pick --voice sapi   (the engine lesson, then click parts to ask about them, same window; LT-9)
 tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --demo-turn --voice sapi
 #   -> the whole turn drawn and spoken on screen (manual row LT-7)

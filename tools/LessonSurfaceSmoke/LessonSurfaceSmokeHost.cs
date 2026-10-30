@@ -35,6 +35,7 @@ internal static partial class LessonSurfaceSmokeHost
                 "--assert-pick" => await RunAssertPickAsync(),
                 "--assert-scene-svg" => await RunAssertSceneSvgAsync(),
                 "--assert-scene-schematic" => await RunAssertSceneSchematicAsync(),
+                "--assert-pick-schematic" => await RunAssertPickSchematicAsync(),
                 "--snapshot-3d" => await RunSnapshot3dAsync(args.Skip(1).ToArray()),
                 "--demo-3d" => await RunDemo3dAsync(args.Skip(1).ToArray()),
                 "--demo" => await RunDemoAsync(args.Skip(1).ToArray()),
@@ -74,6 +75,7 @@ internal static partial class LessonSurfaceSmokeHost
         Console.WriteLine("  --assert-scene-svg      the no-WebGL drawing: pixel orientation, depth order, literal labels, highlight, explode, speed, exit 0");
         Console.WriteLine("  --assert-scene-schematic a lesson's schematic drawn with WebGL and as SVG: placed, tagged, labelled, exploded, exit 0");
         Console.WriteLine("  --assert-pick           real mouse clicks on engine parts -> exactly that part; guards; close (moves the cursor), exit 0");
+        Console.WriteLine("  --assert-pick-schematic real mouse clicks on a lesson schematic's parts -> that part (DEC-057; moves the cursor), exit 0");
         Console.WriteLine("  --snapshot-3d <dir> [--no-webgl]  PNG of every library model, rest and exploded; --no-webgl: the drawing (manual)");
         Console.WriteLine("  --demo-3d [--voice sapi|timed]  the engine lesson drawn and spoken (manual row)");
         return 0;

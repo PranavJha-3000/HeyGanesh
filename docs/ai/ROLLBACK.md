@@ -589,3 +589,13 @@
   - Docs: DEC-056, ARCHITECTURE, TEST-CHECKLIST, HANDOVER.
 - **Rollback point:** `1362f72`. `git checkout 1362f72 -- src/Experience/HeyGanesh.Tray tools/TraySmoke docs/ai`; delete `assets/brand/`, `src/Experience/HeyGanesh.Tray/heyganesh.ico` and `TrayIcons.cs`.
 - **Re-check after revert:** TraySmoke `--assert-source` 7, `--assert-tray` 9; `installer\build.ps1` PACKAGE OK.
+
+## 2026-10-30 · claude-opus-5-5 (click-to-ask on a schematic's parts, DEC-057)
+
+- **Change:**
+  - LessonSurface: `CardSurface.OnPartClicked` also accepts a part of the lesson's own schematic, for an instance it drew and a part id that schematic has.
+  - LessonSession: `PartQuestion.For(pick, schematics)` writes the follow-up from the schematic's part name and title, cleaned and capped, and says the part comes from the lesson's simplified drawing. Library parts are unchanged. `LessonTurn` passes the shown plan's schematics.
+  - Rows: LessonTurnSmoke LT-8 (+3), LessonSurfaceSmoke `--assert-pick-schematic` (LSU-18, moves the cursor).
+  - Docs: DEC-057, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, HANDOVER.
+- **Rollback point:** `7da427a`. `git checkout 7da427a -- src/Experience/HeyGanesh.LessonSurface src/Experience/HeyGanesh.LessonSession tools/LessonTurnSmoke tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** LessonTurnSmoke `--assert-followup-pick` 12; LessonSurfaceSmoke `--assert-pick` 9 and `--assert-scene-schematic` 10.

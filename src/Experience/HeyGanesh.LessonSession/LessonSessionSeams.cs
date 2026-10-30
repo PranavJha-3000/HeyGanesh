@@ -1,6 +1,7 @@
 using HeyGanesh.LessonSurface;
 using HeyGanesh.PartLibrary;
 using HeyGanesh.ScreenOverlay;
+using HeyGanesh.VisualLessonEngine;
 using HeyGanesh.VisualLessonEngine.Runtime;
 
 namespace HeyGanesh.LessonSession;
@@ -56,23 +57,62 @@ public sealed class FollowUpOptions
 }
 
 /// <summary>
-/// The one place a clicked part becomes a question (DEC-031). Written here from the Part Library's own
-/// vetted name and description -- never from anything the page or a model said -- so the follow-up asks
-/// about exactly the part that was drawn. Null for a model or part the library does not have.
+/// The one place a clicked part becomes a question (DEC-031). A library part's question is written from the
+/// Part Library's own vetted name and description, never from anything the page said. Since DEC-057 a part
+/// of the lesson's own schematic is asked about too. Its name and title were written by the model, so they are
+/// cleaned to letters, digits and plain punctuation, capped, and the question says the part is from a
+/// simplified drawing, not the library. The page's ids never reach the question. Null for a part neither
+/// the library nor the lesson's schematics have.
 /// </summary>
 public static class PartQuestion
 {
-    public static string? For(PartPick pick)
+    /// <summary>Longest cleaned name or title put into a question; the validator's own caps are 40 and 60.</summary>
+    private const int MaxNameChars = 40;
+    private const int MaxTitleChars = 60;
+
+    public static string? For(PartPick pick) => For(pick, Array.Empty<SchematicModel>());
+
+    /// <param name="schematics">The schematics of the lesson that was shown (its validated plan's).</param>
+    public static string? For(PartPick pick, IReadOnlyList<SchematicModel> schematics)
     {
         ArgumentNullException.ThrowIfNull(pick);
+        ArgumentNullException.ThrowIfNull(schematics);
         var model = ModelLibrary.Find(pick.ModelId);
         var part = model?.Parts.FirstOrDefault(p => p.Id == pick.PartId);
-        if (model is null || part is null)
+        if (model is not null && part is not null)
+        {
+            return $"Tell me more about the {Lower(part.Name)} in the {Lower(model.Title)}. The part library describes it as: {part.Description}";
+        }
+
+        var drawn = schematics.FirstOrDefault(s => s.Id == pick.ModelId);
+        var drawnPart = drawn?.Parts.FirstOrDefault(p => p.Id == pick.PartId);
+        var name = Clean(drawnPart?.Name, MaxNameChars);
+        var title = Clean(drawn?.Title, MaxTitleChars);
+        if (name is null || title is null)
         {
             return null;
         }
 
-        return $"Tell me more about the {Lower(part.Name)} in the {Lower(model.Title)}. The part library describes it as: {part.Description}";
+        return $"Tell me more about the {Lower(name)} in the {Lower(title)}. It is a part of the simplified drawing in the last lesson, " +
+               "not of the part library, so explain what it is and what it does in general terms.";
+    }
+
+    /// <summary>Letters, digits, spaces and plain punctuation only, whitespace collapsed, capped; null when nothing is left.</summary>
+    private static string? Clean(string? text, int max)
+    {
+        if (text is null)
+        {
+            return null;
+        }
+
+        var kept = new string(text.Select(c => char.IsLetterOrDigit(c) || " -'(),.".Contains(c) ? c : ' ').ToArray());
+        var cleaned = string.Join(' ', kept.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        if (cleaned.Length > max)
+        {
+            cleaned = cleaned[..max].TrimEnd();
+        }
+
+        return cleaned.Length == 0 ? null : cleaned;
     }
 
     // "Connecting rod" reads as "the connecting rod"; "DNA double helix" keeps its capitals.

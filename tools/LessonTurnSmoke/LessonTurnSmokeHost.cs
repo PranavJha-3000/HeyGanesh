@@ -65,7 +65,7 @@ internal static partial class LessonTurnSmokeHost
         Console.WriteLine("  --assert-turn-rejected nothing usable -> Rejected and no card is ever opened, exit 0");
         Console.WriteLine("  --assert-turn-errors   auth/provider faults, cancellation and a speaker fault -> outcomes; cards closed, exit 0");
         Console.WriteLine("  --assert-turn-surface  the same turn on REAL cards: capture-excluded, never foreground, none left after, exit 0");
-        Console.WriteLine("  --assert-followup-pick click a 3D part -> library-written follow-up on the same cards; every stop path, exit 0");
+        Console.WriteLine("  --assert-followup-pick click a 3D part -> library-written follow-up on the same cards (a schematic part: its cleaned name, DEC-057); every stop path, exit 0");
         Console.WriteLine("  --assert-turn-stream   streaming model: cards open on the first beat and play while the rest arrives; drops, fallback, repair, faults, cancel, exit 0");
         Console.WriteLine("  --demo-turn [--voice sapi|timed]   manual: fake model + real cards + voice, the whole turn");
         Console.WriteLine("  --demo-pick [--voice sapi|timed]   manual: the engine lesson, then click parts to ask about them (same window)");

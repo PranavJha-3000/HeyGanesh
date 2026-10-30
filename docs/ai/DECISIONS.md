@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-057](#dec-057--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Click-to-ask on a lesson schematic's parts: DEC-031's library-only rule is relaxed for the lesson's own schematic; the follow-up uses its cleaned names and says the part is from a simplified drawing. Also recorded: the tray log keeps transcribed questions (owner) | accepted |
 | [DEC-056](#dec-056--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Hey Ganesh mark: one tapered ink stroke from ear to trunk, the bindu and a crown arc on kraft paper; the tray exe's icon, the notification-area icon and the key screen's | accepted |
 | [DEC-055](#dec-055--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The installer is per-user PowerShell (installer option A): a self-contained win-x64 package, installed to `%LOCALAPPDATA%\Programs\HeyGanesh` with a Start-menu shortcut and an HKCU Apps & features entry; no admin, no signing; MSIX stays a later option | accepted |
 | [DEC-054](#dec-054--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Start at login is the per-user HKCU `Run` value `HeyGanesh` (the quoted tray path), toggled only by the tray's menu item, off by default; `StartupEntry` is the tray's only registry use | accepted |
@@ -67,6 +68,25 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-057 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a schematic's parts can be clicked to ask about them.** This relaxes DEC-031's library-only rule, which DEC-050 left as the owner's call. The owner said "yes".
+
+- **The click:** `CardSurface.OnPartClicked` accepts a part when the instance is one the surface drew and the part id belongs to its catalogue model or to the lesson's own schematic. The page's ids still never reach a question, and forged messages are still counted and dropped (LSU-18).
+- **The question:** `PartQuestion.For(pick, schematics)`, with `LessonTurn` passing the shown plan's schematics. A library part is asked about exactly as before. A schematic part's name and title were written by the model, so:
+  - they are cleaned to letters, digits, spaces and `-'(),.`, collapsed, and capped at 40 and 60 characters;
+  - the question says "It is a part of the simplified drawing in the last lesson, not of the part library, so explain what it is and what it does in general terms";
+  - if nothing is left after cleaning, or the part is not in the schematic, there is no question (UnknownPart).
+- **Why this is safe enough:** the model's names already reach the planner in the PREVIOUS LESSON block, fenced as untrusted. The question adds only a cleaned, capped copy of one name, and the student chose which part.
+
+**Rejected.**
+- Asking by part id only ("the part 'lift-fan'"): ids are less readable than names, and the follow-up should name what the student clicked.
+- Leaving clicks refused: the owner asked for it.
+
+**Also recorded here: the tray log keeps the transcribed questions** (owner: "Keep transcribed questions"), as DEC-052 had left by default. No code change.
+
+Rows: LT-8 15 (+3), LSU-18 (new, local, moves the cursor).
+
 ## DEC-056 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a logo that refers to Lord Ganesha subtly, in three marks.** The owner asked for a logo "inspired from" a line drawing of Ganesha, "subtly referencing Lord Ganesha and as simple as intuitive as HeyClicky logo".

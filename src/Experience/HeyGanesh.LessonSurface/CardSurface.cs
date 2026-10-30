@@ -633,8 +633,9 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, ISchematicCanvas, 
 
     /// <summary>
     /// UI thread. The page's ids are not trusted: the instance must be one this surface drew, its model
-    /// must be in the catalogue, the part must be one of that model's, and a pick must be in progress.
-    /// Anything else is counted and dropped, so a confused or scripted page can never start a question.
+    /// must be in the catalogue or be the lesson's own schematic (DEC-057), the part must be one of that
+    /// model's, and a pick must be in progress. Anything else is counted and dropped, so a confused or
+    /// scripted page can never start a question.
     /// </summary>
     private void OnPartClicked(string? instance, string? part)
     {
@@ -642,8 +643,8 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, ISchematicCanvas, 
             && instance is not null
             && part is not null
             && _sceneInstances.TryGetValue(instance, out var model)
-            && Scene3dCatalog.TryGet(model, out var entry)
-            && entry.Parts.Contains(part))
+            && ((Scene3dCatalog.TryGet(model, out var entry) && entry.Parts.Contains(part))
+                || (_schematics.TryGetValue(model, out var schematic) && schematic.Parts.Any(p => p.Id == part))))
         {
             _pickWait = null;
             wait.TrySetResult(new PartPick(instance, model, part));
@@ -654,9 +655,9 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, ISchematicCanvas, 
     }
 
     /// <summary>
-    /// The lesson's schematics, converted once per play. A click on a schematic's part stays refused
-    /// (<see cref="OnPartClicked"/> checks the library catalogue only): a follow-up question is written
-    /// from vetted library text (DEC-031), and a schematic's names come from the model.
+    /// The lesson's schematics, converted once per play. Since DEC-057 a click on a schematic's part is
+    /// accepted like a library part's (<see cref="OnPartClicked"/>); the follow-up question for it is written
+    /// by <c>PartQuestion</c> from the schematic's cleaned names, and says the part is from a simplified drawing.
     /// </summary>
     public void UseSchematics(IReadOnlyList<SchematicModel> schematics)
     {

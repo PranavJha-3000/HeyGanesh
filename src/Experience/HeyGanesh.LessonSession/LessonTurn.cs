@@ -194,7 +194,7 @@ public static class LessonTurn
                     return new LessonConversationReport(turns, picks, FollowUpEnd.NoPick);
                 }
 
-                var question = PartQuestion.For(pick);
+                var question = PartQuestion.For(pick, shown.Schematics);
                 if (question is null)
                 {
                     return new LessonConversationReport(turns, picks, FollowUpEnd.UnknownPart);

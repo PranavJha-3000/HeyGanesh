@@ -60,6 +60,27 @@ internal static partial class LessonTurnSmokeHost
         failures = Check(unknown.End == FollowUpEnd.UnknownPart && oddClient.Recorded.Count == 1 && unknown.Picks.Count == 0 && odd.Canvas.Closed == 1,
             "a pick for a part the library lacks -> UnknownPart, the model is never asked", failures);
 
+        // DEC-057: a part of the lesson's own schematic is asked about by its name, said to be from the simplified drawing.
+        var jet = Fixture("f35b-schematic.json");
+        var jetClient = new FakeLlmClient(ProviderCapability.Text, jet, jet);
+        var jetHost = new FakePickHost(new PartPick("jet", "f35b", "lift-fan"), null);
+        var jetRequest = Request("can you draw the full jet in 3D?") with { Scene3d = ModelLibrary.ToCatalog(), SchematicGeometry = Schematics.Check };
+        var jetReport = await LessonTurn.RunWithFollowUpsAsync(new VisualPlanner(jetClient), jetHost, new RecordingSpeaker(), jetRequest, new FollowUpOptions { IdleTimeout = TimeSpan.FromSeconds(7) });
+        var jetAsked = jetClient.Recorded.Count == 2 ? UserText(jetClient.Recorded[1]) : string.Empty;
+        failures = Check(jetReport.Turns.Count == 2 && jetReport.Picks.Count == 1 && jetReport.End == FollowUpEnd.NoPick
+            && jetAsked.Contains("Tell me more about the lift fan in the F-35B (simplified). It is a part of the simplified drawing in the last lesson, not of the part library", StringComparison.Ordinal),
+            $"a click on the schematic's lift fan -> a follow-up written from its name, said to be from the simplified drawing ({jetReport.Turns.Count} lessons, {jetReport.End})", failures);
+
+        var messy = new SchematicModel("thing", "A <b>weird</b>\u0007 title", new[] { new SchematicPart("p1", "Lift {fan}; <script>", Array.Empty<SchematicShape>()) });
+        var cleaned = PartQuestion.For(new PartPick("t", "thing", "p1"), new[] { messy }) ?? string.Empty;
+        failures = Check(cleaned.StartsWith("Tell me more about the lift fan script in the A b weird b title.", StringComparison.Ordinal) && cleaned.IndexOfAny(new[] { '<', '>', '{', '}', ';', '\u0007' }) < 0,
+            $"a schematic's model-written names are cleaned to letters, digits and plain punctuation ({cleaned[..Math.Min(70, cleaned.Length)]}...)", failures);
+
+        var jetPlan = jetReport.Turns[0].Plan!.Lesson.Plan!;
+        failures = Check(PartQuestion.For(new PartPick("jet", "f35b", "warp-drive"), jetPlan.Schematics) is null && PartQuestion.For(new PartPick("jet", "f35b", "lift-fan")) is null
+            && PartQuestion.For(new PartPick("t", "thing", "p1"), new[] { messy with { Title = "<>{}" } }) is null,
+            "no question for a part the schematic lacks, without the lesson's schematics, or when nothing is left after cleaning", failures);
+
         // Nothing to click: a 2D lesson, or a canvas that cannot take clicks.
         var flat = new FakePickHost(RodPick);
         var noScene = await LessonTurn.RunWithFollowUpsAsync(Planner(Fixture("chain-rule.json")), flat, new RecordingSpeaker(), Request());

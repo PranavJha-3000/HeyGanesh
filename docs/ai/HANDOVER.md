@@ -1,4 +1,22 @@
 
+## 2026-10-30 · claude-opus-5-5 (finishing round: push, stale items, logo, schematic click-to-ask, DEC-056/DEC-057)
+
+Did: Pushed the ten step 8b–11d commits to PR #1. Cleared three stale items (1362f72):
+- the CO-6 doc now matches Vision's code;
+- the overlay "layering" item was already fixed by `HeyGanesh.Abstractions`, and only stale text remained;
+- the empty ROLLBACK row is removed.
+
+The Hey Ganesh mark is the tray, exe and installer icon (7da427a, DEC-056). Clicking a lesson schematic's parts asks about them (c300cb6, DEC-057). Recorded the owner's decisions: the log keeps transcribed questions; FEATURE-008 is deferred and its two docs are now committed.
+Left: The owner's own rows: IN-3, TS-3, TK-4, TY-6, SH-17, SH-20, SH-22, SH-25, PE-6/PE-7, the keys, and a re-run of LSU-18 and LSU-15 with nobody using the mouse. Open items still carried: multi-monitor ordering (CO-11), MSIX option B, a version number (still 1.0.0.0). `.planning/` and `graphify-out/` (graphify, owner-run) are untracked, neither committed nor ignored. The commits since 9cc4a75 are not pushed.
+Watch: Windows refused synthetic input partway through this round, so the cursor rows can fail as "0/3 inputs accepted" through no code fault. Never undo a mutation with `git checkout -- <file>` while that file also holds the step's own edit: it happened to LessonTurn.cs here and was caught by its diff. Restore from a copy taken before the mutation.
+Next: The owner pushes, or approves a push, of 1362f72..HEAD; then the hands-on rows with keys set.
+Verified: Local CI: 21 gates, all exit 0 (G-15 46, G-24 38). TraySmoke source 8, tray 10, install 16, plus every other tray row. LT-8 15, LT-10 11. LSU source 20, scene-schematic 10, scene 19, scene-svg 8, render 17. CO-6 exit 0. Mutations, each restored:
+- the generic icon fails TY-1 and TY-4;
+- uncleaned names fail LT-8;
+- dropping the schematics from the turn fails LT-8.
+
+LSU-18: the first run's clicks passed; later runs were refused input by Windows.
+
 ## 2026-10-30 · claude-opus-5-5 (the per-user installer, build sequence step 11d, DEC-055)
 
 Did: `installer\build.ps1` (self-contained win-x64 package in git-ignored `artifacts\installer`: 513 files, 198 MB), `install.ps1` (to `%LOCALAPPDATA%\Programs\HeyGanesh`, Start-menu shortcut, HKCU Apps & features entry), `uninstall.ps1` (removes those and this install's start-at-login value; keeps keys and logs). Rows: IN-1 (CI G-25), IN-2 `TraySmoke --assert-install` 15 (local). Step 11, and so the "Must-haves 1–4" wrap-up build list, is complete.

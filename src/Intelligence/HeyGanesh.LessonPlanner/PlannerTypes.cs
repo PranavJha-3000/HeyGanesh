@@ -44,7 +44,9 @@ public sealed record PlanRequest
 
 /// <summary>
 /// The planned lesson, already validated (it is the only thing a player may receive), plus how it
-/// was obtained. Never contains a key or a URL.
+/// was obtained. Never contains a key or a URL. <c>PlanJson</c> is the exact JSON text <c>Lesson</c> was
+/// validated from (DEC-059), so a stored lesson can be parsed and validated again and replayed with no
+/// model call. Null only when no answer came back at all.
 /// </summary>
 public sealed record PlanResult(
     LessonValidationResult Lesson,
@@ -59,7 +61,8 @@ public sealed record PlanResult(
     string? RepairError = null,
     int ReleasedBeats = 0,
     TimeSpan? FirstBeatLatency = null,
-    string? StreamNote = null);
+    string? StreamNote = null,
+    string? PlanJson = null);
 
 /// <summary>
 /// One beat released while the lesson was still streaming (DEC-041): <see cref="Beat"/> as the

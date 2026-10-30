@@ -356,7 +356,7 @@ Drawing (DEC-050):
       schematic part → its cleaned name and title, "a part of the simplified drawing in the last lesson"; neither → UnknownPart
 ```
 
-## Notes store (DEC-058; built in 12a, called by the shell from 12b)
+## Notes store (DEC-058; the shell records each taught turn since DEC-059)
 
 ```
 NotesStore.Open(path = NotesStore.DefaultPath(), options)         src/Foundation/HeyGanesh.Notes/NotesStore.cs
@@ -368,6 +368,15 @@ NotesStore.Open(path = NotesStore.DefaultPath(), options)         src/Foundation
 Record(note): BEGIN IMMEDIATE → INSERT (every value bound ?1..?14) → DELETE all but the newest Keep → COMMIT
 Recent(n) / Get(id): SELECT ... ORDER BY id DESC → TurnNote (picks as a JSON array)
 Delete(id) / Clear() / Count()
+
+Shell (DEC-059):
+  RunAsync → OpenNotes (--no-notes → off; NotesException/IO → off with the reason) → Notes → header "notes : ..."
+  RunSessionAsync → verdict not Failed → TeachAndNoteAsync:
+    record = new TurnRecord → TeachAsync(..., record): route = leg.Why;
+      Highlight → leg, outcome · Tutor → TeachAndSpeakAsync fills Answer, outcome ·
+      Lesson → TeachWithLessonAsync fills title, PlanJson (first lesson's PlanResult.PlanJson), picks, outcome
+    → TurnNotes.From(question, session, now, verdict, record, exit code): null for 12 / 13 / Failed / no question
+    → Notes.Record(note) → "notes : saved #N"   (a failure is "notes : not saved (...)", the exit code unchanged)
 ```
 
 ## Installer (DEC-055)

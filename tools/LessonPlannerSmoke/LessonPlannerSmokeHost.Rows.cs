@@ -103,11 +103,18 @@ internal static partial class LessonPlannerSmokeHost
         failures = Check(result.Lesson.Outcome == LessonOutcome.Valid && result.Attempts == 1 && client.Recorded.Count == 1,
             "recorded answer in prose + fence -> Valid plan in one call", failures);
         failures = Check(result.ModelId == "fake-model" && result.InputTokens == 100 && result.OutputTokens == 200, "model id and token usage carried into the result", failures);
+        // DEC-059: the exact text the kept plan was validated from, so a stored lesson can be parsed again and replayed.
+        var again = result.PlanJson is { } kept ? VisualPlanParser.Parse(kept).Plan : null;
+        failures = Check(result.PlanJson == answer && again?.Title == result.Lesson.Plan!.Title && again.Beats.Count == result.Lesson.Plan.Beats.Count,
+            "PlanJson is the answer the plan came from, and parses back to the same lesson", failures);
 
         var ungrounded = new FakeLlmClient(TextOnly, Fixture("chain-rule.json"), Fixture("chain-rule.json"));
         var noBox = await new VisualPlanner(ungrounded).PlanAsync(Request("chain rule please"));
         failures = Check(noBox.FirstAttemptIssues.Any(i => i.Code == LessonIssueCodes.MarkUngrounded) && noBox.Lesson.Outcome == LessonOutcome.PartiallyDegraded,
             "a mark with no grounded target -> mark.ungrounded; that beat degrades, the lesson survives", failures);
+        var twice = await new VisualPlanner(new FakeLlmClient(TextOnly, "no json at all", Fixture("chain-rule.json"))).PlanAsync(Request("chain rule please", new ScreenGrounding("slide", Target, null, 0, 0)));
+        failures = Check(twice.Attempts == 2 && twice.PlanJson == Fixture("chain-rule.json"),
+            "after a repair, PlanJson is the repaired answer that was kept, not the first", failures);
         return Summarize(failures, "PLAN OK");
     }
 }

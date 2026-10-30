@@ -122,10 +122,12 @@ internal static partial class ShellHost
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
+        TurnRecord record,
         CancellationToken ct)
     {
         if (tutor is null)
         {
+            record.Outcome = "skipped: no DeepSeek key";
             // No DeepSeek key (DEC-047): the leg is skipped honestly. A produced verdict stands on its own —
             // skipping the explanation is not a failure.
             Console.WriteLine("tutor       : skipped — no DeepSeek key (store one with --set-key deepseek, or set");
@@ -141,6 +143,8 @@ internal static partial class ShellHost
 
             Console.WriteLine($"tutor       : {result}");
             Console.WriteLine($"  lesson      : {result.ExplanationText}");
+            record.Answer = result.ExplanationText;
+            record.Outcome = options.NoSpeak ? "explained (not spoken, --no-speak)" : "explained";
 
             if (options.NoSpeak)
             {

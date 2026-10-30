@@ -103,6 +103,9 @@ internal static partial class ShellHost
             Console.WriteLine();
         }
 
+        // DEC-059: the notes store is opened before the header so the header can say where notes go (or why not).
+        using var notes = OpenNotes(options);
+        Notes = notes;
         PrintHeader(options);
 
         if (!ScreenCaptureService.IsCaptureSupported())

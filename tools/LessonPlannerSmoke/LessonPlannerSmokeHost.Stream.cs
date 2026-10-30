@@ -81,6 +81,9 @@ internal static partial class LessonPlannerSmokeHost
         failures = Check(dropped.Count == 2 && dropResult.ReleasedBeats == 2 && dropResult.Lesson.Plan!.Beats.Count == 2
                          && dropResult.StreamNote!.Contains("after 2 beat", StringComparison.Ordinal) && dropClient.Recorded.Count == 1,
             $"a stream that drops after beat 2 keeps those 2 and stops, with no repair call ({dropResult.StreamNote})", failures);
+        // DEC-059: what is kept is what was shown: the released prefix's JSON, not the half-written text.
+        failures = Check(dropResult.PlanJson is { } partial && VisualPlanParser.Parse(partial).Plan?.Beats.Count == 2,
+            "after a dropped stream, PlanJson is the released prefix and parses to exactly those 2 beats", failures);
 
         // 4. Nothing valid while streaming (a wrong schema): nothing released, then the usual repair.
         var wrong = goldens[0].Json.Replace("heyganesh.visualplan/1", "heyganesh.visualplan/9", StringComparison.Ordinal);
@@ -103,6 +106,10 @@ internal static partial class LessonPlannerSmokeHost
         }
 
         failures = Check(propagated, "a provider fault before any beat propagates (nothing was taught)", failures);
+
+        var fullSeen = new List<StreamedBeat>();
+        var full = await new VisualPlanner(new FakeLlmClient(Streaming, goldens[0].Json) { ChunkChars = 7 }).PlanStreamingAsync(goldens[0].Request, fullSeen.Add);
+        failures = Check(full.PlanJson == goldens[0].Json && fullSeen.Count == 5, "a stream that finishes keeps its whole text as PlanJson (DEC-059)", failures);
 
         // 6. A client that cannot stream gets exactly PlanAsync.
         var plain = new FakeLlmClient(TextOnly, goldens[0].Json);

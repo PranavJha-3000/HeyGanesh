@@ -1,4 +1,25 @@
 
+## 2026-10-30 · claude-opus-5-5 (the shell records each turn, build sequence step 12b, DEC-059)
+
+Did:
+- The App Shell, and so the tray, opens the notes store per run (header `notes :`, `--no-notes`) and records each taught turn through `TurnNotes.From` after `TeachAsync`. No note for a key error, a cancelled turn or a Failed verdict.
+- `PlanResult.PlanJson` keeps the exact plan text for replay.
+- Rows: NB-1 6 (CI G-24), NB-2 5 (local), LP-4 5, LP-11 14, TY-3 6.
+
+Left:
+- 12c (Recent lessons window with replay) and 12d (optional session context).
+- Owner: NB-3 (a real recorded turn, with keys), the retention number, 12d.
+- `feat/notes-v1` is local only.
+
+Watch: Any test that runs the real shell in-process must point `HEYGANESH_DATA_DIR` at a temp folder, or it writes the real `notes.db` (it happened once here; the empty file was removed). The Microsoft Store Python cannot see `%LOCALAPPDATA%` (it is redirected), so inspect the real data folder from PowerShell.
+Next: Build 12c on the owner's go-ahead.
+Verified:
+- The whole solution builds -warnaserror 0/0.
+- NB-1 6, NB-2 5, LP all 11 rows (plan 5, stream 14), TY source 8, log 7, stop 6, tray 10, run 8, keys-model 13, keys-pause 3, startup 10, LT all 7 rows.
+- App `--help` 0, `--once` 12, `--once --lesson` 12, `--once --no-route` 12, `--seconds 3` 0.
+- Mutations, all restored byte for byte: noting key errors fails NB-1; an ignored `--no-notes` fails NB-2; a planner that drops `PlanJson` fails LP-4.
+- Local CI runner: 22 gates, all exit 0 (G-14 72, G-24 44, G-26 24).
+
 ## 2026-10-30 · claude-opus-5-5 (the notes store, build sequence step 12a, DEC-058)
 
 Did: Merged PR #1 into main (30e018a) after its CI passed on 4d3d616; ignored `graphify-out/` and `.planning/`. On the new branch `feat/notes-v1`: the Notes plan (D3 = winsqlite3), then `src/Foundation/HeyGanesh.Notes`:

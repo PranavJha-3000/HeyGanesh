@@ -27,6 +27,8 @@ internal static partial class TraySmokeHost
                 "--assert-startup" => RunAssertStartup(),
                 "--assert-startup-menu" => RunAssertStartupMenu(),
                 "--assert-install" => RunAssertInstall(args.Length > 1 ? args[1] : null),
+                "--assert-notes-map" => RunAssertNotesMap(),
+                "--assert-notes-shell" => RunAssertNotesShell(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -58,6 +60,8 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-startup      start at login against a throwaway HKCU key (deleted after); the real Run key only read; exit 0");
         Console.WriteLine("  --assert-startup-menu LOCAL: the tray's Start at login item over a throwaway key; exit 0");
         Console.WriteLine("  --assert-install [package]  LOCAL: install.ps1 / uninstall.ps1 from a built package into temp folders and throwaway HKCU keys; exit 0");
+        Console.WriteLine("  --assert-notes-map    the shell's turn-to-note mapping, every case, through a real temporary store (DEC-059); exit 0");
+        Console.WriteLine("  --assert-notes-shell  LOCAL: the real HeyGanesh.App.exe with temporary data folders: header, --no-notes, no note on a key error, a broken db kept; refuses to run with keys; exit 0");
         return 0;
     }
 

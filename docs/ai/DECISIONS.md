@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-059](#dec-059--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell records each taught turn as a note (none for key errors, cancelled turns or Failed verdicts); the planner keeps the kept plan's exact JSON (`PlanResult.PlanJson`) so a lesson can be replayed; `--no-notes`; a store or write failure never fails a turn | accepted |
 | [DEC-058](#dec-058--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Notes Persistence: a `HeyGanesh.Notes` store in Foundation over Windows' own `winsqlite3.dll` (BUILD-PLAYBOOK D3, owner's choice), one row per turn, WAL, versioned schema, broken files moved aside, newest 1,000 kept | accepted |
 | [DEC-057](#dec-057--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Click-to-ask on a lesson schematic's parts: DEC-031's library-only rule is relaxed for the lesson's own schematic; the follow-up uses its cleaned names and says the part is from a simplified drawing. Also recorded: the tray log keeps transcribed questions (owner) | accepted |
 | [DEC-056](#dec-056--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Hey Ganesh mark: one tapered ink stroke from ear to trunk, the bindu and a crown arc on kraft paper; the tray exe's icon, the notification-area icon and the key screen's | accepted |
@@ -69,6 +70,34 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-059 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the shell records each taught turn, and the planner keeps the exact plan text.** Step 12b of the build sequence (the owner: "Yes, build 12b").
+
+- **When a note is written:** after `TeachAsync`, through `TeachAndNoteAsync` at both of its call sites. A per-turn `TurnRecord` is filled by the leg that ran:
+  - Highlight: its outcome;
+  - Tutor: the answer text;
+  - Lesson: the first lesson's title, its plan JSON, the clicked parts, and the outcome.
+
+  `TurnNotes.From` maps it to a `TurnNote`. The mapping is pure, so NB-1 checks every case.
+- **What gets no note:** a key error (12), a cancelled turn (13), a Failed verdict (never taught from), or no question. A provider fault (3) or a defect (4) is still a turn the student asked, so it is noted with its outcome.
+- **The store:** opened once per run in `RunAsync`, before the header, which says `notes : ON (<path>)`, `off (--no-notes)` or `off (<reason>)`. A store that cannot open, or a write that fails, is one output line; the exit code never changes. A broken `notes.db` is kept aside, and the header names it. The tray runs the same `RunAsync`, so it records too.
+- **The plan's text** (outside the plan's file list, needed for replay): `PlanResult.PlanJson` (optional, last) is the exact text the kept lesson was validated from.
+  - whole answer: the kept attempt's text, so after a repair it is the repaired one;
+  - finished stream: the whole stream;
+  - dropped stream: the released prefix, which parses to exactly the beats the student saw.
+
+  The alternative, serialising the validated `VisualPlan`, would need a writer that matches the parser for every op. The text is already the source of truth.
+
+**A test side effect, found and fixed in this step.** TY-3 and TK-3 run the real shell in-process. Once the shell opened a notes store, my first TY-3 run created an empty `notes.db` in the real `%LOCALAPPDATA%\HeyGanesh`. It held 0 turns, checked through winsqlite3, and I removed it with its `-wal`/`-shm`. Both rows now point `HEYGANESH_DATA_DIR` at a temp folder for the run, and TY-3 checks the header's notes path is under that folder.
+
+**Rejected.**
+- Writing the note from inside each leg: three places to keep in step instead of one.
+- Writing notes on the pool: a write takes milliseconds, after the turn has already finished.
+- Noting key-error turns: nothing was asked of a model, so there is nothing to review.
+
+Rows: LP-4 5 (+2), LP-11 14 (+2), NB-1 (offline, CI G-24), NB-2 (local), NB-3 (owner, keys), TY-3 6 (+1).
+
 ## DEC-058 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the notes store is SQLite through Windows' own copy, in a module that references nothing.** Step 12a of the build sequence. The owner chose `winsqlite3` for BUILD-PLAYBOOK D3 ("Yes, winsqlite3") and approved building 12a.

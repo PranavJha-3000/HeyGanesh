@@ -2,6 +2,7 @@ using HeyGanesh.Abstractions;
 using HeyGanesh.LessonPlanner;
 using HeyGanesh.LessonSession;
 using HeyGanesh.LessonSurface;
+using HeyGanesh.Notes;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Providers.OpenAiCompat;
 using HeyGanesh.ScreenOverlay;
@@ -86,6 +87,7 @@ internal static partial class ShellHost
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
+        TurnRecord record,
         CancellationToken ct)
     {
         var leg = await ChooseLegAsync(routing, options, ct).ConfigureAwait(false);
@@ -95,15 +97,20 @@ internal static partial class ShellHost
             return 13;
         }
 
+        record.Route = leg.Why;
         switch (leg.Leg)
         {
             case TurnLeg.Highlight:
                 Console.WriteLine("teach       : skipped — the route says point: the highlight was the answer");
+                record.Leg = NoteLeg.Highlight;
+                record.Outcome = "the highlight was the answer";
                 return 0;
             case TurnLeg.Lesson when lesson is not null:
-                return await TeachWithLessonAsync(lesson, CatalogFor(leg), voice, options, guidance, ct).ConfigureAwait(false);
+                record.Leg = NoteLeg.Lesson;
+                return await TeachWithLessonAsync(lesson, CatalogFor(leg), voice, options, guidance, record, ct).ConfigureAwait(false);
             default:
-                return await TeachAndSpeakAsync(tutor, voice, options, guidance, ct).ConfigureAwait(false);
+                record.Leg = NoteLeg.Tutor;
+                return await TeachAndSpeakAsync(tutor, voice, options, guidance, record, ct).ConfigureAwait(false);
         }
     }
 
@@ -144,10 +151,12 @@ internal static partial class ShellHost
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
+        TurnRecord record,
         CancellationToken ct)
     {
         if (lesson.Planner is null)
         {
+            record.Outcome = "skipped: no lesson model";
             Console.WriteLine($"lesson      : skipped — a lesson was chosen but no lesson model is configured ({LessonKeyEnvVar}");
             Console.WriteLine("                MISSING, DEC-027). The verdict above stands as-is.");
             return 0;
@@ -190,6 +199,13 @@ internal static partial class ShellHost
             }
 
             Console.WriteLine($"  follow-ups  : {conversation.Picks.Count}, ended {conversation.End}");
+
+            // DEC-059: the first lesson is the one asked for; its exact plan text makes it replayable.
+            var first = conversation.Turns[0].Plan;
+            record.LessonTitle = first?.Lesson.Plan?.Title;
+            record.PlanJson = first?.PlanJson;
+            record.Picks.AddRange(conversation.Picks.Select(p => $"{p.InstanceId}.{p.PartId}"));
+            record.Outcome = $"{conversation.Turns[^1].Outcome}, {conversation.Picks.Count} follow-up(s), ended {conversation.End}";
             if (conversation.End == FollowUpEnd.Cancelled)
             {
                 // Cancelled while the finished lesson waited for a click: the lesson itself played, but the

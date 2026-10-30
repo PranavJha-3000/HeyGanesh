@@ -71,6 +71,8 @@
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
     <!-- The key commands use Security's KeyRing directly (DEC-045), so the reference is stated, not inherited. -->
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+    <!-- Each taught turn becomes a note in the local store (DEC-058/DEC-059); zero NuGet, Windows' own SQLite. -->
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Notes\HeyGanesh.Notes.csproj" />
   </ItemGroup>
 
   <ItemGroup>

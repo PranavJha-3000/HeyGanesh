@@ -73,6 +73,9 @@ internal static partial class TraySmokeHost
         failures = Check(output.Contains("hook live: IsRunning=True", StringComparison.Ordinal) && output.Contains("still running       : False", StringComparison.Ordinal),
             "the same ordered teardown as Ctrl+C: the hook was live and is released before the shell returns", failures);
         failures = Check(!output.Contains("auto-stop", StringComparison.Ordinal), "no --seconds was given, so only the token could have stopped it", failures);
+        var notesLine = output.Split('\n').FirstOrDefault(l => l.Contains("notes      :", StringComparison.Ordinal))?.Trim() ?? "(no notes line)";
+        failures = Check(notesLine.Contains(Path.Combine(Path.GetTempPath(), "heyganesh-traysmoke"), StringComparison.OrdinalIgnoreCase),
+            $"the in-process shell's notes go to a temporary folder, never the real data folder ({notesLine})", failures);
 
         var (early, earlyLive, earlyIn, _) = await RunShellAsync(stopAfterLive: null);
         failures = Check(early == 0 && earlyLive && earlyIn < TimeSpan.FromSeconds(20), $"a token already cancelled before the run still ends cleanly: exit {early} in {earlyIn.TotalMilliseconds:F0} ms", failures);
@@ -82,6 +85,9 @@ internal static partial class TraySmokeHost
     /// <summary>Runs ShellHost.RunAsync in hooked mode with console output captured; null means the token is cancelled up front.</summary>
     private static async Task<(int Code, bool Live, TimeSpan StoppedIn, string Output)> RunShellAsync(TimeSpan? stopAfterLive)
     {
+        // The shell opens its notes store (DEC-059): never let a test run reach the real data folder.
+        var savedData = Environment.GetEnvironmentVariable("HEYGANESH_DATA_DIR");
+        Environment.SetEnvironmentVariable("HEYGANESH_DATA_DIR", TempFolder("shell-data"));
         var original = Console.Out;
         var captured = new StringWriter();
         Console.SetOut(TextWriter.Synchronized(captured));
@@ -111,6 +117,7 @@ internal static partial class TraySmokeHost
         finally
         {
             Console.SetOut(original);
+            Environment.SetEnvironmentVariable("HEYGANESH_DATA_DIR", savedData);
         }
     }
 

@@ -610,3 +610,15 @@
 - **Rollback point:** branch `feat/notes-v1` at `e776699` (the commit before this step).
 - **Files to restore:** `git checkout e776699 -- HeyGanesh.sln .github/workflows AGENTS.md docs/ai`; delete `src/Foundation/HeyGanesh.Notes` and `tools/NotesSmoke`.
 - **Re-check after revert:** `dotnet build -c Debug -warnaserror` 0/0; the local CI runner reports 21 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the shell records each turn, build sequence step 12b, DEC-059)
+
+- **Change:**
+  - LessonPlanner: `PlanResult.PlanJson` (optional, last), the exact JSON text the kept plan was validated from, on both the whole and the streamed path.
+  - App Shell: references `HeyGanesh.Notes`; opens the store once per run (header line `notes :`, `--no-notes`); a per-turn `TurnRecord` filled by the legs; `TurnNotes.From` maps a finished turn to a `TurnNote` (none for a key error or a cancelled turn); a failed write is a log line, never a failed turn.
+  - Rows: LessonPlannerSmoke (PlanJson checks), TraySmoke `--assert-notes-map` (offline, CI G-24) and `--assert-notes-shell` (local, the real exe).
+  - Docs: DEC-059, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/notes-v1` at `09d4747` (the commit before this step).
+- **Files to restore:** `git checkout 09d4747 -- src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **If notes were recorded and you want them gone:** delete `%LOCALAPPDATA%\HeyGanesh\notes.db` (and its `-wal`/`-shm`).
+- **Re-check after revert:** App `--once --question "x"` exit 12; TraySmoke `--assert-source` 8; the local CI runner reports 22 gates, all exit 0.

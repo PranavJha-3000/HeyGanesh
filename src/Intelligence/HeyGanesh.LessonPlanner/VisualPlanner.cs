@@ -104,6 +104,7 @@ public sealed partial class VisualPlanner : IDisposable
         var messages = new List<LlmMessage> { user };
 
         LessonValidationResult? best = null;
+        string? bestText = null;
         IReadOnlyList<LessonIssue> firstIssues = Array.Empty<LessonIssue>();
         int attempts = 0, input = 0, output = 0;
         var latency = TimeSpan.Zero;
@@ -150,6 +151,7 @@ public sealed partial class VisualPlanner : IDisposable
             if (best is null || Rank(lesson.Outcome) >= Rank(best.Outcome))
             {
                 best = lesson;
+                bestText = response.Text ?? string.Empty;
             }
 
             if (lesson.Outcome == LessonOutcome.Valid)
@@ -161,7 +163,7 @@ public sealed partial class VisualPlanner : IDisposable
             messages.Add(new LlmMessage { Role = "user", Text = PlannerPrompt.Repair(lesson.Issues) });
         }
 
-        return new PlanResult(best!, attempts, image is not null, imageNote, modelId, input, output, latency, firstIssues, repairError);
+        return new PlanResult(best!, attempts, image is not null, imageNote, modelId, input, output, latency, firstIssues, repairError, PlanJson: bestText);
     }
 
     private (LlmImagePart? Image, string? Note) ChooseImage(ScreenGrounding? screen)

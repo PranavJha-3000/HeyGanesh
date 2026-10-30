@@ -450,3 +450,16 @@
 - **Files to restore:** `git checkout 4581601 -- src/Foundation/HeyGanesh.Security src/Experience/HeyGanesh.App tools/SecretSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Foundation/HeyGanesh.Security/KeyRing.cs`, `src/Experience/HeyGanesh.App/ShellHost.Keys.cs` and `tools/SecretSmoke/SecretSmokeHost.KeyRing.cs`.
 - **Credentials:** a key stored with `--set-key` stays in Windows Credential Manager after a revert; remove it first with `--remove-key <name>`, or delete the generic credential `HeyGanesh:<name>:api-key` in Control Panel > Credential Manager.
 - **Re-check after revert:** `dotnet run --project tools\SecretSmoke -c Debug` -> `ALL PASS`; App `--help` exit 0; the local CI runner reports 18 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (every API client reads its key through the key ring, build sequence step 8b, DEC-046)
+
+- **Change:**
+  - `SelectionOptions`, `VisionOptions` and `FishTtsOptions` gain an optional `Func<string?> ApiKey`; their clients use it when given and otherwise read the environment exactly as before. (The Tutor was planned too and left out: TU-8, see DEC-046.)
+  - The App Shell passes `KeyRing.Reader(...)` to the Jev, Vision and Fish clients, and decides which legs run from the key ring (Credential Manager or environment).
+  - `EnvironmentSecretStore` reads through the ring (renamed `KeyRingSecretStore`).
+  - PlannerEval's `EnvKeyStore` is replaced by the same ring; PE-5 follows.
+  - Smoke rows: key-source checks in ElementSelectionSmoke (ES-10), VisionSmoke (V-9) and VoiceSmoke (VO-8); CI G-23.
+  - Docs: DEC-046, FLOW, ARCHITECTURE, PLATFORM, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `31c2bbd` (the commit before this step).
+- **Files to restore:** `git checkout 31c2bbd -- src/Perception src/Experience/HeyGanesh.Voice src/Experience/HeyGanesh.App tools AGENTS.md docs/ai .github/workflows/ci.yml`, then delete any new file `git status` lists.
+- **Re-check after revert:** the local CI runner reports 18 gates, all exit 0; App `--once --question "x"` exit 12.

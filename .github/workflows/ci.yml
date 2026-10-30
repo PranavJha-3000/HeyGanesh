@@ -177,6 +177,23 @@ jobs:
           & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-preroll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      # G-23: key sources (DEC-046) - each API client the App Shell composes takes its key from the key ring's
+      # reader when given one, and otherwise reads its environment variable exactly as before. Unroutable
+      # loopback URLs and a refusing HTTP handler: no request leaves the machine, no real key is read.
+      - name: G-23 Key sources
+        shell: pwsh
+        run: |
+          foreach ($p in @('ElementSelectionSmoke', 'VisionSmoke', 'VoiceSmoke')) {
+            dotnet build "tools\$p" -c Debug -warnaserror
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          & 'tools\ElementSelectionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.ElementSelectionSmoke.exe' --assert-key-source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\VisionSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VisionSmoke.exe' --assert-key-source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-fish-format
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       # G-22: the planner evaluation set (DEC-043/DEC-044) - the set is well formed; every automatic check both passes
       # and fails; the recording path works through the real client against a loopback stub with no key in any file;
       # the live client matches the App Shell's. Once the owner commits a reviewed live recording as

@@ -10,11 +10,21 @@ namespace HeyGanesh.App;
 
 internal static partial class ShellHost
 {
+    /// <summary>
+    /// The process's one key ring (DEC-046): every API client the shell composes reads its key through it, per
+    /// request. Static and never disposed: it holds no key, only the Credential Manager handle, for the life
+    /// of the process.
+    /// </summary>
+    private static readonly KeyRing Keys = new();
+
+    /// <summary>True when the key is in Credential Manager or its environment variable: the gate for each leg.</summary>
+    private static bool HasKey(string name) => Keys.Describe(name).Source != KeySource.Missing;
+
     private static int RunKeyCommand(string command, string name)
     {
         try
         {
-            using var ring = new KeyRing();
+            var ring = Keys;
             if (command == "keys")
             {
                 Console.WriteLine("Provider keys (Credential Manager first, then the environment variable; values never shown):");
@@ -23,8 +33,6 @@ internal static partial class ShellHost
                     Console.WriteLine($"  {key.Name,-9} {key.EnvironmentVariable,-19} {ring.Describe(key.Name)}");
                 }
 
-                Console.WriteLine("note: until build step 8b the API clients read only the environment variable; a key held");
-                Console.WriteLine("      only in Credential Manager is not used by them yet.");
                 return 0;
             }
 
@@ -116,27 +124,4 @@ internal static partial class ShellHost
         return text;
     }
 
-    /// <summary>
-    /// The header's note when a key sits in Credential Manager but not in the environment: until step 8b the
-    /// clients read only the environment, so the header says the stored key is not used rather than
-    /// letting "MISSING" look wrong.
-    /// </summary>
-    private static string StoredNote(string name, bool inEnvironment)
-    {
-        if (inEnvironment)
-        {
-            return string.Empty;
-        }
-
-        try
-        {
-            using var ring = new KeyRing();
-            return ring.IsStored(name) ? " (stored in Credential Manager; the clients read it from build step 8b)" : string.Empty;
-        }
-        catch (Exception)
-        {
-            // The header must never fail the shell; an unreadable store simply adds no note.
-            return string.Empty;
-        }
-    }
 }

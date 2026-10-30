@@ -47,6 +47,14 @@ public sealed class VisionOptions
     /// </summary>
     public int MaxSamples { get; init; } = 2;
 
+    /// <summary>
+    /// Where the key comes from, per request (DEC-046): the App Shell passes its key ring's reader
+    /// (Windows Credential Manager, then the environment). Null keeps this client's own environment read,
+    /// so hosts and rows that pass nothing behave exactly as before. A delegate that returns null or blank
+    /// is a missing key: the call fails as an authentication fault before any byte is sent.
+    /// </summary>
+    public Func<string?>? ApiKey { get; init; }
+
     /// <summary>How long a single provider call may take before it is abandoned.</summary>
     public TimeSpan PerCallTimeout { get; init; } = TimeSpan.FromSeconds(60);
 

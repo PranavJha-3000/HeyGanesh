@@ -22,6 +22,11 @@ internal static partial class ElementSelectionSmokeHost
             return RunAssertTextMerge();
         }
 
+        if (args.Length > 0 && args[0] == "--assert-key-source")
+        {
+            return await RunAssertKeySourceAsync();
+        }
+
         var options = ParseArgs(args);
         if (options.Help || string.IsNullOrWhiteSpace(options.Question))
         {

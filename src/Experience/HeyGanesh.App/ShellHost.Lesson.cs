@@ -47,12 +47,12 @@ internal static partial class ShellHost
     /// </summary>
     /// <remarks>
     /// Ownership: the planner owns the client it resolves from the registry (one per process, not per
-    /// question) and RunAsync's using disposes it. The key is read only by EnvironmentSecretStore, per
+    /// question) and RunAsync's using disposes it. The key is read only by KeyRingSecretStore, per
     /// request, and never printed — the header reports presence only.
     /// </remarks>
     private static VisualPlanner? CreateLessonPlanner()
     {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(LessonKeyEnvVar)))
+        if (!HasKey("deepseek"))
         {
             return null;
         }
@@ -66,7 +66,7 @@ internal static partial class ShellHost
             // Streaming (DEC-042): the lesson's first beat is drawn while the rest is still being written.
             // OpenAiCompatLlmClient.StreamAsync reads the provider's server-sent events as they arrive.
             Capabilities = ProviderCapability.Text | ProviderCapability.Streaming,
-            SecretStore = new EnvironmentSecretStore(LessonKeyEnvVar),
+            SecretStore = new KeyRingSecretStore(Keys, "deepseek"),
             CredentialProviderId = "deepseek",
         }));
         registry.Assign(new ProviderAssignment { Role = ProviderRole.Tutor, ProviderId = "deepseek", ModelId = "deepseek-flash" });

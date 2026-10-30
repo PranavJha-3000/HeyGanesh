@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using HeyGanesh.Providers.Core;
+using HeyGanesh.Security;
 using HeyGanesh.VisualLessonEngine;
 using FakeLlm = HeyGanesh.Tools.LessonPlannerSmoke.FakeLlmClient;
 
@@ -13,8 +14,12 @@ namespace HeyGanesh.Tools.PlannerEval;
 /// </summary>
 internal static partial class PlannerEvalHost
 {
-    /// <summary>PE-4's dummy key lives in this process-only variable, never in DEEPSEEK_API_KEY.</summary>
-    private const string StubKeyVariable = "PLANNEREVAL_STUB_KEY";
+    /// <summary>
+    /// PE-4's ring: an empty store and an environment that knows only a dummy key, so the row never reads or
+    /// writes the machine's Credential Manager or DEEPSEEK_API_KEY.
+    /// </summary>
+    private static KeyRing DummyRing(string dummy) =>
+        new(new EmptyStore(), v => v == "DEEPSEEK_API_KEY" ? dummy : null);
 
     private sealed record ReplayOutcome(List<CaseRun> Runs, List<string> NotReplayed, List<string> Differences, List<string> Regressions, bool PromptChanged, JsonObject Summary);
 
@@ -39,13 +44,15 @@ internal static partial class PlannerEvalHost
             }
         }
 
-        // The key is described by presence and length only, and checked before anything is built: with no
-        // key no client exists and no connection is ever opened.
-        var key = LiveClient.KeyState();
-        Console.WriteLine($"{LiveClient.KeyVariable}: {key}");
-        if (key == "MISSING")
+        // The key comes from the app's key ring (DEC-046) and is described by presence, length and source only,
+        // checked before anything is built: with no key no client exists and no connection is ever opened.
+        using var ring = new KeyRing();
+        var state = ring.Describe(LiveClient.KeyName);
+        var key = state.ToString();
+        Console.WriteLine($"{LiveClient.KeyName} key: {key}");
+        if (state.Source == KeySource.Missing)
         {
-            Console.WriteLine($"KEY MISSING: set {LiveClient.KeyVariable} to record; nothing was sent (exit 12)");
+            Console.WriteLine("KEY MISSING: store it with HeyGanesh.App --set-key deepseek, or set DEEPSEEK_API_KEY; nothing was sent (exit 12)");
             return 12;
         }
 
@@ -67,7 +74,7 @@ internal static partial class PlannerEvalHost
         Console.CancelKeyPress += stop;
         try
         {
-            using var client = LiveClient.Create();
+            using var client = LiveClient.Create(ring);
             Console.WriteLine($"recording {cases.Count} case(s) with {LiveClient.ModelId} into {dir}");
             return await RecordAsync(set, cases, client, dir, key, cts.Token);
         }
@@ -242,7 +249,7 @@ internal static partial class PlannerEvalHost
         var dummy = "pe4-dummy-" + Guid.NewGuid().ToString("N");
         var root = Path.Combine(Path.GetTempPath(), "heyganesh-pe4-" + Guid.NewGuid().ToString("N")[..8]);
         var rec = Path.Combine(root, "rec");
-        Environment.SetEnvironmentVariable(StubKeyVariable, dummy);
+        using var dummyRing = DummyRing(dummy);
         try
         {
             using var stub = StubServer.Start();
@@ -252,9 +259,9 @@ internal static partial class PlannerEvalHost
             }
 
             int code;
-            using (var client = LiveClient.Build(stub.Prefix, StubKeyVariable))
+            using (var client = LiveClient.Build(stub.Prefix, dummyRing))
             {
-                code = await RecordAsync(set, cases, client, rec, LiveClient.KeyState(StubKeyVariable), CancellationToken.None);
+                code = await RecordAsync(set, cases, client, rec, dummyRing.Describe(LiveClient.KeyName).ToString(), CancellationToken.None);
             }
 
             var runs = EvalReport.LoadCases(rec);
@@ -306,7 +313,6 @@ internal static partial class PlannerEvalHost
         }
         finally
         {
-            Environment.SetEnvironmentVariable(StubKeyVariable, null);
             try
             {
                 Directory.Delete(root, recursive: true);
@@ -338,7 +344,8 @@ internal static partial class PlannerEvalHost
             $"base URL {LiveClient.BaseUrl} is the shell's, over https", failures);
         failures = Check(shell.Contains($"ModelId = \"{LiveClient.ModelId}\"", StringComparison.Ordinal), $"model {LiveClient.ModelId} is the shell's", failures);
         failures = Check(shell.Contains($"Capabilities = {caps},", StringComparison.Ordinal), $"capabilities {caps} are the shell's", failures);
-        failures = Check(shell.Contains($"\"{LiveClient.KeyVariable}\"", StringComparison.Ordinal), $"key variable {LiveClient.KeyVariable} is the shell's", failures);
+        failures = Check(shell.Contains($"new KeyRingSecretStore(Keys, \"{LiveClient.KeyName}\")", StringComparison.Ordinal),
+            $"the key is the shell's key ring entry '{LiveClient.KeyName}'", failures);
 
         // Only PE-4 may aim the client elsewhere, and it does so with its own dummy key variable.
         var builds = Directory.GetFiles(Path.Combine(root, "tools", "PlannerEval"), "*.cs")
@@ -421,6 +428,24 @@ internal static partial class PlannerEvalHost
         }
 
         return n;
+    }
+
+    /// <summary>A store with nothing in it: PE-4's ring falls through to its dummy environment.</summary>
+    private sealed class EmptyStore : ISecretStore
+    {
+        public SecretHandle? Get(string providerId, string keyAlias) => null;
+
+        public void Set(string providerId, string keyAlias, ReadOnlyMemory<byte> secret) => throw new NotSupportedException("PE-4 stores nothing");
+
+        public bool Exists(string providerId, string keyAlias) => false;
+
+        public void Delete(string providerId, string keyAlias)
+        {
+        }
+
+        public void Dispose()
+        {
+        }
     }
 
     private static string Fmt(Dictionary<string, bool> checks) =>

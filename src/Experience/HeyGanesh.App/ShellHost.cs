@@ -114,10 +114,12 @@ internal static partial class ShellHost
         // One Jev client for both decisions Jev makes in a turn — which element (Element Selection) and
         // how to teach (the router, DEC-036). The shell owns it: a service handed a client never disposes
         // it, and declaring it before the selection service disposes it after.
-        var selectionOptions = new SelectionOptions { MaxCandidates = options.MaxCandidates };
+        // Every API client reads its key per request through the key ring (DEC-046): Credential Manager
+        // first, then the environment variable.
+        var selectionOptions = new SelectionOptions { MaxCandidates = options.MaxCandidates, ApiKey = Keys.Reader("typesafe") };
         using var jev = JevClients.CreateTypeSafe(selectionOptions);
         using var selection = new ElementSelectionService(jev, selectionOptions);
-        using var vision = new VisionService();
+        using var vision = new VisionService(options: new VisionOptions { ApiKey = Keys.Reader("deepseek") });
         using var orchestrator = new ContextOrchestratorService(
             capture,
             selection,
@@ -159,7 +161,10 @@ internal static partial class ShellHost
         // ends, so sitting idle here costs nothing. Declaration order still sets teardown order — voice
         // is disposed after the hotkey (no new turn can start) and before the overlay (a turn that was
         // draining has already been awaited by RunHookedAsync, so nothing speaks into a dead service).
-        using var voice = new VoiceService();
+        // The Fish client is built here only to hand it the key ring's reader; declared before voice, so it
+        // is disposed after the service that speaks through it (a service never disposes a client it was given).
+        using var tts = new FishTtsClient(new FishTtsOptions { ApiKey = Keys.Reader("fish") });
+        using var voice = new VoiceService(tts: tts);
 
         using var hotkey = new HotkeyMonitor();
 

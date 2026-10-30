@@ -326,7 +326,7 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 
-## Keys (KeyRing, DEC-045; API clients read through it from build step 8b)
+## Keys (KeyRing, DEC-045; the shell's API clients read through it, DEC-046)
 
 ```
 HeyGanesh.App --keys | --set-key <name> | --remove-key <name>     (runs instead of the shell, then exits)
@@ -335,9 +335,14 @@ HeyGanesh.App --keys | --set-key <name> | --remove-key <name>     (runs instead 
                     → KeyState "present (N chars, source)" | "MISSING"   (the only thing ever printed)
     Store(name, typed): ReadHidden (no echo; piped stdin = one line) → trim, refuse inner whitespace → Set
     Remove(name): Delete (the environment variable is untouched)
-Shell header (every run): keys line from the environment, + "stored in Credential Manager" note via KeyRing.IsStored
-Today the clients still read the environment themselves (TypeSafeJevClient, DeepSeekVisionClient,
-DeepSeekTutorClient, FishTtsClient, EnvironmentSecretStore); 8b hands each a KeyRing.Reader(name) delegate.
+Shell header (every run): keys line = Keys.Describe(name) per key; HasKey(name) decides the router and lesson legs
+Composition root (DEC-046), one static KeyRing `Keys`:
+  SelectionOptions.ApiKey = Keys.Reader("typesafe")  → TypeSafeJevClient (Element Selection + router)
+  VisionOptions.ApiKey    = Keys.Reader("deepseek")  → DeepSeekVisionClient (fallback leg)
+  FishTtsOptions.ApiKey   = Keys.Reader("fish")      → FishTtsClient → VoiceService(tts:)
+  KeyRingSecretStore(Keys, "deepseek")               → OpenAiCompatLlmClient (lesson planner)
+  each per request: delegate() → Credential Manager → else environment variable → Authorization header
+  The Tutor (not composed yet, SH-17) still reads DEEPSEEK_API_KEY itself until step 9.
 ```
 
 ## Turn routing path (Turn Router — DEC-035; wired into the App Shell by DEC-036, live run key-gated)

@@ -23,7 +23,7 @@ internal static partial class ShellHost
     /// the key gate first anyway). It shares the shell's one Jev client with Element Selection.
     /// </summary>
     private static Router? CreateRouter(ShellOptions options, IJevClient jev) =>
-        options.Lesson || options.NoRoute || string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(RouterKeyEnvVar))
+        options.Lesson || options.NoRoute || !HasKey("typesafe")
             ? null
             : new Router(jev);
 

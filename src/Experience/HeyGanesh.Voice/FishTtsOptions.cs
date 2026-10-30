@@ -22,6 +22,14 @@ public sealed class FishTtsOptions
     public string ApiKeyEnvVar { get; init; } = "FISH_AUDIO_API_KEY";
 
     /// <summary>
+    /// Where the key comes from, per request (DEC-046): the App Shell passes its key ring's reader
+    /// (Windows Credential Manager, then the environment). Null keeps this client's own environment read,
+    /// so hosts and rows that pass nothing behave exactly as before. A delegate that returns null or blank
+    /// is a missing key: the call fails as an authentication fault before any byte is sent.
+    /// </summary>
+    public Func<string?>? ApiKey { get; init; }
+
+    /// <summary>
     /// Model sent in the <c>model</c> header. The v1 endpoint documents model selection through a header
     /// rather than the JSON body; if the provider rejects a name here, change this one field.
     /// </summary>

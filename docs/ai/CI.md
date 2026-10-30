@@ -28,6 +28,7 @@
 | **G-20 Element Selection text merge** | build `tools\ElementSelectionSmoke`, then the EXE with `--assert-text-merge` (ES-8, DEC-039; the other Element Selection rows walk a real window and stay local-only) | `esTextMerge=pass` | exit 0 |
 | **G-21 Voice pre-roll** | build `tools\VoiceSmoke`, then the EXE with `--assert-preroll` (VO-11, DEC-040: the real client against a loopback HttpListener stub; no microphone, device or network) | `voicePreroll=pass` | exit 0 |
 | **G-22 Planner evaluation set** | build `tools\PlannerEval`, then the EXE with each of `--assert-set` `--assert-checks` `--assert-record-stub` `--assert-drift` (PE-1, PE-2, PE-4, PE-5, DEC-043/DEC-044: no key; PE-4 uses a loopback stub and a dummy key); then `--replay tools\PlannerEval\baseline` once that baseline exists (PE-7: exit 1 on a regression, 3 when the planner prompt changed), otherwise "no baseline yet" | `plannerEval=pass` | exit 0 for every mode |
+| **G-23 Key sources** | build `tools\ElementSelectionSmoke`, `tools\VisionSmoke`, `tools\VoiceSmoke`, then `--assert-key-source` (ES-10), `--assert-key-source` (V-9), `--assert-fish-format` (VO-8, now with the key-source checks), DEC-046 | `keySources=pass` | exit 0 for every mode |
 
 ## Local-Only Notes
 

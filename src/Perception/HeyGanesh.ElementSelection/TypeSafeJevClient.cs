@@ -36,13 +36,13 @@ internal sealed partial class TypeSafeJevClient : IJevClient, IDisposable
 
     public async Task<JevRawResponse> EvaluateAsync(JevRequest request, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable(ApiKeyEnvVar);
+        var key = _options.ApiKey is { } apiKey ? apiKey() : Environment.GetEnvironmentVariable(ApiKeyEnvVar);
         if (string.IsNullOrWhiteSpace(key))
         {
             // Fail fast and specifically: a missing key is an auth problem, not a model problem.
             throw new JevAuthenticationException(
-                $"TypeSafe API key not found. Set the {ApiKeyEnvVar} environment variable. " +
-                "(This direct-key path is temporary -- see DEC-008 pending the API key security proxy.)");
+                $"TypeSafe API key not found. Set the {ApiKeyEnvVar} environment variable or store the typesafe key. " +
+                "(The app reads keys through its key ring, DEC-046: HeyGanesh.App --set-key stores one.)");
         }
 
         var body = new JsonObject

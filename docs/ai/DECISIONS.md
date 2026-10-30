@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-046](#dec-046--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell's API clients (Jev, Vision, Fish, the lesson and router models) read their keys through the key ring per request; `SelectionOptions`, `VisionOptions`, `FishTtsOptions` gain an optional `Func<string?> ApiKey` that defaults to the old environment read; the Tutor waits for step 9 because TU-8 forbids a key-named option | accepted |
 | [DEC-045](#dec-045--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The "API key security proxy" is `HeyGanesh.Security.KeyRing`: three known keys, Windows Credential Manager first and the environment variable as fallback, described by presence/length/source only; the App Shell gains `--keys`, `--set-key`, `--remove-key`; clients read through it from step 8b | accepted |
 | [DEC-044](#dec-044--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The evaluation set records live (`--record`, the shell's DeepSeek client, key presence only) and replays offline (`--replay`); a committed baseline gates CI: a check that passed there and fails now exits 1, a changed planner prompt exits 3 | accepted |
 | [DEC-043](#dec-043--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A planner evaluation set: 30 questions (six verbatim from the HeyClicky reference video) scored by 11 deterministic checks in a new host `tools/PlannerEval`; 7a proves every check passes and fails offline (CI G-22); no LLM judge in v0 | accepted |
@@ -56,6 +57,36 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-046 — 2026-10-30 — claude-opus-5-5
+
+**Decision — every API client the App Shell composes reads its key through the key ring, per request.** Step 8b of the build sequence (the owner: "Yes, build 8b"). A key stored with `--set-key` is now used.
+
+- **Element Selection, Vision, Voice:**
+  - `SelectionOptions`, `VisionOptions` and `FishTtsOptions` gain `Func<string?>? ApiKey`;
+  - `TypeSafeJevClient`, `DeepSeekVisionClient` and `FishTtsClient` call it per request when given, and otherwise read their environment variable exactly as before;
+  - a source returning null or blank is a missing key (the same authentication fault, before any byte is sent);
+  - no module gains a project reference.
+- **App Shell:**
+  - one static `KeyRing` (`Keys`) hands `Keys.Reader(name)` to the Jev client, Vision and a Fish client it now builds itself (declared before `VoiceService`, so disposed after it);
+  - the lesson model's `ISecretStore` is `KeyRingSecretStore` (it replaced `EnvironmentSecretStore`);
+  - which legs run (router, lesson) is decided by `HasKey` (Credential Manager or environment);
+  - the header's `keys :` line prints `KeyState` ("present (N chars, source)" or "MISSING").
+- **PlannerEval:** `--record` reads through the same ring (`RingKeyStore`), so a stored key works for it; PE-4 uses a ring over an empty store and a dummy environment, so it reads nothing real; PE-5 checks the shell's `new KeyRingSecretStore(Keys, "deepseek")`.
+- **Missing-key messages** now end "(The app reads keys through its key ring, DEC-046: HeyGanesh.App --set-key stores one.)".
+
+**Changed from the plan while building.** The Tutor (`DeepSeekTutorOptions`) is left out. TU-8 deliberately refuses any option whose name contains "Key", "Secret", "Credential" or "Handler" (DEC-017: no credential surface, no transport knob), and the shell does not use the Tutor yet (`CreateTutorClient()` returns null). Whether TU-8 should allow a key *source* (a delegate, never a value) is a decision for step 9, which turns the Tutor on. Until then the Tutor reads `DEEPSEEK_API_KEY` only.
+
+**Rejected.**
+- Renaming the Tutor's option to dodge TU-8's name check: that would defeat the check instead of deciding it.
+- Passing the key ring object itself into the modules (TutorEngine and Voice reference nothing).
+
+**Consequences.**
+- With a key stored in Credential Manager and no environment variable, the shell's legs run and authenticate. This is live-gated: no key here.
+- The Tutor stays environment-only until step 9.
+- The environment fallback is kept, so CI and every documented command still work.
+
+Plan: [plans/2026-10-30-security-proxy-v1.md](plans/2026-10-30-security-proxy-v1.md). Rows: ES-10, V-9, VO-8 (key-source checks), PE-4/PE-5 (updated), CI G-23.
+
 ## DEC-045 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the app's provider keys come from one key ring, held in Windows Credential Manager, with the environment variable as a fallback.** Step 8a of the build sequence (the owner: "Yes, build 8a"). It ends DEC-007's "temporary stopgap … pending the API key security proxy" once 8b routes the clients through it.

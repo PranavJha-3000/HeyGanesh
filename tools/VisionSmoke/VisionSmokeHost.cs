@@ -21,6 +21,11 @@ internal static partial class VisionSmokeHost
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--assert-key-source")
+        {
+            return await RunAssertKeySourceAsync();
+        }
+
         var options = ParseArgs(args);
         if (options.Help || string.IsNullOrWhiteSpace(options.Question))
         {

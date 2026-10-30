@@ -93,8 +93,8 @@ internal static partial class ShellHost
         Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish): where it was found and");
         Console.WriteLine("                  its length, never its value; then exit.");
         Console.WriteLine("--set-key <name>  store a key in Windows Credential Manager. It is typed or pasted with nothing");
-        Console.WriteLine("                  shown, or piped on stdin; then exit. Until build step 8b the API clients still");
-        Console.WriteLine("                  read only the environment variable, so a stored key is not used yet.");
+        Console.WriteLine("                  shown, or piped on stdin; then exit. Every API client reads it from there");
+        Console.WriteLine("                  first, then from the environment variable.");
         Console.WriteLine("--remove-key <name>  delete a stored key (the environment variable is not touched); then exit.");
     }
 
@@ -115,7 +115,8 @@ internal static partial class ShellHost
         Console.WriteLine("Live listens need HEYGANESH_QWEN_GATEWAY_URL (the qwen-audio-agent Gateway is a separate");
         Console.WriteLine("process that runs with its own provider key; no key crosses the protocol to HeyGanesh). The");
         Console.WriteLine("resolve legs need TYPESAFE_API_KEY (Element Selection) and DEEPSEEK_API_KEY (Vision, which");
-        Console.WriteLine("only runs as the fallback). The shell prints key presence only, never a value.");
+        Console.WriteLine("only runs as the fallback), stored with --set-key or set in the environment. The shell prints");
+        Console.WriteLine("key presence, length and source only, never a value.");
     }
 
     /// <summary>
@@ -125,10 +126,11 @@ internal static partial class ShellHost
     /// </summary>
     private static void PrintHeader(ShellOptions options)
     {
-        var typesafeKey = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TYPESAFE_API_KEY"));
-        var deepseekKey = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY"));
+        // Keys come from the key ring (DEC-046): Credential Manager first, then the environment variable. The
+        // same answers decide which legs CreateRouter() and CreateLessonPlanner() compose.
+        var typesafeKey = HasKey("typesafe");
+        var deepseekKey = HasKey("deepseek");
         var gatewayUrl = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HEYGANESH_QWEN_GATEWAY_URL"));
-        var fishKey = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FISH_AUDIO_API_KEY"));
 
         var trigger = options.Once
             ? "one turn at startup, hook never installed"
@@ -154,10 +156,9 @@ internal static partial class ShellHost
         Console.WriteLine($"  trigger    : {trigger}");
         Console.WriteLine($"  target     : {(options.Foreground ? "foreground window" : "window under the cursor")}");
         Console.WriteLine($"  overlay    : {(options.Overlay ? $"{options.DurationMs} ms per found verdict" : "disabled (--no-overlay)")}");
-        Console.WriteLine($"  keys       : TYPESAFE_API_KEY={(typesafeKey ? "present (value suppressed)" : "MISSING")}{StoredNote("typesafe", typesafeKey)}  " +
-                          $"DEEPSEEK_API_KEY={(deepseekKey ? "present (value suppressed)" : "MISSING")}{StoredNote("deepseek", deepseekKey)}");
+        Console.WriteLine($"  keys       : TYPESAFE_API_KEY={Keys.Describe("typesafe")}  DEEPSEEK_API_KEY={Keys.Describe("deepseek")}");
         Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
-                          $"FISH_AUDIO_API_KEY={(fishKey ? "present (value suppressed)" : "MISSING")}{StoredNote("fish", fishKey)} (TTS speaks the lesson when one is produced)");
+                          $"FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
         // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
         // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
         Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");

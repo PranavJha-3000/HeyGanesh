@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (every API client reads its key through the key ring, build sequence step 8b, DEC-046)
+
+Did: `SelectionOptions`, `VisionOptions` and `FishTtsOptions` gain an optional `ApiKey` delegate; their clients use it per request and otherwise read the environment as before. The App Shell holds one static `KeyRing` and hands its readers to Jev, Vision and a Fish client it now builds. The lesson model reads through `KeyRingSecretStore` (it replaced `EnvironmentSecretStore`). The router and lesson gates and the header use the ring. PlannerEval records through the same ring (`RingKeyStore`), and PE-4 uses a ring over a dummy. The missing-key messages are updated. Rows: ES-10 (4), V-9 (4) and VO-8 (+2 checks), all in CI gate G-23.
+Left: The Tutor still reads `DEEPSEEK_API_KEY` itself: TU-8 refuses a key-named option (DEC-017), so whether to allow a key source is decided in step 9's plan, together with turning the Tutor on. SH-25, the real credential-slot round trip, is yours. Steps 9–11 remain.
+Watch: A loop that prints `$(...)` before reading `$?` reports the wrong exit code. One verification loop did this, and the rows were re-run with the code captured first. `Keys` is static and never disposed on purpose. The header's keys line now prints the length and source of a present key.
+Next: Plan step 9 (turn the Tutor on, and decide TU-8 for its key source).
+Verified: All touched projects build -warnaserror 0/0. ES-10 4, V-9 4, VO-8 10, VO-6 21, VO-11 13, TU-8 source 15 and TU-11 payload 33 (unchanged); ES-8 exit 0. PlannerEval PE-1 7, PE-2 24, PE-4 9, PE-5 5; `--record` with no key exits 12. App `--help` 0, `--keys` 0, `--once` 12, `--cancel-ms 60` 13, `--once --lesson` 12. A client that ignores its key source fails ES-10 and V-9 (2 checks each), and both were restored. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (one key ring for API keys, build sequence step 8a, DEC-045)
 
 Did: `HeyGanesh.Security.KeyRing` (Credential Manager first, environment fallback, presence/length/source only). The App Shell gains `--keys`, `--set-key <name>` (no echo, or piped stdin) and `--remove-key <name>` in `ShellHost.Keys.cs`, plus an explicit Security reference. The header notes a key stored in Credential Manager. SecretSmoke gains `--assert-keyring` (KR-1, 11) and `--assert-keyring-cm` (KR-2, 4, throwaway `keyring-test.*` targets); CI G-12 runs both. The wrap-up sequence (8 proxy, 9 Tutor on, 10 schematic 3D, 11 tray app + installer) is in the step 8 plan.

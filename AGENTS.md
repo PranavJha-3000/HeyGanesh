@@ -27,7 +27,7 @@ Subsystems, and the seams between them are load-bearing:
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
 | Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
-| API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The API clients still read the environment until build step 8b routes them through the ring. |
+| API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045/DEC-046): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The shell's Jev, Vision, Fish, lesson and router clients read through it per request; the Tutor still reads `DEEPSEEK_API_KEY` until step 9. |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
 

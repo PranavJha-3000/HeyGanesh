@@ -3,7 +3,9 @@
 2026-10-30 · claude-opus-5-5 · STATUS: 8a BUILT 2026-10-30 (owner: "Yes, build 8a"): KR-1 11 PASS, KR-2 4 PASS, SH-24 verified; DEC-045.
 Changed while building: the header keeps its environment-based text (it still decides which legs run) and only adds a
 "stored in Credential Manager" note; the real-slot round trip (SH-25) was refused by this session's guard and is the
-owner's to run. 8b is not built.
+owner's to run. 8b BUILT 2026-10-30 (owner: "Yes, build 8b"): ES-10 4, V-9 4, VO-8 10 PASS, CI G-23; DEC-046.
+Changed while building: the Tutor is left for step 9 (TU-8 refuses a key-named option on DeepSeekTutorOptions; that is a
+decision, not something to rename around); the row ids are ES-10, V-9 and VO-8 rather than TU-11/new App rows.
 
 ## The wrap-up sequence (the owner chose must-haves 1–4, 2026-10-30)
 

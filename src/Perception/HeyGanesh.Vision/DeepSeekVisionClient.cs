@@ -37,13 +37,13 @@ internal sealed class DeepSeekVisionClient : IVisionClient, IDisposable
 
     public async Task<VisionRawResponse> AskAsync(VisionRequest request, CancellationToken ct)
     {
-        var key = Environment.GetEnvironmentVariable(ApiKeyEnvVar);
+        var key = _options.ApiKey is { } apiKey ? apiKey() : Environment.GetEnvironmentVariable(ApiKeyEnvVar);
         if (string.IsNullOrWhiteSpace(key))
         {
             // Fail fast and specifically: a missing key is an auth problem, not a model problem.
             throw new VisionAuthenticationException(
-                $"DeepSeek API key not found. Set the {ApiKeyEnvVar} environment variable. " +
-                "(This direct-key path is temporary -- see DEC-007 pending the API key security proxy.)");
+                $"DeepSeek API key not found. Set the {ApiKeyEnvVar} environment variable or store the deepseek key. " +
+                "(The app reads keys through its key ring, DEC-046: HeyGanesh.App --set-key stores one.)");
         }
 
         var messages = _prompt.BuildMessages(

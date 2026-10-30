@@ -49,6 +49,8 @@ internal static partial class ShellHost
             Question = options.Question,
             ScreenMatchFound = guidance.Found,
             Models = RouteModels,
+            // The lesson leg can draw a lesson's own schematic whenever it offers 3D (DEC-050/DEC-051).
+            Schematics = true,
         }, ct);
     }
 
@@ -106,10 +108,13 @@ internal static partial class ShellHost
         return leg;
     }
 
-    /// <summary>The planner's 3D offer for a leg: none (2D), one model, or the whole catalogue (--lesson).</summary>
+    /// <summary>
+    /// The planner's 3D offer for a leg: none (2D), one model, or the whole catalogue (--lesson, and a
+    /// schematic leg, DEC-051). Any non-null offer also carries Schematics.Check (RunLessonAsync).
+    /// </summary>
     private static ModelCatalog? CatalogFor(LegChoice leg) => leg.Canvas switch
     {
-        LessonCanvas.FullCatalogue => LessonSurface.CardSurface.Scene3dCatalog,
+        LessonCanvas.FullCatalogue or LessonCanvas.Schematic => LessonSurface.CardSurface.Scene3dCatalog,
         LessonCanvas.OneModel => new ModelCatalog(LessonSurface.CardSurface.Scene3dCatalog.Models.Where(m => m.Id == leg.ModelId)),
         _ => null,
     };

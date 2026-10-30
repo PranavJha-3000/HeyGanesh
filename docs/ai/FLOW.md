@@ -308,7 +308,7 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
         cancelled while routing → CANCELLED, exit 13
         Highlight (route: point) → "teach : skipped — … the highlight was the answer", exit 0
         Tutor (no router / no route / --no-route / route: explain) → TeachAndSpeakAsync   the Tutor leg, unchanged
-        Lesson → TeachWithLessonAsync with Scene3d = CatalogFor(leg): full (--lesson) | one model | null (2D)
+        Lesson → TeachWithLessonAsync with Scene3d = CatalogFor(leg): full (--lesson, or a schematic route, DEC-051) | one model | null (2D)
       lesson.Planner is null (DEEPSEEK_API_KEY missing) → "lesson : skipped", exit 0
       else TeachWithLessonAsync
         PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop(), Scene3d = scene3d }   (DEC-033; DEC-036 for scene3d)
@@ -326,7 +326,7 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
 
-## Schematic models (VisualPlan 1.2, DEC-048; planner DEC-049; drawn and requested by the shell DEC-050; router 10d)
+## Schematic models (VisualPlan 1.2, DEC-048; planner DEC-049; drawn and requested by the shell DEC-050; chosen by the router DEC-051)
 
 ```
 model JSON header: "schematics": [ { id, title, parts: [ { id, name, shapes: [ { shape, size, at, turn, finish } ] } ] } ]
@@ -378,7 +378,7 @@ Composition root (DEC-046), one static KeyRing `Keys`:
 ```
 RunSessionAsync → PrintVerdict → StartRoute(router, options, verdict, ct)       ShellHost.Route.cs
   router null (--lesson / --no-route / TYPESAFE_API_KEY missing) or verdict Failed → no route started
-  else RouteSafelyAsync: RouteRequest { Question, ScreenMatchFound = verdict.Found, Models = ModelLibrary.V1 (id, title, subject) }
+  else RouteSafelyAsync: RouteRequest { Question, ScreenMatchFound = verdict.Found, Models = ModelLibrary.V1 (id, title, subject), Schematics = true (DEC-051) }
     JevClientException / ArgumentException → "route : FAILED (…)", null route;  OCE → null route
   (the overlay shows meanwhile; TeachAsync awaits the task — see Lesson leg)
 
@@ -393,5 +393,7 @@ RunSessionAsync → PrintVerdict → StartRoute(router, options, verdict, ct)   
         lesson, no models                           → Dimension = Flat
         lesson, dimension or model id never offered → Routed = false
         lesson, 3d with dimension and model ≥ 0.5 on an offered id → Dimension = Scene3d, ModelId
-        lesson, anything less sure                  → Dimension = Flat, Reason
+        lesson, 3d ≥ 0.5 and "none" ≥ 0.5, request.Schematics → Dimension = Scene3d, Schematic, no ModelId (DEC-051)
+          → TurnLegs: LessonCanvas.Schematic → the full catalogue + Schematics.Check (a library model may still be used)
+        lesson, anything less sure (or "none" without Schematics) → Dimension = Flat, Reason
 ```

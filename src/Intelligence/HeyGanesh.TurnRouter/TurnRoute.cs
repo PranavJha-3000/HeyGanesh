@@ -47,6 +47,13 @@ public sealed record RouteRequest
 
     /// <summary>The 3D models a lesson may use. Empty means the dimension and model questions are not asked.</summary>
     public IReadOnlyList<RouteModel> Models { get; init; } = Array.Empty<RouteModel>();
+
+    /// <summary>
+    /// Whether the caller can draw a lesson's own simplified 3D model when no listed one fits (DEC-051;
+    /// schematics, DEC-048/DEC-050). Off by default: then "3D, but no listed model" is a 2D lesson, as
+    /// before. Only asked about when <see cref="Models"/> is not empty.
+    /// </summary>
+    public bool Schematics { get; init; }
 }
 
 /// <summary>
@@ -65,6 +72,12 @@ public sealed record TurnRoute
 
     /// <summary>Set only for <see cref="LessonDimension.Scene3d"/>: an id the caller offered, never anything else.</summary>
     public string? ModelId { get; init; }
+
+    /// <summary>
+    /// A 3D lesson with no listed model: the lesson draws its own simplified one (DEC-051). Only ever set
+    /// with <see cref="LessonDimension.Scene3d"/>, a null <see cref="ModelId"/>, and a request that allowed it.
+    /// </summary>
+    public bool Schematic { get; init; }
 
     /// <summary>Why the route is what it is: the refusal, or a downgrade from 3D to 2D. Null when nothing needs saying.</summary>
     public string? Reason { get; init; }
@@ -88,7 +101,7 @@ public sealed record TurnRoute
     public override string ToString() => !Routed
         ? $"no route ({Reason})"
         : Intent == TurnIntent.Lesson
-            ? $"lesson {(Dimension == LessonDimension.Scene3d ? $"3D {ModelId}" : "2D")}"
+            ? $"lesson {(Dimension == LessonDimension.Scene3d ? (Schematic ? "3D schematic" : $"3D {ModelId}") : "2D")}"
             : Intent!.Value.ToString().ToLowerInvariant();
 }
 

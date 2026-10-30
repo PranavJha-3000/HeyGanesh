@@ -57,6 +57,16 @@ internal static partial class TurnRouterSmokeHost
         failures = Check(Keys(req, Model).SequenceEqual(expectedModels), $"model options are the offered ids plus none ({string.Join(", ", Keys(req, Model))})", failures);
         failures = Check(req.Questions[Model].Criteria!["dna-helix"] == "DNA double helix (biology)", "each model is described by its title and subject", failures);
 
+        // DEC-051: only a caller that can draw a schematic is told one is made when no listed model fits.
+        var drawing = new FakeJevClient(_ => FakeJevClient.Answers((Intent, "lesson", 0.9)));
+        await new Router(drawing).RouteAsync(Request(Question) with { Schematics = true }, CancellationToken.None);
+        const string Simplified = "simplified 3D drawing";
+        failures = Check(
+            !req.Questions[Model].Criteria![Router.NoModelOptionId]!.Contains(Simplified, StringComparison.Ordinal)
+            && drawing.Recorded[0].Questions[Model].Criteria![Router.NoModelOptionId]!.Contains(Simplified, StringComparison.Ordinal)
+            && drawing.Recorded[0].Questions[Dimension].Criteria!["3d"]!.Contains(Simplified, StringComparison.Ordinal),
+            "the 3D and 'none' options promise a simplified 3D drawing only when the request allows schematics", failures);
+
         var state = req.State!.AsObject();
         failures = Check(
             (string?)state["screen_match"] == "not found" && (int?)state["model_count"] == 3 && (int?)state["question_words"] == 6 && (string?)state["window_title"] == "Notes - Physics",
@@ -95,7 +105,16 @@ internal static partial class TurnRouterSmokeHost
         failures = Check(flat.Routed && flat.Dimension == LessonDimension.Flat && flat.ModelId is null, $"lesson + 2d -> 2D lesson, no model even if one was named ({flat})", failures);
 
         var none = await RouteWith(r, (Intent, "lesson", 0.9), (Dimension, "3d", 0.9), (Model, "none", 0.9));
-        failures = Check(none.Routed && none.Dimension == LessonDimension.Flat && none.Reason is not null, $"lesson + 3d + none -> 2D lesson with a reason ({none.Reason})", failures);
+        failures = Check(none.Routed && none.Dimension == LessonDimension.Flat && !none.Schematic && none.Reason is not null, $"lesson + 3d + none -> 2D lesson with a reason, when schematics are not allowed ({none.Reason})", failures);
+
+        // DEC-051: a caller that can draw a schematic gets one instead, gated like any model answer.
+        var drawn = r with { Schematics = true };
+        var schematic = await RouteWith(drawn, (Intent, "lesson", 0.9), (Dimension, "3d", 0.9), (Model, "none", 0.8));
+        failures = Check(schematic.Routed && schematic.Dimension == LessonDimension.Scene3d && schematic.Schematic && schematic.ModelId is null && schematic.ModelScore == 0.8,
+            $"with schematics allowed, lesson + 3d + none -> 3D schematic lesson, no model id ({schematic}; {schematic.Reason})", failures);
+        var unsureNone = await RouteWith(drawn, (Intent, "lesson", 0.9), (Dimension, "3d", 0.9), (Model, "none", 0.3));
+        failures = Check(unsureNone.Routed && unsureNone.Dimension == LessonDimension.Flat && !unsureNone.Schematic && unsureNone.Reason!.Contains("0.30", StringComparison.Ordinal),
+            $"an unsure 'none' (0.30) is still a 2D lesson ({unsureNone.Reason})", failures);
 
         var noModels = await RouteWith(Request("derive the chain rule", withModels: false), (Intent, "lesson", 0.9));
         failures = Check(noModels.Routed && noModels.Dimension == LessonDimension.Flat, "lesson with no catalogue -> 2D lesson", failures);

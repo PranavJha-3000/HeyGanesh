@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the router can choose a 3D schematic, build sequence step 10d, DEC-051)
+
+Did: `RouteRequest.Schematics` (opt-in) and `TurnRoute.Schematic`: with it, 3D + `none` (both at 0.5 or above) is a 3D schematic route instead of 2D; `LessonCanvas.Schematic`; the shell sets the flag and offers the full catalogue plus `Schematics.Check` for that leg; the routed lesson header says so. Rows: TR-2 15, TR-3 15, TR-6 11.
+Left: Step 10 is complete. Step 11 (tray app, first-run key screen, start at login, installer) needs planning. Your decisions: click-to-ask on schematic parts (relaxes DEC-031); pushing the six local commits (8b, 9, 10a–10d).
+Watch: The shell's `CatalogFor` mapping has no offline row (the App carries no fakes, DEC-012); it is a one-line switch, checked by reading. A real routed schematic turn needs TYPESAFE and DeepSeek keys (SH-22).
+Next: Plan step 11 on the owner's go-ahead.
+Verified: TurnRouter, TurnRouterSmoke and App build -warnaserror 0/0. TR source 3, request 15, map 15, gate 7, errors 5, legs 11. App `--once`, `--once --lesson`, `--once --no-route` exit 12. Mutations: a router that ignores the flag fails TR-3 (2); legs without the schematic case fail TR-6 (1); a request that always promises a drawing fails TR-2 (1); all restored byte for byte. Local CI runner: 19 gates, all exit 0 (G-18 56 PASS lines, was 52).
+
 ## 2026-10-30 · claude-opus-5-5 (the scene window draws schematics; the shell asks for them, build sequence step 10c, DEC-050)
 
 Did: `ISchematicCanvas` (optional). `LessonPlayer` hands each lesson's schematics to it before the reset, on both paths, and `LessonTurn` passes the streamed header's. `CardSurface` implements it, converting with `Schematics.ToModel` and resolving `model` ops from them before the library; `SceneMessages.Model(op, model)`. The shell's lesson request carries `Schematics.Check` whenever 3D is offered. Rows: LSU-17 `--assert-scene-schematic` (10, WebGL and SVG), LS-14 +2, LT-10 +1. `--snapshot-3d` writes `f35b-schematic.png`, and I looked at it: a readable top view, tags, labels on the right parts.

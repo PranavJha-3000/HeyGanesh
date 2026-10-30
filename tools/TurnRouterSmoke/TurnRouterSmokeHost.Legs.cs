@@ -36,6 +36,9 @@ internal static partial class TurnRouterSmokeHost
 
         failures = Check(TurnLegs.Choose(scene, false, false) is { Leg: TurnLeg.Lesson, Canvas: LessonCanvas.OneModel, ModelId: "dna-helix" }, "3D lesson -> lesson offered that one model", failures);
 
+        var drawn = TurnLegs.Choose(scene with { ModelId = null, Schematic = true }, false, false);
+        failures = Check(drawn is { Leg: TurnLeg.Lesson, Canvas: LessonCanvas.Schematic, ModelId: null }, $"a 3D schematic route -> a schematic lesson ({drawn.Why})", failures);
+
         var noModel = TurnLegs.Choose(scene with { ModelId = null }, false, false);
         failures = Check(noModel.Canvas == LessonCanvas.Flat, "a 3D route with no model id is a 2D lesson, never the full catalogue", failures);
         return Summarize(failures, "LEGS OK");

@@ -512,3 +512,14 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `c327bdc` (the commit before this step).
 - **Files to restore:** `git checkout c327bdc -- src/Intelligence/HeyGanesh.VisualLessonEngine src/Experience/HeyGanesh.LessonSession src/Experience/HeyGanesh.LessonSurface src/Experience/HeyGanesh.App tools/LessonSmoke tools/LessonTurnSmoke tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** LessonSmoke `--assert-schematic` 20, LessonTurnSmoke `--assert-turn-stream` 10, LessonSurfaceSmoke `--assert-scene` 19; App `--once --lesson --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the router can choose a 3D schematic, build sequence step 10d, DEC-051)
+
+- **Change:**
+  - TurnRouter: `RouteRequest.Schematics` (opt-in, default false); with it, "3d" plus model "none" maps to a 3D route with `TurnRoute.Schematic` set instead of a 2D lesson, and the 3D / "none" option texts say a simplified drawing is made. `TurnLegs.Choose` maps it to the new `LessonCanvas.Schematic`.
+  - App Shell: the route request sets `Schematics = true`; `CatalogFor` offers the full catalogue for a schematic leg (so the planner gets `Schematics.Check` as for any 3D lesson); the routed lesson header says so.
+  - Rows: TurnRouterSmoke TR-2 (+1), TR-3 (+2), TR-6 (+1).
+  - Docs: DEC-051, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `3de8935` (the commit before this step).
+- **Files to restore:** `git checkout 3de8935 -- src/Intelligence/HeyGanesh.TurnRouter src/Experience/HeyGanesh.App tools/TurnRouterSmoke AGENTS.md docs/ai`.
+- **Re-check after revert:** TurnRouterSmoke `--assert-request` 14, `--assert-map` 13, `--assert-legs` 10; App `--once --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.

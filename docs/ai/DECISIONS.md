@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-051](#dec-051--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The router can choose a 3D schematic: with `RouteRequest.Schematics` set (the shell sets it), "3D, no listed model fits" is a schematic lesson on the full catalogue instead of 2D cards; off by default | accepted |
 | [DEC-050](#dec-050--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The scene window draws a lesson's schematic (optional `ISchematicCanvas`, handed the schematics by `LessonPlayer`) and the shell asks for them whenever it offers 3D; a click on a schematic part stays refused, because follow-ups use vetted library text only | accepted |
 | [DEC-049](#dec-049--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The planner offers one schematic only when the request carries a catalogue and the Part Library's geometry check; the validator accepts none without that check; the eval gains K-12 (a schematic lesson must say it is simplified) | accepted |
 | [DEC-048](#dec-048--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | VisualPlan 1.2: a lesson may define one schematic model (closed shapes and finishes, ≤ 12 parts / 40 shapes, ±2 box) for an object the catalogue lacks; the engine checks structure, the Part Library's `Schematics.Check` checks geometry through a delegate; a refused schematic costs only its beats | accepted |
@@ -61,6 +62,18 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-051 — 2026-10-30 — claude-opus-5-5
+
+**Decision — "3D, but no listed model fits" becomes a schematic lesson when the caller can draw one.** Step 10d of the build sequence (the owner: "Yes, build 10d").
+
+- **Router:** `RouteRequest.Schematics` (default false). With it, the model answer `none` at 0.5 or above, after a 3D answer at 0.5 or above, maps to `Dimension = Scene3d`, `Schematic = true`, no `ModelId`, with a reason. `none` is gated like any model answer, so an unsure `none` is still a 2D lesson. Only then do the 3D and `none` options tell Jev a simplified 3D drawing is made. Without the flag, every answer maps exactly as before (TR-3's old `none` check still passes unchanged).
+- **Legs:** `TurnLegs.Choose` maps it to the new `LessonCanvas.Schematic`. A 3D route with no model id that is not a schematic still falls back to 2D.
+- **Shell:** the route request sets `Schematics = true`. `CatalogFor` offers the whole catalogue for a schematic leg, so `RunLessonAsync` also hands over `Schematics.Check` (DEC-050). The planner's prompt already says to use a catalogue model when one fits, so a wrong "none" can still end up on a library model.
+
+**Rejected.** Meaning "schematic" by `Scene3d` with a null `ModelId` and no flag: `TurnLegs` already treats that as a malformed route and draws 2D, and that guard is worth keeping. Always on, with no request flag: a router caller that cannot draw schematics would be sent lessons it cannot show.
+
+Plan: [plans/2026-10-30-schematic-3d-v1.md](plans/2026-10-30-schematic-3d-v1.md). Rows: TR-2 (+1), TR-3 (+2), TR-6 (+1).
+
 ## DEC-050 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the cards draw a lesson's schematic like any model, and the shell asks for one whenever it offers 3D.** Step 10c of the build sequence (the owner: "Yes, build 10c").

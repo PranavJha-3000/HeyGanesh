@@ -52,7 +52,7 @@ public sealed class TurnRouter
         var response = await _client.EvaluateAsync(jevRequest, cancellationToken).ConfigureAwait(false);
         clock.Stop();
 
-        return Map(response, models, clock.Elapsed);
+        return Map(response, models, request.Schematics, clock.Elapsed);
     }
 
     private JevRequest BuildRequest(RouteRequest request, IReadOnlyList<RouteModel> models)
@@ -86,7 +86,9 @@ public sealed class TurnRouter
                 Criteria = new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
                     [Flat] = "Flat cards: text, equations, plots, arrows and steps.",
-                    [Scene] = "A 3D model the user can turn and click: a physical object or structure from the list of models.",
+                    [Scene] = request.Schematics
+                        ? "A 3D model the user can turn: a physical object or structure, from the list of models or, when none fits, a simplified 3D drawing of it."
+                        : "A 3D model the user can turn and click: a physical object or structure from the list of models.",
                 },
             };
 
@@ -96,7 +98,9 @@ public sealed class TurnRouter
                 criteria[model.Id] = $"{model.Title} ({model.Subject})";
             }
 
-            criteria[NoModelOptionId] = "None of the listed models shows what the user asked about.";
+            criteria[NoModelOptionId] = request.Schematics
+                ? "None of the listed models shows what the user asked about; a simplified 3D drawing of it is made instead."
+                : "None of the listed models shows what the user asked about.";
             questions[ModelQuestionId] = new()
             {
                 Type = "choice",
@@ -118,7 +122,7 @@ public sealed class TurnRouter
         return new JevRequest { Model = _options.ModelId, State = state, Questions = questions };
     }
 
-    private TurnRoute Map(JevRawResponse response, IReadOnlyList<RouteModel> models, TimeSpan latency)
+    private TurnRoute Map(JevRawResponse response, IReadOnlyList<RouteModel> models, bool schematics, TimeSpan latency)
     {
         var common = new TurnRoute
         {
@@ -191,9 +195,26 @@ public sealed class TurnRouter
             return lesson with { Reason = $"3D scored {dimensionScore:0.00}, below {_options.MinScore:0.00}; drawing in 2D." };
         }
 
-        if (modelAnswer?.Choice is null or NoModelOptionId)
+        if (modelAnswer?.Choice is null)
         {
-            return lesson with { Reason = "3D was chosen but no listed model fits; drawing in 2D." };
+            return lesson with { Reason = "3D was chosen but no model answer came back; drawing in 2D." };
+        }
+
+        if (modelAnswer.Choice == NoModelOptionId)
+        {
+            // DEC-051: a caller that can draw a lesson's own simplified model gets one instead of 2D. Its
+            // score is gated like any model's, so an unsure "none" is still a 2D lesson.
+            if (!schematics)
+            {
+                return lesson with { Reason = "3D was chosen but no listed model fits; drawing in 2D." };
+            }
+
+            if (modelScore < _options.MinScore)
+            {
+                return lesson with { Reason = $"model 'none' scored {modelScore:0.00}, below {_options.MinScore:0.00}; drawing in 2D." };
+            }
+
+            return lesson with { Dimension = LessonDimension.Scene3d, Schematic = true, Reason = "no listed model fits; the lesson draws a simplified 3D model." };
         }
 
         if (modelScore < _options.MinScore)

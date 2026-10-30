@@ -27,6 +27,12 @@ public enum LessonCanvas
 
     /// <summary>The whole catalogue (what <c>--lesson</c> has always offered).</summary>
     FullCatalogue,
+
+    /// <summary>
+    /// 3D with no listed model: the lesson draws its own simplified one (DEC-051). The shell offers the
+    /// whole catalogue too, so the planner can still use a library model if one turns out to fit.
+    /// </summary>
+    Schematic,
 }
 
 /// <summary>The leg to run and why, in words the shell prints as-is.</summary>
@@ -70,6 +76,8 @@ public static class TurnLegs
             TurnIntent.Explain => new(TurnLeg.Tutor, LessonCanvas.None, null, "routed: explain"),
             TurnIntent.Lesson when route.Dimension == LessonDimension.Scene3d && route.ModelId is { } model =>
                 new(TurnLeg.Lesson, LessonCanvas.OneModel, model, $"routed: 3D lesson on {model}"),
+            TurnIntent.Lesson when route.Dimension == LessonDimension.Scene3d && route.Schematic =>
+                new(TurnLeg.Lesson, LessonCanvas.Schematic, null, "routed: 3D lesson with a schematic, no listed model fits"),
             TurnIntent.Lesson => new(TurnLeg.Lesson, LessonCanvas.Flat, null, route.Reason is { } why ? $"routed: 2D lesson ({why})" : "routed: 2D lesson"),
             _ => new(TurnLeg.Tutor, LessonCanvas.None, null, "unknown intent: the Tutor leg, as without a router"),
         };

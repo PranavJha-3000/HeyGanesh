@@ -5,7 +5,8 @@ Changed while building: sizes are [0, 4] (a size spans the shape), not (0, 2]. 1
 10b"): LP-12 7 PASS, PE-2 26 with K-12; DEC-049. Changed: no geometry check now means no schematic at all (the
 validator, not just the prompt), so the shell cannot receive one before 10c draws it. 10c BUILT 2026-10-30 (owner: "Yes, build 10c"): LSU-17 10 PASS,
 LS-14 22, LT-10 11; DEC-050. Changed: clicks on schematic parts stay refused (DEC-031, the owner's call); the fixture's
-explode camera is `top`. 10d is not built.
+explode camera is `top`. 10d BUILT 2026-10-30 (owner: "Yes, build 10d"): TR-2 15, TR-3 15, TR-6 11; DEC-051.
+Changed: an opt-in `RouteRequest.Schematics` flag, so the router's default mapping is unchanged.
 
 ## Problem, restated
 

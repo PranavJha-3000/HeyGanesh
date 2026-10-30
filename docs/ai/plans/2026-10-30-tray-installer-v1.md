@@ -3,7 +3,8 @@
 2026-10-30 · claude-opus-5-5 · STATUS: 11a BUILT 2026-10-30 (owner: "Yes, build 11a"): TY-1 6, TY-2 7, TY-3 5, TY-4 9, TY-5 8; DEC-052.
 Changed while building: the rows are TY-1..TY-5 (TR-* is the Turn Router's); the menu has no Keys… or Start at login item
 until 11b/11c build them; the log row (TY-2) is offline and the planted-key check moved into TY-5, on the real exe.
-11b–11d are not built.
+11b BUILT 2026-10-30 (owner: "Yes, build 11b"): TK-1 13, TK-2 11, TK-3 3; DEC-053. It opens by itself for a missing DeepSeek or
+TypeSafe key (decision 3, as recommended). 11c–11d are not built.
 
 ## Problem, restated
 

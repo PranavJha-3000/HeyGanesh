@@ -363,9 +363,14 @@ HeyGanesh.Tray.exe Main [STAThread]                                   src/Experi
     taken → SignalFirst (sets Local\HeyGanesh.Tray.Show) → exit 3
   TrayLog.Open(DefaultFolder, now): prune to the newest 4, open shell-<stamp>.log → Console.SetOut / SetError
   a console-only flag (--once, --help, --keys, --set-key, --remove-key) → log line, exit 2
-  TrayApp (ApplicationContext): hidden marshal control, NotifyIcon + menu (status, key presence, Open log folder, Quit)
-    Task.Run(ShellHost.RunAsync(args, stop, hookLive))                 the App Shell's own path, unchanged
+  TrayApp (ApplicationContext): hidden marshal control, NotifyIcon + menu (status, key presence, Keys…, Open log folder, Quit)
+    Task.Run(ShellHost.RunAsync(args, stop, hookLive, paused = () => key screen open))   the App Shell's own path
       RunHookedAsync: hotkey.Start → "hook live" → hookLive() → status "Listening…"
+                      Pressed → paused()? "REFUSED: the key screen is open" (no turn) : pump.OnPressed   (DEC-053)
+    a required key (deepseek, typesafe) missing at start → OpenKeys (DEC-053)
+    Keys… / OpenKeys → one KeyScreen (a second click activates it); open → paused; FormClosed → not paused, menu refreshed
+      KeyScreen Save → KeyScreenModel.Save → KeyRing.Store (trim, refuse) → message by length; box cleared
+      KeyScreen Remove → KeyScreenModel.Remove → KeyRing.Remove (an environment variable is said, not touched)
                       stop.Wait() ends on Ctrl+C, --seconds, or the stop token (Register → stop.Set)
                       → hotkey.Stop → lifetime.Cancel → pump.DrainAsync → hook health → exit code
     Show event set (a second launch) → balloon + log line

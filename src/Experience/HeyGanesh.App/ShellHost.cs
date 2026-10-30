@@ -70,9 +70,11 @@ internal static partial class ShellHost
     /// <summary>
     /// The same run, for a host with no console (the tray, DEC-052). <paramref name="stop"/> ends hooked mode the
     /// way Ctrl+C does, with the same ordered teardown; <paramref name="hookLive"/> is called once, when the
-    /// keyboard hook is installed. Both are ignored by every other mode.
+    /// keyboard hook is installed. While <paramref name="triggerPaused"/> returns true, a Ctrl+Alt press starts
+    /// no turn (the tray's key screen is open, DEC-053: AltGr is Ctrl+Alt on many keyboards). All three are
+    /// ignored by every other mode.
     /// </summary>
-    public static async Task<int> RunAsync(string[] args, CancellationToken stop, Action? hookLive)
+    public static async Task<int> RunAsync(string[] args, CancellationToken stop, Action? hookLive, Func<bool>? triggerPaused = null)
     {
         var options = ParseArgs(args);
 
@@ -200,7 +202,7 @@ internal static partial class ShellHost
             return await oncePump.RunDirectAsync().ConfigureAwait(false);
         }
 
-        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, router, options, lifetime, stop, hookLive).ConfigureAwait(false);
+        return await RunHookedAsync(hotkey, orchestrator, overlay, voice, tutor, lesson, router, options, lifetime, stop, hookLive, triggerPaused).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -224,7 +226,8 @@ internal static partial class ShellHost
         ShellOptions options,
         CancellationTokenSource lifetime,
         CancellationToken stopToken,
-        Action? hookLive)
+        Action? hookLive,
+        Func<bool>? triggerPaused)
     {
         var pump = new TriggerPump(voice, orchestrator, overlay, tutor, lesson, router, options, lifetime.Token);
 
@@ -232,7 +235,17 @@ internal static partial class ShellHost
         // gate and hand work to the pool — the hook callback and the monitor's worker thread are never
         // blocked by a microphone, a Gateway socket, or a capture (DEC-012's non-blocking stance, now
         // spanning a whole voice turn instead of one session).
-        hotkey.Pressed += (_, _) => pump.OnPressed();
+        hotkey.Pressed += (_, _) =>
+        {
+            // DEC-053: while the tray's key screen is open, typing there (AltGr is Ctrl+Alt) must not start a turn.
+            if (triggerPaused?.Invoke() == true)
+            {
+                Console.WriteLine("REFUSED: the key screen is open; close it to ask with Ctrl+Alt.");
+                return;
+            }
+
+            pump.OnPressed();
+        };
         hotkey.Released += (_, _) => pump.OnReleased();
 
         try

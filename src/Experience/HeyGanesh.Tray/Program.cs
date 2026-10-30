@@ -47,7 +47,7 @@ internal static class Program
         Application.SetCompatibleTextRenderingDefault(false);
 
         using var keys = new KeyRing();
-        using var app = new TrayApp((stop, hookLive) => ShellHost.RunAsync(args, stop, hookLive), keys, log.Folder, instance.ShowRequested);
+        using var app = new TrayApp((stop, hookLive, paused) => ShellHost.RunAsync(args, stop, hookLive, paused), keys, log.Folder, instance.ShowRequested, openKeysIfMissing: true);
         Application.Run(app);
         Console.WriteLine($"tray: exit {app.ExitCode}");
         return app.ExitCode;

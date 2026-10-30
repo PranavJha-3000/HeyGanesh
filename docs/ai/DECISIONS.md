@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-053](#dec-053--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The tray's key screen: one masked box per key, Save/Remove through the key ring, presence and length only; it opens by itself when DeepSeek or TypeSafe is missing; Ctrl+Alt is refused while it is open, through a new optional `triggerPaused` on `RunAsync` | accepted |
 | [DEC-052](#dec-052--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A tray host (`HeyGanesh.Tray`, WinExe, WinForms `NotifyIcon`) runs the App Shell's own composition through a new `RunAsync(args, stop, hookLive)`; the console exe is unchanged; output goes to a log file (newest 5); one tray per session | accepted |
 | [DEC-051](#dec-051--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The router can choose a 3D schematic: with `RouteRequest.Schematics` set (the shell sets it), "3D, no listed model fits" is a schematic lesson on the full catalogue instead of 2D cards; off by default | accepted |
 | [DEC-050](#dec-050--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The scene window draws a lesson's schematic (optional `ISchematicCanvas`, handed the schematics by `LessonPlayer`) and the shell asks for them whenever it offers 3D; a click on a schematic part stays refused, because follow-ups use vetted library text only | accepted |
@@ -63,6 +64,24 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-053 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a key screen in the tray, writing only through the key ring.** Step 11b of the build sequence (the owner: "Yes, build 11b").
+
+- **Rules, no UI:** `KeyScreenModel`. Save is `KeyRing.Store` (trimmed; empty and inner-whitespace keys refused with KeyRing's sentence, .NET's "(Parameter …)" suffix stripped). Remove is `KeyRing.Remove`, and it says when an environment variable still provides the key. A status is "missing" or `KeyState`'s "present (N chars, source)". No text it returns holds a value (TK-1).
+- **Window:** `KeyScreen`, WinForms. One `UseSystemPasswordChar` box per key, with Save and Remove; nothing is written until Save, and the box is cleared at once. It is the tray's one window that takes focus, on purpose. What was typed lives in a .NET string until then, like any text box; it is handed only to `KeyRing.Store`.
+- **When it opens:** from "Keys…", and by itself at start when DeepSeek or TypeSafe is missing (`KeyScreenModel.Required`). Fish is optional. This was plan decision 3. The owner approved building 11b as planned, so it follows the plan's recommendation.
+- **The pause:** `ShellHost.RunAsync(args, stop, hookLive, triggerPaused)`, the last optional. In hooked mode a Ctrl+Alt press while it returns true prints `REFUSED: the key screen is open; …` and starts nothing. The reason: AltGr is Ctrl+Alt on many keyboards, so typing a key could otherwise start a listen. The tray passes "the key screen is open".
+
+**Rejected.**
+- A modal dialog: it would block the tray's menu, including Quit.
+- Showing the last 4 characters: even a partial value is a value, and the API Key Isolation invariant has no exception for it.
+- Pausing inside `TriggerPump`: the hotkey handler in `RunHookedAsync` is the one place a press enters, so the check sits there, before the pump.
+
+**Owner rows.** TK-4: a real save and remove writes the real Credential Manager slot, which this session's guard keeps for the owner, like SH-25.
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: TK-1 (CI G-24), TK-2, TK-3 (local), TK-4 (owner); TY-1 and TY-4 updated.
+
 ## DEC-052 — 2026-10-30 — claude-opus-5-5
 
 **Decision — Hey Ganesh gets a tray host that runs the App Shell's own composition; the console exe stays as it is.** Step 11a of the build sequence (the owner: "Yes, build 11a").

@@ -194,15 +194,16 @@ jobs:
           & 'tools\VoiceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.VoiceSmoke.exe' --assert-fish-format
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      # G-24: the tray (DEC-052) - its source audit and its log file. The icon, the stop seam with a real keyboard
-      # hook and the real HeyGanesh.Tray.exe need an interactive desktop and stay local (TY-3..TY-5).
+      # G-24: the tray (DEC-052/DEC-053) - its source audit, its log file and the key screen's rules. The icon, the key
+      # window, the stop seam and the pause with a real keyboard hook, and the real HeyGanesh.Tray.exe need an
+      # interactive desktop and stay local (TY-3..TY-5, TK-2, TK-3).
       - name: G-24 Tray offline
         shell: pwsh
         run: |
           dotnet build tools\TraySmoke -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\TraySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TraySmoke.exe'
-          foreach ($m in @('--assert-source', '--assert-log')) {
+          foreach ($m in @('--assert-source', '--assert-log', '--assert-keys-model')) {
             & $exe $m
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

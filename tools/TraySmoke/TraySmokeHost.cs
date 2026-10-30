@@ -21,6 +21,9 @@ internal static partial class TraySmokeHost
                 "--assert-stop" => await RunAssertStopAsync(),
                 "--assert-tray" => RunAssertTray(),
                 "--assert-run" => await RunAssertRunAsync(),
+                "--assert-keys-model" => RunAssertKeysModel(),
+                "--assert-keys-window" => RunAssertKeysWindow(),
+                "--assert-keys-pause" => await RunAssertKeysPauseAsync(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -46,6 +49,9 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-stop    LOCAL: the real shell's hooked mode ends on the stop token with the hook released; exit 0");
         Console.WriteLine("  --assert-tray    LOCAL: the real icon and menu; a second launch is answered; Quit ends the loop; exit 0");
         Console.WriteLine("  --assert-run     LOCAL: HeyGanesh.Tray.exe end to end: log, no planted key in it, one instance, console flags refused; exit 0");
+        Console.WriteLine("  --assert-keys-model   the key screen's rules over an in-memory store: save, refuse, remove, no value in any text; exit 0");
+        Console.WriteLine("  --assert-keys-window  LOCAL: the real key screen (masked, writes only on Save) and the tray opening it; exit 0");
+        Console.WriteLine("  --assert-keys-pause   LOCAL: PRESSES Ctrl+Alt once: while paused the real shell starts no turn; exit 0");
         return 0;
     }
 
@@ -97,7 +103,7 @@ internal static partial class TraySmokeHost
         failures = Check(csproj.Contains("<OutputType>WinExe</OutputType>", StringComparison.Ordinal), "WinExe: Windows opens no console for it", failures);
         failures = Check(!csproj.Contains("<PackageReference", StringComparison.Ordinal), "zero PackageReference (WinForms is a framework reference)", failures);
         failures = Check(refs.SequenceEqual(new[] { "HeyGanesh.App", "HeyGanesh.Security" }), $"references the App Shell and Security only ({string.Join(", ", refs)})", failures);
-        failures = Check(sources["Program.cs"].Contains("ShellHost.RunAsync(args, stop, hookLive)", StringComparison.Ordinal), "runs the App Shell's own composition through RunAsync(args, stop, hookLive)", failures);
+        failures = Check(sources["Program.cs"].Contains("ShellHost.RunAsync(args, stop, hookLive, paused)", StringComparison.Ordinal), "runs the App Shell's own composition through RunAsync(args, stop, hookLive, paused)", failures);
         failures = Check(found.Length == 0, $"no key value read, no console input, no P/Invoke, network, focus stealing or pipeline built here ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
         failures = Check(shell.Contains("RunAsync(string[] args) => RunAsync(args, CancellationToken.None, null);", StringComparison.Ordinal), "the console's RunAsync(args) passes no stop token and no callback, so it is unchanged", failures);
         return Summarize(failures, "SOURCE AUDIT OK");

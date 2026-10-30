@@ -534,3 +534,14 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `3e95da8` (the commit before this step).
 - **Files to restore:** `git checkout 3e95da8 -- src/Experience/HeyGanesh.App HeyGanesh.sln .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.Tray` and `tools/TraySmoke`.
 - **Re-check after revert:** App `--seconds 4` exit 0 with the hook released; App `--once --question "x"` exit 12; the local CI runner reports 19 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the key screen, build sequence step 11b, DEC-053)
+
+- **Change:**
+  - App Shell: `RunAsync(args, stop, hookLive, triggerPaused)`, the last optional. While it returns true, a Ctrl+Alt press is refused with a line, and no turn starts.
+  - Tray: `KeyScreenModel` (no UI) and `KeyScreen` (WinForms window: one masked box per key, Save / Remove, status by presence and length only); a "Keys…" menu item; the screen opens by itself at start when the DeepSeek or TypeSafe key is missing; the trigger is paused while it is open.
+  - TraySmoke: TK-1 (offline, CI G-24), TK-2 and TK-3 (local); TY-1 and TY-4 updated for the new menu item and argument.
+  - Docs: DEC-053, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `e6bab31` (the commit before this step).
+- **Files to restore:** `git checkout e6bab31 -- src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new file `git status` lists.
+- **Re-check after revert:** TraySmoke `--assert-source` 6, `--assert-tray` 9; App `--seconds 4` exit 0; the local CI runner reports 20 gates, all exit 0.

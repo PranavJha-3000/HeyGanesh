@@ -131,7 +131,7 @@ internal static partial class TraySmokeHost
         var loop = new Thread(() =>
         {
             Application.EnableVisualStyles();
-            tray = new TrayApp(async (stop, hookLive) =>
+            tray = new TrayApp(async (stop, hookLive, _) =>
             {
                 hookLive();
                 try
@@ -162,8 +162,8 @@ internal static partial class TraySmokeHost
             failures = Check(app.OnUi(() => app.Icon.Visible) && registered, $"the icon is visible and registered with the notification area ({(registered ? "Shell_NotifyIconGetRect S_OK" : "not found")})", failures);
 
             var texts = app.OnUi(() => app.MenuTexts);
-            var expected = new[] { "Listening: hold Ctrl+Alt to ask", "deepseek key: present", "typesafe key: missing", "fish key: missing", "-", "Open log folder", "Quit" };
-            failures = Check(texts.SequenceEqual(expected), $"the menu: status, one presence line per key, Open log folder, Quit ({string.Join(" | ", texts)})", failures);
+            var expected = new[] { "Listening: hold Ctrl+Alt to ask", "deepseek key: present", "typesafe key: missing", "fish key: missing", "Keys…", "-", "Open log folder", "Quit" };
+            failures = Check(texts.SequenceEqual(expected), $"the menu: status, one presence line per key, Keys…, Open log folder, Quit ({string.Join(" | ", texts)})", failures);
             failures = Check(!texts.Any(t => t.Contains("made-up", StringComparison.Ordinal) || t.Contains("chars", StringComparison.Ordinal)), "no key value, and not even a length, is on the menu", failures);
             failures = Check(GetForegroundWindow() == foregroundBefore, "showing the icon did not take the foreground", failures);
 
@@ -185,7 +185,7 @@ internal static partial class TraySmokeHost
         // A shell that ends on its own (exit 0, as after --seconds) ends the loop too, with no message box.
         var selfEnded = new Thread(() =>
         {
-            using var second = new TrayApp(async (_, hookLive) => { hookLive(); await Task.Delay(200); return 0; }, keys, TempFolder("tray"), null);
+            using var second = new TrayApp(async (_, hookLive, _) => { hookLive(); await Task.Delay(200); return 0; }, keys, TempFolder("tray"), null);
             Application.Run(second);
         });
         selfEnded.SetApartmentState(ApartmentState.STA);

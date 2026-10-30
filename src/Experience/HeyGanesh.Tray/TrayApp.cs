@@ -12,7 +12,9 @@ namespace HeyGanesh.Tray;
 /// ends only when the shell has returned, so the keyboard hook is always released before the process exits.
 /// If the shell ends by itself with a failure, a message box says so and points at the log. Every UI change
 /// is marshalled through <see cref="_ui"/>, a hidden control, because the shell calls back on its own threads.
-/// The menu shows each key's presence only, never a value or a length.
+/// The menu shows each key's presence only, never a value or a length. "Keys…" opens the key screen (DEC-053),
+/// which also opens by itself at start when a required key is missing; while it is open the shell is told to
+/// refuse Ctrl+Alt.
 /// </remarks>
 internal sealed class TrayApp : ApplicationContext
 {
@@ -25,11 +27,15 @@ internal sealed class TrayApp : ApplicationContext
     private readonly ToolStripMenuItem _quit;
     private readonly List<(string Name, ToolStripMenuItem Item)> _keyLines = new();
     private readonly RegisteredWaitHandle? _showWait;
+    private KeyScreen? _keyScreen;
+    private volatile bool _keyScreenOpen;
     private bool _quitting;
 
-    /// <param name="runShell">Runs the pipeline until the token fires; calls the action once the hook is live. The product passes ShellHost.RunAsync.</param>
+    /// <param name="runShell">Runs the pipeline until the token fires; calls the action once the hook is live, and asks the
+    /// function before each Ctrl+Alt turn whether the trigger is paused. The product passes ShellHost.RunAsync.</param>
     /// <param name="showRequested">Set by a second launch (SingleInstance); null when nothing can signal.</param>
-    public TrayApp(Func<CancellationToken, Action, Task<int>> runShell, KeyRing keys, string logFolder, WaitHandle? showRequested)
+    /// <param name="openKeysIfMissing">Open the key screen at start when a required key is missing (the product: true).</param>
+    public TrayApp(Func<CancellationToken, Action, Func<bool>, Task<int>> runShell, KeyRing keys, string logFolder, WaitHandle? showRequested, bool openKeysIfMissing = false)
     {
         _keys = keys;
         _logFolder = logFolder;
@@ -45,6 +51,7 @@ internal sealed class TrayApp : ApplicationContext
             menu.Items.Add(line);
         }
 
+        menu.Items.Add(new ToolStripMenuItem("Keys…", null, (_, _) => OpenKeys()));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Open log folder", null, (_, _) => OpenLogFolder()));
         _quit = new ToolStripMenuItem("Quit", null, (_, _) => Quit());
@@ -66,7 +73,13 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         Console.WriteLine("tray: icon shown; the shell is starting");
-        var run = Task.Run(() => runShell(_stop.Token, () => Post(OnHookLive)));
+        var run = Task.Run(() => runShell(_stop.Token, () => Post(OnHookLive), () => _keyScreenOpen));
+        if (openKeysIfMissing && new KeyScreenModel(_keys).NeedsSetup)
+        {
+            Console.WriteLine("tray: a required key is missing; opening the key screen");
+            Post(OpenKeys);
+        }
+
         run.ContinueWith(t => Post(() => Finish(t)), TaskScheduler.Default);
     }
 
@@ -78,6 +91,41 @@ internal sealed class TrayApp : ApplicationContext
         _icon.ContextMenuStrip!.Items.Cast<ToolStripItem>().Select(i => i is ToolStripSeparator ? "-" : i.Text ?? string.Empty).ToList();
 
     internal NotifyIcon Icon => _icon;
+
+    /// <summary>The open key screen, or null. For TK-2.</summary>
+    internal KeyScreen? OpenKeyScreen => _keyScreen;
+
+    /// <summary>What the shell is told before each Ctrl+Alt turn. For TK-2.</summary>
+    internal bool TriggerPaused => _keyScreenOpen;
+
+    /// <summary>The menu's Keys…: one screen at a time; a second click brings it forward.</summary>
+    internal void OpenKeys()
+    {
+        if (_quitting)
+        {
+            return;
+        }
+
+        if (_keyScreen is not null)
+        {
+            _keyScreen.Activate();
+            return;
+        }
+
+        _keyScreen = new KeyScreen(new KeyScreenModel(_keys));
+        _keyScreen.FormClosed += (_, _) =>
+        {
+            _keyScreenOpen = false;
+            _keyScreen.Dispose();
+            _keyScreen = null;
+            RefreshKeys();
+            Console.WriteLine("tray: key screen closed; Ctrl+Alt asks again");
+        };
+        _keyScreenOpen = true;
+        Console.WriteLine("tray: key screen open; Ctrl+Alt is paused until it closes");
+        _keyScreen.Show();
+        _keyScreen.Activate();
+    }
 
     /// <summary>Runs <paramref name="read"/> on the UI thread. For TY-4, which drives the tray from another thread.</summary>
     internal T OnUi<T>(Func<T> read) => (T)_ui.Invoke(read);
@@ -132,6 +180,7 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         _icon.Visible = false;
+        _keyScreen?.Close();
         if (!_quitting && ExitCode != 0)
         {
             MessageBox.Show($"Hey Ganesh stopped (exit {ExitCode}). The details are in the log:\n{_logFolder}", "Hey Ganesh", MessageBoxButtons.OK, MessageBoxIcon.Warning);

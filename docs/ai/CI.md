@@ -29,7 +29,7 @@
 | **G-21 Voice pre-roll** | build `tools\VoiceSmoke`, then the EXE with `--assert-preroll` (VO-11, DEC-040: the real client against a loopback HttpListener stub; no microphone, device or network) | `voicePreroll=pass` | exit 0 |
 | **G-22 Planner evaluation set** | build `tools\PlannerEval`, then the EXE with each of `--assert-set` `--assert-checks` `--assert-record-stub` `--assert-drift` (PE-1, PE-2, PE-4, PE-5, DEC-043/DEC-044: no key; PE-4 uses a loopback stub and a dummy key); then `--replay tools\PlannerEval\baseline` once that baseline exists (PE-7: exit 1 on a regression, 3 when the planner prompt changed), otherwise "no baseline yet" | `plannerEval=pass` | exit 0 for every mode |
 | **G-23 Key sources** | build `tools\ElementSelectionSmoke`, `tools\VisionSmoke`, `tools\VoiceSmoke`, then `--assert-key-source` (ES-10), `--assert-key-source` (V-9), `--assert-fish-format` (VO-8, now with the key-source checks), DEC-046 | `keySources=pass` | exit 0 for every mode |
-| **G-24 Tray offline** | build `tools\TraySmoke`, then `--assert-source` (TY-1) and `--assert-log` (TY-2), DEC-052; TY-3..TY-5 need an interactive desktop and stay local | `tray=pass` | exit 0 for every mode |
+| **G-24 Tray offline** | build `tools\TraySmoke`, then `--assert-source` (TY-1), `--assert-log` (TY-2) and `--assert-keys-model` (TK-1), DEC-052/DEC-053; TY-3..TY-5, TK-2 and TK-3 need an interactive desktop and stay local | `tray=pass` | exit 0 for every mode |
 
 ## Local-Only Notes
 

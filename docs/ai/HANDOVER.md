@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the key screen, build sequence step 11b, DEC-053)
+
+Did: `KeyScreenModel` + `KeyScreen` in the tray (masked boxes, Save/Remove through `KeyRing`, status by presence and length); "Keys…" on the menu; it opens by itself when DeepSeek or TypeSafe is missing; `RunAsync(..., triggerPaused)` refuses Ctrl+Alt while it is open. Rows: TK-1 13 (CI G-24), TK-2 11, TK-3 3 (local); TY-1 and TY-4 updated.
+Left: 11c start at login, 11d installer (A or B is yours). TK-4 and TY-6 are your hands-on rows. Open decisions: transcribed questions in the log; click-to-ask on schematic parts. Eight local commits unpushed.
+Watch: TK-3 really presses Ctrl+Alt (injected), so do not run it while typing. Mutation patterns must be unique as written and as reverted: the 'flag' mutation's revert matched a longer line, refused, and left TrayApp mutated until it was restored from the pre-run backup (the 'auto' run after it still failed on its own check).
+Next: Build 11c (start at login) on the owner's go-ahead.
+Verified: App, Tray, TraySmoke build -warnaserror 0/0. TraySmoke source 6, log 7, stop 5, tray 9, run 8, keys-model 13, keys-window 11, keys-pause 3. App `--seconds 3` exit 0, `--once --question "x"` 12. Mutations: a shell that ignores the pause fails TK-3 (2); a tray that never sets the pause fails TK-2 (1); no auto-open fails TK-2 (3); a Save message that echoes the key fails TK-1 (2); all restored byte for byte. Local CI runner: 20 gates, all exit 0 (G-24: 26 PASS lines).
+
 ## 2026-10-30 · claude-opus-5-5 (the tray host, build sequence step 11a, DEC-052)
 
 Did: `ShellHost.RunAsync(args, stop, hookLive)` (console path unchanged); new `src/Experience/HeyGanesh.Tray` (WinExe, in the solution): the icon and menu (status, key presence, Open log folder, Quit), `TrayLog` (newest 5), `SingleInstance` (a second launch exits 3), console-only flags refused (exit 2). New `tools/TraySmoke`: TY-1 6, TY-2 7 (CI G-24), TY-3 5, TY-4 9, TY-5 8 (local). Plan step 11 written and committed with this step.

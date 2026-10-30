@@ -599,3 +599,14 @@
   - Docs: DEC-057, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, HANDOVER.
 - **Rollback point:** `7da427a`. `git checkout 7da427a -- src/Experience/HeyGanesh.LessonSurface src/Experience/HeyGanesh.LessonSession tools/LessonTurnSmoke tools/LessonSurfaceSmoke AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** LessonTurnSmoke `--assert-followup-pick` 12; LessonSurfaceSmoke `--assert-pick` 9 and `--assert-scene-schematic` 10.
+
+## 2026-10-30 · claude-opus-5-5 (the notes store, build sequence step 12a, DEC-058)
+
+- **Change:**
+  - New `src/Foundation/HeyGanesh.Notes`: `NotesStore` over Windows' own `winsqlite3.dll` (P/Invoke, no package).
+  - New `tools/NotesSmoke` (NS-1..NS-6, all offline, temp folders); CI gate G-26; the module is added to G-2's zero-NuGet list (`scan-secrets.ps1`) and to the solution.
+  - Docs: DEC-058, ARCHITECTURE, FLOW, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+  - Nothing calls the store yet (12b wires the shell), so no existing behaviour changes.
+- **Rollback point:** branch `feat/notes-v1` at `e776699` (the commit before this step).
+- **Files to restore:** `git checkout e776699 -- HeyGanesh.sln .github/workflows AGENTS.md docs/ai`; delete `src/Foundation/HeyGanesh.Notes` and `tools/NotesSmoke`.
+- **Re-check after revert:** `dotnet build -c Debug -warnaserror` 0/0; the local CI runner reports 21 gates, all exit 0.

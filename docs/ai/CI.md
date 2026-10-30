@@ -31,6 +31,7 @@
 | **G-23 Key sources** | build `tools\ElementSelectionSmoke`, `tools\VisionSmoke`, `tools\VoiceSmoke`, then `--assert-key-source` (ES-10), `--assert-key-source` (V-9), `--assert-fish-format` (VO-8, now with the key-source checks), DEC-046 | `keySources=pass` | exit 0 for every mode |
 | **G-24 Tray offline** | build `tools\TraySmoke`, then `--assert-source` (TY-1), `--assert-log` (TY-2) `--assert-keys-model` (TK-1) and `--assert-startup` (TS-1, a throwaway HKCU key, deleted after), DEC-052..DEC-054; TY-3..TY-5, TK-2, TK-3 and TS-2 need an interactive desktop and stay local | `tray=pass` | exit 0 for every mode |
 | **G-25 Installer package** | `powershell.exe -File installer\build.ps1` (IN-1, DEC-055): a self-contained win-x64 publish of the tray into `artifacts\installer\app`, the scripts beside it, and the files a package needs checked; the runner downloads the .NET runtime packs from nuget.org; the install round trip (IN-2) is local | `installer=pass` | exit 0, `PACKAGE OK` |
+| **G-26 Notes store offline** | build `tools\NotesSmoke`, then `--assert-source` `--assert-store` `--assert-migrate` `--assert-concurrent` `--assert-corrupt` `--assert-retention` (NS-1..NS-6, DEC-058): Windows' own `winsqlite3`, temporary databases only | `notesStore=pass` | exit 0 for every mode |
 
 ## Local-Only Notes
 

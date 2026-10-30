@@ -218,6 +218,20 @@ jobs:
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      # G-26: the notes store (DEC-058) - Windows' own winsqlite3 through P/Invoke, every row offline against a database
+      # in a temporary folder: source audit, round trip, migration, two writers at once, a corrupt file moved aside,
+      # retention.
+      - name: G-26 Notes store offline
+        shell: pwsh
+        run: |
+          dotnet build tools\NotesSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = 'tools\NotesSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.NotesSmoke.exe'
+          foreach ($m in @('--assert-source', '--assert-store', '--assert-migrate', '--assert-concurrent', '--assert-corrupt', '--assert-retention')) {
+            & $exe $m
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       # G-22: the planner evaluation set (DEC-043/DEC-044) - the set is well formed; every automatic check both passes
       # and fails; the recording path works through the real client against a loopback stub with no key in any file;
       # the live client matches the App Shell's. Once the owner commits a reviewed live recording as

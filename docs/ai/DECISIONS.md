@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-058](#dec-058--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Notes Persistence: a `HeyGanesh.Notes` store in Foundation over Windows' own `winsqlite3.dll` (BUILD-PLAYBOOK D3, owner's choice), one row per turn, WAL, versioned schema, broken files moved aside, newest 1,000 kept | accepted |
 | [DEC-057](#dec-057--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Click-to-ask on a lesson schematic's parts: DEC-031's library-only rule is relaxed for the lesson's own schematic; the follow-up uses its cleaned names and says the part is from a simplified drawing. Also recorded: the tray log keeps transcribed questions (owner) | accepted |
 | [DEC-056](#dec-056--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Hey Ganesh mark: one tapered ink stroke from ear to trunk, the bindu and a crown arc on kraft paper; the tray exe's icon, the notification-area icon and the key screen's | accepted |
 | [DEC-055](#dec-055--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The installer is per-user PowerShell (installer option A): a self-contained win-x64 package, installed to `%LOCALAPPDATA%\Programs\HeyGanesh` with a Start-menu shortcut and an HKCU Apps & features entry; no admin, no signing; MSIX stays a later option | accepted |
@@ -68,6 +69,38 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-058 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the notes store is SQLite through Windows' own copy, in a module that references nothing.** Step 12a of the build sequence. The owner chose `winsqlite3` for BUILD-PLAYBOOK D3 ("Yes, winsqlite3") and approved building 12a.
+
+- **Module:** `src/Foundation/HeyGanesh.Notes`. No package and no project reference. It reaches `winsqlite3.dll` (System32, SQLite 3.53.4 on this PC; Windows 10 and 11 ship it) through 17 functions declared in `SqliteNative.cs`. Strings cross as UTF-8 byte arrays.
+- **Data:** one `turns` row per `TurnNote`:
+  - time (UTC ISO 8601) and session;
+  - the question, the leg, the route;
+  - the verdict (source, found, element, confidence);
+  - the Tutor's answer, or the lesson title and plan JSON;
+  - the picks (a JSON array) and the outcome.
+
+  Never stored: screenshots, screen text, keys.
+- **Safety:**
+  - every value is a bound parameter;
+  - `BEGIN IMMEDIATE` around each write and its retention delete;
+  - full-mutex connection plus the store's own lock;
+  - WAL with a 5 s busy timeout, so the tray and the console exe can both write (NS-4: without the timeout, 200 of 600 writes fail).
+- **Schema:** version 1 in `PRAGMA user_version`. A newer version is refused and the file left untouched, so an older build never damages a newer database. A file SQLite cannot read, or one failing `quick_check`, is moved aside with its `-wal`/`-shm` and a fresh database starts; `MovedAside` reports it.
+- **Retention:** the newest `NotesOptions.Keep` turns, 1,000 by default. That is the plan's placeholder, and the owner has not picked yet.
+- **Unavailable SQLite:** `LibraryVersion()` returns null and `Open` throws a `NotesException`. The shell (12b) will then run without notes, never crash.
+
+**Rejected.**
+- `Microsoft.Data.Sqlite`: a new package while Windows already has SQLite.
+- JSON-lines files: delete, retention, listing and two writers would all be hand-rolled.
+- ESENT: a heavier API.
+- `LibraryImport`: it needs the source generator's settings, and plain `DllImport` with byte arrays is enough here.
+
+**Process slip, recorded.** The usage limit was hit mid-step. The project file and `SqliteNative.cs` existed before this step's ROLLBACK entry was written. Both were new files, nothing existing had been changed, and the entry was written before any further change.
+
+Plan: [plans/2026-10-30-notes-v1.md](plans/2026-10-30-notes-v1.md). Rows: NS-1..NS-6 (offline, CI G-26); the module is in G-2's zero-NuGet list.
+
 ## DEC-057 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a schematic's parts can be clicked to ask about them.** This relaxes DEC-031's library-only rule, which DEC-050 left as the owner's call. The owner said "yes".

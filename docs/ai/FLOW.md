@@ -356,6 +356,20 @@ Drawing (DEC-050):
       schematic part → its cleaned name and title, "a part of the simplified drawing in the last lesson"; neither → UnknownPart
 ```
 
+## Notes store (DEC-058; built in 12a, called by the shell from 12b)
+
+```
+NotesStore.Open(path = NotesStore.DefaultPath(), options)         src/Foundation/HeyGanesh.Notes/NotesStore.cs
+  LibraryVersion() null (no winsqlite3) → NotesException, "notes are off"
+  TryOpenHealthy: sqlite3_open_v2 (create, full mutex) → busy_timeout → user_version
+    > 1 → refused, file untouched (NotesException "written by a newer Hey Ganesh")
+    quick_check != ok, or NOTADB/CORRUPT on the way → MoveAside (notes.db[-wal,-shm] → .broken-<stamp>) → open fresh
+    journal_mode=WAL; version 0 → CREATE TABLE turns + index → user_version = 1
+Record(note): BEGIN IMMEDIATE → INSERT (every value bound ?1..?14) → DELETE all but the newest Keep → COMMIT
+Recent(n) / Get(id): SELECT ... ORDER BY id DESC → TurnNote (picks as a JSON array)
+Delete(id) / Clear() / Count()
+```
+
 ## Installer (DEC-055)
 
 ```

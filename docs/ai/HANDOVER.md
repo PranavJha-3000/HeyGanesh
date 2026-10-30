@@ -1,4 +1,16 @@
 
+## 2026-10-30 · claude-opus-5-5 (the notes store, build sequence step 12a, DEC-058)
+
+Did: Merged PR #1 into main (30e018a) after its CI passed on 4d3d616; ignored `graphify-out/` and `.planning/`. On the new branch `feat/notes-v1`: the Notes plan (D3 = winsqlite3), then `src/Foundation/HeyGanesh.Notes`:
+- `NotesStore` over Windows' own `winsqlite3.dll`: record, recent, get, delete, clear, retention;
+- WAL with a busy timeout, schema version 1, a broken file moved aside, a newer schema refused.
+
+`tools/NotesSmoke` holds NS-1..NS-6; CI gate G-26; the module is in G-2's zero-NuGet list and in the solution.
+Left: 12b (the shell records each turn, a `notes :` header line, `--no-notes`), 12c (Recent lessons window with replay), 12d (optional session context). Owner decisions: retention (1,000 placeholder) and 12d. `feat/notes-v1` is local only.
+Watch: The usage limit hit mid-step: two new files existed before the ROLLBACK entry (recorded in DEC-058). `pwsh` is not on Git Bash's path, so run the G-2 guard through the local CI runner. `NotesStore.Open` throws when winsqlite3 is missing; 12b must catch that and run without notes.
+Next: Build 12b on the owner's go-ahead.
+Verified: Notes and NotesSmoke build -warnaserror 0/0; the whole solution 0/0. NS-1 4, NS-2 8, NS-3 4, NS-4 3, NS-5 2, NS-6 3. Mutations: no retention delete fails NS-6; deleting a broken file fails NS-5; opening a newer schema fails NS-3; no busy timeout fails NS-4 (200 of 600 writes refused). All restored byte for byte. Local CI runner: 22 gates, all exit 0 (new G-26: 24 PASS lines; G-2 covers the module).
+
 ## 2026-10-30 · claude-opus-5-5 (finishing round: push, stale items, logo, schematic click-to-ask, DEC-056/DEC-057)
 
 Did: Pushed the ten step 8b–11d commits to PR #1. Cleared three stale items (1362f72):

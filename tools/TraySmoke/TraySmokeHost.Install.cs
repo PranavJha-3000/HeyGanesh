@@ -36,6 +36,11 @@ internal static partial class TraySmokeHost
             failures = Check(File.Exists(exe) && File.Exists(Path.Combine(target, "uninstall.ps1")) && File.Exists(Path.Combine(target, ".heyganesh-install")),
                 "the folder holds the tray, uninstall.ps1 and the install marker", failures);
             failures = Check(File.Exists(Path.Combine(shortcuts, "Hey Ganesh.lnk")), "a 'Hey Ganesh' Start-menu shortcut", failures);
+            using (var exeIcon = Icon.ExtractAssociatedIcon(exe))
+            {
+                failures = Check(exeIcon is not null && IsMark(exeIcon), "the installed exe carries the Hey Ganesh mark, so the shortcut and Apps & features show it (DEC-056)", failures);
+            }
+
             using (var entry = Registry.CurrentUser.OpenSubKey($@"{testKey}\Uninstall\HeyGanesh"))
             {
                 var uninstall = entry?.GetValue("UninstallString") as string ?? string.Empty;

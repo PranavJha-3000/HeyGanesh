@@ -22,6 +22,7 @@ internal sealed class TrayApp : ApplicationContext
     private readonly KeyRing _keys;
     private readonly string _logFolder;
     private readonly CancellationTokenSource _stop = new();
+    private readonly Icon _mark = TrayIcons.Load(SystemInformation.SmallIconSize);
     private readonly Control _ui = new();
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _status;
@@ -77,7 +78,7 @@ internal sealed class TrayApp : ApplicationContext
 
         _icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _mark,
             Text = "Hey Ganesh",
             ContextMenuStrip = menu,
             Visible = true,
@@ -269,6 +270,7 @@ internal sealed class TrayApp : ApplicationContext
         {
             _showWait?.Unregister(null);
             _icon.Dispose();
+            _mark.Dispose();
             _ui.Dispose();
             _stop.Dispose();
         }

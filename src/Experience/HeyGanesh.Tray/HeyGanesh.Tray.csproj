@@ -24,12 +24,19 @@
     <RootNamespace>HeyGanesh.Tray</RootNamespace>
     <AssemblyName>HeyGanesh.Tray</AssemblyName>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- The Hey Ganesh mark (DEC-056): the exe's icon, which the installer's shortcut and Apps & features entry show. -->
+    <ApplicationIcon>heyganesh.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HeyGanesh.App\HeyGanesh.App.csproj" />
     <!-- The menu's key lines use Security's KeyRing directly (presence only), so the reference is stated, not inherited. -->
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The same file, embedded, for the notification-area icon and the key screen (TrayIcons). -->
+    <EmbeddedResource Include="heyganesh.ico" LogicalName="HeyGanesh.Tray.heyganesh.ico" />
   </ItemGroup>
 
   <ItemGroup>

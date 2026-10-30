@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-056](#dec-056--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The Hey Ganesh mark: one tapered ink stroke from ear to trunk, the bindu and a crown arc on kraft paper; the tray exe's icon, the notification-area icon and the key screen's | accepted |
 | [DEC-055](#dec-055--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The installer is per-user PowerShell (installer option A): a self-contained win-x64 package, installed to `%LOCALAPPDATA%\Programs\HeyGanesh` with a Start-menu shortcut and an HKCU Apps & features entry; no admin, no signing; MSIX stays a later option | accepted |
 | [DEC-054](#dec-054--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Start at login is the per-user HKCU `Run` value `HeyGanesh` (the quoted tray path), toggled only by the tray's menu item, off by default; `StartupEntry` is the tray's only registry use | accepted |
 | [DEC-053](#dec-053--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The tray's key screen: one masked box per key, Save/Remove through the key ring, presence and length only; it opens by itself when DeepSeek or TypeSafe is missing; Ctrl+Alt is refused while it is open, through a new optional `triggerPaused` on `RunAsync` | accepted |
@@ -66,6 +67,28 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-056 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a logo that refers to Lord Ganesha subtly, in three marks.** The owner asked for a logo "inspired from" a line drawing of Ganesha, "subtly referencing Lord Ganesha and as simple as intuitive as HeyClicky logo".
+
+- **The mark:** black ink on a kraft-paper tile, the reference's own colours.
+  - One tapered brush stroke runs from the ear's tip across the forehead, down the trunk and into its curl, like the reference's right-hand line.
+  - A dot is the bindu.
+  - A short arc above it is the crown.
+  - The trunk with the dot also reads as a question mark, which fits a tutor you ask questions.
+- **Size check:** looked at 16–128 px on light and dark backgrounds. From 24 px all three marks are distinct; at 16 px the arc and the dot merge, and the trunk still carries the shape.
+- **Files:** `assets/brand/heyganesh.svg` is the source drawing, filled outlines so it renders the same everywhere; also `heyganesh-256.png`. `src/Experience/HeyGanesh.Tray/heyganesh.ico` holds 16, 20, 24, 32, 40, 48, 64 and 256 px. The drawing and the ICO came from one geometry, drawn with Pillow in a scratch script that is not part of the repo or the build.
+- **Where it shows:**
+  - the tray exe (`ApplicationIcon`), and so the installer's Start-menu shortcut and the Apps & features entry;
+  - the notification-area icon and the key screen, through `TrayIcons` (embedded resource), which replaces `SystemIcons.Application`.
+- **Rejected while drawing:**
+  - an S-curve and a dot alone: it read as a letter, not a trunk;
+  - adding the ear's inner tick and three tilak lines: too much at 16 px.
+
+**Not changed:** the version stays 1.0.0.0, and the lesson windows keep their own icons.
+
+Rows: TY-1 +1, TY-4 +1, IN-2 +1.
+
 ## DEC-055 — 2026-10-30 — claude-opus-5-5
 
 **Decision — a per-user script installer around a self-contained package.** Step 11d of the build sequence. The owner chose installer option A ("A: script installer") and a self-contained build that downloads the runtime packs ("Self-contained, allow download").

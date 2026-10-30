@@ -213,14 +213,14 @@ dotnet run --project tools/SecretSmoke -c Debug -- --assert-keyring
 # Tray (DEC-052): the app with no console. Build the host (it builds the tray and the shell first), read its exit codes.
 dotnet build tools/TraySmoke -c Debug -warnaserror
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-source
-#   -> 7 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key) offline; local-only, real hook for a few seconds: --assert-stop 5, --assert-tray 9, --assert-run 8,
+#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key) offline; local-only, real hook for a few seconds: --assert-stop 5, --assert-tray 10, --assert-run 8,
 #   --assert-keys-window 11 (shows the key window), --assert-keys-pause 3 (PRESSES Ctrl+Alt once), --assert-startup-menu 7)
 #   by hand: src/Experience/HeyGanesh.Tray/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tray.exe  (icon menu: status, keys, Open log folder, Quit)
 # Installer (DEC-055): per-user, no admin. Build the package, then install it on a PC (or run the round trip locally).
 powershell -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
 #   -> PACKAGE OK: artifacts\installer (self-contained win-x64, ~200 MB), exit 0   (-Zip also writes artifacts\installer-win-x64.zip)
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-install
-#   -> 15 PASS, exit 0 (temp folders and throwaway HKCU keys; starts the installed tray once)
+#   -> 16 PASS, exit 0 (temp folders and throwaway HKCU keys; starts the installed tray once)
 #   real install (owner): powershell -NoProfile -ExecutionPolicy Bypass -File artifacts\installer\install.ps1
 # Turn routing (DEC-036): without --lesson and with TYPESAFE_API_KEY set, Jev picks point / explain / 2D or 3D lesson per turn.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-route --question "x"

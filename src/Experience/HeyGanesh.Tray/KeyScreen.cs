@@ -20,6 +20,7 @@ internal sealed class KeyScreen : Form
     {
         _model = model;
         Text = "Hey Ganesh keys";
+        Icon = TrayIcons.Load(SystemInformation.IconSize);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;

@@ -578,3 +578,14 @@
   - TEST-CHECKLIST's CO-6 note says the mismatch is resolved.
 - **Rollback point:** `9cc4a75`. `git checkout 9cc4a75 -- src/Perception/HeyGanesh.Vision/VisionResult.cs src/Platform/HeyGanesh.ScreenOverlay/HeyGanesh.ScreenOverlay.csproj docs/ai`.
 - **Re-check after revert:** `dotnet build -c Debug -warnaserror` 0/0; ContextOrchestratorSmoke `--question "Save" --fake-vision-none` exit 0 (CO-6).
+
+## 2026-10-30 · claude-opus-5-5 (the Hey Ganesh logo and app icon, DEC-056)
+
+- **Change:**
+  - New `assets/brand/heyganesh.svg` (the source drawing) and `heyganesh-256.png`.
+  - New `src/Experience/HeyGanesh.Tray/heyganesh.ico` (16–256 px), used as the tray exe's `ApplicationIcon` and as an embedded resource.
+  - `TrayIcons` loads it for the notification-area icon (it was `SystemIcons.Application`) and the key screen.
+  - TraySmoke: TY-1, TY-4 and IN-2 check it.
+  - Docs: DEC-056, ARCHITECTURE, TEST-CHECKLIST, HANDOVER.
+- **Rollback point:** `1362f72`. `git checkout 1362f72 -- src/Experience/HeyGanesh.Tray tools/TraySmoke docs/ai`; delete `assets/brand/`, `src/Experience/HeyGanesh.Tray/heyganesh.ico` and `TrayIcons.cs`.
+- **Re-check after revert:** TraySmoke `--assert-source` 7, `--assert-tray` 9; `installer\build.ps1` PACKAGE OK.

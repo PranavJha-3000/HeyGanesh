@@ -73,6 +73,17 @@ internal static partial class TraySmokeHost
         return failures == 0 ? 0 : 1;
     }
 
+    /// <summary>
+    /// True when an icon is the Hey Ganesh mark: right of the trunk, halfway down, is bare kraft paper (DEC-056).
+    /// Windows' generic application icon has no such colour there.
+    /// </summary>
+    private static bool IsMark(Icon icon)
+    {
+        using var bitmap = icon.ToBitmap();
+        var c = bitmap.GetPixel(bitmap.Width * 85 / 100, bitmap.Height / 2);
+        return Math.Abs(c.R - 214) < 40 && Math.Abs(c.G - 196) < 40 && Math.Abs(c.B - 162) < 40 && c.A > 200;
+    }
+
     private static string RepoRoot()
     {
         var root = AppContext.BaseDirectory;
@@ -112,6 +123,12 @@ internal static partial class TraySmokeHost
         failures = Check(sources["Program.cs"].Contains("ShellHost.RunAsync(args, stop, hookLive, paused)", StringComparison.Ordinal), "runs the App Shell's own composition through RunAsync(args, stop, hookLive, paused)", failures);
         failures = Check(found.Length == 0, $"no key value read, no console input, no P/Invoke, network, focus stealing or pipeline built here ({(found.Length == 0 ? "none" : string.Join(", ", found))})", failures);
         failures = Check(shell.Contains("RunAsync(string[] args) => RunAsync(args, CancellationToken.None, null);", StringComparison.Ordinal), "the console's RunAsync(args) passes no stop token and no callback, so it is unchanged", failures);
+        // DEC-056: the mark, not Windows' generic icon, in every size the shell asks for.
+        var ico = File.ReadAllBytes(Path.Combine(dir, "heyganesh.ico"));
+        var sizes = Enumerable.Range(0, BitConverter.ToUInt16(ico, 4)).Select(i => ico[6 + i * 16] == 0 ? 256 : ico[6 + i * 16]).ToArray();
+        failures = Check(csproj.Contains("<ApplicationIcon>heyganesh.ico</ApplicationIcon>", StringComparison.Ordinal) && csproj.Contains("LogicalName=\"HeyGanesh.Tray.heyganesh.ico\"", StringComparison.Ordinal)
+            && new[] { 16, 20, 24, 32, 48, 256 }.All(sizes.Contains) && !sources.Values.Any(s => s.Contains("SystemIcons.Application", StringComparison.Ordinal)),
+            $"the Hey Ganesh icon is the exe's icon and an embedded resource, {sizes.Length} sizes ({string.Join(", ", sizes)}); no generic icon (DEC-056)", failures);
         var registry = sources.Where(s => s.Value.Contains("Registry", StringComparison.Ordinal)).Select(s => s.Key).ToArray();
         failures = Check(registry.SequenceEqual(new[] { "StartupEntry.cs" }), $"the registry is touched only by StartupEntry (DEC-054) ({string.Join(", ", registry)})", failures);
         return Summarize(failures, "SOURCE AUDIT OK");

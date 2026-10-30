@@ -159,6 +159,7 @@ internal static partial class TraySmokeHost
             var app = tray!;
 
             var registered = app.OnUi(() => IconRegistered(app.Icon));
+            failures = Check(app.OnUi(() => app.Icon.Icon is { } shown && IsMark(shown)), "the notification area shows the Hey Ganesh mark, not the generic icon (DEC-056)", failures);
             failures = Check(app.OnUi(() => app.Icon.Visible) && registered, $"the icon is visible and registered with the notification area ({(registered ? "Shell_NotifyIconGetRect S_OK" : "not found")})", failures);
 
             var texts = app.OnUi(() => app.MenuTexts);

@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (one key ring for API keys, build sequence step 8a, DEC-045)
+
+Did: `HeyGanesh.Security.KeyRing` (Credential Manager first, environment fallback, presence/length/source only). The App Shell gains `--keys`, `--set-key <name>` (no echo, or piped stdin) and `--remove-key <name>` in `ShellHost.Keys.cs`, plus an explicit Security reference. The header notes a key stored in Credential Manager. SecretSmoke gains `--assert-keyring` (KR-1, 11) and `--assert-keyring-cm` (KR-2, 4, throwaway `keyring-test.*` targets); CI G-12 runs both. The wrap-up sequence (8 proxy, 9 Tutor on, 10 schematic 3D, 11 tray app + installer) is in the step 8 plan.
+Left: 8b: route the four clients and `EnvironmentSecretStore` / the eval's `EnvKeyStore` through `KeyRing.Reader`. SH-25: the owner runs the real credential-slot round trip (this session's guard refused it). Steps 9–11. Fifteen commits are local, ahead of PR #1; not pushed.
+Watch: Until 8b a key stored only in Credential Manager is NOT used by any client; `--keys` and the header say so. KR-2 and SecretSmoke's self-test write throwaway credentials, in CI too. `KeyRing.Read` returns a string because the header needs one; use it for nothing else.
+Next: Plan-approved 8b: build it on the owner's go-ahead.
+Verified: Security, App and SecretSmoke build -warnaserror 0/0. KR-1 11 PASS; KR-2 4 PASS; SecretSmoke self-test ALL PASS. App `--keys` exit 0; unknown name exit 2; empty line and "two words" exit 1; `--help` 0; `--once --question "x"` exit 12 with an unchanged keys line. Three mutations (env before store, inner spaces accepted, store failure fatal) each fail KR-1, restored byte for byte. Local CI runner (below).
+
 ## 2026-10-30 · claude-opus-5-5 (planner evaluation: record live, replay offline, baseline gate, build sequence step 7b, DEC-044)
 
 Did: `tools/PlannerEval` gains:

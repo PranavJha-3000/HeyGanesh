@@ -76,6 +76,11 @@ internal static partial class ShellHost
             return 0;
         }
 
+        if (options.KeyCommand is not null)
+        {
+            return RunKeyCommand(options.KeyCommand, options.KeyName);
+        }
+
         // The question source is mode-dependent now that Voice exists (DEC-014): hooked mode is the
         // product path and listens to the microphone, so a flagged --question there is ignored (said
         // out loud, never silently defaulted); --once keeps --question as the deterministic scripted

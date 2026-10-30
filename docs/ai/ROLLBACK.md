@@ -437,3 +437,16 @@
 - **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `e489d82` (the commit before this step).
 - **Files to restore:** `git checkout e489d82 -- tools/PlannerEval .github/workflows/ci.yml AGENTS.md docs/ai`, then delete any new file under `tools/PlannerEval/` (`git status` lists them).
 - **Re-check after revert:** PlannerEval `--assert-set` 7 PASS and `--assert-checks` 24 PASS; the local CI runner reports 18 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (one key ring for API keys, build sequence step 8a, DEC-045)
+
+- **Change:**
+  - `HeyGanesh.Security` gains `KeyRing`: three known keys, Credential Manager first, then the environment variable; it describes a key without its value.
+  - The App Shell gains `--keys`, `--set-key <name>` and `--remove-key <name>`, plus an explicit Security reference; the header notes a key stored in Credential Manager.
+  - SecretSmoke gains `--assert-keyring` (offline) and `--assert-keyring-cm` (real Credential Manager, throwaway `keyring-test.*` targets); CI G-12 runs both.
+  - Docs: DEC-045, FLOW, ARCHITECTURE, PLATFORM, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+  - No API client reads through the ring yet (that is 8b).
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `4581601` (the commit before this step).
+- **Files to restore:** `git checkout 4581601 -- src/Foundation/HeyGanesh.Security src/Experience/HeyGanesh.App tools/SecretSmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Foundation/HeyGanesh.Security/KeyRing.cs`, `src/Experience/HeyGanesh.App/ShellHost.Keys.cs` and `tools/SecretSmoke/SecretSmokeHost.KeyRing.cs`.
+- **Credentials:** a key stored with `--set-key` stays in Windows Credential Manager after a revert; remove it first with `--remove-key <name>`, or delete the generic credential `HeyGanesh:<name>:api-key` in Control Panel > Credential Manager.
+- **Re-check after revert:** `dotnet run --project tools\SecretSmoke -c Debug` -> `ALL PASS`; App `--help` exit 0; the local CI runner reports 18 gates, all exit 0.

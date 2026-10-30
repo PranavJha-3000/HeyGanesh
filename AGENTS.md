@@ -27,7 +27,7 @@ Subsystems, and the seams between them are load-bearing:
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
 | Notes Persistence | PLANNED — no assembly yet | SQLite-backed notes store for user learning session context; no `src/HeyGanesh.Notes/` assembly exists today (PLATFORM.md §94). |
-| API key security proxy | PLANNED — no assembly yet | Isolates LLM API keys from the rest of the application; no `src/HeyGanesh.SecurityProxy/` assembly exists today (PLATFORM.md §95). |
+| API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The API clients still read the environment until build step 8b routes them through the ring. |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
 
@@ -203,6 +203,12 @@ tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEv
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --lesson --question "x"
 #   keys unset -> header 'lesson : ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING ...', KEY ERROR (Element Selection), exit 12 (SH-18)
 #   with keys: 3D lessons + click-to-ask follow-ups (30 s click wait; Ctrl+Alt refused meanwhile) -- live row SH-20
+# Keys (DEC-045): one key ring, Credential Manager first, then the environment; values are never printed.
+src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --keys
+#   -> deepseek / typesafe / fish: MISSING or "present (N chars, <source>)", exit 0
+#   store one yourself: HeyGanesh.App.exe --set-key deepseek  (typed or pasted, nothing shown); --remove-key deepseek
+dotnet run --project tools/SecretSmoke -c Debug -- --assert-keyring
+#   -> 11 PASS, exit 0   (also: --assert-keyring-cm 4, throwaway keyring-test.* credentials only)
 # Turn routing (DEC-036): without --lesson and with TYPESAFE_API_KEY set, Jev picks point / explain / 2D or 3D lesson per turn.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-route --question "x"
 #   keys unset -> header 'route : off (--no-route ...)', KEY ERROR (Element Selection), exit 12 (SH-21); with keys: routed turns -- live row SH-22

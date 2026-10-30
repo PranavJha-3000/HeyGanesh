@@ -15,6 +15,7 @@ internal static partial class ShellHost
         var retainCaptures = true; var expectDpi = true; var noSpeak = false; var lesson = false; var noRoute = false; var noOcr = false;
         var seconds = 0; var cancelMs = 0; var durationMs = 3000;
         var maxDim = 1280; var maxCandidates = 120;
+        string? keyCommand = null; var keyName = "";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -36,6 +37,10 @@ internal static partial class ShellHost
                 case "--max-dim": maxDim = int.Parse(args[++i]); break;
                 case "--max-candidates": maxCandidates = int.Parse(args[++i]); break;
                 case "--help": case "-h": case "/?": help = true; break;
+                // Key commands (DEC-045) run on their own and exit; the name is checked by RunKeyCommand.
+                case "--keys": keyCommand = "keys"; break;
+                case "--set-key": keyCommand = "set"; keyName = i + 1 < args.Length ? args[++i] : ""; break;
+                case "--remove-key": keyCommand = "remove"; keyName = i + 1 < args.Length ? args[++i] : ""; break;
                 default: Console.WriteLine($"ignoring unknown argument '{args[i]}'"); break;
             }
         }
@@ -47,7 +52,7 @@ internal static partial class ShellHost
         // mode decision, never a defaulted fake question.
         return new ShellOptions(
             question, help, once, overlay, foreground, retainCaptures, expectDpi,
-            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute, noOcr);
+            seconds, cancelMs, durationMs, maxDim, maxCandidates, noSpeak, lesson, noRoute, noOcr, keyCommand, keyName);
     }
 
     private static void PrintUsage()
@@ -85,6 +90,12 @@ internal static partial class ShellHost
         Console.WriteLine("--max-candidates  candidate cap handed to Element Selection (default 120).");
         Console.WriteLine("--no-dpi          do not claim PerMonitorV2 awareness, so the overlay's refusal to draw on");
         Console.WriteLine("                  a non-aware host can be observed. Nothing in a normal run should use it.");
+        Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish): where it was found and");
+        Console.WriteLine("                  its length, never its value; then exit.");
+        Console.WriteLine("--set-key <name>  store a key in Windows Credential Manager. It is typed or pasted with nothing");
+        Console.WriteLine("                  shown, or piped on stdin; then exit. Until build step 8b the API clients still");
+        Console.WriteLine("                  read only the environment variable, so a stored key is not used yet.");
+        Console.WriteLine("--remove-key <name>  delete a stored key (the environment variable is not touched); then exit.");
     }
 
     private static void PrintFooter()
@@ -98,6 +109,8 @@ internal static partial class ShellHost
         Console.WriteLine("codes: 12/3 are a key/provider error from the teaching seam or the speaker, 4 is a mapping");
         Console.WriteLine("fault in the shell (or a lesson card fault), 1 with --lesson means no usable lesson came");
         Console.WriteLine("back; the verdict is always reported (and drawn) before any of them can fire.");
+        Console.WriteLine("Key commands (--keys, --set-key, --remove-key): 0 done | 1 nothing was entered, or the key");
+        Console.WriteLine("was refused (a space or line break inside) | 2 unknown key name | 4 Credential Manager refused.");
         Console.WriteLine();
         Console.WriteLine("Live listens need HEYGANESH_QWEN_GATEWAY_URL (the qwen-audio-agent Gateway is a separate");
         Console.WriteLine("process that runs with its own provider key; no key crosses the protocol to HeyGanesh). The");
@@ -141,10 +154,10 @@ internal static partial class ShellHost
         Console.WriteLine($"  trigger    : {trigger}");
         Console.WriteLine($"  target     : {(options.Foreground ? "foreground window" : "window under the cursor")}");
         Console.WriteLine($"  overlay    : {(options.Overlay ? $"{options.DurationMs} ms per found verdict" : "disabled (--no-overlay)")}");
-        Console.WriteLine($"  keys       : TYPESAFE_API_KEY={(typesafeKey ? "present (value suppressed)" : "MISSING")}  " +
-                          $"DEEPSEEK_API_KEY={(deepseekKey ? "present (value suppressed)" : "MISSING")}");
+        Console.WriteLine($"  keys       : TYPESAFE_API_KEY={(typesafeKey ? "present (value suppressed)" : "MISSING")}{StoredNote("typesafe", typesafeKey)}  " +
+                          $"DEEPSEEK_API_KEY={(deepseekKey ? "present (value suppressed)" : "MISSING")}{StoredNote("deepseek", deepseekKey)}");
         Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
-                          $"FISH_AUDIO_API_KEY={(fishKey ? "present (value suppressed)" : "MISSING")} (TTS speaks the lesson when one is produced)");
+                          $"FISH_AUDIO_API_KEY={(fishKey ? "present (value suppressed)" : "MISSING")}{StoredNote("fish", fishKey)} (TTS speaks the lesson when one is produced)");
         // Keep this line in step with CreateTutorClient(): DEC-015 ships the teaching seam with no
         // client, so until the owner decides a provider, the teach/speak leg reports its skip per turn.
         Console.WriteLine("  tutor      : seam wired, no client yet (DEC-015 — the provider is the owner's call)");
@@ -194,6 +207,8 @@ internal static partial class ShellHost
         bool NoSpeak,
         bool Lesson,
         bool NoRoute,
-        bool NoOcr);
+        bool NoOcr,
+        string? KeyCommand,
+        string KeyName);
 }
 

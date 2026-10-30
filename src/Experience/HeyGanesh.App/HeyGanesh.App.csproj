@@ -69,6 +69,8 @@
     -->
     <ProjectReference Include="..\HeyGanesh.LessonSession\HeyGanesh.LessonSession.csproj" />
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
+    <!-- The key commands use Security's KeyRing directly (DEC-045), so the reference is stated, not inherited. -->
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -92,7 +92,7 @@ by either module; the finer confidence-tier gate stays a future Jev component.
 | Jev intent/routing component | PLANNED | No `src/HeyGanesh.Jev/` assembly exists. Today Jev is only the Element Selection choice model behind `IJevClient`. The confidence-gate and the intent classifier are both unbuilt. |
 | Visual Lesson Engine | PLANNED | No `src/Intelligence/HeyGanesh.VisualLessonEngine/` assembly exists. |
 | Notes persistence | PLANNED | No `src/HeyGanesh.Notes/` assembly exists; no lesson is stored anywhere today. |
-| API key security proxy | PLANNED | No `src/HeyGanesh.SecurityProxy/` assembly exists. Vision, Element Selection, Tutor and Voice all read their key from the environment at call time (a temporary stopgap). |
+| API key security proxy | PARTIAL (DEC-045) | `HeyGanesh.Security.KeyRing`: Credential Manager first, environment fallback, key commands in the App Shell. Vision, Element Selection, Tutor and Voice still read their key from the environment at call time until build step 8b. |
 | WinUI 3 / packaged shell | PLANNED | Deferred twice (DEC-011, DEC-012). |
 | CursorTarget abstraction | PLANNED | No such type exists in the tree. |
 

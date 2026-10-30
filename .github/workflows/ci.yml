@@ -62,9 +62,17 @@ jobs:
         shell: pwsh
         run: pwsh -File .github/workflows/scan-secrets.ps1
 
+      # G-12: the secret store, and the key ring over it (DEC-045). --assert-keyring-cm writes and removes
+      # throwaway keyring-test.* credentials only, never the app's own targets.
       - name: G-12 Security offline
         shell: pwsh
-        run: dotnet run --project tools\SecretSmoke -c Debug
+        run: |
+          dotnet build tools\SecretSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($m in @('--self-test', '--assert-keyring', '--assert-keyring-cm')) {
+            & 'tools\SecretSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.SecretSmoke.exe' $m
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       # G-13..G-15: the lesson hosts are read from the built EXE, as TEST-CHECKLIST does. All three use
       # fake canvases / fake models; LessonSurfaceSmoke and LT-6/LT-7/LT-9 draw real cards and stay local-only.

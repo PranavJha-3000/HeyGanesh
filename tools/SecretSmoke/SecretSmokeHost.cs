@@ -14,7 +14,19 @@ internal static partial class SecretSmokeHost
         {
             Console.WriteLine("Usage: SecretSmoke [--self-test]");
             Console.WriteLine("  --self-test   run the full offline verification suite and exit");
+            Console.WriteLine("  --assert-keyring     KeyRing over a fake store and environment: order, no value in any report, store rules (DEC-045)");
+            Console.WriteLine("  --assert-keyring-cm  KeyRing over the real Credential Manager under throwaway keyring-test.* targets, removed after");
             return 0;
+        }
+
+        if (args.Length > 0 && args[0] == "--assert-keyring")
+        {
+            return RunAssertKeyRing();
+        }
+
+        if (args.Length > 0 && args[0] == "--assert-keyring-cm")
+        {
+            return RunAssertKeyRingCredentialManager();
         }
 
         int failures = 0;

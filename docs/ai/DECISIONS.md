@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-045](#dec-045--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The "API key security proxy" is `HeyGanesh.Security.KeyRing`: three known keys, Windows Credential Manager first and the environment variable as fallback, described by presence/length/source only; the App Shell gains `--keys`, `--set-key`, `--remove-key`; clients read through it from step 8b | accepted |
 | [DEC-044](#dec-044--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The evaluation set records live (`--record`, the shell's DeepSeek client, key presence only) and replays offline (`--replay`); a committed baseline gates CI: a check that passed there and fails now exits 1, a changed planner prompt exits 3 | accepted |
 | [DEC-043](#dec-043--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A planner evaluation set: 30 questions (six verbatim from the HeyClicky reference video) scored by 11 deterministic checks in a new host `tools/PlannerEval`; 7a proves every check passes and fails offline (CI G-22); no LLM judge in v0 | accepted |
 | [DEC-042](#dec-042--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A lesson turn plans through `PlanStreamingAsync`: the cards open on the first released beat and each beat plays while the rest is written; a stream that stops early ends `Stopped` with the reason; the shell's DeepSeek client advertises `Streaming` and prints `first beat :` | accepted |
@@ -55,6 +56,36 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-045 — 2026-10-30 — claude-opus-5-5
+
+**Decision — the app's provider keys come from one key ring, held in Windows Credential Manager, with the environment variable as a fallback.** Step 8a of the build sequence (the owner: "Yes, build 8a"). It ends DEC-007's "temporary stopgap … pending the API key security proxy" once 8b routes the clients through it.
+
+- **`HeyGanesh.Security.KeyRing`:**
+  - knows `deepseek` (`DEEPSEEK_API_KEY`), `typesafe` (`TYPESAFE_API_KEY`) and `fish` (`FISH_AUDIO_API_KEY`);
+  - reads Credential Manager first (target `HeyGanesh:<name>:api-key`, the existing `CredentialManagerSecretStore`), then the variable;
+  - `Describe` returns presence, length and source, never a value (`KeyState.ToString` is the only report);
+  - `Reader(name)` is a per-request delegate that caches nothing;
+  - `Store` trims, and refuses an empty key or one with a space, line break or control character inside;
+  - a Credential Manager failure falls back to the environment and says "[Credential Manager unavailable]".
+- **App Shell key commands:**
+  - `--keys` shows each key's state;
+  - `--set-key <name>` reads the key with nothing echoed (or one line of piped stdin) and stores it;
+  - `--remove-key <name>` deletes it;
+  - exit codes: 0 done, 1 nothing entered or refused, 2 unknown name, 4 Credential Manager refused.
+- **The header:** the `keys :` line keeps its environment-based text (it still decides which legs run), and adds "(stored in Credential Manager; the clients read it from build step 8b)" when a key is stored but not in the environment.
+
+**Rejected.**
+- A separate proxy process that injects the key into requests: a second process to supervise and a localhost port to lock down, for risks (a key in logs, screenshots, files, history) that Credential Manager plus presence-only reporting already cover. It can sit behind the same delegates later.
+- A new `HeyGanesh.SecurityProxy` assembly: `HeyGanesh.Security` already holds the store.
+- Giving the clients an `ISecretStore`: TutorEngine and Voice deliberately reference nothing. 8b passes delegates instead.
+
+**Consequences.**
+- Until 8b the API clients read only the environment, and the `--keys` note and the header say so.
+- `--assert-keyring-cm` and SecretSmoke's self-test write throwaway credentials, in CI as well.
+- Storing a real key is the owner's action: `--set-key <name>`.
+
+Plan: [plans/2026-10-30-security-proxy-v1.md](plans/2026-10-30-security-proxy-v1.md). Rows: KR-1, KR-2 (CI G-12), SH-24, SH-25 (owner).
+
 ## DEC-044 — 2026-10-30 — claude-opus-5-5
 
 **Decision — the evaluation set records live once and replays offline forever; a reviewed recording becomes the baseline CI gates on.** Step 7b of the build sequence (the owner: "For now build all systems with API keys... I will add them later").

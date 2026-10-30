@@ -26,6 +26,7 @@ internal static partial class TraySmokeHost
                 "--assert-keys-pause" => await RunAssertKeysPauseAsync(),
                 "--assert-startup" => RunAssertStartup(),
                 "--assert-startup-menu" => RunAssertStartupMenu(),
+                "--assert-install" => RunAssertInstall(args.Length > 1 ? args[1] : null),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -56,6 +57,7 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-keys-pause   LOCAL: PRESSES Ctrl+Alt once: while paused the real shell starts no turn; exit 0");
         Console.WriteLine("  --assert-startup      start at login against a throwaway HKCU key (deleted after); the real Run key only read; exit 0");
         Console.WriteLine("  --assert-startup-menu LOCAL: the tray's Start at login item over a throwaway key; exit 0");
+        Console.WriteLine("  --assert-install [package]  LOCAL: install.ps1 / uninstall.ps1 from a built package into temp folders and throwaway HKCU keys; exit 0");
         return 0;
     }
 

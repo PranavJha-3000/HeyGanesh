@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-055](#dec-055--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The installer is per-user PowerShell (installer option A): a self-contained win-x64 package, installed to `%LOCALAPPDATA%\Programs\HeyGanesh` with a Start-menu shortcut and an HKCU Apps & features entry; no admin, no signing; MSIX stays a later option | accepted |
 | [DEC-054](#dec-054--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | Start at login is the per-user HKCU `Run` value `HeyGanesh` (the quoted tray path), toggled only by the tray's menu item, off by default; `StartupEntry` is the tray's only registry use | accepted |
 | [DEC-053](#dec-053--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The tray's key screen: one masked box per key, Save/Remove through the key ring, presence and length only; it opens by itself when DeepSeek or TypeSafe is missing; Ctrl+Alt is refused while it is open, through a new optional `triggerPaused` on `RunAsync` | accepted |
 | [DEC-052](#dec-052--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | A tray host (`HeyGanesh.Tray`, WinExe, WinForms `NotifyIcon`) runs the App Shell's own composition through a new `RunAsync(args, stop, hookLive)`; the console exe is unchanged; output goes to a log file (newest 5); one tray per session | accepted |
@@ -65,6 +66,34 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-055 — 2026-10-30 — claude-opus-5-5
+
+**Decision — a per-user script installer around a self-contained package.** Step 11d of the build sequence. The owner chose installer option A ("A: script installer") and a self-contained build that downloads the runtime packs ("Self-contained, allow download").
+
+- **Package:** `installer\build.ps1` runs `dotnet publish` on the tray: Release, `-r win-x64 --self-contained`, `DebugType=none`. It writes into `artifacts\installer\app` (git-ignored), with the two scripts beside it and `package.txt`, and checks the files a package cannot run without. Measured: 513 files, 198 MB, version 1.0.0.0, more than the plan's ~150 MB guess. The publish includes the App Shell as a library, not its console exe as a command, so key commands in an install are the tray's key screen.
+- **Install:** `install.ps1` (Windows PowerShell 5.1, which every PC has) copies the package to `%LOCALAPPDATA%\Programs\HeyGanesh` and creates a `Hey Ganesh` Start-menu shortcut with `WScript.Shell`. It adds an HKCU `Uninstall\HeyGanesh` entry (name, version, location, icon, size, NoModify/NoRepair, an uninstall command running the installed `uninstall.ps1`). It neither starts the app nor turns on start at login.
+- **Guards, in both scripts:**
+  - a folder is replaced or removed only if it carries the `.heyganesh-install` marker (or is empty);
+  - nothing happens while a tray runs from the install;
+  - uninstall removes the folder before the Apps & features entry, so a locked file leaves a way to retry.
+- **Uninstall keeps** the keys in Credential Manager and `%LOCALAPPDATA%\HeyGanesh` (logs, WebView2 data), and says so. It removes the Run value only when it starts this install (DEC-054).
+- **Testable:** every location is a parameter. IN-2 runs the real scripts against temp folders and throwaway HKCU keys, and only reads the real locations.
+
+**The download.** The first publish restored three runtime packs from nuget.org into the NuGet cache, not the two named when asking: `microsoft.netcore.app.runtime.win-x64`, `microsoft.windowsdesktop.app.runtime.win-x64`, and also `microsoft.aspnetcore.app.runtime.win-x64`. The SDK restores every runtime pack for the RID. Unpacked: 124, 126 and 40 MB. CI's runner downloads them on each run.
+
+**Known limits.**
+- Unsigned: SmartScreen may warn about the scripts, and they need `-ExecutionPolicy Bypass`.
+- The version is the default 1.0.0.0 until the project sets one.
+- The icon is still Windows' generic one.
+
+**Rejected.**
+- MSIX (option B): it needs MakeAppx/SignTool and a trusted certificate. It would also bring the capture-border capability, and stays a later step.
+- Framework-dependent: smaller, but needs the .NET 8 Desktop Runtime on the target PC (the owner chose self-contained).
+- Inno Setup / WiX: new external tools.
+- A zip with no installer: no shortcut, no uninstall entry.
+
+Plan: [plans/2026-10-30-tray-installer-v1.md](plans/2026-10-30-tray-installer-v1.md). Rows: IN-1 (CI G-25), IN-2 (local), IN-3 (owner).
+
 ## DEC-054 — 2026-10-30 — claude-opus-5-5
 
 **Decision — start at login is one per-user Run value, changed only by the menu.** Step 11c of the build sequence (the owner: "Yes, build 11c").

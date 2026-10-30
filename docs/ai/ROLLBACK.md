@@ -556,3 +556,16 @@
 - **Files to restore:** `git checkout 20be2ce -- src/Experience/HeyGanesh.Tray tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **If you turned it on and want it gone:** untick "Start at login" in the tray menu, or `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v HeyGanesh /f`.
 - **Re-check after revert:** TraySmoke `--assert-source` 6, `--assert-tray` 9, `--assert-keys-window` 11; the local CI runner reports 20 gates, all exit 0.
+
+## 2026-10-30 · claude-opus-5-5 (the per-user installer, build sequence step 11d, DEC-055)
+
+- **Change:**
+  - New `installer/`: `build.ps1` (self-contained win-x64 publish of the tray into `artifacts/installer/app`, plus the scripts), `install.ps1` (copy to `%LOCALAPPDATA%\Programs\HeyGanesh`, a Start-menu shortcut, an HKCU "Apps & features" entry) and `uninstall.ps1` (removes those, and a start-at-login value that points at this install). Every location is a parameter, so the row installs into temporary folders and throwaway HKCU keys.
+  - `.gitignore`: `artifacts/`.
+  - TraySmoke: `--assert-install <package>` (IN-2, local).
+  - The first self-contained publish downloads `Microsoft.NETCore.App.Runtime.win-x64` and `Microsoft.WindowsDesktop.App.Runtime.win-x64` from nuget.org into the NuGet cache (owner-approved).
+  - Docs: DEC-055, FLOW, ARCHITECTURE, AGENTS.md, TEST-CHECKLIST, CI.md, HANDOVER, plan.
+- **Rollback point:** branch `feat/lesson-shell-wiring-v1` at `d297155` (the commit before this step).
+- **Files to restore:** `git checkout d297155 -- .gitignore tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `installer/`, `artifacts/` and any new file `git status` lists.
+- **If you installed it:** run `%LOCALAPPDATA%\Programs\HeyGanesh\uninstall.ps1` (or Apps & features → Hey Ganesh → Uninstall) before reverting.
+- **Re-check after revert:** TraySmoke `--assert-source` 7; the local CI runner reports 20 gates, all exit 0.

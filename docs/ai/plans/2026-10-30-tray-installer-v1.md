@@ -5,7 +5,8 @@ Changed while building: the rows are TY-1..TY-5 (TR-* is the Turn Router's); the
 until 11b/11c build them; the log row (TY-2) is offline and the planted-key check moved into TY-5, on the real exe.
 11b BUILT 2026-10-30 (owner: "Yes, build 11b"): TK-1 13, TK-2 11, TK-3 3; DEC-053. It opens by itself for a missing DeepSeek or
 TypeSafe key (decision 3, as recommended). 11c BUILT 2026-10-30 (owner: "Yes, build 11c"): TS-1 10, TS-2 7; DEC-054. The
-throwaway key is `HKCU\Software\HeyGanesh\Test-<id>\Run`. 11d is not built.
+throwaway key is `HKCU\Software\HeyGanesh\Test-<id>\Run`. 11d BUILT 2026-10-30 (owner: "A: script installer", self-contained with
+the download): IN-1 PACKAGE OK (513 files, 198 MB), IN-2 15; DEC-055. Step 11 is complete.
 
 ## Problem, restated
 

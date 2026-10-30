@@ -1,4 +1,12 @@
 
+## 2026-10-30 · claude-opus-5-5 (the per-user installer, build sequence step 11d, DEC-055)
+
+Did: `installer\build.ps1` (self-contained win-x64 package in git-ignored `artifacts\installer`: 513 files, 198 MB), `install.ps1` (to `%LOCALAPPDATA%\Programs\HeyGanesh`, Start-menu shortcut, HKCU Apps & features entry), `uninstall.ps1` (removes those and this install's start-at-login value; keeps keys and logs). Rows: IN-1 (CI G-25), IN-2 `TraySmoke --assert-install` 15 (local). Step 11, and so the "Must-haves 1–4" wrap-up build list, is complete.
+Left: Owner rows: IN-3 (real install), TS-3, TK-4, TY-6, SH-17, SH-20, SH-22, SH-25, PE-6/PE-7, and the keys themselves. Open decisions: transcribed questions in the log; click-to-ask on schematic parts (DEC-031). Ten local commits unpushed. `docs/ai/features/FEATURE-008.md` and `docs/ai/plans/2026-10-30-papermorph-review.md` appeared untracked during 11b; not mine, left alone.
+Watch: The first publish downloaded three runtime packs (aspnetcore too), not two. In `--assert-install`, a broken running-check half-deletes the temp install (a locked exe): that is the guard's reason. The scripts are ASCII with a BOM and CRLF for Windows PowerShell 5.1; keep them that way.
+Next: Push the ten commits (your go-ahead), then run IN-3 with your keys set.
+Verified: build.ps1 exit 0, PACKAGE OK, 0 warnings. TraySmoke `--assert-install` 15, `--assert-source` 7 (unchanged). The real install folder, shortcut, entry and Run value read the same before and after (all absent). Mutations on the package's scripts: replacing a foreign folder, skipping the running check, and leaving start at login behind each fail IN-2; restored byte for byte from installer\. Local CI runner: 21 gates, all exit 0 (new G-25 builds the package).
+
 ## 2026-10-30 · claude-opus-5-5 (start at login, build sequence step 11c, DEC-054)
 
 Did: `StartupEntry` (HKCU Run value `HeyGanesh`, the quoted tray path; its key path injectable) and a "Start at login" menu item: unchecked until chosen, "(set for another copy)" when the value points elsewhere, refusals logged with a balloon. Rows: TS-1 10 (CI G-24, a throwaway HKCU key), TS-2 7 (local); TY-1 now 7.

@@ -354,6 +354,26 @@ Drawing (DEC-050):
   part click → OnPartClicked checks the library catalogue only → a schematic part is refused (DEC-031)
 ```
 
+## Installer (DEC-055)
+
+```
+installer\build.ps1 [-Out] [-Zip]
+  -Out not empty and no package.txt → REFUSED, exit 1
+  dotnet publish HeyGanesh.Tray -c Release -r win-x64 --self-contained -p:DebugType=none -o <Out>\app
+  copy install.ps1 + uninstall.ps1 beside app\, uninstall.ps1 into app\
+  required files present? (tray, App, coreclr, WinForms, WebView2 Core + loader, LessonPage\) else INCOMPLETE, exit 1
+  package.txt → PACKAGE OK, exit 0
+install.ps1 [-Source -Target -Shortcuts -UninstallKey]                   (Windows PowerShell 5.1, per user)
+  no tray in Source → REFUSED · a tray running from Target → REFUSED · Target not empty and no .heyganesh-install → REFUSED
+  marker present → upgrade (old files removed) → copy app\* → marker → "Hey Ganesh.lnk" (WScript.Shell) → HKCU Uninstall entry
+  (does not start the app, does not touch start at login)
+uninstall.ps1 [-Target = its own folder, -Shortcuts -UninstallKey -RunKey]   (Apps & features runs it from the install folder)
+  no marker → REFUSED · running → REFUSED
+  Run value HeyGanesh starts this install → removed (else left) · shortcut pointing here → removed
+  cd %TEMP% → remove the folder (failure → FAILED, entry kept for a retry) → remove the entry if it names this folder
+  keys in Credential Manager and %LOCALAPPDATA%\HeyGanesh are kept
+```
+
 ## Tray (DEC-052)
 
 ```

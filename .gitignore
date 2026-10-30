@@ -1,6 +1,8 @@
 # Build output
 bin/
 obj/
+# The installer package (installer/build.ps1, DEC-055)
+artifacts/
 
 # Tool/IDE local state
 *.user

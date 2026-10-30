@@ -209,6 +209,15 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
+      # G-25: the installer package (DEC-055) - a self-contained win-x64 publish of the tray plus the scripts, and the
+      # files a package needs in order to run. Windows PowerShell 5.1, as on a user's PC. The install round trip
+      # (IN-2) runs the installed tray and stays local.
+      - name: G-25 Installer package
+        shell: pwsh
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       # G-22: the planner evaluation set (DEC-043/DEC-044) - the set is well formed; every automatic check both passes
       # and fails; the recording path works through the real client against a loopback stub with no key in any file;
       # the live client matches the App Shell's. Once the owner commits a reviewed live recording as

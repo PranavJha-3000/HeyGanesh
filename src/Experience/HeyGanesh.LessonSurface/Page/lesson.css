@@ -3,54 +3,7 @@
    setting through prefers-color-scheme. The frame is glass (DEC-063): the host draws Windows' Acrylic behind a
    transparent page, and --frame tints it; the board stays opaque so ink always sits on a steady surface. With
    reduced transparency or more contrast the frame is solid. If the host could not turn Acrylic on, it paints the
-   solid frame colour behind the page, so the tint lands on that instead. */
-:root {
-  --frame: rgba(248, 248, 250, 0.72);
-  --frame-solid: #f5f5f7;
-  --glass-edge: rgba(255, 255, 255, 0.7);
-  --board: #fdfcf9;
-  --board-dot: rgba(0, 0, 0, 0.075);
-  --hairline: rgba(0, 0, 0, 0.08);
-  --text: #1d1d1f;
-  --text-2: rgba(60, 60, 67, 0.62);
-  --fill-1: rgba(120, 120, 128, 0.12);
-  --fill-2: rgba(120, 120, 128, 0.18);
-  --accent: #007aff;
-  --ink: #1d1d1f;
-  --muted: rgba(60, 60, 67, 0.82);
-  --red: #ff3b30;
-  --marker: rgba(255, 204, 0, 0.45);
-  --ui: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  --hand: "Ink Free", "Segoe Print", "Comic Sans MS", cursive;
-  --serif: "Cambria Math", "Cambria", "Times New Roman", serif;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --frame: rgba(30, 30, 34, 0.64);
-    --frame-solid: #1c1c1f;
-    --glass-edge: rgba(255, 255, 255, 0.14);
-    --board: #121315;
-    --board-dot: rgba(255, 255, 255, 0.065);
-    --hairline: rgba(255, 255, 255, 0.09);
-    --text: #f5f5f7;
-    --text-2: rgba(235, 235, 245, 0.62);
-    --fill-1: rgba(120, 120, 128, 0.2);
-    --fill-2: rgba(120, 120, 128, 0.3);
-    --accent: #0a84ff;
-    --ink: #f2f2ee;
-    --muted: rgba(235, 235, 245, 0.6);
-    --red: #ff453a;
-    --marker: rgba(255, 214, 10, 0.28);
-    color-scheme: dark;
-  }
-}
-
-@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  :root { --frame: var(--frame-solid); }
-}
-
+   solid frame colour behind the page, so the tint lands on that instead. The tokens themselves live in tokens.css. */
 * { box-sizing: border-box; }
 
 html, body {

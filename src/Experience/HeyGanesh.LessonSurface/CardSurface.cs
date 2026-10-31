@@ -453,7 +453,9 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, ISchematicCanvas, 
                     drawing.GetProperty("hash").GetInt64(),
                     Strings(drawing.GetProperty("labelTexts")),
                     drawing.GetProperty("labelForeign").GetInt32())
-                : null);
+                : null,
+            CardNative.DwmGetWindowAttribute(scene.Handle, CardNative.DwmwaWindowCornerPreference, out var corner, sizeof(int)) == 0 ? corner : -1,
+            CardNative.DwmGetWindowAttribute(scene.Handle, CardNative.DwmwaSystemBackdropType, out var backdrop, sizeof(int)) == 0 ? backdrop : -1);
     });
 
     /// <summary>

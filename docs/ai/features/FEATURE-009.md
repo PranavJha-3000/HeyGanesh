@@ -1,7 +1,7 @@
 # FEATURE-009 — An Apple-grade look: one visual language for every Hey Ganesh surface
 
 - **Date:** 2026-10-31 · claude-opus-5-5
-- **Status:** steps 1 and 2 done (owner: "Approve, plan step 2", then "Yes, implement step 2"); 2b done (blur works on a never-active card); 2c done (glass card, DEC-063); step 3 next.
+- **Status:** steps 1 and 2 done (owner: "Approve, plan step 2", then "Yes, implement step 2"); 2b done (blur works on a never-active card); 2c done (glass card, DEC-063); 3 done (3D window, DEC-064); step 4 next.
 - **Decision:** [DEC-062](../DECISIONS.md#dec-062--2026-10-31--claude-opus-5-5).
 - **Reference mockup:** a throwaway page built in the session scratchpad (not in the repo). It shows the ask flow,
   the lesson card, the 3D window, the key screen, and the theme / motion / transparency switches. The tokens below are
@@ -60,7 +60,7 @@ either product's assets or names.
 | 2 | Lesson card: page restyle to the tokens + rounded window corners, solid surfaces | ✅ done 2026-10-31 |
 | 2b | Spike: can Acrylic blur stay on a card that never becomes active? Keep it if yes, stay solid if no | ✅ done 2026-10-31: **yes**, through a transparent WebView2 too |
 | 2c | Glass lesson card: DWM Acrylic + transparent WebView2 + tinted frame, solid fallback | ✅ done 2026-10-31 (DEC-063) |
-| 3 | 3D scene window restyle (`scene.css`, `scene-svg.css`) | ⏳ |
+| 3 | 3D scene window restyle (`scene.css`, `scene-svg.css`) | ✅ done 2026-10-31 (DEC-064) |
 | 4 | Screen overlay: soft rounded ring with glow (per-pixel alpha instead of colour key) — ROLLBACK first | ⏳ |
 | 5 | Tray dialogs: key screen, Recent lessons | ⏳ |
 | 6 | Optional features: listening orb, cards growing from the ring, word-by-word captions | ⏳ own plans |
@@ -116,3 +116,13 @@ either product's assets or names.
   Verified: the page snapshot's frame alpha is 163/255 (= .64, painted once) and the board 255, opaque.
   Not verifiable by tools: the blur on a real card, since cards are excluded from capture. Owner check: a lesson card
   over a busy window, in dark and light, and once on battery (expected: flat grey under the tint).
+- 2026-10-31 · claude-opus-5-5 — Step 3 (DEC-064). New `Page/tokens.css`: the tokens moved out of `lesson.css`
+  (the chain-rule card snapshot is byte-identical to step 2c's). Scene page: glass frame, flat accent mark, chips for
+  tags (caveats amber), opaque inset stage for the canvas and the drawing, glass-pill hint, SVG close glyph without a
+  focus ring. `scene.js` reads Babylon's colours from the tokens (`token()` / `tokenColor3()`): stage, pill labels,
+  leader, red lesson highlight, accent pick glow; repaints on a light/dark switch. `scene-svg.css`: only the label,
+  highlight and notice lines below the generated ramps. `CardWindow` applies the glass to the scene page.
+  `SceneSnapshot.CornerPreference`/`BackdropType`; LSU-9 19 → 21. Snapshots reviewed in dark: engine, F-35B schematic
+  (pill labels, red lift-fan glow), DNA (navy backbone readable lit and drawn).
+  Not run: LSU-15 `--assert-pick` and LSU-18 `--assert-pick-schematic` (they move the real mouse; owner's go-ahead).
+  Not seen: light mode, and the real window by eye (capture-excluded).

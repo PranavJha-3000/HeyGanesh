@@ -659,3 +659,10 @@
 - **Rollback point:** `fe4f01d` (step 2 on `feat/apple-look`), or revert this step's commit.
 - **Files to restore:** `git checkout fe4f01d -- src/Experience/HeyGanesh.LessonSurface/CardWindow.cs src/Experience/HeyGanesh.LessonSurface/CardNative.cs src/Experience/HeyGanesh.LessonSurface/CardSurface.cs src/Experience/HeyGanesh.LessonSurface/CardSurfaceOptions.cs src/Experience/HeyGanesh.LessonSurface/Page/lesson.css tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`
 - **Re-check after revert:** build LessonSurface then LessonSurfaceSmoke (sequentially); `--assert-window` 10, `--assert-render` 17, `--assert-source` 20; a real card is solid again.
+
+## 2026-10-31 · claude-opus-5-5 (FEATURE-009 step 3: 3D scene window restyle, DEC-064)
+
+- **Change:** shared `Page/tokens.css` (new; the token block moves out of `lesson.css`, `lesson.html` links it); the scene page (`scene.html`, `scene.css`, `scene-svg.css` label/highlight lines only, `scene.js` colours read from the tokens) gets the glass frame, solid stage, pill labels; `CardWindow` applies glass and corners to the scene page too; `SceneSnapshot.CornerPreference`/`BackdropType` (`CardSurfaceOptions.cs`, `CardSurface.cs`); LSU-9 gains two rows (`LessonSurfaceSmokeHost.Scene.cs`). No new dependency; vendored files untouched.
+- **Rollback point:** `ac6849a` (step 2c on `feat/apple-look`), or revert this step's commit.
+- **Files to restore:** `git checkout ac6849a -- src/Experience/HeyGanesh.LessonSurface tools/LessonSurfaceSmoke`, then delete `src/Experience/HeyGanesh.LessonSurface/Page/tokens.css` if it remains.
+- **Re-check after revert:** build LessonSurface then LessonSurfaceSmoke (sequentially); `--assert-scene` 19, `--assert-orientation` 3, `--assert-scene-svg` 8, `--assert-render` 17; the scene window is paper again.

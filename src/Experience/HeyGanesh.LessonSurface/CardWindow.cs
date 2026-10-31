@@ -85,13 +85,13 @@ internal sealed class CardWindow : Form
             throw new InvalidOperationException($"card window could not be excluded from capture (Win32 error {error})");
         }
 
-        // FEATURE-009 steps 2 and 2c (DEC-062, DEC-063): the lesson card is a rounded glass window. DWM draws
-        // Acrylic behind the whole client area (the frame is extended over it, and black client pixels show the
-        // backdrop); the WebView2 background is transparent so the page's translucent frame tint lands on the
-        // blur, while the page's board stays opaque. If Windows refuses either call (older builds), the card keeps
-        // a solid background equal to the page's frame colour, so it never shows black. The scene page keeps its
-        // paper look until step 3. Never call BringToFront() on a card: it activates the window.
-        if (page == CardPage)
+        // FEATURE-009 steps 2, 2c and 3 (DEC-062, DEC-063, DEC-064): the lesson card and the 3D scene window are
+        // rounded glass windows. DWM draws Acrylic behind the whole client area (the frame is extended over it,
+        // and black client pixels show the backdrop); the WebView2 background is transparent so the page's
+        // translucent frame tint lands on the blur, while the page's board or stage stays opaque. If Windows
+        // refuses either call (older builds), the window keeps a solid background equal to the page's frame
+        // colour, so it never shows black. Never call BringToFront() on a card: it activates the window.
+        if (page == CardPage || page == ScenePage)
         {
             var light = AppsUseLightTheme();
             var round = CardNative.DwmwcpRound;

@@ -1,0 +1,59 @@
+/* FEATURE-009 design tokens (DEC-062), the one place Hey Ganesh's page colours and type are defined.
+   Linked first by lesson.html and scene.html; scene.js reads the colours it hands to Babylon from here too
+   (getComputedStyle), so a colour changes in this file only. Light by default, dark when Windows' app theme is
+   dark (prefers-color-scheme). --frame is the glass tint over the host's Acrylic (DEC-063); with reduced
+   transparency or more contrast it becomes solid. */
+:root {
+  --frame: rgba(248, 248, 250, 0.72);
+  --frame-solid: #f5f5f7;
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --board: #fdfcf9;
+  --board-dot: rgba(0, 0, 0, 0.075);
+  --hairline: rgba(0, 0, 0, 0.08);
+  --text: #1d1d1f;
+  --text-2: rgba(60, 60, 67, 0.62);
+  --fill-1: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.18);
+  --accent: #007aff;
+  --accent-soft: rgba(0, 122, 255, 0.14);
+  --amber: #c27c00;
+  --amber-soft: rgba(255, 159, 10, 0.16);
+  --pill: rgba(255, 255, 255, 0.92);
+  --ink: #1d1d1f;
+  --muted: rgba(60, 60, 67, 0.82);
+  --red: #ff3b30;
+  --marker: rgba(255, 204, 0, 0.45);
+  --ui: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --hand: "Ink Free", "Segoe Print", "Comic Sans MS", cursive;
+  --serif: "Cambria Math", "Cambria", "Times New Roman", serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --frame: rgba(30, 30, 34, 0.64);
+    --frame-solid: #1c1c1f;
+    --glass-edge: rgba(255, 255, 255, 0.14);
+    --board: #121315;
+    --board-dot: rgba(255, 255, 255, 0.065);
+    --hairline: rgba(255, 255, 255, 0.09);
+    --text: #f5f5f7;
+    --text-2: rgba(235, 235, 245, 0.62);
+    --fill-1: rgba(120, 120, 128, 0.2);
+    --fill-2: rgba(120, 120, 128, 0.3);
+    --accent: #0a84ff;
+    --accent-soft: rgba(10, 132, 255, 0.2);
+    --amber: #ffd60a;
+    --amber-soft: rgba(255, 214, 10, 0.16);
+    --pill: rgba(44, 44, 48, 0.92);
+    --ink: #f2f2ee;
+    --muted: rgba(235, 235, 245, 0.6);
+    --red: #ff453a;
+    --marker: rgba(255, 214, 10, 0.28);
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root { --frame: var(--frame-solid); }
+}

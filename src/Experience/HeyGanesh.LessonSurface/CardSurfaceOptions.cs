@@ -76,7 +76,9 @@ public sealed record SceneSnapshot(
     Point CloseButton,
     int? DrawingSolids,
     double DrawingBuildMs,
-    SceneDrawing? Drawing);
+    SceneDrawing? Drawing,
+    int CornerPreference,
+    int BackdropType);
 
 /// <summary>
 /// What the no-WebGL drawing painted (DEC-034), for verification rows: part keys in paint order (repeats

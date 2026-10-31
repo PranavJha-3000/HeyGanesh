@@ -1,32 +1,51 @@
-/* 3D lesson window (DEC-030): the same paper frame as the cards, with a canvas instead of a sheet. */
+/* 3D lesson window (DEC-030), in the lesson card's look (FEATURE-009 step 3, DEC-064): a glass frame over the
+   host's Acrylic, and an opaque stage, inset like the card's board, where the model (canvas) or its drawing sits.
+   Colours come from tokens.css; scene.js reads the ones Babylon needs from the same variables. The title-bar
+   mark is flat accent, not the card's gradient: the orientation self-test finds its blue marker by colour
+   anywhere in the page image, and the gradient's darker pixels would match it. */
+* { box-sizing: border-box; }
+
 html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #f6f1e3;
-  font-family: "Segoe Print", "Segoe UI", sans-serif;
-  color: #2b2b2b;
+  font-family: var(--ui);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
+
+/* The tint is painted once, on html only: a second translucent layer on body would double it. */
+html { background: var(--frame); }
+body { background: transparent; }
 
 #frame {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid #d8cfb8;
-  box-sizing: border-box;
+  box-shadow: inset 0 1px 0 var(--glass-edge);
 }
 
+/* The title bar is the drag handle (scene.js posts "drag" on mousedown here). */
 #tab {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: #efe6cf;
-  border-bottom: 1px solid #d8cfb8;
-  cursor: move;
+  gap: 10px;
+  height: 38px;
+  padding: 0 6px 0 12px;
+  cursor: grab;
   user-select: none;
-  font-size: 15px;
+  font: 600 13px/1 var(--ui);
+  letter-spacing: -0.005em;
+}
+
+#tab .mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 #title {
@@ -36,42 +55,67 @@ html, body {
   text-overflow: ellipsis;
 }
 
+#tags { display: flex; gap: 6px; }
+
 .tag {
-  font-family: "Segoe UI", sans-serif;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: #fff3c4;
-  border: 1px solid #c9a227;
+  font: 600 11px/1 var(--ui);
+  letter-spacing: 0.01em;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
 }
+
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
 
 #close {
-  border: none;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
   background: transparent;
-  font-size: 18px;
+  color: var(--text-2);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   cursor: pointer;
-  color: #6b6b6b;
+  transition: background 120ms ease, transform 100ms ease-out;
 }
 
-#view {
+/* No focus ring: the window never takes keyboard focus (WS_EX_NOACTIVATE); see lesson.css. */
+#close:focus { outline: none; }
+#close svg { width: 14px; height: 14px; pointer-events: none; }
+#close:hover { background: var(--fill-1); color: var(--text); }
+#close:active { background: var(--fill-2); transform: scale(0.9); }
+
+/* The stage: the canvas (or the drawing) inset from the frame, opaque, with the card board's corners. */
+#view, #drawing {
   flex: 1;
-  width: 100%;
+  width: calc(100% - 12px);
   min-height: 0;
-  display: block;
-  outline: none;
+  margin: 0 6px 6px;
+  border-radius: 10px;
+  background: var(--board);
+  box-shadow: inset 0 0 0 1px var(--hairline);
 }
+
+#view { display: block; outline: none; }
 
 /* Shown only while the host has picking on (DEC-031): after the lesson, before a click. */
 #hint {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 10px;
-  text-align: center;
-  font-size: 14px;
-  color: #5d4f22;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--pill);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18), inset 0 0 0 1px var(--hairline);
+  font: 12px/1.2 var(--ui);
+  color: var(--text-2);
+  white-space: nowrap;
   pointer-events: none;
 }
 
@@ -81,5 +125,15 @@ html, body {
   right: 24px;
   top: 45%;
   text-align: center;
-  font-size: 17px;
+  font: 15px/1.4 var(--ui);
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #close { transition: none; }
+}
+
+@media (prefers-contrast: more) {
+  #view, #drawing { box-shadow: inset 0 0 0 1px var(--text-2); }
+  #close { color: var(--text); }
 }

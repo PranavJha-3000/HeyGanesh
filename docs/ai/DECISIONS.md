@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-064](#dec-064--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | 3D scene window in the FEATURE-009 look (step 3): shared `tokens.css`, glass frame and opaque stage, pill labels, red highlight and accent pick glows read from the tokens by scene.js; flat accent mark so the orientation probe's colour search stays clean | accepted |
 | [DEC-063](#dec-063--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Glass lesson card (FEATURE-009 step 2c): DWM Acrylic behind a transparent WebView2, page frame tint over it, opaque board; solid fallback when Windows refuses or transparency is reduced; proven on a never-active card by the step 2b spike | accepted |
 | [DEC-062](#dec-062--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | One Apple-grade visual language for every surface (FEATURE-009): approved light/dark tokens, system font for chrome and hand for ink, pills and 14 px corners, critically damped springs, solid fallback for reduced transparency; rolled out one surface per step | accepted |
 | [DEC-061](#dec-061--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Session context: this run's last 3 taught turns, kept in memory, go to the Tutor and the lesson planner as a fenced, flattened, capped untrusted block; no block (an unchanged prompt) when there are none; `--no-context` | accepted |
@@ -74,6 +75,20 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-064 — 2026-10-31 — claude-opus-5-5
+
+**Decision — the 3D scene window takes the lesson card's look, with one shared token file.** FEATURE-009 step 3; the owner: "Yes, implement step 3".
+
+- **One source of colour:** `Page/tokens.css` holds the FEATURE-009 tokens (moved out of `lesson.css`; the card snapshot is byte-identical before and after). Both pages link it first. `scene.js` reads the colours Babylon needs (`--board`, `--pill`, `--hairline`, `--text`, `--text-2`, `--red`, `--accent`, `--ui`) with `getComputedStyle`, so no hex value is copied into script. It repaints the stage and the labels when Windows switches light/dark.
+- **The window:** glass frame (`CardWindow` now applies DEC-063 to the scene page too), an opaque inset stage with 10 px corners for both the canvas and the no-WebGL drawing, chips for the tags (a caveat tag such as "not yet reviewed" is amber), pill labels with a hairline leader. A lesson highlight glows red, as the cards' ink rings. A clicked part glows accent instead of teal.
+- **A flat mark:** the orientation self-test finds its blue marker by colour anywhere in the page image (`b > 200, r < 90, g < 120`). The card's gradient mark has pixels that match, so the scene window's mark is flat accent (g = 122 / 132, no match). LSU-11 passes.
+- **Left alone:** the Part Library palette, the generated colour ramps in `scene-svg.css`, the vendored kit, and the pure-colour orientation markers.
+
+**Rejected.**
+- Copying the tokens into `scene.css`: two copies drift.
+- A transparent canvas, so the model floats on the glass: labels and thin parts get hard to read over a busy, blurred desktop.
+- Hiding the mark during the probe: test-only logic in the page.
+
 ## DEC-063 — 2026-10-31 — claude-opus-5-5
 
 **Decision — the lesson card's frame is real glass: Windows' Acrylic backdrop, tinted by the page.** FEATURE-009 step 2c; the owner: "Yes, implement 2c".

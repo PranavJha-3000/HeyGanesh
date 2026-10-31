@@ -1,10 +1,11 @@
 /* 3D lesson drawing without WebGL (DEC-034). Generated from scene.js's PALETTE; one four-tone ramp per
-   Part Library finish over Anatomy's iso.css variables. Regenerate rather than hand-edit the ramps. */
+   Part Library finish over Anatomy's iso.css variables. Regenerate rather than hand-edit the ramps. The label,
+   highlight and notice lines below the ramps use the FEATURE-009 tokens (DEC-064) and are hand-written. */
 #drawing{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 #drawing[hidden]{display:none}
 #view[hidden]{display:none}
 #drawing>svg{width:100%;height:100%}
-#notice.drawing{top:auto;bottom:6px;font-size:13px;color:#6b6b6b}
+#notice.drawing{top:auto;bottom:12px;font-size:12px;color:var(--text-2)}
 .f-Metal{--anatomy-paper:#b9bec7;--anatomy-face:#b9bec7;--anatomy-shade-0:#73767b;--anatomy-shade-1:#898d93;--anatomy-shade-2:#9fa3ab;--anatomy-shade-3:#b9bec7;--anatomy-top:#cdd0d7;--anatomy-hi:#414246}
 .f-DarkMetal{--anatomy-paper:#5d636e;--anatomy-face:#5d636e;--anatomy-shade-0:#3a3d44;--anatomy-shade-1:#454951;--anatomy-shade-2:#50555f;--anatomy-shade-3:#5d636e;--anatomy-top:#8a8f97;--anatomy-hi:#212326}
 .f-Brass{--anatomy-paper:#c9a227;--anatomy-face:#c9a227;--anatomy-shade-0:#7d6418;--anatomy-shade-1:#95781d;--anatomy-shade-2:#ad8b22;--anatomy-shade-3:#c9a227;--anatomy-top:#d8bc63;--anatomy-hi:#46390e}
@@ -21,11 +22,11 @@
 .f-BaseGuanine{--anatomy-paper:#00798c;--anatomy-face:#00798c;--anatomy-shade-0:#004b57;--anatomy-shade-1:#005a68;--anatomy-shade-2:#006878;--anatomy-shade-3:#00798c;--anatomy-top:#479fac;--anatomy-hi:#002a31}
 .f-BaseCytosine{--anatomy-paper:#66a182;--anatomy-face:#66a182;--anatomy-shade-0:#3f6451;--anatomy-shade-1:#4b7760;--anatomy-shade-2:#588a70;--anatomy-shade-3:#66a182;--anatomy-top:#91bba5;--anatomy-hi:#24382e}
 .f-Backbone{--anatomy-paper:#3d405b;--anatomy-face:#3d405b;--anatomy-shade-0:#262838;--anatomy-shade-1:#2d2f43;--anatomy-shade-2:#34374e;--anatomy-shade-3:#3d405b;--anatomy-top:#737589;--anatomy-hi:#151620}
-.hl>.iso-edge{stroke:#ff7a00;stroke-width:2.2px}
-.lbl line{stroke:#7a6a3a;stroke-width:1.5}
-.lbl rect{fill:#fff6a8;stroke:#7a6a3a;stroke-width:1}
-.lbl.hl rect{stroke:#d0021b;stroke-width:2.5}
-.lbl text{font:14px 'Segoe UI',sans-serif;fill:#2b2b2b}
+.hl>.iso-edge{stroke:var(--red);stroke-width:2.2px}
+.lbl line{stroke:var(--text-2);stroke-width:1.5}
+.lbl rect{fill:var(--pill);stroke:var(--hairline);stroke-width:1;rx:9px}
+.lbl.hl rect{stroke:var(--red);stroke-width:2}
+.lbl text{font:600 13px var(--ui);fill:var(--text)}
 .o-red{--anatomy-paper:#ff0000;--anatomy-face:#ff0000;--anatomy-shade-0:#ff0000;--anatomy-shade-1:#ff0000;--anatomy-shade-2:#ff0000;--anatomy-shade-3:#ff0000;--anatomy-top:#ff0000;--anatomy-hi:#ff0000}
 .o-green{--anatomy-paper:#00ff00;--anatomy-face:#00ff00;--anatomy-shade-0:#00ff00;--anatomy-shade-1:#00ff00;--anatomy-shade-2:#00ff00;--anatomy-shade-3:#00ff00;--anatomy-top:#00ff00;--anatomy-hi:#00ff00}
 .o-blue{--anatomy-paper:#0000ff;--anatomy-face:#0000ff;--anatomy-shade-0:#0000ff;--anatomy-shade-1:#0000ff;--anatomy-shade-2:#0000ff;--anatomy-shade-3:#0000ff;--anatomy-top:#0000ff;--anatomy-hi:#0000ff}

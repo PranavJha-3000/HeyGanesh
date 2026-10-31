@@ -195,6 +195,8 @@ internal static partial class LessonSurfaceSmokeHost
         failures = Check(end.Visible && (end.ExStyle & WsExNoActivate) != 0 && (end.ExStyle & WsExToolWindow) != 0 && (end.ExStyle & WsExTopmost) != 0,
             $"scene window visible, NOACTIVATE | TOOLWINDOW | TOPMOST (0x{end.ExStyle:X})", failures);
         failures = Check(end.DisplayAffinity == WdaExcludeFromCapture, $"scene window display affinity is WDA_EXCLUDEFROMCAPTURE (0x{end.DisplayAffinity:X})", failures);
+        failures = Check(end.CornerPreference == DwmwcpRound, $"scene window corners are rounded by DWM: DWMWCP_ROUND (read back {end.CornerPreference}) (DEC-064)", failures);
+        failures = Check(end.BackdropType == DwmsbtTransientWindow, $"scene window frame is glass: DWMSBT_TRANSIENTWINDOW Acrylic (read back {end.BackdropType}) (DEC-064)", failures);
         failures = Check(!surface.EverTookFocus, "no card or scene window ever became the foreground window", failures);
         var cardShown = await surface.DescribeCardAsync("card-strokes");
         failures = Check(cardShown.ElementIds.Contains("s-exhaust") && end.Bounds.X + end.Bounds.Width <= cardShown.Bounds.X,

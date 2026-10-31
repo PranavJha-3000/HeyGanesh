@@ -21,6 +21,11 @@
 
   function post(msg) { window.chrome.webview.postMessage(msg); }
 
+  // Colours come from tokens.css (FEATURE-009, DEC-064), read at use time, so they follow the Windows theme.
+  // Hex tokens (--board, --red, --accent) go to Babylon colours; the rest are CSS colour strings for Babylon GUI.
+  function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function tokenColor3(name) { return BABYLON.Color3.FromHexString(token(name)); }
+
   // ---------- engine (or none: the lesson then continues in speech) ----------
   var engine = null, scene = null, camera = null, glow = null, ui = null, webgl = 0;
   try {
@@ -58,7 +63,7 @@
   if (engine) {
     scene = new BABYLON.Scene(engine);
     scene.useRightHandedSystem = true;            // the Part Library frame: Y up, right-handed
-    scene.clearColor = new BABYLON.Color4(0.965, 0.945, 0.89, 1);
+    scene.clearColor = tokenColor3("--board").toColor4(1);   // the opaque stage, as the card's board
     camera = new BABYLON.ArcRotateCamera("camera", VIEWS.iso[0], VIEWS.iso[1], 7, BABYLON.Vector3.Zero(), scene);
     camera.minZ = 0.05;
     var sky = new BABYLON.HemisphericLight("sky", new BABYLON.Vector3(0.3, 1, 0.4), scene);
@@ -180,7 +185,8 @@
     tagsEl.replaceChildren();
     tags.forEach(function (t) {
       var s = document.createElement("span");
-      s.className = "tag";
+      // A caveat ("not yet reviewed", "animation needs 3D") reads as a warning chip; the rest as accent chips.
+      s.className = /not yet|needs/.test(t) ? "tag warn" : "tag";
       s.textContent = t;
       tagsEl.appendChild(s);
     });
@@ -293,14 +299,16 @@
     if (!r) throw new Error("label target not in scene");
     var rect = new BABYLON.GUI.Rectangle(op.id);
     rect.adaptWidthToChildren = true;
-    rect.height = "30px";
-    rect.cornerRadius = 3;
+    rect.height = "28px";
+    rect.cornerRadius = 14;   // a pill, as the page's chips
     rect.thickness = 1;
-    rect.color = "#7a6a3a";
-    rect.background = "#fff6a8";
+    rect.color = token("--hairline");
+    rect.background = token("--pill");
     var text = new BABYLON.GUI.TextBlock(op.id + "#text", op.text);  // canvas text, never markup
-    text.fontSize = 15;
-    text.color = "#2b2b2b";
+    text.fontSize = 13;
+    text.fontWeight = "600";
+    text.fontFamily = token("--ui");
+    text.color = token("--text");
     text.resizeToFit = true;
     text.paddingLeft = "8px"; text.paddingRight = "8px";
     rect.addControl(text);
@@ -308,9 +316,9 @@
     rect.linkWithMesh(r.anchor);
     rect.linkOffsetY = -70;
     var line = new BABYLON.GUI.Line(op.id + "#leader");
-    line.lineWidth = 2;
-    line.color = "#7a6a3a";
-    line.y2 = 15;
+    line.lineWidth = 1.5;
+    line.color = token("--text-2");
+    line.y2 = 14;
     ui.addControl(line);
     line.linkWithMesh(r.anchor);
     line.connectedControl = rect;
@@ -320,12 +328,14 @@
   function highlight(op) {
     var label = labels[op.target];
     if (label) {
-      label.rect.thickness = 3;
-      label.rect.color = "#d0021b";
+      // A highlight is red, as the cards' ink rings; a clicked part glows accent (see the click handler).
+      label.rect.thickness = 2;
+      label.rect.color = token("--red");
     } else {
       var r = resolve(op.target);
       if (!r) throw new Error("highlight target not in scene");
-      r.meshes.forEach(function (m) { glow.addMesh(m, BABYLON.Color3.FromHexString("#ff7a00")); });
+      var red = tokenColor3("--red");
+      r.meshes.forEach(function (m) { glow.addMesh(m, red); });
     }
     highlights.push(op.target);
   }
@@ -608,6 +618,21 @@
     }
   });
 
+  // Windows switched light/dark while the window is open: the CSS follows by itself; repaint what Babylon
+  // holds (the stage and the labels) from the new tokens. Glows already on stay as they are until cleared.
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+    if (!scene) return;
+    scene.clearColor = tokenColor3("--board").toColor4(1);
+    Object.keys(labels).forEach(function (k) {
+      var l = labels[k];
+      l.rect.background = token("--pill");
+      l.rect.color = highlights.indexOf(k) >= 0 ? token("--red") : token("--hairline");
+      l.rect.children[0].color = token("--text");
+      l.line.color = token("--text-2");
+    });
+    kick();
+  });
+
   document.getElementById("tab").addEventListener("mousedown", function (e) {
     if (e.button === 0 && e.target.id !== "close") post({ kind: "drag" });
   });
@@ -619,7 +644,7 @@
     if (!hit || !hit.hit) return;
     var meta = hit.pickedMesh.metadata;
     var r = resolve(meta.instance + "." + meta.part);
-    if (r) r.meshes.forEach(function (m) { glow.addMesh(m, BABYLON.Color3.FromHexString("#2a9d8f")); });
+    if (r) { var accent = tokenColor3("--accent"); r.meshes.forEach(function (m) { glow.addMesh(m, accent); }); }
     setPicking(false);
     kick();
     post({ kind: "part-clicked", instance: meta.instance, part: meta.part });

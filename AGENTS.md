@@ -158,7 +158,7 @@ tools/LessonSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSmo
 dotnet build src/Experience/HeyGanesh.LessonSurface -c Debug
 dotnet build tools/LessonSurfaceSmoke -c Debug
 tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --assert-render
-#   -> 17 PASS, exit 0   (also: --assert-source 20, --assert-window 10, --assert-security 4, --assert-marks 2)
+#   -> 17 PASS, exit 0   (also: --assert-source 20, --assert-window 11, --assert-security 4, --assert-marks 2)
 #   3D scene window (DEC-030): --assert-scene-math 7 (offline), --assert-scene 19, --assert-scene-idle 4,
 #   --assert-orientation 3, --assert-scene-nowebgl 8, --assert-scene-svg 8 (no-WebGL drawing, DEC-034), --assert-scene-schematic 10 (a lesson's schematic, DEC-050);
 #   manual: --snapshot-3d <dir> [--no-webgl], --demo-3d --voice sapi

@@ -652,3 +652,10 @@
 - **Rollback point:** `3e7690e` (HEAD of `feat/notes-v1` before this step), or revert this step's commit.
 - **Files to restore:** `git checkout 3e7690e -- src/Experience/HeyGanesh.LessonSurface/Page/lesson.css src/Experience/HeyGanesh.LessonSurface/Page/lesson.html src/Experience/HeyGanesh.LessonSurface/CardWindow.cs src/Experience/HeyGanesh.LessonSurface/CardNative.cs src/Experience/HeyGanesh.LessonSurface/CardSurface.cs src/Experience/HeyGanesh.LessonSurface/CardSurfaceOptions.cs tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`
 - **Re-check after revert:** build `src/Experience/HeyGanesh.LessonSurface` then `tools/LessonSurfaceSmoke` (sequentially, CS2012); `--assert-source` 20, `--assert-render` 17, `--assert-window` 9, `--assert-security` 4, `--assert-marks` 2; `--demo all --voice timed --snapshot <dir>` shows the cream paper again.
+
+## 2026-10-31 · claude-opus-5-5 (FEATURE-009 step 2c: glass lesson card, DEC-063)
+
+- **Change:** the lesson card window gets DWM Acrylic (`DWMWA_SYSTEMBACKDROP_TYPE` 3, frame extended over the client area, immersive dark mode by the app theme), a black form background and a transparent WebView2 background (`CardWindow.cs`, `CardNative.cs`); `lesson.css` frame colour becomes the glass tint with solid fallbacks; `CardSnapshot.BackdropType` (`CardSurfaceOptions.cs`, `CardSurface.cs`); LSU-2 gains one row (`LessonSurfaceSmokeHost.Window.cs`). Lesson page only; no new dependency.
+- **Rollback point:** `fe4f01d` (step 2 on `feat/apple-look`), or revert this step's commit.
+- **Files to restore:** `git checkout fe4f01d -- src/Experience/HeyGanesh.LessonSurface/CardWindow.cs src/Experience/HeyGanesh.LessonSurface/CardNative.cs src/Experience/HeyGanesh.LessonSurface/CardSurface.cs src/Experience/HeyGanesh.LessonSurface/CardSurfaceOptions.cs src/Experience/HeyGanesh.LessonSurface/Page/lesson.css tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`
+- **Re-check after revert:** build LessonSurface then LessonSurfaceSmoke (sequentially); `--assert-window` 10, `--assert-render` 17, `--assert-source` 20; a real card is solid again.

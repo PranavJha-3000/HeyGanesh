@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-063](#dec-063--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Glass lesson card (FEATURE-009 step 2c): DWM Acrylic behind a transparent WebView2, page frame tint over it, opaque board; solid fallback when Windows refuses or transparency is reduced; proven on a never-active card by the step 2b spike | accepted |
 | [DEC-062](#dec-062--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | One Apple-grade visual language for every surface (FEATURE-009): approved light/dark tokens, system font for chrome and hand for ink, pills and 14 px corners, critically damped springs, solid fallback for reduced transparency; rolled out one surface per step | accepted |
 | [DEC-061](#dec-061--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Session context: this run's last 3 taught turns, kept in memory, go to the Tutor and the lesson planner as a fenced, flattened, capped untrusted block; no block (an unchanged prompt) when there are none; `--no-context` | accepted |
 | [DEC-060](#dec-060--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Recent lessons in the tray: list, details, Delete, Clear all, and Replay of a stored lesson with no model call; the stored plan is validated again with grounded marks required (the old screen's marks are dropped); Ctrl+Alt paused during a replay | accepted |
@@ -73,6 +74,21 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-063 — 2026-10-31 — claude-opus-5-5
+
+**Decision — the lesson card's frame is real glass: Windows' Acrylic backdrop, tinted by the page.** FEATURE-009 step 2c; the owner: "Yes, implement 2c".
+
+- **How:** for the lesson page only, `CardWindow` sets rounded corners, immersive dark mode from the app theme, extends the DWM frame over the whole client area and sets `DWMWA_SYSTEMBACKDROP_TYPE` = `DWMSBT_TRANSIENTWINDOW`. The form background is black (DWM shows the backdrop there) and the WebView2 background transparent. `lesson.css` paints the frame tint once, on `html` (dark `rgba(30,30,34,.64)`, light `rgba(248,248,250,.72)`); the board stays opaque, so ink never sits on a moving background.
+- **Fallbacks:** if either DWM call fails, the window paints the solid frame colour, as in step 2, and never shows black. `prefers-reduced-transparency` or `prefers-contrast: more` makes the tint solid. On battery with energy saver on, Windows draws Acrylic as flat grey; the tint still sits on it.
+- **Evidence:** the step 2b spike (FEATURE-009 log) showed Acrylic blurring on a window that is not the foreground window, and showing through a transparent WebView2 page, measured from screen pixels with controls. This disproved the step 2 assumption that it would go solid.
+
+**Rejected.**
+- The undocumented `SetWindowCompositionAttribute` accent blur: it works too, but it is unsupported and can break with a Windows update.
+- Mica: it tints from the wallpaper and does not blur what is behind the card.
+- A blur drawn by the page itself (`backdrop-filter`): a page cannot see the desktop behind its window.
+
+**Not verifiable by our tools.** Cards are excluded from capture (`WDA_EXCLUDEFROMCAPTURE`), so no screenshot can show the blur on a real card. LSU-2 checks that the backdrop reads back as Acrylic; a person checks the look.
+
 ## DEC-062 — 2026-10-31 — claude-opus-5-5
 
 **Decision — every Hey Ganesh surface moves to one visual language, defined by the tokens in FEATURE-009.** The owner approved the mockup ("Approve, plan step 2").

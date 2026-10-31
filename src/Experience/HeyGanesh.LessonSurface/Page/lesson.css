@@ -1,9 +1,13 @@
 /* Lesson card: a quiet frame around a dot-grid board, a marker-pen hand, one idea per beat (FEATURE-007 §3 item 7).
    Colours, type, shapes and motion are the FEATURE-009 tokens (DEC-062); the page follows the Windows light/dark
-   setting through prefers-color-scheme. Surfaces are solid on purpose: a card never becomes the active window, and
-   Windows' blurred backdrops are believed to go solid on inactive windows (FEATURE-009 step 2b tests that). */
+   setting through prefers-color-scheme. The frame is glass (DEC-063): the host draws Windows' Acrylic behind a
+   transparent page, and --frame tints it; the board stays opaque so ink always sits on a steady surface. With
+   reduced transparency or more contrast the frame is solid. If the host could not turn Acrylic on, it paints the
+   solid frame colour behind the page, so the tint lands on that instead. */
 :root {
-  --frame: #f5f5f7;
+  --frame: rgba(248, 248, 250, 0.72);
+  --frame-solid: #f5f5f7;
+  --glass-edge: rgba(255, 255, 255, 0.7);
   --board: #fdfcf9;
   --board-dot: rgba(0, 0, 0, 0.075);
   --hairline: rgba(0, 0, 0, 0.08);
@@ -24,7 +28,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --frame: #1c1c1f;
+    --frame: rgba(30, 30, 34, 0.64);
+    --frame-solid: #1c1c1f;
+    --glass-edge: rgba(255, 255, 255, 0.14);
     --board: #121315;
     --board-dot: rgba(255, 255, 255, 0.065);
     --hairline: rgba(255, 255, 255, 0.09);
@@ -41,20 +47,28 @@
   }
 }
 
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root { --frame: var(--frame-solid); }
+}
+
 * { box-sizing: border-box; }
 
 html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--frame);
   color: var(--ink);
   font-family: var(--hand);
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
 
-#card { position: relative; height: 100%; display: flex; flex-direction: column; }
+/* The tint is painted once, on html only: a second translucent layer on body would double it. */
+html { background: var(--frame); }
+body { background: transparent; }
+
+/* A bright top edge, as light catching the glass. */
+#card { position: relative; height: 100%; display: flex; flex-direction: column; box-shadow: inset 0 1px 0 var(--glass-edge); }
 
 /* The title bar is the drag handle (lesson.js posts "drag" on mousedown here). */
 #tab {

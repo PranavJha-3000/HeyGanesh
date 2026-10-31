@@ -85,16 +85,34 @@ internal sealed class CardWindow : Form
             throw new InvalidOperationException($"card window could not be excluded from capture (Win32 error {error})");
         }
 
-        // FEATURE-009 step 2 (DEC-062): the lesson card gets rounded corners and a background equal to the
-        // page's frame colour, so no cream or white shows at its edges or before the page draws. The scene
-        // page keeps its paper look until step 3. Rounding is cosmetic: a refusal (older Windows) is ignored.
+        // FEATURE-009 steps 2 and 2c (DEC-062, DEC-063): the lesson card is a rounded glass window. DWM draws
+        // Acrylic behind the whole client area (the frame is extended over it, and black client pixels show the
+        // backdrop); the WebView2 background is transparent so the page's translucent frame tint lands on the
+        // blur, while the page's board stays opaque. If Windows refuses either call (older builds), the card keeps
+        // a solid background equal to the page's frame colour, so it never shows black. The scene page keeps its
+        // paper look until step 3. Never call BringToFront() on a card: it activates the window.
         if (page == CardPage)
         {
-            var frame = AppsUseLightTheme() ? Color.FromArgb(0xf5, 0xf5, 0xf7) : Color.FromArgb(0x1c, 0x1c, 0x1f);
-            BackColor = frame;
-            _web.DefaultBackgroundColor = frame;
+            var light = AppsUseLightTheme();
             var round = CardNative.DwmwcpRound;
             CardNative.DwmSetWindowAttribute(Handle, CardNative.DwmwaWindowCornerPreference, ref round, sizeof(int));
+            var dark = light ? 0 : 1;
+            CardNative.DwmSetWindowAttribute(Handle, CardNative.DwmwaUseImmersiveDarkMode, ref dark, sizeof(int));
+
+            var whole = new CardNative.Margins { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+            var acrylic = CardNative.DwmsbtTransientWindow;
+            if (CardNative.DwmExtendFrameIntoClientArea(Handle, ref whole) == 0
+                && CardNative.DwmSetWindowAttribute(Handle, CardNative.DwmwaSystemBackdropType, ref acrylic, sizeof(int)) == 0)
+            {
+                BackColor = Color.Black;
+                _web.DefaultBackgroundColor = Color.Transparent;
+            }
+            else
+            {
+                var frame = light ? Color.FromArgb(0xf5, 0xf5, 0xf7) : Color.FromArgb(0x1c, 0x1c, 0x1f);
+                BackColor = frame;
+                _web.DefaultBackgroundColor = frame;
+            }
         }
 
         await _web.EnsureCoreWebView2Async(environment);

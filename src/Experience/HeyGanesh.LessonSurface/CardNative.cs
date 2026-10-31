@@ -16,6 +16,20 @@ internal static class CardNative
     public const int DwmwaWindowCornerPreference = 33;
     public const int DwmwcpRound = 2;
 
+    // Glass (DEC-063): Acrylic behind the whole client area. Proven on a never-active card by the step 2b spike.
+    public const int DwmwaUseImmersiveDarkMode = 20;
+    public const int DwmwaSystemBackdropType = 38;
+    public const int DwmsbtTransientWindow = 3;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Margins
+    {
+        public int Left, Right, Top, Bottom;
+    }
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref Margins margins);
+
     [DllImport("dwmapi.dll")]
     public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 

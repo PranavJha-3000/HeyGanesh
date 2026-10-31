@@ -13,7 +13,7 @@ internal static partial class LessonSurfaceSmokeHost
 {
     private const int WsExNoActivate = 0x08000000, WsExToolWindow = 0x00000080, WsExTopmost = 0x00000008;
     private const uint WdaExcludeFromCapture = 0x11;
-    private const int DwmwcpRound = 2;
+    private const int DwmwcpRound = 2, DwmsbtTransientWindow = 3;
 
     private static async Task<int> RunAssertWindowAsync()
     {
@@ -31,6 +31,7 @@ internal static partial class LessonSurfaceSmokeHost
                 failures);
             failures = Check(card.DisplayAffinity == WdaExcludeFromCapture, $"card display affinity is WDA_EXCLUDEFROMCAPTURE (0x{card.DisplayAffinity:X})", failures);
             failures = Check(card.CornerPreference == DwmwcpRound, $"card corners are rounded by DWM: DWMWCP_ROUND (read back {card.CornerPreference}) (DEC-062)", failures);
+            failures = Check(card.BackdropType == DwmsbtTransientWindow, $"card frame is glass: DWMSBT_TRANSIENTWINDOW Acrylic (read back {card.BackdropType}) (DEC-063)", failures);
             Console.WriteLine($"        (WinForms Activated seen on a card: {surface.ActivationSeen})");
             failures = Check(!surface.EverTookFocus, "no card ever became the foreground window", failures);
             var d = VirtualDesktop();

@@ -111,7 +111,8 @@ public sealed record CardSnapshot(
     int ScriptElements,
     int BoldElements,
     string Notice,
-    bool BrowserAcceleratorKeys);
+    bool BrowserAcceleratorKeys,
+    int CornerPreference);
 
 /// <summary>Result of the page-isolation self-test.</summary>
 public sealed record IsolationProbe(bool NavigationBlocked, bool FetchBlocked);

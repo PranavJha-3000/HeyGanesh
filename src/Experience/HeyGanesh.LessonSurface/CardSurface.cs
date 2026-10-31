@@ -384,7 +384,8 @@ public sealed class CardSurface : ILessonCanvas, IPartPicker, ISchematicCanvas, 
             d.GetProperty("script").GetInt32(),
             d.GetProperty("bold").GetInt32(),
             d.GetProperty("notice").GetString() ?? string.Empty,
-            card.BrowserAcceleratorKeysEnabled);
+            card.BrowserAcceleratorKeysEnabled,
+            CardNative.DwmGetWindowAttribute(card.Handle, CardNative.DwmwaWindowCornerPreference, out var corner, sizeof(int)) == 0 ? corner : -1);
     });
 
     /// <summary>Writes one card's page as PNG to <paramref name="destination"/> (review / lesson history).</summary>

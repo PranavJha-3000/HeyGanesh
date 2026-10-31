@@ -85,6 +85,18 @@ internal sealed class CardWindow : Form
             throw new InvalidOperationException($"card window could not be excluded from capture (Win32 error {error})");
         }
 
+        // FEATURE-009 step 2 (DEC-062): the lesson card gets rounded corners and a background equal to the
+        // page's frame colour, so no cream or white shows at its edges or before the page draws. The scene
+        // page keeps its paper look until step 3. Rounding is cosmetic: a refusal (older Windows) is ignored.
+        if (page == CardPage)
+        {
+            var frame = AppsUseLightTheme() ? Color.FromArgb(0xf5, 0xf5, 0xf7) : Color.FromArgb(0x1c, 0x1c, 0x1f);
+            BackColor = frame;
+            _web.DefaultBackgroundColor = frame;
+            var round = CardNative.DwmwcpRound;
+            CardNative.DwmSetWindowAttribute(Handle, CardNative.DwmwaWindowCornerPreference, ref round, sizeof(int));
+        }
+
         await _web.EnsureCoreWebView2Async(environment);
         var core = _web.CoreWebView2;
         var settings = core.Settings;
@@ -172,6 +184,16 @@ internal sealed class CardWindow : Form
         {
             tcs.TrySetException(reason);
         }
+    }
+
+    /// <summary>
+    /// Windows' app theme (Settings › Personalization › Colors), the same setting WebView2 maps to the page's
+    /// prefers-color-scheme. Light when the value is missing or unreadable, as on Windows itself.
+    /// </summary>
+    private static bool AppsUseLightTheme()
+    {
+        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        return key?.GetValue("AppsUseLightTheme") is not int value || value != 0;
     }
 
     private static string? StringProperty(JsonElement message, string name) =>

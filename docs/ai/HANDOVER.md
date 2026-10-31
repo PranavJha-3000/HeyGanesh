@@ -1,4 +1,12 @@
 
+## 2026-10-31 · claude-opus-5-5 (an Apple-grade look, FEATURE-009 steps 1–2, DEC-062)
+
+Did: Analysed duckyhelper.com and look-at-it.in and built an approved mockup (scratchpad only); tokens in FEATURE-009, decision DEC-062. Step 2: the lesson card now uses the tokens in light and dark (`lesson.css`, `lesson.html`; `lesson.js` untouched) and has DWM rounded corners plus a theme-matched window background (`CardWindow`, lesson page only). `CardSnapshot.CornerPreference` added; LSU-2 9 → 10. ROLLBACK entry written first.
+Left: Steps 2b (can Acrylic blur stay on a never-active card?), 3 (scene window), 4 (overlay), 5 (tray), 6 (features). The dark-mode marker reads olive: the owner decides whether to change that token. `feat/notes-v1` was already merged into `main` (PR #2); steps 1–2 are on `feat/apple-look`, cut from `main`.
+Watch: The 3D scene window shares `CardWindow`; the new code is gated on `page == CardPage`, so step 3 must lift that gate. `--assert-window` prints `WinForms Activated seen on a card: True`; that was already the case on the old code (checked), and the real foreground check passes. Snapshots render the page, not the window, so they cannot show the corners. WebView2 cannot be a layered window, so per-pixel transparent cards are out.
+Next: The owner looks at a real lesson card (rounded corners, dark and light), then step 2b.
+Verified: LessonSurface + LessonSurfaceSmoke + LessonTurnSmoke + whole solution build -warnaserror 0/0. LSU `--assert-source` 20, `--assert-render` 17, `--assert-window` 10, `--assert-security` 4, `--assert-marks` 2, LT `--assert-turn-surface` 6, all exit 0. Before/after `--demo all --voice timed --snapshot` reviewed in dark mode. Not run: light mode on the real window, CI runner.
+
 ## 2026-10-31 · claude-opus-5-5 (earlier turns as context for follow-ups, build sequence step 12d, DEC-061)
 
 Did: `SessionTurns` keeps this run's last 3 taught turns in memory. They go to the Tutor (`TutorRequest.EarlierTurns`) and the planner (`PlanRequest.EarlierTurns`) as a fenced, flattened, capped untrusted block. With none, the prompts are unchanged byte for byte. Header line `context :`, `--no-context`. Rows: TU-13 7 (G-7), LP-13 7 (G-14), NB-4 5 (G-24), NB-2 6. Step 12 (Notes Persistence) is complete.

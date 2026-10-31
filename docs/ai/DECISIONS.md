@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-062](#dec-062--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | One Apple-grade visual language for every surface (FEATURE-009): approved light/dark tokens, system font for chrome and hand for ink, pills and 14 px corners, critically damped springs, solid fallback for reduced transparency; rolled out one surface per step | accepted |
 | [DEC-061](#dec-061--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Session context: this run's last 3 taught turns, kept in memory, go to the Tutor and the lesson planner as a fenced, flattened, capped untrusted block; no block (an unchanged prompt) when there are none; `--no-context` | accepted |
 | [DEC-060](#dec-060--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Recent lessons in the tray: list, details, Delete, Clear all, and Replay of a stored lesson with no model call; the stored plan is validated again with grounded marks required (the old screen's marks are dropped); Ctrl+Alt paused during a replay | accepted |
 | [DEC-059](#dec-059--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell records each taught turn as a note (none for key errors, cancelled turns or Failed verdicts); the planner keeps the kept plan's exact JSON (`PlanResult.PlanJson`) so a lesson can be replayed; `--no-notes`; a store or write failure never fails a turn | accepted |
@@ -72,6 +73,20 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-062 — 2026-10-31 — claude-opus-5-5
+
+**Decision — every Hey Ganesh surface moves to one visual language, defined by the tokens in FEATURE-009.** The owner approved the mockup ("Approve, plan step 2").
+
+- **What it is:** near-white or near-black surfaces, one system blue, red only for ink; Segoe UI Variable for window chrome, Ink Free kept for what the tutor writes; pills and 14 px corners; critically damped springs. It follows the Windows light/dark setting; reduced motion and reduced transparency each have a defined fallback.
+- **How it lands:** one surface per step (FEATURE-009 sequence): lesson card, 3D window, overlay, tray dialogs. Features that change behaviour (listening orb, cards growing from the ring, word-by-word captions) are not part of this decision and get their own plans.
+- **Why these choices:** ranked from duckyhelper.com and look-at-it.in, filtered through Apple's design rules: the system font before a custom one, colour only where it means something, motion that can be interrupted. No web font, no library: the pages keep `font-src 'self'` and the zero-dependency rule.
+
+**Rejected.**
+- Keeping the cream graph paper: it reads as a separate product from the rest of the app, and it has no dark form.
+- A web font (Figtree, Inter, Outfit, as the reference sites use): a new vendored asset, and Segoe UI Variable is the platform's own tuned face.
+- Rebuilding the windows in WinUI 3 or WPF with a Fluent library: new dependencies for a look that DWM attributes and CSS reach.
+- Copying either site's assets, names or marketing layout.
+
 ## DEC-061 — 2026-10-31 — claude-opus-5-5
 
 **Decision — a follow-up is understood from this run's last 3 taught turns, sent as untrusted context.** Step 12d of the build sequence (the owner: "Build 12d first").

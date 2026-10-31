@@ -645,3 +645,10 @@
 - **Rollback point:** branch `feat/notes-v1` at `79d6a92` (the commit before this step).
 - **Files to restore:** `git checkout 79d6a92 -- src/Intelligence/HeyGanesh.TutorEngine src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/TutorSmoke tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** TutorSmoke `--assert-prompt`, LessonPlannerSmoke `--assert-prompt` 10, PlannerEval `--assert-drift` 5; the local CI runner reports 22 gates, all exit 0.
+
+## 2026-10-31 · claude-opus-5-5 (FEATURE-009 step 2: lesson card restyle, DEC-062)
+
+- **Change:** the lesson card page moves to the FEATURE-009 tokens (`Page/lesson.css`, `Page/lesson.html`); the card window gets rounded corners and a theme-matched background for the lesson page only (`CardWindow.cs`, `CardNative.cs`); `CardSnapshot` gains `CornerPreference` (`CardSurfaceOptions.cs`, `CardSurface.cs`); LSU-2 gains one row (`tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`). No new dependency; `lesson.js`, the CSP and every element id are unchanged.
+- **Rollback point:** `3e7690e` (HEAD of `feat/notes-v1` before this step), or revert this step's commit.
+- **Files to restore:** `git checkout 3e7690e -- src/Experience/HeyGanesh.LessonSurface/Page/lesson.css src/Experience/HeyGanesh.LessonSurface/Page/lesson.html src/Experience/HeyGanesh.LessonSurface/CardWindow.cs src/Experience/HeyGanesh.LessonSurface/CardNative.cs src/Experience/HeyGanesh.LessonSurface/CardSurface.cs src/Experience/HeyGanesh.LessonSurface/CardSurfaceOptions.cs tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`
+- **Re-check after revert:** build `src/Experience/HeyGanesh.LessonSurface` then `tools/LessonSurfaceSmoke` (sequentially, CS2012); `--assert-source` 20, `--assert-render` 17, `--assert-window` 9, `--assert-security` 4, `--assert-marks` 2; `--demo all --voice timed --snapshot <dir>` shows the cream paper again.

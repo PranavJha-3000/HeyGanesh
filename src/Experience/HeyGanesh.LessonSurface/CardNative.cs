@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace HeyGanesh.LessonSurface;
 
-/// <summary>The few Win32 calls the card windows need: style/affinity read-back and caption dragging.</summary>
+/// <summary>The few Win32 calls the card windows need: style/affinity read-back, caption dragging and rounded corners.</summary>
 internal static class CardNative
 {
     public const int WsExNoActivate = 0x08000000;
@@ -11,6 +11,16 @@ internal static class CardNative
     public const int GwlExStyle = -20;
     public const int WmNcLButtonDown = 0x00A1;
     public const int HtCaption = 2;
+
+    // DWMWA_WINDOW_CORNER_PREFERENCE / DWMWCP_ROUND (Windows 11): DWM rounds the borderless card for us (DEC-062).
+    public const int DwmwaWindowCornerPreference = 33;
+    public const int DwmwcpRound = 2;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
     public static extern int GetWindowLong(IntPtr hwnd, int index);

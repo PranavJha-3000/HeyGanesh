@@ -1,14 +1,44 @@
-/* Lesson card: cream graph paper, a marker-pen hand, one idea per beat (FEATURE-007 §3 item 7). */
+/* Lesson card: a quiet frame around a dot-grid board, a marker-pen hand, one idea per beat (FEATURE-007 §3 item 7).
+   Colours, type, shapes and motion are the FEATURE-009 tokens (DEC-062); the page follows the Windows light/dark
+   setting through prefers-color-scheme. Surfaces are solid on purpose: a card never becomes the active window, and
+   Windows' blurred backdrops are believed to go solid on inactive windows (FEATURE-009 step 2b tests that). */
 :root {
-  --paper: #f6f1e3;
-  --grid: #e8e0cb;
-  --ink: #2b2b2b;
-  --muted: #6f6a5e;
-  --tab: #ece4cf;
-  --accent: #d9534f;
-  --marker: rgba(255, 214, 77, 0.55);
+  --frame: #f5f5f7;
+  --board: #fdfcf9;
+  --board-dot: rgba(0, 0, 0, 0.075);
+  --hairline: rgba(0, 0, 0, 0.08);
+  --text: #1d1d1f;
+  --text-2: rgba(60, 60, 67, 0.62);
+  --fill-1: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.18);
+  --accent: #007aff;
+  --ink: #1d1d1f;
+  --muted: rgba(60, 60, 67, 0.82);
+  --red: #ff3b30;
+  --marker: rgba(255, 204, 0, 0.45);
+  --ui: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --hand: "Ink Free", "Segoe Print", "Comic Sans MS", cursive;
   --serif: "Cambria Math", "Cambria", "Times New Roman", serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --frame: #1c1c1f;
+    --board: #121315;
+    --board-dot: rgba(255, 255, 255, 0.065);
+    --hairline: rgba(255, 255, 255, 0.09);
+    --text: #f5f5f7;
+    --text-2: rgba(235, 235, 245, 0.62);
+    --fill-1: rgba(120, 120, 128, 0.2);
+    --fill-2: rgba(120, 120, 128, 0.3);
+    --accent: #0a84ff;
+    --ink: #f2f2ee;
+    --muted: rgba(235, 235, 245, 0.6);
+    --red: #ff453a;
+    --marker: rgba(255, 214, 10, 0.28);
+    color-scheme: dark;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -17,59 +47,83 @@ html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--paper);
+  background: var(--frame);
   color: var(--ink);
   font-family: var(--hand);
   user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 #card { position: relative; height: 100%; display: flex; flex-direction: column; }
 
+/* The title bar is the drag handle (lesson.js posts "drag" on mousedown here). */
 #tab {
   flex: none;
   display: flex;
   align-items: center;
-  height: 30px;
-  padding: 0 6px 0 14px;
-  background: var(--tab);
-  border-bottom: 1px solid #ddd3bb;
-  font: 13px "Segoe UI", sans-serif;
-  color: var(--muted);
+  gap: 10px;
+  height: 38px;
+  padding: 0 6px 0 12px;
+  font: 600 13px/1 var(--ui);
+  letter-spacing: -0.005em;
+  color: var(--text);
   cursor: grab;
 }
 
-#title { flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-#close {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 18px;
-  width: 26px;
-  height: 26px;
-  border-radius: 13px;
-  cursor: pointer;
+#tab .mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #6aa8ff, var(--accent) 45%, #5e3bd6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-#close:hover { background: #ddd3bb; }
+#title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+#close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 120ms ease, transform 100ms ease-out;
+}
+
+/* No focus ring: a card never takes keyboard focus (WS_EX_NOACTIVATE), but WebView2 still draws
+   Chromium's ring on the first button, which read as a stray circle in every snapshot. */
+#close:focus { outline: none; }
+#close svg { width: 14px; height: 14px; pointer-events: none; }
+#close:hover { background: var(--fill-1); color: var(--text); }
+#close:active { background: var(--fill-2); transform: scale(0.9); }
+
+/* The board: inset from the frame, a faint dot grid instead of graph paper. */
 #content {
   flex: 1;
   overflow: hidden;
-  padding: 18px 22px;
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 22px 22px;
+  margin: 0 6px 6px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background-color: var(--board);
+  background-image: radial-gradient(var(--board-dot) 1.1px, transparent 1.5px);
+  background-size: 18px 18px;
+  background-position: 9px 9px;
+  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 
 #ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 
 /* fit-content: highlight rings and arrows hug what is written, not the whole card width. */
-.el { width: fit-content; max-width: 100%; margin: 0 0 12px; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 260ms ease; }
+.el { width: fit-content; max-width: 100%; margin: 0 0 12px; opacity: 0; transform: translateY(6px); transition: opacity 320ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .el.in { opacity: 1; transform: none; }
 
-.heading { font-size: 30px; line-height: 1.15; }
+.heading { font-size: 30px; line-height: 1.12; }
 .body { font-size: 22px; line-height: 1.3; }
 .note { font-size: 17px; color: var(--muted); }
 
@@ -79,12 +133,12 @@ html, body {
 .step { display: flex; align-items: baseline; gap: 10px; font-size: 21px; }
 .step .num {
   flex: none;
-  width: 26px; height: 26px; line-height: 24px;
-  border: 2px solid var(--ink); border-radius: 50%;
+  width: 26px; height: 26px; line-height: 23px;
+  border: 1.8px solid var(--ink); border-radius: 50%;
   text-align: center; font-size: 15px;
 }
 
-.icon { display: inline-block; width: 64px; height: 64px; margin-right: 10px; vertical-align: middle; }
+.icon { display: inline-block; width: 64px; height: 64px; margin-right: 10px; vertical-align: middle; color: var(--ink); }
 .icon svg { width: 100%; height: 100%; }
 
 .el.plot { width: 100%; }
@@ -98,8 +152,8 @@ html, body {
 }
 
 .stroke { fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.stroke.red { stroke: var(--accent); }
-.draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 650ms ease forwards; }
+.stroke.red { stroke: var(--red); }
+.draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 
 .label { font-family: var(--hand); font-size: 15px; fill: var(--muted); }
@@ -115,9 +169,15 @@ html, body {
 .matrix .cell { display: table-cell; padding: 1px 7px; text-align: center; }
 .xarrow { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 4px; font-size: 0.8em; }
 
-.notice { font-size: 22px; color: var(--muted); margin-top: 40px; text-align: center; }
+.notice { font: 17px/1.4 var(--ui); color: var(--text-2); margin-top: 40px; text-align: center; }
 
 @media (prefers-reduced-motion: reduce) {
-  .el { transition: none; }
+  .el { transform: none; transition: opacity 200ms ease; }
   .draw { animation: none; stroke-dashoffset: 0; }
+  #close { transition: none; }
+}
+
+@media (prefers-contrast: more) {
+  #content { box-shadow: inset 0 0 0 1px var(--text-2); }
+  #close { color: var(--text); }
 }

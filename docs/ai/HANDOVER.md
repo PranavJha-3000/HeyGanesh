@@ -1,4 +1,12 @@
 
+## 2026-10-31 · claude-opus-5-5 (LSU-18 click-to-ask on a schematic fixed in the row, BUG-002)
+
+Did: LSU-18 read the scene's pick points while the lesson's last beat was still tweening the jet back together. A beat ends after one frame, not after its 400 ms tween. So `jet.tail`'s point was offered mid-move and landed on the fuselage at rest. The new `UntilStillAsync` (LessonSurfaceSmokeHost.Pick.cs) waits until the frame count holds still. LSU-18 and LSU-15 use it before reading points. No product file changed, no check loosened.
+Left: The HANDOVER item "a re-run of LSU-18 and LSU-15 with nobody using the mouse" is done (both pass). Separately, the brief's "--assert-scene 21" is not `main`'s count: `main` prints 19, as its checklist says.
+Watch: A lesson that ends on a looping animation never comes to rest. UntilStillAsync gives up after about 3 s, and the row's first check fails, saying "at rest (False)". Git Bash `sed -i` here turned TEST-CHECKLIST.md's CRLF into LF; it was re-converted, so check `file` after any sed edit.
+Next: Merge this branch to `main`, on the owner's go-ahead.
+Verified: LessonSurface then LessonSurfaceSmoke build -warnaserror 0/0. `--assert-pick-schematic` 4 PASS on 4 of 4 runs; `--assert-pick` 9 PASS; `--assert-source` 20; `--assert-scene` 19. A temporary no-mouse diagnostic showed the tail point moving 35 px over 400 ms after the lesson. Mutation: the wait skipped fails LSU-18 as reported (`jet.tail->f35b/fuselage`); restored from a copy, it passes again.
+
 ## 2026-10-31 · claude-opus-5-5 (earlier turns as context for follow-ups, build sequence step 12d, DEC-061)
 
 Did: `SessionTurns` keeps this run's last 3 taught turns in memory. They go to the Tutor (`TutorRequest.EarlierTurns`) and the planner (`PlanRequest.EarlierTurns`) as a fenced, flattened, capped untrusted block. With none, the prompts are unchanged byte for byte. Header line `context :`, `--no-context`. Rows: TU-13 7 (G-7), LP-13 7 (G-14), NB-4 5 (G-24), NB-2 6. Step 12 (Notes Persistence) is complete.

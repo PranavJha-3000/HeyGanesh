@@ -18,12 +18,15 @@ internal static partial class LessonSurfaceSmokeHost
         {
             await using var surface = await CardSurface.CreateAsync();
             await new LessonPlayer(surface, new PauseSpeaker(60)).PlayAsync(SchematicLesson());
+            // The last beat explodes the jet back together over 400 ms, after the beat itself has ended: points read
+            // before the parts come to rest are where they were mid-way, not where a click will land (BUG-002).
+            var still = await UntilStillAsync(surface);
             var start = await surface.DescribeSceneAsync();
             var visible = start.PickPoints.Where(p => p.Key.StartsWith("jet.", StringComparison.Ordinal)).ToList();
             // The lesson ends on the top view, where the wings, nozzle and roll posts sit under the fuselage: the page
             // offers a point only for a part whose centre is not covered. The lift fan is the part the lesson labels.
-            failures = Check(visible.Count >= 3 && visible.Any(v => v.Key == "jet.lift-fan"),
-                $"the F-35B schematic drawn: {visible.Count} of its 7 parts have a visible point to click, the lift fan among them ({string.Join(", ", visible.Select(v => v.Key))})", failures);
+            failures = Check(still && visible.Count >= 3 && visible.Any(v => v.Key == "jet.lift-fan"),
+                $"the F-35B schematic drawn and at rest ({still}): {visible.Count} of its 7 parts have a visible point to click, the lift fan among them ({string.Join(", ", visible.Select(v => v.Key))})", failures);
             if (visible.Count == 0)
             {
                 return Summarize(failures + 1, "PICK SCHEMATIC OK");

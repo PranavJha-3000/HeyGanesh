@@ -24,11 +24,12 @@ internal static partial class LessonSurfaceSmokeHost
             await using var surface = await CardSurface.CreateAsync();
             await new LessonPlayer(surface, new PauseSpeaker(60)).PlayAsync(Validated3d(SceneLesson(FourStrokeEngine.Id)));
             var engine = ModelLibrary.Find(FourStrokeEngine.Id)!;
+            var still = await UntilStillAsync(surface);
             var start = await surface.DescribeSceneAsync();
             var rodKey = "m.connecting-rod";
             var hidden = engine.Parts.Select(p => p.Id).Where(id => !start.PickPoints.ContainsKey("m." + id)).ToList();
-            failures = Check(start.PickPoints.ContainsKey(rodKey) && start.PickPoints.Count >= engine.Parts.Count / 2,
-                $"engine drawn: {start.PickPoints.Count} of {engine.Parts.Count} parts have a visible point to click, the connecting rod among them (none found for: {string.Join(", ", hidden)})", failures);
+            failures = Check(still && start.PickPoints.ContainsKey(rodKey) && start.PickPoints.Count >= engine.Parts.Count / 2,
+                $"engine drawn and at rest ({still}): {start.PickPoints.Count} of {engine.Parts.Count} parts have a visible point to click, the connecting rod among them (none found for: {string.Join(", ", hidden)})", failures);
             if (!start.PickPoints.TryGetValue(rodKey, out var rod))
             {
                 return Summarize(failures + 1, "PICK OK");
@@ -100,6 +101,30 @@ internal static partial class LessonSurfaceSmokeHost
         await UntilPickingAsync(surface);
         Click(at);
         return await pick;
+    }
+
+    /// <summary>
+    /// Waits until the scene has stopped drawing: the page renders on demand, so its frame count holds still only
+    /// once every tween (explode, camera) and every non-looping animation has finished. A lesson's beat ends after
+    /// one frame, not after its tweens, so pick points read before this are where the parts were mid-move (BUG-002).
+    /// False if the scene was still drawing after about 3 s (a looping animation never rests).
+    /// </summary>
+    private static async Task<bool> UntilStillAsync(CardSurface surface)
+    {
+        var last = (await surface.DescribeSceneAsync()).Frames;
+        for (var i = 0; i < 30; i++)
+        {
+            await Task.Delay(100);
+            var now = (await surface.DescribeSceneAsync()).Frames;
+            if (now == last)
+            {
+                return true;
+            }
+
+            last = now;
+        }
+
+        return false;
     }
 
     private static async Task UntilPickingAsync(CardSurface surface)

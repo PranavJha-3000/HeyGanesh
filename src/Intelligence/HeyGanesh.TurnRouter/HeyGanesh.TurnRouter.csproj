@@ -2,13 +2,12 @@
 
   <!--
     Turn Router (DEC-035) — one Jev call that decides how a turn is taught: point at it, explain it,
-    or draw a lesson; a 2D or 3D lesson; and which catalogue model, if any.
+    or draw a lesson. Since DEC-075 it asks nothing more: the drawing program chooses 2D or 3D itself.
 
     Pure policy over the existing Jev seam: its only ProjectReference is Element Selection, for
     IJevClient and its request/answer records (DEC-008). It never reads a key, opens a socket or
     touches the screen — the caller hands it an IJevClient, and the future Security Proxy swaps in
-    behind that same seam. Zero PackageReference. Nothing calls it yet; the App Shell wiring is the
-    next step of the build sequence.
+    behind that same seam. Zero PackageReference. The App Shell routes each turn with it (DEC-036).
   -->
 
   <PropertyGroup>

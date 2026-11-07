@@ -735,3 +735,10 @@
 - **Rollback point:** `88368e6` (step 6), or revert this step's commit.
 - **Files to restore:** `git checkout 88368e6 -- src/Experience/HeyGanesh.App tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.App/ShellHost.Drawing.cs` and any other file this step added (`git status` lists them).
 - **Re-check after revert:** `dotnet build src/Experience/HeyGanesh.App -c Debug -warnaserror` -> 0/0; SH-18 with its old header line (`3D: 3 models, click a part to ask`), exit 12; TraySmoke `--assert-source` 8, `--assert-session` 5; LessonTurnSmoke `--assert-turn` 4.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 8: the Turn Router asks intent only, DEC-075)
+
+- **Change:** `src/Intelligence/HeyGanesh.TurnRouter` loses the dimension and model questions and every 3D field (`LessonDimension`, `RouteModel`, `RouteRequest.Models`/`Schematics`, `TurnRoute.Dimension`/`ModelId`/`Schematic`/scores, `LessonCanvas`, `LegChoice.Canvas`/`ModelId`). The App Shell's `ShellHost.Route.cs` stops offering models and prints the shorter route line; `ShellHost.Lesson.cs` drops a stale comment; the App csproj comment is updated. `tools/TurnRouterSmoke` TR-2/3/4/6 rewritten for one question. Docs: DEC-075, FLOW, ARCHITECTURE, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER.
+- **Rollback point:** `e3a8abe` (step 7), or revert this step's commit.
+- **Files to restore:** `git checkout e3a8abe -- src/Intelligence/HeyGanesh.TurnRouter tools/TurnRouterSmoke src/Experience/HeyGanesh.App AGENTS.md docs/ai`.
+- **Re-check after revert:** TurnRouterSmoke TR-2 15, TR-3 15, TR-4 7, TR-6 11; `dotnet build tools/TraySmoke -c Debug -warnaserror` 0/0.

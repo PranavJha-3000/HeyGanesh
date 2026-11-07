@@ -84,8 +84,9 @@
 
   <ItemGroup>
     <!--
-      The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught; PartLibrary gives it the
-      models' titles and subjects to offer. Both are pure policy/data with no NuGet.
+      The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught (intent only since DEC-075).
+      PartLibrary is no longer offered to the router; the tray's replay of stored VisualPlan lessons still
+      checks schematics with it until step 9. Both are pure policy/data with no NuGet.
     -->
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.TurnRouter\HeyGanesh.TurnRouter.csproj" />
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />

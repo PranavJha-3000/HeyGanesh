@@ -331,7 +331,7 @@ RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, noth
 ```
 CreateLessonClient (composition root, once per process): the deepseek key present → OpenAiCompatLlmClient(api.deepseek.com, deepseek-flash, Streaming, KeyRingSecretStore), owned and disposed by the shell; `new DrawingPlanner(client)`. `DrawingStage(OpenStageAsync)` is always created and opens no window until the first lesson; it is disposed at shutdown, after the turn in flight was drained. The offline route through the same turn is `tools/TraySmoke --assert-drawing-leg` (SH-29). The old cards path (`LessonTurn`, VisualPlanner, "Click a part to ask") is no longer used by the shell; it stays until FEATURE-011 step 10.
 
-## Schematic models (VisualPlan 1.2, DEC-048; planner DEC-049; drawn and requested by the shell DEC-050; chosen by the router DEC-051)
+## Schematic models (VisualPlan 1.2, DEC-048; planner DEC-049; drawn and requested by the shell DEC-050; the router's choice of one, DEC-051, removed by DEC-075)
 
 ```
 model JSON header: "schematics": [ { id, title, parts: [ { id, name, shapes: [ { shape, size, at, turn, finish } ] } ] } ]
@@ -466,27 +466,25 @@ Composition root (DEC-046), one static KeyRing `Keys`:
   The Tutor (not composed yet, SH-17) still reads DEEPSEEK_API_KEY itself until step 9.
 ```
 
-## Turn routing path (Turn Router — DEC-035; wired into the App Shell by DEC-036, live run key-gated)
+## Turn routing path (Turn Router — DEC-035; wired into the App Shell by DEC-036; intent only since DEC-075; live run key-gated)
 
 ```
 RunSessionAsync → PrintVerdict → StartRoute(router, options, verdict, ct)       ShellHost.Route.cs
   router null (--lesson / --no-route / TYPESAFE_API_KEY missing) or verdict Failed → no route started
-  else RouteSafelyAsync: RouteRequest { Question, ScreenMatchFound = verdict.Found, Models = ModelLibrary.V1 (id, title, subject), Schematics = true (DEC-051) }
+  else RouteSafelyAsync: RouteRequest { Question, ScreenMatchFound = verdict.Found }
     JevClientException / ArgumentException → "route : FAILED (…)", null route;  OCE → null route
-  (the overlay shows meanwhile; TeachAsync awaits the task — see Lesson leg)
+  (the overlay shows meanwhile; TeachAsync awaits the task — see Lesson leg; a question over a drawing skips it)
 
   → TurnRouter.RouteAsync(request, ct)                         TurnRouter.cs
-      blank question → ArgumentException (nothing sent); a model with id "none" → ArgumentException
-      BuildRequest: one JevRequest { Model = jev-1.13.0, State = computed facts,
-                                     Questions = intent [+ dimension + model when Models is non-empty] }
+      blank question → ArgumentException (nothing sent)
+      BuildRequest: one JevRequest { Model = jev-1.13.0, State = window_title, screen_match, question_words,
+                                     Questions = intent only (point / explain / lesson) }
       IJevClient.EvaluateAsync(request, ct)                    faults and OCE pass through unchanged
-      Map:
+      Map (only the intent answer is read):
         intent missing / never offered / below 0.5 → TurnRoute { Routed = false, Reason }
-        point | explain                             → TurnRoute { Routed, Intent }
-        lesson, no models                           → Dimension = Flat
-        lesson, dimension or model id never offered → Routed = false
-        lesson, 3d with dimension and model ≥ 0.5 on an offered id → Dimension = Scene3d, ModelId
-        lesson, 3d ≥ 0.5 and "none" ≥ 0.5, request.Schematics → Dimension = Scene3d, Schematic, no ModelId (DEC-051)
-          → TurnLegs: LessonCanvas.Schematic → the full catalogue + Schematics.Check (a library model may still be used)
-        lesson, anything less sure (or "none" without Schematics) → Dimension = Flat, Reason
+        point | explain | lesson                    → TurnRoute { Routed, Intent }
+
+  → TurnLegs.Choose(route, --lesson, --no-route) → LegChoice(Leg, Why)          TurnLegs.cs
+      --lesson → Lesson; --no-route / no route → Tutor; point → Highlight; explain → Tutor; lesson → Lesson
+      (the drawing program decides 2D or 3D on the stage, DEC-074)
 ```

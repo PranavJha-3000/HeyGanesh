@@ -1,3 +1,11 @@
+## 2026-11-07 · claude-opus-5-5 (the Turn Router asks intent only, FEATURE-011 step 8, DEC-075)
+
+Did: `HeyGanesh.TurnRouter` asks one Jev choice (point / explain / lesson); the dimension and model questions, catalogue, schematic route and 3D fields are removed; `LegChoice` is `(Leg, Why)`. The App Shell offers no models, prints a shorter route line, and its header says the drawing picks 2D or 3D. TR-2/3/4/6 rewritten.
+Left: Step 9 (notes + replay of programs), step 10 (delete the old stack). SH-22 and SH-28 are live (owner).
+Watch: The App still references PartLibrary, only for the tray's VisualPlan replay (goes in step 9/10). A provider answering an unasked question is ignored, not refused.
+Next: FEATURE-011 step 9.
+Verified: TurnRouter, TurnRouterSmoke and TraySmoke (App, Tray) build -warnaserror 0/0. TR-1 3, TR-2 11, TR-3 8, TR-4 5, TR-5 5, TR-6 7 PASS. Shell rows exit 0/12/0/0/1/13/12/12/12/0/12; SH-21 dummy key `route : ON`, 0 occurrences, exit 0; cancel 1/60 → 13. TY-1, SH-29 PASS. One mutation fails TR-2.
+
 ## 2026-11-07 · claude-opus-5-5 (the App Shell's lesson leg on the drawing stage, FEATURE-011 step 7, DEC-074)
 
 Did: `--lesson` and routed lessons draw on the drawing stage: DrawingPlanner → DrawStageController + DrawStageVoice → DrawStageWindow over the verdict's monitor (`ShellHost.Drawing.cs`, `ShellHost.Lesson.cs` rewritten). A drawing stays up; a question over it or a part click is a follow-up (keep() or redraw); NONE → the Tutor (a follow-up's drawing cleared); close ends it; Ctrl+Alt is free after a lesson. New offline row SH-29 (CI G-24); SH-18 updated; SH-28 live.

@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-075](#dec-075--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The Turn Router asks intent only (FEATURE-011 step 8): point / explain / lesson in one Jev choice; the dimension and model questions, `RouteRequest.Models`/`Schematics`, `LessonDimension`, `RouteModel`, `LessonCanvas` and the route's 3D fields are removed, because the drawing program chooses 2D or 3D itself | accepted |
 | [DEC-074](#dec-074--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The App Shell's lesson leg draws on the drawing stage (FEATURE-011 step 7): `--lesson` and routed lessons use DrawingPlanner + DrawStageController/DrawStageVoice/DrawStageWindow; a drawing stays up and the next question over it (same monitor) or a part click is a follow-up (keep() or redraw), asked without waiting for the route; NONE or no program hands the turn to the Tutor (a follow-up's drawing is cleared); close ends it; no click wait, so Ctrl+Alt is free after a lesson | accepted |
 | [DEC-073](#dec-073--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | PlannerEval scores drawing programs (FEATURE-011 step 6): static checks K-2/3/4/8/9/10/11 on the program's say() lines and strings (offline, CI), run checks P-1..P-5 on a hidden real stage (local), `--record --drawing` through DrawingPlanner on every provider; a replay re-scores the static checks and keeps the recorded run checks; stage.js exposes the accepted marks read-only to the host (third local edit) | accepted |
 | [DEC-072](#dec-072--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing planner (FEATURE-011 step 5): DrawingPlanner in LessonPlanner asks any ILlmClient for a program in the drawing language, streamed or whole; openclicky's prompts are embedded from the vendored files and filled from code (our name, no photo(), the untrusted-data rule); screen text, the pointed-at name, earlier turns and a follow-up's program go in fenced; NONE and prose never reach the stage | accepted |
@@ -85,6 +86,21 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-075 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the Turn Router asks intent only.** FEATURE-011 step 8; the owner: "Complete step 8-10 in new session". Supersedes the dimension and model parts of DEC-035 and all of DEC-051; the intent question, the 0.5 gate, the refusal of an id never offered, error pass-through and `TurnLegs.Choose`'s flag rules (DEC-036) are unchanged.
+
+- **The call.** One Jev request with one typed choice, `intent`: point / explain / lesson. The lesson option now reads "Teach with a spoken drawing, flat or 3D: …" (it said "drawn step-by-step cards"). State carries `window_title`, `screen_match` and `question_words`; `model_count` is gone with the models.
+- **Removed from `HeyGanesh.TurnRouter`:** `LessonDimension`, `RouteModel`, `RouteRequest.Models` and `.Schematics`, `TurnRoute.Dimension`, `.ModelId`, `.Schematic`, `.DimensionScore`, `.ModelScore`, the `dimension` / `model` question ids and the `none` option, `LessonCanvas`, and `LegChoice.Canvas` / `.ModelId`. `LegChoice` is `(Leg, Why)`. A routed lesson's reason is "routed: lesson".
+- **Why.** Since DEC-074 the lesson leg draws a program on the stage, and the program decides flat or 3D (a `figure` or not). The route's 3D choice and catalogue model were already ignored by the shell; asking for them cost tokens and latency and implied a catalogue that step 10 deletes.
+- **Answers to questions not asked** (a stray `dimension` or `model` answer from the provider) are ignored, not refused: only the intent answer is read, and its id must be one offered.
+- **The App Shell** builds the request with the question and the screen match only, prints `route : <intent>  intent=<score>  jev=… latency=…`, and its header says `ON: Jev chooses point / explain / lesson; a drawing picks 2D or 3D itself …`. `CatalogFor` (unused since step 7) and `RouteModels` are deleted. The App keeps its PartLibrary reference until step 9: the tray's replay of stored VisualPlan lessons still checks schematics with it.
+- **Rows:** TR-2 15 → 11, TR-3 15 → 8, TR-4 7 → 5, TR-6 11 → 7; TR-1 3 and TR-5 5 unchanged. SH-21's exits and lines are unchanged except the `route : ON` wording; SH-22 (live) now expects `route : lesson` with no 2D/3D or model.
+
+**Rejected.**
+- Keeping the dimension question as a hint to the drawing planner: the program already chooses, and a hint the planner may contradict adds a second source of truth.
+- Refusing a route when the provider answers a question that was not asked: Jev answering only what it is asked is the provider's contract; a stray extra answer says nothing about the intent answer, which is still checked against its offered ids.
+
 ## DEC-074 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the App Shell's lesson leg draws on the drawing stage.** FEATURE-011 step 7; the owner: "yes build step 7 in new session".

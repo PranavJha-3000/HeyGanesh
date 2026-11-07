@@ -318,3 +318,9 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Plan drift: a click's follow-up is not saved as a note (no verdict to record); it is kept in this run's memory. A drawn lesson's note has its first spoken line as the title and no stored program, so Recent lessons cannot replay a drawing until step 9.
   - Not done here: SH-28 (live, the owner's); a real stage window driven by the shell (only by the live row; DS-2..DS-6 cover the window itself).
   - Next: step 8, the router shrinks to intent only.
+- 2026-11-07 · claude-opus-5-5: **step 8 done (DEC-075).** The Turn Router asks intent only.
+  - One Jev choice, point / explain / lesson; the lesson option offers "a spoken drawing, flat or 3D". The dimension and model questions, the catalogue, the schematic route and every 3D field are gone from `HeyGanesh.TurnRouter`; `LegChoice` is `(Leg, Why)`.
+  - The App Shell offers no models, prints a shorter route line, and its header says the drawing picks 2D or 3D. `CatalogFor` (unused since step 7) is deleted. The App keeps PartLibrary until step 9 (the replay still checks schematics).
+  - Rows: TR-2 11, TR-3 8, TR-4 5, TR-6 7 (TR-1 3, TR-5 5 unchanged). The shell's offline rows keep their exits (0/12/0/0/1/13/12/12/12/0/12; SH-21 with a dummy key: `route : ON …`, the dummy printed 0 times, exit 0). TraySmoke TY-1 and SH-29 pass.
+  - Mutation caught: a second question put back into the request fails TR-2.
+  - Next: step 9, notes and replay of programs.

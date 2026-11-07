@@ -114,7 +114,6 @@ internal static partial class ShellHost
                 record.Outcome = "the highlight was the answer";
                 return 0;
             case TurnLeg.Lesson when lesson is not null:
-                // The route's 2D / 3D / model choice is not passed on: the program decides (FEATURE-011 step 8 drops it).
                 record.Leg = NoteLeg.Lesson;
                 return await TeachWithLessonAsync(tutor, lesson, voice, options, guidance, record, ct).ConfigureAwait(false);
             default:

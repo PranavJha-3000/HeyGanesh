@@ -205,6 +205,11 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
    events. Speech goes through a `Func<string, CancellationToken, Task>`. Rows: **DS-6 `--assert-pace`**
    (fake speaker: lines spoken in order, each timing sent, `finished` after the last; a cut-short voice
    → `finishNow`). **DS-7 `--demo <sample> --voice sapi`** by hand.
+   The page's buttons (owner, 2026-11-07: "Handle close, hide rest"): the page's `close` message stops
+   the voice, clears the stage, hides the window and raises a `Closed` event. A one-rule `stage.css` edit
+   (recorded in VENDOR.md) hides Picture, Video and PiP, so `save` is never sent. The close button's
+   "(Esc)" hint stays as upstream wrote it. The window is never activated, so Esc cannot reach it. Rows:
+   DS-6 adds `close` → `Closed`, and DS-5 or DS-1 checks that the three buttons are hidden.
 5. **`DrawingPlanner`** (in LessonPlanner, next to the old planner until step 10). Prompts filled from
    code (`{{W}}`, `{{H}}`, `{{captionTop}}`, beats, calls, parts); grounded box, screen text and earlier
    turns fenced as untrusted; `NONE` detection; streaming `js` block extraction; a follow-up prompt with
@@ -259,5 +264,5 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
     - DS-4 uses 15 × 1.5 s statements for the program cap, not "a 25 s program". A single statement is already stopped at 2 s.
     - DS-5 checks no unknown colour: `tone()` already falls back.
   - Found: a forged result that matches the running statement takes that statement's place, and in a stream the ones after it (`seq` is not a secret). Only checked marks are painted either way. DEC-070 records why `seq` is not made the boundary.
-  - Still open: the page's Picture / Video / PiP / close buttons. This step does not hide them. The choice goes to the owner with step 4.
+  - The page's Picture / Video / PiP / close buttons: decided by the owner ("Handle close, hide rest"), built in step 4 (see its plan above).
   - Next: step 4, `DrawStageController` and the speech clock.

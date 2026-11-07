@@ -29,6 +29,7 @@ Subsystems, and the seams between them are load-bearing:
 | Notes Persistence | `src/Foundation/HeyGanesh.Notes/` | The notes store (DEC-058): one row per turn (question, leg, route, verdict in words, the Tutor's answer or the lesson plan's JSON, follow-up picks, outcome) in `%LOCALAPPDATA%/HeyGanesh/notes.db`, through Windows' own `winsqlite3.dll` by P/Invoke (zero NuGet). Never screenshots, screen text or keys. WAL + busy timeout so the tray and the console exe can both write; schema in `user_version`; an unreadable file is moved aside, a newer schema refused. Since step 12b (DEC-059) the App Shell, and so the tray, records each taught turn (not key errors or cancelled turns), with the lesson's exact plan JSON (`PlanResult.PlanJson`) for replay; header line `notes :`, `--no-notes` turns it off; a store that cannot open or a failed write is a line, never a failed turn. |
 | Tray | `src/Experience/HeyGanesh.Tray/` | Hey Ganesh as a desktop app (DEC-052): a notification-area icon with no console. It runs the App Shell's own composition through `ShellHost.RunAsync(args, stop, hookLive)`; Quit stops it like Ctrl+C. The shell's lines go to `logs/shell-<stamp>.log` (newest 5 kept); one tray per session (a second launch exits 3). Console-only flags (`--once`, `--help`, key commands) stay on `HeyGanesh.App.exe`. The key screen (DEC-053, "Keys…", and by itself when the DeepSeek or TypeSafe key is missing) stores keys through the key ring; Ctrl+Alt is refused while it is open. "Start at login" (DEC-054) writes or removes the per-user Run value `HeyGanesh`, only when chosen. "Recent lessons…" (DEC-060) lists saved turns and replays a stored lesson with no model call (validated again, screen marks dropped); Ctrl+Alt is paused while it plays. |
 | API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045/DEC-046): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The shell's Jev, Vision, Fish, lesson and router clients read through it per request; the Tutor still reads `DEEPSEEK_API_KEY` until step 9. |
+| Claude Code plan provider | `src/Providers/HeyGanesh.Providers.ClaudeCode/` | An `ILlmClient` on the person's Claude plan (DEC-065): runs the `claude` CLI headless per call (`-p`, stream-json, no tools, no session, temp folder), with API-key and nesting variables stripped, so no key is needed. Ported from openclicky (MIT). Only PlannerEval `--record --provider claude-code` uses it so far (FEATURE-010). |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
 
@@ -228,6 +229,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-install
 #   -> 16 PASS, exit 0 (temp folders and throwaway HKCU keys; starts the installed tray once)
 #   real install (owner): powershell -NoProfile -ExecutionPolicy Bypass -File artifacts\installer\install.ps1
+# Claude Code plan provider (DEC-065): offline rows run the host as a fake `claude`; --live uses the real CLI on your plan.
+# Build library then host SEQUENTIALLY (CS2012).
+dotnet build src/Providers/HeyGanesh.Providers.ClaudeCode -c Debug
+dotnet build tools/ClaudeCodeSmoke -c Debug
+tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.ClaudeCodeSmoke.exe --assert-args
+#   -> 15 PASS, exit 0   (also: --assert-stream 6, --assert-errors 10)
+tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.ClaudeCodeSmoke.exe --live "In one sentence, what is torque?"
+#   -> LIVE OK with timings, tokens and the API-equivalent cost; signed out -> LIVE FAILED (AuthFailed), exit 12 (sign in: run `claude`, then /login)
+#   the eval on your plan: PlannerEval.exe --record <dir> --provider claude-code [--model sonnet] --cases E-01,E-03
 # Notes store (DEC-058): offline, temporary databases, Windows' own winsqlite3. Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Foundation/HeyGanesh.Notes -c Debug
 dotnet build tools/NotesSmoke -c Debug

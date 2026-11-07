@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (plan providers, FEATURE-010 step 1, DEC-065)
+
+Did: Assessed openclicky (MIT). New `HeyGanesh.Providers.ClaudeCode`: an `ILlmClient` that runs `claude -p` on the owner's Claude plan (stream-json, no tools, no session, system prompt by file, API-key and `CLAUDECODE` variables stripped). New `tools/ClaudeCodeSmoke` (CC-1..CC-4). PlannerEval `--record --provider claude-code [--model m]` (PE-8); DeepSeek stays the default and `LiveClient`/PE-5 are unchanged. On branch `feat/plan-providers`, cut from `feat/apple-look` at `6832a0f`.
+Left: CC-4 and PE-8 live rows. The standalone `claude` CLI is signed out on this PC (`claude auth status` loggedIn false; "OAuth session expired"); the owner runs `claude` then `/login`. Steps 2 (Codex, not installed), 3 (record openclicky's drawing language) and 4 (side-by-side rendering; needs the owner's OK to copy `draw-stage` + three.js into `tools/`). Not wired into the App Shell, tray or Tutor.
+Watch: Every provider call starts the CLI cold, so expect a slow first beat. PlannerEval's AuthFailed line still says "refused the key" for claude-code. `dotnet sln add` rewrites the whole `.sln` (left untouched; most hosts are not in it). `sed -i` drops CRLF here; edit docs with a script that keeps line endings.
+Next: Owner signs the CLI in, then run `ClaudeCodeSmoke --live` and `PlannerEval --record <dir> --provider claude-code --cases E-01,E-03`, and plan step 2.
+Verified: Library, smoke and PlannerEval build -warnaserror 0/0. CC-1 15, CC-2 6, CC-3 10 PASS. PlannerEval set 7, checks 26, record-stub 9, drift 5 unchanged. Live: signed-out path gives exit 12 in both hosts.
+
 ## 2026-10-31 · claude-opus-5-5 (an Apple-grade look, FEATURE-009 steps 1–3, DEC-062..DEC-064)
 
 Did: Mockup approved; tokens in FEATURE-009 (DEC-062). Step 2: lesson card restyled, rounded (`fe4f01d`). Step 2b spike: Acrylic blurs on a never-active card and through a transparent WebView2. Step 2c (DEC-063): real Acrylic glass frame, opaque board (`ac6849a`). Both are pushed on `feat/apple-look`. Step 3 (DEC-064): shared `Page/tokens.css`; the 3D scene window gets the glass frame, opaque stage, chips, pill labels, red highlight and accent pick glows (scene.js reads colours from the tokens), and a flat mark so the orientation probe stays clean. LSU-9 19 → 21.

@@ -666,3 +666,10 @@
 - **Rollback point:** `ac6849a` (step 2c on `feat/apple-look`), or revert this step's commit.
 - **Files to restore:** `git checkout ac6849a -- src/Experience/HeyGanesh.LessonSurface tools/LessonSurfaceSmoke`, then delete `src/Experience/HeyGanesh.LessonSurface/Page/tokens.css` if it remains.
 - **Re-check after revert:** build LessonSurface then LessonSurfaceSmoke (sequentially); `--assert-scene` 19, `--assert-orientation` 3, `--assert-scene-svg` 8, `--assert-render` 17; the scene window is paper again.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-010 step 1: Claude Code plan provider, DEC-065)
+
+- **Change:** new `src/Providers/HeyGanesh.Providers.ClaudeCode` (an `ILlmClient` that runs the `claude` CLI on the person's Claude plan, ported from openclicky, MIT); new `tools/ClaudeCodeSmoke` (fake-CLI rows + one live row); `tools/PlannerEval` gains `--provider claude-code` for `--record` (default stays DeepSeek). Docs: DEC-065, FEATURE-010, ARCHITECTURE, TEST-CHECKLIST, AGENTS.md, HANDOVER. No new dependency; the App Shell, tray and Tutor are untouched.
+- **Rollback point:** `6832a0f` (HEAD of `feat/apple-look`; this step is on `feat/plan-providers`), or revert this step's commit.
+- **Files to restore:** `git checkout 6832a0f -- tools/PlannerEval AGENTS.md docs/ai`, then delete `src/Providers/HeyGanesh.Providers.ClaudeCode` and `tools/ClaudeCodeSmoke`.
+- **Re-check after revert:** build `tools/PlannerEval`; `--assert-record-stub` 9, `--assert-drift` 5.

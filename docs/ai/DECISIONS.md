@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-065](#dec-065--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Plan providers (FEATURE-010 step 1): an `ILlmClient` over the `claude` CLI on the person's Claude plan, ported from openclicky (MIT); one tool-less, session-less `-p` run per call, system prompt by file, API-key and nesting variables stripped; used by PlannerEval `--record --provider claude-code` only | accepted |
 | [DEC-064](#dec-064--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | 3D scene window in the FEATURE-009 look (step 3): shared `tokens.css`, glass frame and opaque stage, pill labels, red highlight and accent pick glows read from the tokens by scene.js; flat accent mark so the orientation probe's colour search stays clean | accepted |
 | [DEC-063](#dec-063--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Glass lesson card (FEATURE-009 step 2c): DWM Acrylic behind a transparent WebView2, page frame tint over it, opaque board; solid fallback when Windows refuses or transparency is reduced; proven on a never-active card by the step 2b spike | accepted |
 | [DEC-062](#dec-062--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | One Apple-grade visual language for every surface (FEATURE-009): approved light/dark tokens, system font for chrome and hand for ink, pills and 14 px corners, critically damped springs, solid fallback for reduced transparency; rolled out one surface per step | accepted |
@@ -75,6 +76,23 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-065 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the lesson model can run on the person's Claude plan through the `claude` CLI.** FEATURE-010 step 1; the owner: "Yes, build step 1".
+
+- **How:** `HeyGanesh.Providers.ClaudeCode.ClaudeCodeLlmClient : ILlmClient` runs `claude -p` once per call in a fresh temp folder, with stream-json in and out, partial messages, `--tools ""`, `--safe-mode`, `--strict-mcp-config`, `--disable-slash-commands`, `--no-session-persistence` and no permission prompts. The request is one stream-json user message: each turn's images, then its text, with earlier turns labelled, because a single `-p` turn has no history. The system prompt goes through `--system-prompt-file`, since the planner's prompt can pass Windows' 32 767-character command line.
+- **No key:** the CLI's own sign-in pays. `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `OPENAI_API_KEY`, `CODEX_HOME` and the `CLAUDECODE` / `CLAUDE_CODE_*` nesting variables are removed from the child's environment, so an API key cannot override the plan and a run started inside Claude Code does not talk to the outer session. The API Key Isolation invariant holds trivially: no credential passes through HeyGanesh.
+- **Errors:** signed out or an expired OAuth session -> `AuthFailed` (exit 12 in the hosts); usage limit -> `RateLimited`; past the timeout (180 s) -> `Timeout`, with the whole process tree killed; anything else -> `Transport`, not retryable, so a wrapper never re-runs a plan call by itself. A request with tools -> `CapabilityMissing`.
+- **Reported:** tokens from the result event (input counts cache reads and writes) and `total_cost_usd` as `LastCostUsd`, the API-equivalent cost, for FEATURE-010's cheaper-or-not comparison. Nothing is billed per call on a plan.
+- **Scope:** PlannerEval `--record --provider claude-code [--model m]` only. `LiveClient` and PE-5 are unchanged, and DeepSeek stays the default. The App Shell, tray and Tutor are untouched; wiring them is its own later step.
+- **Source:** ported from openclicky's Windows app (`ClaudeCodeAnswerProvider.cs`, `PlanCLIs.cs`; MIT, credited in each file).
+
+**Rejected.**
+- Calling the Anthropic API with the token Claude Code stores: undocumented, outside the terms, and it moves a credential into HeyGanesh.
+- The Claude Agent SDK: needs Node or Python packages (no new dependencies).
+- `--system-prompt` on the command line: breaks on long prompts.
+- openclicky's npm-shim launcher: only a real `claude.exe` is found (native installer or PATH). Marked as a `shortcut:` in `PlanCli.LocateClaude`.
+
 ## DEC-064 — 2026-10-31 — claude-opus-5-5
 
 **Decision — the 3D scene window takes the lesson card's look, with one shared token file.** FEATURE-009 step 3; the owner: "Yes, implement step 3".

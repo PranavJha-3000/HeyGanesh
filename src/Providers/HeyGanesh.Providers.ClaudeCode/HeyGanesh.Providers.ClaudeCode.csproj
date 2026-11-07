@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    FEATURE-010 step 1 (DEC-065): an ILlmClient that answers on the person's Claude plan by running the
+    `claude` CLI headless, so no API key is needed. Ported from openclicky's Windows app (MIT). Zero NuGet:
+    System.Diagnostics.Process, System.Text.Json and System.Threading.Channels only.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Providers.ClaudeCode</RootNamespace>
+    <AssemblyName>HeyGanesh.Providers.ClaudeCode</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj" />
+  </ItemGroup>
+
+</Project>

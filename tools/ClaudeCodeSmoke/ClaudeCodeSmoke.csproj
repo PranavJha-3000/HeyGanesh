@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    FEATURE-010 step 1 (DEC-065): verification host for the Claude Code plan provider. The offline rows run
+    this same exe as a fake `claude` (HEYGANESH_FAKE_CLAUDE set); only `live` runs the real CLI.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.ClaudeCodeSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.ClaudeCodeSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj" />
+    <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.ClaudeCode\HeyGanesh.Providers.ClaudeCode.csproj" />
+  </ItemGroup>
+
+</Project>

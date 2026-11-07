@@ -26,6 +26,8 @@
     <!-- 7b (DEC-044): the live recording uses the App Shell's lesson client, built the same way (LiveClient, checked by PE-5). -->
     <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
     <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+    <!-- FEATURE-010 (DEC-065): record with provider claude-code plans on the owner's Claude plan. -->
+    <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.ClaudeCode\HeyGanesh.Providers.ClaudeCode.csproj" />
   </ItemGroup>
 
   <ItemGroup>

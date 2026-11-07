@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using HeyGanesh.Providers.ClaudeCode;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Security;
 using HeyGanesh.VisualLessonEngine;
@@ -28,11 +29,21 @@ internal static partial class PlannerEvalHost
     {
         string? dir = null;
         string[]? only = null;
+        var provider = "deepseek";
+        string? model = null;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "--cases" && i + 1 < args.Length)
             {
                 only = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
+            else if (args[i] == "--provider" && i + 1 < args.Length && args[i + 1] is "deepseek" or "claude-code")
+            {
+                provider = args[++i];
+            }
+            else if (args[i] == "--model" && i + 1 < args.Length)
+            {
+                model = args[++i];
             }
             else if (!args[i].StartsWith("--", StringComparison.Ordinal) && dir is null)
             {
@@ -42,6 +53,13 @@ internal static partial class PlannerEvalHost
             {
                 return Usage(args[i]);
             }
+        }
+
+        if (provider == "claude-code")
+        {
+            // DEC-065: no key at all; the CLI's own sign-in pays. A signed-out CLI fails the first case with
+            // AuthFailed, which RecordAsync turns into exit 12 like a missing key.
+            return await RecordOnAsync(new ClaudeCodeLlmClient(new ClaudeCodeOptions { ModelId = model }), "claude-code plan (CLI sign-in, no key)", dir, only);
         }
 
         // The key comes from the app's key ring (DEC-046) and is described by presence, length and source only,
@@ -56,6 +74,13 @@ internal static partial class PlannerEvalHost
             return 12;
         }
 
+        return await RecordOnAsync(LiveClient.Create(ring), key, dir, only);
+    }
+
+    /// <summary>The selected cases over <paramref name="client"/> (disposed here), stoppable with Ctrl+C.</summary>
+    private static async Task<int> RecordOnAsync(ILlmClient client, string keyState, string? dir, string[]? only)
+    {
+        using var _ = client;
         var set = LoadSet();
         var cases = Select(set, only, out var unknown);
         if (unknown.Count > 0)
@@ -74,9 +99,8 @@ internal static partial class PlannerEvalHost
         Console.CancelKeyPress += stop;
         try
         {
-            using var client = LiveClient.Create(ring);
-            Console.WriteLine($"recording {cases.Count} case(s) with {LiveClient.ModelId} into {dir}");
-            return await RecordAsync(set, cases, client, dir, key, cts.Token);
+            Console.WriteLine($"recording {cases.Count} case(s) with {client.ProviderId}/{client.ModelId} into {dir}");
+            return await RecordAsync(set, cases, client, dir, keyState, cts.Token);
         }
         finally
         {

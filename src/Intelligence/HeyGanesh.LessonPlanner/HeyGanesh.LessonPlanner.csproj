@@ -27,4 +27,10 @@
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.Core\HeyGanesh.Providers.Core.csproj" />
   </ItemGroup>
 
+  <!-- FEATURE-011 step 5 (DEC-072): the drawing planner's prompts are openclicky's, vendored once in the drawing stage
+       project and embedded here byte for byte (LP-14 compares them), read from this assembly, never from disk. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\Experience\HeyGanesh.DrawStage\Page\prompt\*.md" LogicalName="HeyGanesh.LessonPlanner.DrawingPrompt.%(Filename)%(Extension)" Link="DrawingPrompt\%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

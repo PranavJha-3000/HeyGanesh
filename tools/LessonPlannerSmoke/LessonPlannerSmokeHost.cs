@@ -37,6 +37,9 @@ internal static partial class LessonPlannerSmokeHost
                 "--assert-stream" => await RunAssertStreamAsync(),
                 "--assert-prompt-schematic" => await RunAssertPromptSchematicAsync(),
                 "--assert-earlier" => await RunAssertEarlierAsync(),
+                "--assert-drawing-prompt" => await RunAssertDrawingPromptAsync(),
+                "--assert-drawing-stream" => await RunAssertDrawingStreamAsync(),
+                "--assert-drawing-none" => await RunAssertDrawingNoneAsync(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -69,6 +72,9 @@ internal static partial class LessonPlannerSmokeHost
         Console.WriteLine("  --assert-stream      beats released as they validate, for every golden lesson at every chunk size; faults, repair, fallback, timing, exit 0");
         Console.WriteLine("  --assert-prompt-schematic  schematics offered only with a catalogue and the geometry check; block from the code; the F-35B answer plans and streams, exit 0");
         Console.WriteLine("  --assert-earlier         earlier turns: fenced, flattened, capped, the last 3; none = unchanged prompt (DEC-061), exit 0");
+        Console.WriteLine("  --assert-drawing-prompt  the drawing planner's prompts: the vendored ones, filled from code, context fenced (DEC-072), exit 0");
+        Console.WriteLine("  --assert-drawing-stream  the program read as it streams or whole; only program text reaches the stage; keep(), faults, exit 0");
+        Console.WriteLine("  --assert-drawing-none    NONE and prose never reach the stage; a program is a program, exit 0");
         return 0;
     }
 

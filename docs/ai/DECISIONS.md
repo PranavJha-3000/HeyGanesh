@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-072](#dec-072--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing planner (FEATURE-011 step 5): DrawingPlanner in LessonPlanner asks any ILlmClient for a program in the drawing language, streamed or whole; openclicky's prompts are embedded from the vendored files and filled from code (our name, no photo(), the untrusted-data rule); screen text, the pointed-at name, earlier turns and a follow-up's program go in fenced; NONE and prose never reach the stage | accepted |
 | [DEC-071](#dec-071--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage's controller and speech clock (FEATURE-011 step 4): DrawStageController (ported, trimmed to what is offered) turns page messages into events and handles the close button (clear, hide, Closed); DrawStageVoice speaks each line in order through any Func<string, CancellationToken, Task> and sends lineStarted / lineEnded, finishNow when the voice fails; stage.css hides Picture, Video and PiP | accepted |
 | [DEC-070](#dec-070--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage trusts nothing the program worker returns (FEATURE-011 step 3): stage.js checks every mark before painting it (known kind, finite numbers near the canvas, bounded sizes and text, at most 4 figures and 300 parts, photo() and f.piece() refused), a program gets 20 s of worker time in all, and the window answers every off-page request 403 and counts it | accepted |
 | [DEC-069](#dec-069--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage window (FEATURE-011 step 2): a Win32 popup with no redirection bitmap, a Windows.UI.Composition tree and WebView2 in composition mode, transparent, click-through except over the boxes the page reports, never activated, capture-excluded, on its own STA thread; the page served by a resource handler so the worker gets its own CSP; the DrawStage assembly takes the already-pinned WebView2 1.0.4314.35 | accepted |
@@ -82,6 +83,31 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-072 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the drawing planner asks for a program, with openclicky's prompts filled from code.** FEATURE-011 step 5; the owner: "Yes, build step 5".
+
+- **`DrawingPlanner.DrawAsync(request, onProgram, ct)`** in `HeyGanesh.LessonPlanner`, next to `VisualPlanner` (unchanged until step 10).
+  - The request: the question, the canvas size (the screenshot's), and optionally the screenshot, the pointed-at box and its name, the screen text, earlier turns, and a follow-up (the drawing on the stage: its questions and program).
+  - The result: `Program`, `None` or `NoProgram`, with the program and keep() for a follow-up, plus model, tokens and timings.
+  - It works through any `ILlmClient`. A client with `Streaming` (Claude Code) has its reply read as it comes, and `onProgram` gets the program so far each time it grows. A client without it (Codex) gives one whole reply, handed over once.
+  - Provider faults and cancellation propagate. The program is not checked here: the stage sandboxes it and checks every mark (DEC-070).
+- **Prompts:** openclicky's `drawing-language.md`, `question.md` and `follow-up.md` are embedded from `HeyGanesh.DrawStage/Page/prompt`, byte for byte (LP-14). They are read from the assembly, not from disk, so LP-1's no-I/O audit still holds, and no project reference is added.
+  - Placeholders are filled from code at openclicky's "detailed" level: 3 to 6 beats, 70 calls, 50 parts, captions below 86 % of H.
+  - The template's placeholders must be exactly the ones filled, in one pass, so a changed vendored prompt fails loudly, and a value containing `{{…}}` is never filled again.
+  - Two changes are made in code, so the vendored files stay exact: the name becomes Hey Ganesh, and the `photo()` line is dropped. An untrusted-data rule is added at the end.
+- **Untrusted context:** the screen text, the pointed-at name and earlier turns go in `<<<BEGIN …>>>` fences, flattened and capped with the old planner's `Untrusted`. The question is flattened to one line. A follow-up's earlier program is capped, and its ``` is neutralised so it cannot close its block. The screenshot goes only to a model with `Vision`; otherwise the prompt says none is attached.
+- **Reading the reply:** `ProgramIn` is ported from openclicky. While streaming, it holds back a closing fence that is still arriving, so the stage never gets a backtick or the prose around the block.
+  - `NONE` counts only as the reply's first word (`NONE.` yes, `NONEXISTENT` and "None of…" no).
+  - Prose or an empty block is `NoProgram`.
+  - `KeepsTheDrawing` (keep() first, after comments) is openclicky's rule.
+- **Rows:** LP-14 `--assert-drawing-prompt` 10, LP-15 `--assert-drawing-stream` 5, LP-16 `--assert-drawing-none` 4. They are offline, and CI gate G-14 runs them.
+
+**Rejected.**
+- Reading the prompt files from the output folder at run time: LP-1 forbids file I/O in the planner, and an embedded copy cannot go missing.
+- Copying openclicky's prompt as C# text, as upstream does: two copies would drift. The vendored files stay the one copy, pinned by VENDOR.md and by LP-14.
+- Checking the program statically here: step 6 adds program checks to PlannerEval. At run time the stage's sandbox is the boundary.
+
 ## DEC-071 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the stage gets a controller, a speech clock, and only a close button.** FEATURE-011 step 4. The owner chose "Handle close, hide rest" for the page's buttons, then said "Yes, build step 4".

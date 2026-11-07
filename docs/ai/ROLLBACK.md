@@ -714,3 +714,10 @@
 - **Rollback point:** `d04460e` (step 3 and the button decision), or revert this step's commit.
 - **Files to restore:** `git checkout d04460e -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`.
 - **Re-check after revert:** DS-1 14, DS-4 13, DS-5 3 PASS; `stage.css` hash equals upstream again.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 5: DrawingPlanner, DEC-072)
+
+- **Change:** `src/Intelligence/HeyGanesh.LessonPlanner` gains `DrawingPlanner` (question in, drawing program out, streamed or whole, NONE detected) beside the old `VisualPlanner`, which is unchanged. Its csproj embeds the three vendored prompt files from `HeyGanesh.DrawStage/Page/prompt` as resources (no new reference, no package). `tools/LessonPlannerSmoke` gains LP-14 `--assert-drawing-prompt`, LP-15 `--assert-drawing-stream`, LP-16 `--assert-drawing-none`; CI gate G-14 runs them. Docs: DEC-072, FEATURE-011, TEST-CHECKLIST, CI.md, AGENTS.md, HANDOVER. Nothing calls the new planner yet.
+- **Rollback point:** `93e5232` (step 4), or revert this step's commit.
+- **Files to restore:** `git checkout 93e5232 -- src/Intelligence/HeyGanesh.LessonPlanner tools/LessonPlannerSmoke .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** LessonPlannerSmoke rows LP-1..LP-13 with their usual counts (`--assert-source` 3).

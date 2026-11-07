@@ -278,3 +278,19 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - First attempt, logged: DS-6 expected `finished` after the last line's voice ended, and it came 0.25 s before. The page ends a line whose `lineEnded` has not come at its estimated length. That is upstream's design, so the check now asks for "after the last line started, within 3 s of its end". Step 7 must wait for both the voice and `finished`.
   - Plan drift: DS-6 runs on the real stage (local), not offline. The pacing is the page's, so a fake surface would test nothing.
   - Next: step 5, `DrawingPlanner` in LessonPlanner.
+- 2026-11-07 · claude-opus-5-5: **step 5 done (DEC-072).** `DrawingPlanner` sits in `HeyGanesh.LessonPlanner`, beside the old planner.
+  - It asks any `ILlmClient`: streamed when the client streams (Claude Code), whole otherwise (Codex).
+  - The vendored prompts are embedded byte for byte and filled from code: our name, no `photo()`, the untrusted-data rule.
+  - Context goes in fenced: the screen text, the pointed-at name, earlier turns, and a follow-up's program.
+  - NONE and prose never reach the stage, and keep() is read for a follow-up.
+  - Rows: LP-14 10, LP-15 5, LP-16 4, offline, in CI G-14. LP-1..LP-13 keep their counts (LP-1 still 3: no file I/O, no new reference).
+  - Mutations caught:
+    - the name not replaced;
+    - `photo()` kept;
+    - an earlier program not neutralised;
+    - the closing fence not held back;
+    - NONE without a word boundary;
+    - screen text not flattened.
+  - Failed attempt, logged: LP-14 first expected two ``` in the follow-up prompt, but the vendored template has three of its own. The check now compares with the template.
+  - Not done here: a live run on a real model. That is step 6 (PlannerEval `--record --drawing`, PE-10).
+  - Next: step 6, PlannerEval for programs.

@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (drawing planner, FEATURE-011 step 5, DEC-072)
+
+Did: `DrawingPlanner` in LessonPlanner (question → program in the drawing language through any ILlmClient, streamed or whole; vendored prompts embedded and filled from code; context fenced; NONE / NoProgram; keep() for follow-ups). LP-14/15/16, in CI G-14.
+Left: Steps 6–10 (next: PlannerEval for programs). No live model has written a program through it yet. Not wired into the shell.
+Watch: The prompts are embedded from `HeyGanesh.DrawStage/Page/prompt`: editing a vendored prompt changes the planner (LP-14 and VENDOR.md both pin it). A placeholder added upstream makes `Fill` throw by design. Python `'\\n'` inside a heredoc becomes a real newline in C#: use the Edit tool for such lines.
+Next: FEATURE-011 step 6 (PlannerEval program checks PE-9, live PE-10), on the owner's go-ahead.
+Verified: LessonPlanner + LessonPlannerSmoke build -warnaserror 0/0. All 15 LessonPlannerSmoke rows PASS, LP-1..LP-13 at their usual counts. Six mutations each fail LP-14..16.
+
 ## 2026-11-07 · claude-opus-5-5 (drawing stage controller and speech clock, FEATURE-011 step 4, DEC-071)
 
 Did: `DrawStageController` (ported, trimmed; close button clears, hides, raises `Closed`), `DrawStageMessages`, `DrawStageVoice` (lines spoken in order with lineStarted/lineEnded, finishNow on a failed voice), `IDrawStageSurface` on `DrawStageWindow`; `stage.css` hides Picture/Video/PiP (VENDOR.md). DS-6 `--assert-pace`, DS-7 `--demo`; DS-1 checks the CSS edit.

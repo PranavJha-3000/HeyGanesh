@@ -673,3 +673,10 @@
 - **Rollback point:** `6832a0f` (HEAD of `feat/apple-look`; this step is on `feat/plan-providers`), or revert this step's commit.
 - **Files to restore:** `git checkout 6832a0f -- tools/PlannerEval AGENTS.md docs/ai`, then delete `src/Providers/HeyGanesh.Providers.ClaudeCode` and `tools/ClaudeCodeSmoke`.
 - **Re-check after revert:** build `tools/PlannerEval`; `--assert-record-stub` 9, `--assert-drift` 5.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-010 step 2: Codex plan provider, DEC-066)
+
+- **Change:** `src/Providers/HeyGanesh.Providers.ClaudeCode` gains `CodexLlmClient` (runs `codex exec` on the person's ChatGPT plan) and, in `PlanCli`, a generic `Locate` and openclicky's npm-shim / cmd.exe launcher (so `claude.cmd` and `codex.cmd` installs work); `tools/ClaudeCodeSmoke` gains fake-codex rows CX-1..CX-3, the launcher row CX-5 and `--live-codex` (CX-4); PlannerEval `--provider codex`. Docs: DEC-066, FEATURE-010, TEST-CHECKLIST, AGENTS.md, HANDOVER. No new dependency.
+- **Rollback point:** `e01794f` (step 1 on `feat/plan-providers`), or revert this step's commit.
+- **Files to restore:** `git checkout e01794f -- src/Providers/HeyGanesh.Providers.ClaudeCode tools/ClaudeCodeSmoke tools/PlannerEval AGENTS.md docs/ai`, then delete any new file `git status` lists.
+- **Re-check after revert:** ClaudeCodeSmoke `--assert-args` 15, `--assert-stream` 6, `--assert-errors` 10; PlannerEval `--assert-drift` 5.

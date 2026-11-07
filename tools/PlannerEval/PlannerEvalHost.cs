@@ -62,7 +62,7 @@ internal static partial class PlannerEvalHost
         Console.WriteLine("  --assert-record-stub  record through the real client against a loopback stub; no key in any file; replay reproduces it; the baseline gate fires, exit 0");
         Console.WriteLine("  --assert-drift   the live client's settings match the App Shell's lesson client, exit 0");
         Console.WriteLine("  --record [dir] [--cases E-01,M-02]  LIVE: plan the cases with DeepSeek (DEEPSEEK_API_KEY) and write a recording; no key -> exit 12");
-        Console.WriteLine("        [--provider claude-code [--model <m>]]  instead plan on your Claude plan through the claude CLI (DEC-065); signed out -> exit 12");
+        Console.WriteLine("        [--provider claude-code|codex [--model <m>]]  instead plan on your Claude or ChatGPT plan through its CLI (DEC-065/DEC-066); signed out -> exit 12");
         Console.WriteLine("  --replay <dir> [--baseline <dir>]   re-score a recording offline; with a baseline: exit 1 on a regression, 3 when the prompt changed");
         return 0;
     }

@@ -10,7 +10,7 @@ namespace HeyGanesh.Tools.ClaudeCodeSmoke;
 /// CC-1..CC-3 run offline against <see cref="FakeClaude"/> (this exe); CC-4 (<c>--live</c>) runs the real CLI on
 /// the owner's Claude plan. Exit codes: 0 pass, 1 a row failed, 2 usage, 12 Claude Code signed out.
 /// </summary>
-internal static class ClaudeCodeSmokeHost
+internal static partial class ClaudeCodeSmokeHost
 {
     private const string System = "You are a careful teacher.";
 
@@ -23,6 +23,11 @@ internal static class ClaudeCodeSmokeHost
             "--assert-stream" => Report(await AssertStreamAsync()),
             "--assert-errors" => Report(await AssertErrorsAsync()),
             "--live" when args.Length >= 2 => await LiveAsync(args[1], args.Length >= 4 && args[2] == "--model" ? args[3] : null),
+            "--assert-codex-args" => Report(await AssertCodexArgsAsync()),
+            "--assert-codex-run" => Report(await AssertCodexRunAsync()),
+            "--assert-codex-errors" => Report(await AssertCodexErrorsAsync()),
+            "--assert-launch" => Report(await AssertLaunchAsync()),
+            "--live-codex" when args.Length >= 2 => await LiveCodexAsync(args[1], args.Length >= 4 && args[2] == "--model" ? args[3] : null),
             _ => Usage(),
         };
     }
@@ -34,6 +39,11 @@ internal static class ClaudeCodeSmokeHost
         Console.WriteLine("  --assert-stream   CC-2: deltas, result, tokens, cost, no-partial fallback");
         Console.WriteLine("  --assert-errors   CC-3: signed out, rate limit, timeout, cancel, crash, empty, missing exe, tools");
         Console.WriteLine("  --live \"<question>\" [--model <m>]   CC-4: one real call on your Claude plan");
+        Console.WriteLine("  --assert-codex-args    CX-1: codex exec flags, prompt on stdin, image files, stripped variables, scratch folder");
+        Console.WriteLine("  --assert-codex-run     CX-2: answer file, events fallback, tokens, one-piece stream");
+        Console.WriteLine("  --assert-codex-errors  CX-3: signed out, usage limit, timeout, cancel, crash, empty, missing exe, tools");
+        Console.WriteLine("  --assert-launch        CX-5: npm shim script found, .cmd through cmd.exe keeps every argument, .cmd located");
+        Console.WriteLine("  --live-codex \"<question>\" [--model <m>]   CX-4: one real call on your ChatGPT plan");
         return 2;
     }
 

@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-066](#dec-066--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Codex plan provider (FEATURE-010 step 2): `CodexLlmClient` runs `codex exec` read-only and ephemeral with the person's config, tools and web search off; system prompt on stdin (cmd.exe's 8 191 cap); not streamed; npm `.cmd` shims launched through their Node script or an escaped cmd.exe line; same assembly as DEC-065 | accepted |
 | [DEC-065](#dec-065--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Plan providers (FEATURE-010 step 1): an `ILlmClient` over the `claude` CLI on the person's Claude plan, ported from openclicky (MIT); one tool-less, session-less `-p` run per call, system prompt by file, API-key and nesting variables stripped; used by PlannerEval `--record --provider claude-code` only | accepted |
 | [DEC-064](#dec-064--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | 3D scene window in the FEATURE-009 look (step 3): shared `tokens.css`, glass frame and opaque stage, pill labels, red highlight and accent pick glows read from the tokens by scene.js; flat accent mark so the orientation probe's colour search stays clean | accepted |
 | [DEC-063](#dec-063--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Glass lesson card (FEATURE-009 step 2c): DWM Acrylic behind a transparent WebView2, page frame tint over it, opaque board; solid fallback when Windows refuses or transparency is reduced; proven on a never-active card by the step 2b spike | accepted |
@@ -76,6 +77,21 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-066 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the lesson model can also run on the person's ChatGPT plan through `codex exec`.** FEATURE-010 step 2; the owner: "Yes, build step 2".
+
+- **How:** `CodexLlmClient : ILlmClient`, in the same `HeyGanesh.Providers.ClaudeCode` assembly as DEC-065 (both are plan-CLI clients sharing `PlanCli`; renaming the assembly was left alone as churn). One `codex exec` per call in a fresh temp folder: `--skip-git-repo-check --ephemeral --ignore-user-config --ignore-rules --sandbox read-only --json`, openclicky's eleven `--disable` features, web search off and low reasoning effort. Images go as files with `-i`; the answer is read from `-o last-message.txt`, falling back to the last `agent_message` event; tokens come from `turn.completed`.
+- **System prompt on stdin, not `-c developer_instructions`:** npm installs Codex as `codex.cmd`. When its Node script cannot be found, cmd.exe runs it and caps the line at 8 191 characters, and the planner's prompt is longer. Tradeoff: the instructions carry user-level weight. Marked `shortcut:` until a Codex instructions-file setting is verified live.
+- **Not streamed:** capabilities are Text and Vision, so the planner takes its whole-answer path and the first beat arrives with the whole lesson. FEATURE-010 step 3 measures what that costs.
+- **Launcher:** `PlanCli.Resolve` (ported from openclicky) starts an `.exe` directly. It runs an npm shim's Node script with node, and any other `.cmd` through `cmd.exe /d /s /c` with every argument quoted and `^`-escaped. CX-5 shows that `%PATH%` is not expanded, and that removing the escaping fails the row. This also pays off DEC-065's `claude.cmd` shortcut.
+- **Errors:** the same mapping as DEC-065. Signed out, `codex login` or 401 -> AuthFailed; usage or rate limit (the inner message of a JSON 429 body) -> RateLimited; everything else not retryable.
+
+**Rejected.**
+- `-c developer_instructions=...`: the 8 191-character cap above.
+- Codex's app-server mode: it streams, but is a long-running protocol for a one-shot call.
+- The OpenAI API with the token Codex stores: outside the terms, and it moves a credential into HeyGanesh.
+
 ## DEC-065 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the lesson model can run on the person's Claude plan through the `claude` CLI.** FEATURE-010 step 1; the owner: "Yes, build step 1".

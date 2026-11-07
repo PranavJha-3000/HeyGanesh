@@ -107,7 +107,7 @@ public sealed class ClaudeCodeLlmClient : ILlmClient
         if (exe is null || !File.Exists(exe))
         {
             throw new ProviderException(ProviderErrorKind.Transport, ProviderId, ModelId,
-                "Claude Code is not installed: no claude.exe in %USERPROFILE%\\.local\\bin or on PATH.", isRetryable: false);
+                "Claude Code is not installed: no claude.exe or claude.cmd in %USERPROFILE%\\.local\\bin, npm's folder or on PATH.", isRetryable: false);
         }
 
         var scratch = PlanCli.MakeScratch();

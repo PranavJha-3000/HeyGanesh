@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (Codex plan provider, FEATURE-010 step 2, DEC-066)
+
+Did: `CodexLlmClient` (codex exec on the ChatGPT plan: read-only, ephemeral, config, tools and web search off, system prompt on stdin, not streamed) in the plan-provider assembly. `PlanCli` gains `Locate` and openclicky's npm-shim / cmd.exe launcher, so `.cmd` installs of either CLI work. CX-1..CX-5 offline. PlannerEval `--provider codex`. CC-4 and PE-8 now pass live on the owner's Claude plan (CLI signed in).
+Left: CX-4 live (owner: `npm i -g @openai/codex`, `codex login`). Steps 3 and 4. Still not wired into the App Shell, tray or Tutor.
+Watch: CX-5 only became sensitive with `%PATH%` in the argument: inside quotes cmd.exe already ignores `&` and the pipe, so a test without a `%VAR%` passes even with no escaping. Codex flags come from openclicky's 0.152.1; a newer Codex may differ. The cached-token sum for Codex is an assumption.
+Next: Owner installs and signs in to Codex, then `ClaudeCodeSmoke --live-codex "hi"`; then plan step 3.
+Verified: Builds -warnaserror 0/0. CC-1 15, CC-2 6, CC-3 10, CX-1 11, CX-2 4, CX-3 9, CX-5 4, all exit 0; CX-5 fails with the `^` escaping removed (mutation, restored). PlannerEval set, checks, record-stub, drift OK. Live: CC-4 OK (2.2 s first text, 3.9 s total); CX-4 not installed, exit 1.
+
 ## 2026-11-07 · claude-opus-5-5 (plan providers, FEATURE-010 step 1, DEC-065)
 
 Did: Assessed openclicky (MIT). New `HeyGanesh.Providers.ClaudeCode`: an `ILlmClient` that runs `claude -p` on the owner's Claude plan (stream-json, no tools, no session, system prompt by file, API-key and `CLAUDECODE` variables stripped). New `tools/ClaudeCodeSmoke` (CC-1..CC-4). PlannerEval `--record --provider claude-code [--model m]` (PE-8); DeepSeek stays the default and `LiveClient`/PE-5 are unchanged. On branch `feat/plan-providers`, cut from `feat/apple-look` at `6832a0f`.

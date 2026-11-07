@@ -37,7 +37,7 @@ internal static partial class PlannerEvalHost
             {
                 only = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             }
-            else if (args[i] == "--provider" && i + 1 < args.Length && args[i + 1] is "deepseek" or "claude-code")
+            else if (args[i] == "--provider" && i + 1 < args.Length && args[i + 1] is "deepseek" or "claude-code" or "codex")
             {
                 provider = args[++i];
             }
@@ -60,6 +60,12 @@ internal static partial class PlannerEvalHost
             // DEC-065: no key at all; the CLI's own sign-in pays. A signed-out CLI fails the first case with
             // AuthFailed, which RecordAsync turns into exit 12 like a missing key.
             return await RecordOnAsync(new ClaudeCodeLlmClient(new ClaudeCodeOptions { ModelId = model }), "claude-code plan (CLI sign-in, no key)", dir, only);
+        }
+
+        if (provider == "codex")
+        {
+            // DEC-066: the same, on the ChatGPT plan through codex exec; not streamed, so first beat = whole lesson.
+            return await RecordOnAsync(new CodexLlmClient(new CodexOptions { ModelId = model }), "codex plan (CLI sign-in, no key)", dir, only);
         }
 
         // The key comes from the app's key ring (DEC-046) and is described by presence, length and source only,

@@ -32,6 +32,7 @@
   const LEAD = 0.08, TAIL = 0.12; // a line's strokes start just after its words and end just before they do
   const FASTEST = 0.35, SLOWEST = 2, OPEN_LINE_SLOWEST = 1.3;
   const STATEMENT_SECONDS = 2;    // the longest one statement may run before the program is stopped
+  const PROGRAM_SECONDS = 20;     // Hey Ganesh: the most worker time a whole program (or a follow-up) may use (DEC-070)
   const MAX_ERRORS = 5;
 
   const TONES = {
@@ -56,14 +57,62 @@
   let lines = [], items = [], released = 0, penFreeAt = 0, finishing = false, finishedSent = false, ranSent = false;
   let markCount = 0, errors = 0, uid = 0;
   let remembered = false, recording = false;
+  let workerSeconds = 0, figuresSeen = 0, partsSeen = 0, skippedLogged = 0;
 
   const now = () => performance.now() / 1000;
+
+  // ------------------------------------------------------------------ checking marks (Hey Ganesh, DEC-070)
+  // The worker runs the model's code, and that code can post results of its own (postMessage stays: it is how the
+  // worker answers). So nothing from the worker is trusted: every mark is checked here before it is painted (a known
+  // kind, finite numbers near the canvas, bounded sizes and text, a cap on figures and parts), and photo() and
+  // f.piece() are not offered (DEC-067: no host fetch from model text). markProblem says why a mark is refused, or null.
+  const MARK_KINDS = new Set(['line', 'arrow', 'poly', 'ellipse', 'rect', 'dot', 'text', 'highlight', 'card', 'figure', 'part3d', 'motion3d', 'label3d', 'view3d']);
+  const AT_KINDS = new Set(['ellipse', 'rect', 'dot', 'text', 'highlight', 'card', 'figure']);
+  const POINT_KINDS = new Set(['line', 'arrow', 'poly']);
+  const PART_KINDS = new Set(['box', 'cyl', 'cone', 'sphere', 'torus', 'capsule', 'tube', 'pipe', 'lathe', 'extrude', 'spring', 'gear', 'blob', 'arrow']);
+  const MOTION_KINDS = new Set(['spin', 'bob', 'stroke', 'pulse', 'orbit', 'move']);
+  const MAX_POINTS = 500, MAX_TEXT = 300, MAX_TITLE = 120, MAX_FIGURES = 4, MAX_PARTS = 300, MAX_PARAMS = 20000, MAX_SAY = 1000;
+
+  function markProblem(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return 'not a mark';
+    if (m.do === 'photo') return 'photo() is not offered';
+    if (!MARK_KINDS.has(m.do)) return 'unknown kind ' + String(m.do).slice(0, 20);
+    const reach = 2 * Math.max(W, H);
+    const finite = v => typeof v === 'number' && isFinite(v);
+    const onCanvas = p => Array.isArray(p) && finite(p[0]) && finite(p[1]) && p[0] >= -reach && p[0] <= W + reach && p[1] >= -reach && p[1] <= H + reach;
+    const short = (v, n) => v === undefined || v === null || String(v).length <= n;
+    if ((AT_KINDS.has(m.do) || 'at' in m) && !onCanvas(m.at)) return 'its position is missing or far off the canvas';
+    if (POINT_KINDS.has(m.do) && !(Array.isArray(m.pts) && m.pts.length >= 2 && m.pts.length <= MAX_POINTS && m.pts.every(onCanvas))) {
+      return 'its points are missing, too many or far off the canvas';
+    }
+    for (const key of ['w', 'h', 'rx', 'ry', 'r']) if (key in m && !(finite(m[key]) && Math.abs(m[key]) <= 2 * reach)) return key + ' is not a sensible size';
+    if ('size' in m && !(finite(m.size) && m.size >= 0 && m.size <= 200)) return 'its text size is not sensible';
+    if ('width' in m && !(finite(m.width) && m.width >= 0 && m.width <= 100)) return 'its line width is not sensible';
+    if (!short(m.text, MAX_TEXT) || !short(m.title, MAX_TITLE) || !short(m.caption, MAX_TITLE)) return 'its text is too long';
+    if (m.do === 'figure' && ++figuresSeen > MAX_FIGURES) return 'more than ' + MAX_FIGURES + ' figures';
+    if (m.do === 'part3d') {
+      if (m.kind === 'piece') return 'f.piece() is not offered';
+      if (!PART_KINDS.has(m.kind)) return 'unknown part kind ' + String(m.kind).slice(0, 20);
+      let length = 0;
+      try { length = JSON.stringify(m.params || {}).length; } catch (_) { return 'its shape cannot be read'; }
+      if (length > MAX_PARAMS) return 'its shape is too large';
+      if (++partsSeen > MAX_PARTS) return 'more than ' + MAX_PARTS + ' parts';
+    }
+    if (m.do === 'motion3d' && !MOTION_KINDS.has(m.kind)) return 'unknown motion ' + String(m.kind).slice(0, 20);
+    return null;
+  }
+
+  // A say() from the worker: its words (capped, they go to the voice) and the mark count it follows.
+  const soundSay = s => s && typeof s === 'object' && typeof s.text === 'string' && s.text.length <= MAX_SAY && typeof s.at === 'number' && isFinite(s.at);
 
   function reset() {
     if (worker) worker.terminate();
     worker = null;
     restartStream();
     markCount = 0;
+    figuresSeen = 0;
+    partsSeen = 0;
+    skippedLogged = 0;
     while (svg.lastChild) svg.removeChild(svg.lastChild);
     if (window.Figure3D) window.Figure3D.clear();
     if (typeof photos !== 'undefined') photos.clear();
@@ -87,6 +136,7 @@
     finishedSent = false;
     ranSent = false;
     errors = 0;
+    workerSeconds = 0;
     remembered = false;
     showCaption(null);
     showTools();
@@ -191,26 +241,39 @@
       send({ type: 'programRan', lines: lines.length });
     }
     if (running || stopped || !worker || !pending.length) return;
-    running = { seq: ++seq, code: pending.shift() };
+    running = { seq: ++seq, code: pending.shift(), started: now() };
     worker.postMessage({ type: 'run', seq: running.seq, code: running.code });
     runTimer = setTimeout(() => stop('a statement ran longer than ' + STATEMENT_SECONDS + ' s: ' + running.code.slice(0, 80)), STATEMENT_SECONDS * 1000);
   }
 
   function ran(result) {
-    if (!running || result.seq !== running.seq) return;
+    if (!result || !running || result.seq !== running.seq) return;
     clearTimeout(runTimer);
     const code = running.code;
+    workerSeconds += now() - running.started;
     running = null;
-    for (const warning of result.warnings || []) log('warning: ' + warning);
-    if (result.error && errors++ < MAX_ERRORS) send({ type: 'error', text: result.error + ' in: ' + code.slice(0, 120) });
+    // Hey Ganesh (DEC-070): the result may be forged by the program, so its parts are read only in the shape expected.
+    for (const warning of (Array.isArray(result.warnings) ? result.warnings : []).slice(0, 20)) log('warning: ' + String(warning).slice(0, 200));
+    if (result.error && errors++ < MAX_ERRORS) send({ type: 'error', text: String(result.error).slice(0, 300) + ' in: ' + code.slice(0, 120) });
     // Marks and lines in the order the statement made them: a mark belongs to the latest say() before it. say().at
-    // counts the program's marks before it, as markCount does here.
-    const says = (result.says || []).slice();
-    for (const mark of result.marks || []) {
+    // counts the program's marks before it, as markCount does here. A refused mark still counts, so the lines after
+    // it stay with the marks they belong to.
+    const says = Array.isArray(result.says) ? result.says.filter(soundSay) : [];
+    for (const mark of Array.isArray(result.marks) ? result.marks : []) {
       while (says.length && says[0].at <= markCount) addLine(says.shift());
+      const problem = markProblem(mark);
+      if (problem) {
+        markCount++;
+        if (skippedLogged++ < 20) log('mark skipped: ' + problem);
+        continue;
+      }
       addItem(mark);
     }
     while (says.length) addLine(says.shift());
+    if (workerSeconds > PROGRAM_SECONDS) {
+      stop('the program ran longer than ' + PROGRAM_SECONDS + ' s in all');
+      return;
+    }
     runNext();
   }
 

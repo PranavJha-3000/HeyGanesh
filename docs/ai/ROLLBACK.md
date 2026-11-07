@@ -700,3 +700,10 @@
 - **Rollback point:** `a81f785` (step 1), or revert this step's commit.
 - **Files to restore:** `git checkout a81f785 -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`, then delete any new file `git status` lists under those folders.
 - **Re-check after revert:** DS-1 13 PASS, exit 0.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 3: mark check, program time cap, off-page requests, DEC-070)
+
+- **Change:** the first local edit to vendored code: `Page/stage.js` checks every mark the worker returns before painting it, guards the worker's result shape, and stops a program after 20 s of worker time in all; `VENDOR.md` records the edit and the new hash. `DrawStageWindow` answers every request that is not for the page's host with 403 and counts it. `tools/DrawStageSmoke` gains DS-4 `--assert-sandbox` and DS-5 `--assert-marks`; DS-1 checks the edit is in place. Docs: DEC-070, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER.
+- **Rollback point:** `ddd58cf` (step 2), or revert this step's commit.
+- **Files to restore:** `git checkout ddd58cf -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`.
+- **Re-check after revert:** DS-1 13, DS-2 13 PASS; `stage.js` hash equals upstream again (`bde25b57…`).

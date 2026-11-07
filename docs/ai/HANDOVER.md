@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (drawing stage sandbox and mark check, FEATURE-011 step 3, DEC-070)
+
+Did: `stage.js`'s first local edit (VENDOR.md records it): every mark from the worker is checked before it is painted, `photo()`/`f.piece()` refused, 20 s of worker time per program. `DrawStageWindow` answers off-page requests 403 and counts them. DS-4 `--assert-sandbox`, DS-5 `--assert-marks`; DS-1 checks the edit.
+Left: Steps 4–10. The page's Picture/Video/PiP/close buttons still show with nothing handling them (owner's choice, with step 4). Not wired into the shell.
+Watch: A forged worker result can take the running statement's place (`seq` is not a secret); only the mark check is a boundary. Any further edit to a vendored file must update its VENDOR.md row and "Local edits". DS-4 takes about 40 s.
+Next: FEATURE-011 step 4 (`DrawStageController` + speech clock, DS-6/DS-7), on the owner's go-ahead.
+Verified: DrawStage + DrawStageSmoke build -warnaserror 0/0. DS-1 14, DS-2 13 (×3), DS-4 13, DS-5 3 PASS, exit 0. Mutations: no mark check, no program cap and no worker CSP each fail their row.
+
 ## 2026-11-07 · claude-opus-5-5 (drawing stage window, FEATURE-011 step 2, DEC-069)
 
 Did: `DrawStageWindow` (transparent, click-through, capture-excluded WebView2 composition window over one monitor, own STA thread; page served by a resource handler, worker gets its own CSP, navigation fenced) and `StageThread` in `HeyGanesh.DrawStage`, which now takes the already-pinned WebView2 1.0.4314.35. DS-2 `--assert-window`, DS-3 `--snapshot`.

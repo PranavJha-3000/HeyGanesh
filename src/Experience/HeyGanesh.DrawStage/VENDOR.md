@@ -18,8 +18,8 @@ so line endings are the repository's (LF). Nothing here is fetched at runtime. `
 - **Licences:** openclicky's MIT licence ships as `Page/LICENSE-openclicky`, and three.js's as
   `Page/vendor/three/LICENSE`.
 
-Unchanged from upstream at this step. Any later edit to a vendored file (FEATURE-011 step 3: the mark check
-and the program time cap) is listed under "Local edits" with its new hash.
+Every file is byte-exact from upstream except those listed under "Local edits", which the table pins at their
+edited hash.
 
 | File | Bytes | SHA-256 | Source path at `5b838ad` |
 |---|---|---|---|
@@ -40,7 +40,7 @@ and the program time cap) is listed under "Local edits" with its new hash.
 | `samples/rocket.js` | 1796 | `1f69aecba6f8ae4bfd22eaa86b996535a65b190bb628c6684ce1c40074b30cf7` | `windows/src/OpenClicky.Windows/Assets/DrawStage/samples/rocket.js` |
 | `stage-worker.js` | 11131 | `3c0ae3e56d56573e3ae3146195fd0d12b3d68eb43d011e67d6173b10247db8a0` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage-worker.js` |
 | `stage.css` | 6916 | `7893b2a1e2a27f33b0044c0f277df84f7410aeb1f1d68bc50d2d9e52316838e8` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.css` |
-| `stage.js` | 42576 | `bde25b57dc7a058e21d842c3ada25a2b1e718e27b38ba6c3966536ffc1bea340` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.js` |
+| `stage.js` | 47287 | `69626bc75a080f11374d318fadac44b0079b589eea6fe6015a796dbc05cdb61a` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.js` |
 | `vendor/three/LICENSE` | 1081 | `4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/LICENSE` |
 | `vendor/three/README.txt` | 241 | `4c3b9deaa72b1c3a588c77eed1cc8c42c2dcecfb553ef44163c8e045894f88bc` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/README.txt` |
 | `vendor/three/RoomEnvironment.js` | 3622 | `625d0d8ac8690a73799ea0e2c577d6260162e0da97698c4fe9b03715909ac214` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/RoomEnvironment.js` |
@@ -49,6 +49,12 @@ and the program time cap) is listed under "Local edits" with its new hash.
 
 ## Local edits
 
-None yet.
+- `stage.js` (2026-11-07 · claude-opus-5-5, FEATURE-011 step 3, DEC-070). Upstream 42576 bytes,
+  `bde25b57dc7a058e21d842c3ada25a2b1e718e27b38ba6c3966536ffc1bea340`. Added: `PROGRAM_SECONDS = 20` (the worker time a
+  whole program may use, checked after each statement); the "checking marks" section (`markProblem`, `soundSay`):
+  every mark the worker returns is checked before it is painted (known kind, finite numbers near the canvas, bounded
+  sizes and text, at most 4 figures and 300 parts, `photo()` and `f.piece()` refused); `ran()` reads the result only in
+  the shape expected and skips a refused mark with a `log` line. `reset()`/`restartStream()` zero the new counters.
+  Nothing upstream was removed.
 
 Vendored 2026-11-07 · claude-opus-5-5 with the owner's approval ("Approve, use three.js").

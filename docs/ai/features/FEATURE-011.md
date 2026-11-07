@@ -248,3 +248,16 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Mutations caught: no capture exclusion, no worker CSP header, navigation not cancelled. That last mutant really did load example.com once.
   - Found for step 4: the vendored page shows its Picture / Video / PiP / close buttons from the start (openclicky `e411d99`), and they post `save` and similar messages nobody handles yet. Step 4 either handles close and PiP and hides save, or a step 3 CSS edit hides them; the choice is the owner's.
   - Next: step 3, the sandbox rows and the mark check.
+- 2026-11-07 · claude-opus-5-5: **step 3 done (DEC-070).** `stage.js` gets its first local edit, recorded in VENDOR.md with the upstream and new hashes:
+  - `markProblem` checks every mark the worker returns before it is painted, and `photo()` and `f.piece()` are refused;
+  - `PROGRAM_SECONDS = 20` caps a program's worker time in all.
+
+  `DrawStageWindow` answers every off-page request 403 and counts it (`OffPageRequests`).
+  - Rows: DS-1 14, DS-4 `--assert-sandbox` 13, DS-5 `--assert-marks` 3, DS-2 13 (3 of 3 runs).
+  - Mutations caught: no mark check (DS-5, 3 FAIL); no program cap (DS-4, the 20 s check); no worker CSP (DS-4: the `import()` request is answered 403 locally and counted).
+  - Plan drift:
+    - DS-4 uses 15 × 1.5 s statements for the program cap, not "a 25 s program". A single statement is already stopped at 2 s.
+    - DS-5 checks no unknown colour: `tone()` already falls back.
+  - Found: a forged result that matches the running statement takes that statement's place, and in a stream the ones after it (`seq` is not a secret). Only checked marks are painted either way. DEC-070 records why `seq` is not made the boundary.
+  - Still open: the page's Picture / Video / PiP / close buttons. This step does not hide them. The choice goes to the owner with step 4.
+  - Next: step 4, `DrawStageController` and the speech clock.

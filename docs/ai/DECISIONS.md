@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-070](#dec-070--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage trusts nothing the program worker returns (FEATURE-011 step 3): stage.js checks every mark before painting it (known kind, finite numbers near the canvas, bounded sizes and text, at most 4 figures and 300 parts, photo() and f.piece() refused), a program gets 20 s of worker time in all, and the window answers every off-page request 403 and counts it | accepted |
 | [DEC-069](#dec-069--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage window (FEATURE-011 step 2): a Win32 popup with no redirection bitmap, a Windows.UI.Composition tree and WebView2 in composition mode, transparent, click-through except over the boxes the page reports, never activated, capture-excluded, on its own STA thread; the page served by a resource handler so the worker gets its own CSP; the DrawStage assembly takes the already-pinned WebView2 1.0.4314.35 | accepted |
 | [DEC-068](#dec-068--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | three.js r172 (MIT) vendored as files for the drawing stage's 3D figures, byte-equal to npm `three@0.172.0`; Babylon 9.30 and Anatomy leave with the old stack (FEATURE-011 step 10); porting `figure3d.js` to Babylon rejected | accepted |
 | [DEC-067](#dec-067--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Lessons move to openclicky's drawing stage (FEATURE-011): the model writes a drawing-language program run in a no-network worker and drawn in time with speech; VisualPlan, cards, Babylon scene, Part Library and LessonTurn go; mark check, capture exclusion, PerMonitorV2, grounding by prompt, notes replay of programs, the router's intent and the eval harness survive; `photo()` and `f.piece()` dropped; click-to-ask by part name | accepted |
@@ -80,6 +81,29 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-070 — 2026-11-07 — claude-opus-5-5
+
+**Decision — nothing the program worker returns is trusted; the page checks it.** FEATURE-011 step 3; the owner: "Yes, build step 3".
+
+- **The threat:** the model's program runs in the worker, and `postMessage` must stay there (it is how the worker answers). So a program can post a result of its own. `seq` is not a secret: a forged result that matches the running statement takes its place, and in a stream it can take the statements after it too (DS-5 shows one). The fences (DS-1) keep the program off the network. This decision bounds what it can make the page paint.
+- **Mark check (`stage.js`, the first local edit, listed in VENDOR.md):** `markProblem` refuses:
+  - a mark of an unknown kind, or with a position or points that are not finite or lie more than twice the canvas off it;
+  - sizes beyond twice that reach, text size above 200, or line width above 100;
+  - text above 300 characters, or titles and captions above 120;
+  - more than 4 figures, or more than 300 parts;
+  - an unknown part kind or motion, or part parameters above 20 kB of JSON;
+  - `photo()` and `f.piece()`, which are not offered (DEC-067: the host fetches nothing from model text).
+
+  A refused mark is skipped with a `log` line (at most 20 per drawing). It still counts, so `say()` lines stay with their marks. Warnings, errors and `say()` text are read only as the shape expected and are capped. Colours need no check: `tone()` already falls back for anything that is not a known name or hex. Material names fall back in figure3d.
+- **Program time cap:** `PROGRAM_SECONDS = 20` of worker time in all, checked after each statement, on top of upstream's 2 s per statement. A follow-up stream gets its own 20 s.
+- **Off-page requests (`DrawStageWindow`):** a second resource filter (`*`) answers every request for another host 403, locally, and counts it in `OffPageRequests`. The CSPs should stop any request before it is made, so the count stays 0. If a fence ever fails, the request still never reaches the network, and DS-4 fails on the count. This was shown by dropping the worker CSP: `import()` of an address was answered 403 and counted 1.
+- **Rows:** DS-1 gains a check for the edit (14). DS-4 `--assert-sandbox` 13, DS-5 `--assert-marks` 3, both local.
+
+**Rejected.**
+- Making `seq` unguessable: model code can replace the worker's `onmessage` and read every run. The check on what is painted is the boundary that holds.
+- Removing `postMessage` from the worker: the worker could no longer answer.
+- Checking marks in the worker's API: the program can forge results anyway, so the check belongs on the page's side.
+
 ## DEC-069 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the drawing stage runs in a transparent, click-through window over one monitor.** FEATURE-011 step 2; the owner: "Yes, build step 2".

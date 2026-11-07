@@ -21,6 +21,8 @@ internal static class DrawStageSmokeHost
                 "--assert-source" => RunAssertSource(),
                 "--assert-window" => DrawStageSmokeWindow.RunAssertWindow(),
                 "--snapshot" when args.Length > 1 => DrawStageSmokeWindow.RunSnapshot(args[1]),
+                "--assert-sandbox" => DrawStageSmokeWindow.RunAssertSandbox(),
+                "--assert-marks" => DrawStageSmokeWindow.RunAssertMarks(),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -47,6 +49,9 @@ internal static class DrawStageSmokeHost
         Console.WriteLine("                    click-through except over reported boxes, never activated, navigation fenced, the page serves");
         Console.WriteLine("                    only its files and the worker its own CSP, a program draws; exit 0");
         Console.WriteLine("  --snapshot <dir>  (local) draws two samples on the stage and saves each as a PNG in <dir> for review; exit 0");
+        Console.WriteLine("  --assert-sandbox  (local) programs that reach for the network, workers or the fences fail; a busy statement stops at");
+        Console.WriteLine("                    2 s, a program at 20 s in all, 2000 marks at most; no request leaves the page's host; exit 0");
+        Console.WriteLine("  --assert-marks    (local) bad and forged marks are skipped with a log line, good ones drawn; exit 0");
         return 0;
     }
 
@@ -120,6 +125,11 @@ internal static class DrawStageSmokeHost
         var stage = File.ReadAllText(Path.Combine(page, "stage.js"));
         failures = Check(Regex.IsMatch(stage, @"STATEMENT_SECONDS\s*=\s*2\b") && stage.Contains("worker.terminate()", StringComparison.Ordinal),
             "a statement gets 2 s before the page terminates the worker", failures);
+
+        // Step 3 (DEC-070), the one local edit to stage.js: nothing the worker returns is painted unchecked.
+        failures = Check(Regex.IsMatch(stage, @"PROGRAM_SECONDS\s*=\s*20\b") && stage.Contains("const problem = markProblem(mark);", StringComparison.Ordinal)
+                && stage.Contains("if (m.do === 'photo') return", StringComparison.Ordinal) && stage.Contains("if (m.kind === 'piece') return", StringComparison.Ordinal),
+            "stage.js checks every mark before painting it, refuses photo() and f.piece(), and gives a program 20 s of worker time (DEC-070)", failures);
 
         // MIT: both licences travel with the copied files.
         failures = Check(File.ReadAllText(Path.Combine(page, "LICENSE-openclicky")).Contains("MIT License", StringComparison.Ordinal)

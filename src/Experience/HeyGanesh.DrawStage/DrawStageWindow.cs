@@ -63,6 +63,7 @@ public sealed class DrawStageWindow : IDisposable
     private volatile bool _takesMouse;
     private bool _dragging;
     private int _blockedNavigations;
+    private int _offPageRequests;
     private volatile bool _workerPolicyServed;
 
     private DrawStageWindow(PixelRect frame, double scale, string pageFolder)
@@ -87,6 +88,9 @@ public sealed class DrawStageWindow : IDisposable
 
     /// <summary>Navigations away from the page that were cancelled.</summary>
     public int BlockedNavigations => Volatile.Read(ref _blockedNavigations);
+
+    /// <summary>Requests for anything but the page's own host, all answered 403 locally; 0 while the CSPs hold.</summary>
+    public int OffPageRequests => Volatile.Read(ref _offPageRequests);
 
     /// <summary>The program worker's script was served with <see cref="WorkerPolicy"/> at least once.</summary>
     public bool WorkerPolicyServed => _workerPolicyServed;
@@ -296,9 +300,18 @@ public sealed class DrawStageWindow : IDisposable
 
         // Every request to the page's host is answered here, from the output folder. A virtual host folder mapping
         // would be simpler, but its responses can't carry headers, and the worker needs a CSP of its own.
-        page.AddWebResourceRequestedFilter($"https://{PageHost}/*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+        // Every other request is answered here too, with 403, and counted (DEC-070): the CSPs should stop any before it is
+        // made, so a non-zero count means a fence failed, and even then nothing reaches the network.
+        page.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
         page.WebResourceRequested += (_, args) =>
         {
+            if (!args.Request.Uri.StartsWith("https://" + PageHost + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                Interlocked.Increment(ref _offPageRequests);
+                args.Response = environment.CreateWebResourceResponse(null, 403, "Forbidden", "Content-Type: text/plain; charset=utf-8");
+                return;
+            }
+
             var (status, reason, body, headers) = PageFile(args.Request.Uri, _pageFolder);
             args.Response = environment.CreateWebResourceResponse(body, status, reason, headers);
             if (status == 200 && headers.Contains(WorkerPolicy, StringComparison.Ordinal))

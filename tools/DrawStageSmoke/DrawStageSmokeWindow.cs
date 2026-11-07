@@ -111,6 +111,124 @@ internal static class DrawStageSmokeWindow
         return Summarize(failures, "SNAPSHOT OK (review the PNGs by eye)");
     });
 
+    // DS-4 (step 3, DEC-070): a hostile program gets nowhere. Each case is its own stream, so the page's cap of 5 error
+    // lines per stream never hides one.
+    public static int RunAssertSandbox() => WithStage((stage, messages) =>
+    {
+        var failures = 0;
+        (string Name, string Code)[] fenced =
+        {
+            ("fetch", "fetch('x.js')"),
+            ("XMLHttpRequest", "new XMLHttpRequest()"),
+            ("WebSocket", "new WebSocket('wss://example.com/')"),
+            ("Worker", "new Worker('stage-worker.js')"),
+            ("Blob", "new Blob(['1'])"),
+            ("createObjectURL", "URL.createObjectURL(1)"),
+            ("importScripts", "importScripts('x.js')"),
+        };
+        foreach (var (name, code) in fenced)
+        {
+            var heard = Program(stage, messages, code + "\nsay('after')", TimeSpan.FromSeconds(10));
+            var error = heard.FirstOrDefault(m => m.Type == "error").Text ?? "";
+            failures = Check(error.Contains(name, StringComparison.Ordinal) && (error.Contains("not a function", StringComparison.Ordinal) || error.Contains("not a constructor", StringComparison.Ordinal))
+                    && heard.Any(m => m.Type == "line" && m.Text == "after"),
+                $"{code}: fails, and the program goes on ({error})", failures);
+        }
+
+        var import = Program(stage, messages, "import('https://example.com/x.js')\nsay('after')", TimeSpan.FromSeconds(10));
+        Thread.Sleep(1000); // time for a request to be made, if one could be
+        failures = Check(import.Any(m => m.Type == "line" && m.Text == "after") && stage.OffPageRequests == 0,
+            $"import() of an address makes no request ({stage.OffPageRequests} off-page)", failures);
+
+        var redefine = Program(stage, messages, "Object.defineProperty(self, 'fetch', {value: () => 1})", TimeSpan.FromSeconds(10));
+        var redefineError = redefine.FirstOrDefault(m => m.Type == "error").Text ?? "";
+        failures = Check(redefineError.Contains("redefine", StringComparison.OrdinalIgnoreCase), $"a fence cannot be put back ({redefineError})", failures);
+
+        var watch = Stopwatch.StartNew();
+        var spin = Program(stage, messages, "while (true) {}\nsay('after')", TimeSpan.FromSeconds(10));
+        var spinSeconds = watch.Elapsed.TotalSeconds;
+        failures = Check(spin.Any(m => m.Type == "error" && m.Text!.Contains("longer than 2 s", StringComparison.Ordinal)) && !spin.Any(m => m.Type == "line") && spinSeconds is > 1.8 and < 5,
+            $"a statement that never ends is stopped at 2 s and nothing after it runs ({spinSeconds:F1} s)", failures);
+
+        var many = Program(stage, messages, "for (let i = 0; i < 3000; i++) dot(10, 10, 2)", TimeSpan.FromSeconds(10));
+        failures = Check(many.Any(m => m.Type == "error" && m.Text!.Contains("too many marks", StringComparison.Ordinal)), "3000 marks are refused at the limit of 2000", failures);
+
+        // Fifteen statements of 1.5 s each: every one is under the 2 s limit, the program is not under 20 s.
+        var busy = string.Concat(Enumerable.Repeat("for (const t = Date.now(); Date.now() - t < 1500;) {}\n", 15)) + "say('after')";
+        watch.Restart();
+        var slow = Program(stage, messages, busy, TimeSpan.FromSeconds(40));
+        var slowSeconds = watch.Elapsed.TotalSeconds;
+        failures = Check(slow.Any(m => m.Type == "error" && m.Text!.Contains("longer than 20 s in all", StringComparison.Ordinal)) && !slow.Any(m => m.Type == "line") && slowSeconds is > 19.5 and < 26,
+            $"a program of many slow statements is stopped at 20 s of worker time ({slowSeconds:F1} s)", failures);
+
+        failures = Check(stage.OffPageRequests == 0, $"no request asked for anything but the page's host ({stage.OffPageRequests})", failures);
+        return Summarize(failures, "SANDBOX OK");
+    });
+
+    // DS-5 (step 3, DEC-070): the page paints only marks that pass its check, whatever the worker sends.
+    public static int RunAssertMarks() => WithStage((stage, messages) =>
+    {
+        var failures = 0;
+        // The forged results go last: a forged result that matches the running statement takes its place (seq is not a
+        // secret, DEC-070), and with no statement after it nothing else can be taken.
+        const string code = """
+            step(1); say('Good marks and bad ones.')
+            dot(100, 100, 8)
+            const f = figure(300, 200, 400, 300)
+            f.box({size: [1, 1, 1]})
+            rect(1e9, 10, 20, 20)
+            text(50, 50, 'x'.repeat(5000))
+            circle(100, 100, 1e9)
+            photo(10, 10, 100, 100, {query: 'a cat'})
+            f.piece({make: 'a gear'})
+            f.blob({balls: Array.from({length: 3000}, () => [0, 0, 0, 0.1])})
+            for (let s = 0; s <= 100; s++) postMessage({type: 'ran', seq: s, marks: [{do: 'script', text: 'alert(1)'}, {do: 'dot', at: [NaN, 1]}, {do: 'dot', at: [500, 500], r: 5}], says: [{text: 42}], warnings: 'w'})
+            """;
+        var heard = Program(stage, messages, code, TimeSpan.FromSeconds(10));
+        Run(stage.PostAsync("{\"type\":\"finishNow\"}"));
+        var finished = WaitFor(() => Parsed(messages).Any(m => m.Type == "finished"), TimeSpan.FromSeconds(10));
+        heard = Parsed(messages);
+        var skipped = heard.Where(m => m.Type == "log" && m.Text!.StartsWith("mark skipped: ", StringComparison.Ordinal)).Select(m => m.Text![14..]).ToArray();
+        string[] expected =
+        {
+            "its position is missing or far off the canvas", "its text is too long", "rx is not a sensible size", "photo() is not offered",
+            "f.piece() is not offered", "its shape is too large", "unknown kind script", "its position is missing or far off the canvas",
+        };
+        failures = Check(skipped.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(expected.OrderBy(s => s, StringComparer.Ordinal)),
+            $"the 8 bad marks (6 from the program, 2 forged) are each skipped with a reason ({string.Join("; ", skipped)})", failures);
+        // paint() gives every mark it paints one <g>, 3D ones included.
+        var drawn = Run(stage.RunHostScriptAsync("JSON.stringify([document.querySelectorAll('#stage > g').length, document.getElementById('figures').children.length])"));
+        failures = Check(drawn == "\"[4,1]\"", $"only the 4 good marks are painted: the dot, the figure, its box and the forged good dot ([marks, 3D figures] = {drawn})", failures);
+        var errors = heard.Where(m => m.Type == "error").Select(m => m.Text).ToArray();
+        failures = Check(finished && errors.Length == 0 && heard.Count(m => m.Type == "line") == 1,
+            $"the drawing finishes with no error and only its one real line (a forged say() is dropped) ({string.Join("; ", errors)})", failures);
+        return Summarize(failures, "MARKS OK");
+    });
+
+    // One program as one stream, until the page says all of it ran (or was stopped).
+    private static List<(string Type, string? Text)> Program(DrawStageWindow stage, ConcurrentQueue<string> messages, string code, TimeSpan timeout)
+    {
+        messages.Clear();
+        Run(stage.PostAsync(JsonSerializer.Serialize(new { type = "beginStream", w = 1280, h = 720, pace = "estimate" })));
+        Run(stage.PostAsync(JsonSerializer.Serialize(new { type = "feed", code, done = true })));
+        WaitFor(() => Parsed(messages).Any(m => m.Type == "programRan"), timeout);
+        return Parsed(messages);
+    }
+
+    private static List<(string Type, string? Text)> Parsed(ConcurrentQueue<string> messages) => messages.Select(json =>
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            return (root.GetProperty("type").GetString() ?? "", root.TryGetProperty("text", out var text) ? text.ToString() : null);
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            return ("?", json);
+        }
+    }).ToList();
+
     private static int WithStage(Func<DrawStageWindow, ConcurrentQueue<string>, int> body)
     {
         var profile = Path.Combine(Path.GetTempPath(), "heyganesh-drawstagesmoke", Guid.NewGuid().ToString("N")[..8]);

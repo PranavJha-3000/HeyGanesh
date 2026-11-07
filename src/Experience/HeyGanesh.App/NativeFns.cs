@@ -56,6 +56,22 @@ internal static class NativeFns
         GetSystemMetrics(SmCxVirtualScreen),
         GetSystemMetrics(SmCyVirtualScreen));
 
+    [DllImport("shcore.dll")]
+    private static extern int GetDpiForMonitor(IntPtr monitor, int dpiType, out uint dpiX, out uint dpiY);
+
+    /// <summary>A monitor's scale (its effective DPI / 96) for the drawing stage window (DEC-069, DEC-074); 1 when the OS cannot say.</summary>
+    internal static double MonitorScale(IntPtr monitor)
+    {
+        try
+        {
+            return GetDpiForMonitor(monitor, 0, out var dpi, out _) == 0 && dpi > 0 ? dpi / 96.0 : 1.0;
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
+        {
+            return 1.0;
+        }
+    }
+
     /// <summary>
     /// True when the calling thread is at least per-monitor aware. Same probe, same floor, same
     /// "say aware when the OS cannot answer" bias as <c>ScreenOverlayService.IsPerMonitorDpiAware</c>,

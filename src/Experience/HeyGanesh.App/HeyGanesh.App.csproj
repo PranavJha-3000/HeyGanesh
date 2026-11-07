@@ -68,6 +68,13 @@
       EnvironmentSecretStore); it brings Providers.Core and Security with it.
     -->
     <ProjectReference Include="..\HeyGanesh.LessonSession\HeyGanesh.LessonSession.csproj" />
+    <!--
+      The drawing stage (FEATURE-011 step 7, DEC-074): the lesson leg draws with DrawingPlanner (LessonPlanner, which
+      arrives through LessonSession) on DrawStageWindow, with DrawStageController and DrawStageVoice. WebView2 is the
+      same pinned package LessonSession already brings, so no new dependency. LessonSession stays referenced until
+      the old stack is deleted (step 10): the tray's replay of stored VisualPlan lessons still uses it.
+    -->
+    <ProjectReference Include="..\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
     <!-- The key commands use Security's KeyRing directly (DEC-045), so the reference is stated, not inherited. -->
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />

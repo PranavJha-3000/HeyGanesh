@@ -1,3 +1,11 @@
+## 2026-11-07 · claude-opus-5-5 (the App Shell's lesson leg on the drawing stage, FEATURE-011 step 7, DEC-074)
+
+Did: `--lesson` and routed lessons draw on the drawing stage: DrawingPlanner → DrawStageController + DrawStageVoice → DrawStageWindow over the verdict's monitor (`ShellHost.Drawing.cs`, `ShellHost.Lesson.cs` rewritten). A drawing stays up; a question over it or a part click is a follow-up (keep() or redraw); NONE → the Tutor (a follow-up's drawing cleared); close ends it; Ctrl+Alt is free after a lesson. New offline row SH-29 (CI G-24); SH-18 updated; SH-28 live.
+Left: SH-28, the live run (owner). Step 8 (router to intent only), step 9 (notes + replay of programs: a drawn lesson's note has no program yet, so Recent lessons cannot replay it), step 10 (delete the old stack; `ShellHost.Route.cs` `CatalogFor` is now unused and goes with it).
+Watch: No automated row drives a real `DrawStageWindow` through the shell (SH-29 uses a fake page). A follow-up skips the route on purpose. A click turn has no verdict: no screenshot, no note. The finish wait is 5 min, then exit 4 with the stage cleared.
+Next: The owner runs SH-28 (keys + Fish + Gateway + a person at the desk), then FEATURE-011 step 8 on the owner's go-ahead.
+Verified: App and TraySmoke build -warnaserror 0/0. Shell rows exit 0/12/0/0/1/13/12/12/12/0/12; SH-18 dummy key 0 occurrences, exit 12. SH-29 14 PASS (two mutations each fail it). TY-1, NB-1, NB-4, RL-1, RL-2 pass. DS-1 16, DS-5 3, DS-6 8, LP-14 10, LP-15 5, LP-16 4, PE-9 28, PE-11 12 PASS.
+
 
 ## 2026-11-07 · claude-opus-5-5 (PlannerEval for drawing programs, FEATURE-011 step 6, DEC-073)
 

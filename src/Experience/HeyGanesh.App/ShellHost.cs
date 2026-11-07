@@ -158,15 +158,18 @@ internal static partial class ShellHost
         var tutor = tutorClient is null ? null : new TutorService(tutorClient);
 
         // The lesson seam (DEC-027), composed only when --lesson asks for it. Unlike the Tutor's, its
-        // client is built from the environment: no key -> no planner -> the leg reports its skip. The
-        // planner owns the client it resolved, and this using disposes it. The overlay is handed in for
-        // screen marks: by the time a lesson plays, the verdict's highlight has already left the screen.
-        // The router (DEC-036) can choose a lesson too, so the lesson seam is also composed whenever a
-        // router exists; without --lesson it only runs on the turns the router sends to it.
+        // client is built from the key ring: no key -> no planner -> the leg reports its skip. The shell
+        // owns the client, and this using disposes it. The router (DEC-036) can choose a lesson too, so
+        // the lesson seam is also composed whenever a router exists; without --lesson it only runs on the
+        // turns the router sends to it. Since DEC-074 a lesson is drawn on the drawing stage, which
+        // outlives a turn (a drawing stays up for follow-ups) and opens no window until the first lesson;
+        // declared before voice, so it is disposed after the turn that draws on it has been drained.
         var router = CreateRouter(options, jev);
         var lessonWanted = options.Lesson || router is not null;
-        using VisualPlanner? lessonPlanner = lessonWanted ? CreateLessonPlanner() : null;
-        var lesson = lessonWanted ? new LessonLeg(lessonPlanner, overlay) : null;
+        using var lessonClient = lessonWanted ? CreateLessonClient() : null;
+        using var stage = new DrawingStage(OpenStageAsync);
+        stage.Logged += line => Console.WriteLine($"stage       : {line}");
+        var lesson = lessonWanted ? new LessonLeg(lessonClient is null ? null : new DrawingPlanner(lessonClient), stage) : null;
 
         // The speech seam, composed with the default real legs (Qwen Gateway in, Fish/WAV out). The
         // constructor opens no devices: the microphone is taken per listen and released when the listen
@@ -252,6 +255,12 @@ internal static partial class ShellHost
             pump.OnPressed();
         };
         hotkey.Released += (_, _) => pump.OnReleased();
+
+        // DEC-074: a click on a part of the drawing asks a follow-up, as one more turn through the same gate.
+        if (lesson is not null)
+        {
+            lesson.Stage.PartClicked += pump.OnFigurePart;
+        }
 
         try
         {

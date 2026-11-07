@@ -309,3 +309,12 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Found: the DS-1 row in TEST-CHECKLIST still said 13 and "no package or project reference" from step 1. Corrected with this step's count.
   - Not done here: PE-10, a live recording (the owner's).
   - Next: step 7, the App Shell lesson leg switches to the stage.
+- 2026-11-07 · claude-opus-5-5: **step 7 done (DEC-074).** The App Shell's lesson leg draws on the stage.
+  - `--lesson` and routed lessons ask `DrawingPlanner` and draw through `DrawStageController` + `DrawStageVoice` on a `DrawStageWindow` over the verdict's monitor (new `ShellHost.Drawing.cs`: `DrawingStage`, `DrawOnStageAsync`, `PartQuestion`, `ToCanvas`). VisualPlanner → LessonTurn → cards is no longer used by the shell; it stays until step 10.
+  - A drawing stays up. A question asked over it (same monitor) is a follow-up, asked without waiting for the route; a part click is one too (cleaned name, ≤ 60 characters). keep() continues the drawing, otherwise it is redrawn. NONE or no program → the Tutor answers; over a drawing, the drawing is cleared first. The close button forgets it. Nothing waits for a click, so Ctrl+Alt is free once the drawing and its voice are done.
+  - Rows: SH-29 `TraySmoke --assert-drawing-leg` 14 (offline, CI G-24); SH-18 updated (same exits, new header); SH-28 live (owner), replacing SH-20 for the shell. The offline shell rows keep their exits (0/12/0/0/1/13/12/12/12/0/12); DS-1 16, DS-5 3, DS-6 8, LP-14 10, LP-15 5, LP-16 4, PE-9 28, PE-11 12; TraySmoke TY-1, NB-1, NB-4, RL-1, RL-2 still pass.
+  - Mutations caught: the follow-up never passed to the planner; NONE leaving the drawing up.
+  - Plan drift: the task named the live row SH-23, but SH-23 is the OCR row (DEC-039), so the live row is SH-28 and the offline one SH-29.
+  - Plan drift: a click's follow-up is not saved as a note (no verdict to record); it is kept in this run's memory. A drawn lesson's note has its first spoken line as the title and no stored program, so Recent lessons cannot replay a drawing until step 9.
+  - Not done here: SH-28 (live, the owner's); a real stage window driven by the shell (only by the live row; DS-2..DS-6 cover the window itself).
+  - Next: step 8, the router shrinks to intent only.

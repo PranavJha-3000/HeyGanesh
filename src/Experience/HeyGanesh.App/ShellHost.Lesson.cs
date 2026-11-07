@@ -1,84 +1,84 @@
 using HeyGanesh.Abstractions;
+using HeyGanesh.DrawStage;
 using HeyGanesh.LessonPlanner;
-using HeyGanesh.LessonSession;
-using HeyGanesh.LessonSurface;
 using HeyGanesh.Notes;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Providers.OpenAiCompat;
-using HeyGanesh.ScreenOverlay;
 using HeyGanesh.TurnRouter;
 using HeyGanesh.TutorEngine;
-using HeyGanesh.VisualLessonEngine.Runtime;
 using HeyGanesh.Voice;
 
 namespace HeyGanesh.App;
 
-// The lesson leg (FEATURE-007 Phase 4.5, DEC-027): with --lesson, a produced verdict is taught as a
-// drawn, spoken lesson instead of the Tutor's prose. Same seat in the turn as the Tutor leg: it runs
-// only on non-Failed verdicts, after the overlay has reported, and it re-decides nothing.
+// The lesson leg (DEC-027; on the drawing stage since FEATURE-011 step 7, DEC-074): with --lesson, or when the route
+// chooses a lesson, a produced verdict is taught as a drawing the model writes as a program, drawn on the stage over
+// the real screen while each line is spoken. Same seat in the turn as the Tutor leg: it runs only on non-Failed
+// verdicts, after the overlay has reported, and it re-decides nothing.
 //
-// The shell keeps the two jobs DEC-015/016 give it and nothing more: it maps the verdict to plain
-// grounding data (GuidanceResult never leaves this file), and it hands Voice's SpeakAsync in as the
-// lesson's speaker. Planning, cards and playback are HeyGanesh.LessonSession's LessonTurn, which
-// tools/LessonTurnSmoke drives with a fake model — this assembly carries no fakes (DEC-012).
+// The drawing stays up after the lesson. The next question asked over it (Ctrl+Alt, same monitor) is a follow-up, and
+// so is a click on a part of a 3D figure; the model keeps the drawing (keep()) or draws afresh, or says NONE and the
+// Tutor answers. The close button ends the drawing. Nothing waits for a click, so Ctrl+Alt is free once a lesson ends.
+//
+// The shell keeps its two jobs (DEC-015/016): it maps the verdict to plain data (the screenshot's size, the grounded
+// box in canvas units, the screen text) and hands Voice's SpeakAsync in as the speech clock. The turn itself is
+// DrawOnStageAsync (ShellHost.Drawing.cs), which TraySmoke --assert-drawing-leg drives with fakes; this assembly
+// carries no fakes (DEC-012). The old VisualPlanner -> LessonTurn -> cards path is no longer used here; it stays in
+// the tree until FEATURE-011 step 10.
 
 internal static partial class ShellHost
 {
-    /// <summary>The composed lesson seam. Present whenever --lesson is on; <see cref="Planner"/> is null without a key.</summary>
-    private sealed record LessonLeg(VisualPlanner? Planner, ScreenOverlayService Marks);
+    /// <summary>The composed lesson seam. Present whenever a lesson can be chosen; <see cref="Planner"/> is null without a key.</summary>
+    private sealed record LessonLeg(DrawingPlanner? Planner, DrawingStage Stage);
 
     private const string LessonKeyEnvVar = "DEEPSEEK_API_KEY";
 
     /// <summary>
-    /// How long a finished 3D lesson waits for a click on a part (DEC-031/DEC-033). Shorter than the
-    /// session default because Ctrl+Alt is refused while it waits: one turn at a time.
+    /// How long a drawing may take to finish once the model's program is complete (voice and page both done). Far
+    /// above a long spoken lesson; it only keeps a stage that never reports from holding the turn forever.
     /// </summary>
-    private static readonly TimeSpan LessonPickIdle = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DrawingFinishWait = TimeSpan.FromMinutes(5);
 
-    /// <summary>For the header: how many 3D models a lesson may show (the cards' catalogue, DEC-033).</summary>
-    private static int Scene3dModelCount => CardSurface.Scene3dCatalog.Models.Count;
+    /// <summary>The longest first spoken line kept as the lesson's title in the notes.</summary>
+    private const int MaxTitleChars = 120;
 
     /// <summary>
-    /// DEC-027: the lesson planner is built from the environment, not held behind a code flip like the
-    /// Tutor's (DEC-017). With no key the leg reports an honest skip; with one, the first lesson works
-    /// with no code change. DeepSeek through the OpenAI-compatible adapter is the provider the repo
-    /// already commits to (DEC-017: deepseek-flash, DEEPSEEK_API_KEY). It has no Vision, so the planner
-    /// sends no image and says so in the prompt (DEC-024) — a Vision-capable provider is a registry
-    /// assignment away, not a planner change.
+    /// DEC-027: the lesson model is built from the key ring, not held behind a code flip like the Tutor's (DEC-017).
+    /// With no key the leg reports an honest skip; with one, the first lesson works with no code change. DeepSeek
+    /// through the OpenAI-compatible adapter (deepseek-flash, streamed, DEC-042), the provider the repo already commits
+    /// to. It has no Vision, so DrawingPlanner sends no image and says so (DEC-072).
     /// </summary>
     /// <remarks>
-    /// Ownership: the planner owns the client it resolves from the registry (one per process, not per
-    /// question) and RunAsync's using disposes it. The key is read only by KeyRingSecretStore, per
-    /// request, and never printed — the header reports presence only.
+    /// Ownership: the shell owns the client (one per process) and RunAsync's using disposes it. The key is read only by
+    /// KeyRingSecretStore, per request, and never printed: the header reports presence only.
     /// </remarks>
-    private static VisualPlanner? CreateLessonPlanner()
+    private static ILlmClient? CreateLessonClient()
     {
         if (!HasKey("deepseek"))
         {
             return null;
         }
 
-        var registry = new ProviderRegistry();
-        registry.RegisterLlmFactory("deepseek", model => new OpenAiCompatLlmClient(new OpenAiCompatOptions
+        return new OpenAiCompatLlmClient(new OpenAiCompatOptions
         {
             ProviderId = "deepseek",
             BaseUrl = "https://api.deepseek.com",
-            ModelId = model,
-            // Streaming (DEC-042): the lesson's first beat is drawn while the rest is still being written.
-            // OpenAiCompatLlmClient.StreamAsync reads the provider's server-sent events as they arrive.
+            ModelId = "deepseek-flash",
+            // Streaming (DEC-042): the drawing starts while the rest of the program is still being written.
             Capabilities = ProviderCapability.Text | ProviderCapability.Streaming,
             SecretStore = new KeyRingSecretStore(Keys, "deepseek"),
             CredentialProviderId = "deepseek",
-        }));
-        registry.Assign(new ProviderAssignment { Role = ProviderRole.Tutor, ProviderId = "deepseek", ModelId = "deepseek-flash" });
-        return VisualPlanner.FromRegistry(registry);
+        });
     }
 
+    /// <summary>The real stage window over a monitor, at that monitor's scale (DEC-069); the shell's DrawingStage opener.</summary>
+    private static async Task<IDrawStageSurface> OpenStageAsync(MonitorInfo monitor) =>
+        await DrawStageWindow.OpenAsync(monitor.Bounds, NativeFns.MonitorScale(monitor.Handle)).ConfigureAwait(false);
+
     /// <summary>
-    /// The one dispatch between the teaching legs, so both call sites stay a single line. The leg is
-    /// TurnLegs.Choose's answer (DEC-036): with no router it is exactly the old dispatch — the lesson
-    /// on --lesson, otherwise the Tutor — and a route can also pick point (nothing more to teach) or a
-    /// lesson on one model or in 2D.
+    /// The one dispatch between the teaching legs, so both call sites stay a single line. A question asked over a
+    /// drawing on the stage is a follow-up and goes to the lesson leg without waiting for the route (DEC-074): the
+    /// follow-up prompt decides keep, redraw, or NONE (then the Tutor). Otherwise the leg is TurnLegs.Choose's answer
+    /// (DEC-036): with no router it is the old dispatch, the lesson on --lesson and otherwise the Tutor.
     /// </summary>
     private static async Task<int> TeachAsync(
         TutorService? tutor,
@@ -90,6 +90,14 @@ internal static partial class ShellHost
         TurnRecord record,
         CancellationToken ct)
     {
+        if (lesson?.Planner is not null && guidance.Captures.Count > 0 && lesson.Stage.FollowUpOn(guidance.Captures[0].Monitor) is not null)
+        {
+            Console.WriteLine("route       : skipped — a follow-up: the question was asked over the drawing on screen");
+            record.Route = "a follow-up over the drawing on screen";
+            record.Leg = NoteLeg.Lesson;
+            return await TeachWithLessonAsync(tutor, lesson, voice, options, guidance, record, ct).ConfigureAwait(false);
+        }
+
         var leg = await ChooseLegAsync(routing, options, ct).ConfigureAwait(false);
         if (leg is null)
         {
@@ -106,8 +114,9 @@ internal static partial class ShellHost
                 record.Outcome = "the highlight was the answer";
                 return 0;
             case TurnLeg.Lesson when lesson is not null:
+                // The route's 2D / 3D / model choice is not passed on: the program decides (FEATURE-011 step 8 drops it).
                 record.Leg = NoteLeg.Lesson;
-                return await TeachWithLessonAsync(lesson, CatalogFor(leg), voice, options, guidance, record, ct).ConfigureAwait(false);
+                return await TeachWithLessonAsync(tutor, lesson, voice, options, guidance, record, ct).ConfigureAwait(false);
             default:
                 record.Leg = NoteLeg.Tutor;
                 return await TeachAndSpeakAsync(tutor, voice, options, guidance, record, ct).ConfigureAwait(false);
@@ -115,39 +124,14 @@ internal static partial class ShellHost
     }
 
     /// <summary>
-    /// The verdict as planner grounding — the lesson-side twin of MapGuidanceToContext. Found: the
-    /// description, the resolved box (the only place a lesson may mark, LS-12) and the frame the verdict
-    /// was resolved against, as already-encoded bytes. Honest no-match: description and box absent, so
-    /// every screen mark is refused and the question stands alone. Precondition: !Failed (call sites).
-    /// </summary>
-    private static ScreenGrounding? MapGuidanceToGrounding(GuidanceResult guidance)
-    {
-        if (!guidance.Found)
-        {
-            return null;
-        }
-
-        var frame = guidance.Captures.Count > 0 ? guidance.Captures[0] : null;
-        return new ScreenGrounding(
-            guidance.Description,
-            guidance.BoxOnScreen,
-            frame?.Jpeg,
-            frame?.OutputWidth ?? 0,
-            frame?.OutputHeight ?? 0);
-    }
-
-    /// <summary>
-    /// Plans, draws and speaks one lesson, then any click-to-ask follow-ups (DEC-033): the planner is
-    /// offered <paramref name="scene3d"/> (null: 2D only), and a finished 3D lesson waits <see cref="LessonPickIdle"/> for
-    /// the student to click a part. Never throws — the TeachAndSpeakAsync contract, the same exit-code
-    /// alphabet: 0 played (or the honest no-key skip), 1 nothing usable came back (no lesson was
-    /// produced, like "no transcript was produced"), 12 key error, 3 provider/speech fault,
-    /// 13 cancelled, 4 a shell or card defect. With follow-ups the code is the LAST turn's: the loop
-    /// stops at the first turn that did not play to the end, so that turn is the one that ended it.
+    /// The verdict as drawing context: the canvas is the screenshot the verdict was resolved against (Captures[0], the
+    /// cursor's monitor), the grounded box goes in canvas units with its description, and the screen's text goes in
+    /// as read (all three fenced as untrusted by the planner). An honest no-match carries the screenshot only.
+    /// Precondition: !Failed (call sites).
     /// </summary>
     private static async Task<int> TeachWithLessonAsync(
+        TutorService? tutor,
         LessonLeg lesson,
-        VisualLessonEngine.ModelCatalog? scene3d,
         VoiceService voice,
         ShellOptions options,
         GuidanceResult guidance,
@@ -162,78 +146,107 @@ internal static partial class ShellHost
             return 0;
         }
 
-        // Speech is the lesson's clock. --no-speak keeps the clock but not the voice: each sentence
-        // holds its beat for roughly the time it would take to say, so the cards still pace.
-        ILessonSpeaker speaker = options.NoSpeak
-            ? new DelegateLessonSpeaker((text, token) => Task.Delay(Math.Clamp(text.Length * 60, 600, 8000), token))
-            : new DelegateLessonSpeaker((text, token) => voice.SpeakAsync(new SpeakRequest { Text = text }, token));
+        if (guidance.Captures.Count == 0)
+        {
+            // The drawing is sized and placed by the screenshot; without one (--no-retain-captures) the Tutor answers.
+            Console.WriteLine("lesson      : no captured frame to size the drawing on (--no-retain-captures); the Tutor answers instead");
+            record.Leg = NoteLeg.Tutor;
+            return await TeachAndSpeakAsync(tutor, voice, options, guidance, record, ct).ConfigureAwait(false);
+        }
 
+        var frame = guidance.Captures[0];
+        var request = new DrawingRequest
+        {
+            Question = options.Question,
+            CanvasWidth = frame.OutputWidth,
+            CanvasHeight = frame.OutputHeight,
+            ScreenJpeg = frame.Jpeg,
+            PointedAtBox = guidance.Found ? ToCanvas(guidance.BoxOnScreen, frame.Monitor.Bounds, frame.OutputWidth, frame.OutputHeight) : null,
+            PointedAtDescription = guidance.Found ? guidance.Description : null,
+            ScreenText = frame.TextLines.Count > 0 ? string.Join("\n", frame.TextLines.Select(l => l.Text)) : null,
+            EarlierTurns = EarlierTurnsFor(options),
+        };
+
+        return await DrawAndReportAsync(tutor, lesson.Planner, lesson.Stage, voice, options, frame.Monitor, request, guidance, record, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A click on a part of the drawing, asked as a follow-up (DEC-074). There is no verdict for a click: the canvas is
+    /// the drawing's own, no screenshot or screen text goes with it, and a NONE answer goes to the Tutor with an empty
+    /// context. Kept in this run's memory (DEC-061) but not saved as a note: a note records a verdict, and there is
+    /// none (FEATURE-011 step 9 reworks notes).
+    /// </summary>
+    private static async Task<int> TeachPartAsync(TutorService? tutor, LessonLeg lesson, VoiceService voice, ShellOptions options, string question, CancellationToken ct)
+    {
+        if (lesson.Planner is null || lesson.Stage.Drawing is not { } drawing)
+        {
+            Console.WriteLine("follow-up   : the drawing is gone, so there is nothing to ask about");
+            return 0;
+        }
+
+        var asked = options with { Question = question };
+        var record = new TurnRecord { Leg = NoteLeg.Lesson, Route = "a follow-up: a part of the drawing was clicked" };
+        var request = new DrawingRequest
+        {
+            Question = question,
+            CanvasWidth = drawing.Width,
+            CanvasHeight = drawing.Height,
+            EarlierTurns = EarlierTurnsFor(options),
+        };
+
+        var code = await DrawAndReportAsync(tutor, lesson.Planner, lesson.Stage, voice, asked, drawing.Monitor, request, NoVerdict, record, ct).ConfigureAwait(false);
+        if (!options.NoContext)
+        {
+            Session.Add(TurnNotes.From(question, NotesSession, DateTimeOffset.Now, NoVerdict, record, code));
+        }
+
+        return code;
+    }
+
+    /// <summary>A verdict that says nothing (not found, not failed): a click's Tutor fallback teaches the concept alone.</summary>
+    private static readonly GuidanceResult NoVerdict = new();
+
+    /// <summary>DEC-061: this run's earlier turns, so a follow-up question can be understood.</summary>
+    private static IReadOnlyList<EarlierTurn> EarlierTurnsFor(ShellOptions options) =>
+        options.NoContext ? Array.Empty<EarlierTurn>() : Session.Snapshot().Select(t => new EarlierTurn(t.Question, t.Taught)).ToArray();
+
+    /// <summary>
+    /// Draws one lesson and reports it. Never throws: the TeachAndSpeakAsync contract and exit-code alphabet. 0 drawn
+    /// (or closed by the person); NONE or no program hands the turn to the Tutor, whose code it returns; 12 a key error
+    /// (the lesson model or the speech); 3 a provider or speech fault; 13 cancelled; 4 a stage or shell fault.
+    /// </summary>
+    private static async Task<int> DrawAndReportAsync(
+        TutorService? tutor,
+        DrawingPlanner planner,
+        DrawingStage stage,
+        VoiceService voice,
+        ShellOptions options,
+        MonitorInfo monitor,
+        DrawingRequest request,
+        GuidanceResult guidance,
+        TurnRecord record,
+        CancellationToken ct)
+    {
+        // Speech is the drawing's clock (pace speech). --no-speak keeps a clock but not the voice: the page paces each
+        // beat by its own estimate of the line's length.
+        Func<string, CancellationToken, Task>? speak = options.NoSpeak
+            ? null
+            : (text, token) => voice.SpeakAsync(new SpeakRequest { Text = text }, token);
+
+        DrawingTurn turn;
         try
         {
-            var conversation = await LessonTurn.RunWithFollowUpsAsync(
-                lesson.Planner,
-                new CardSurfaceHost(marks: lesson.Marks),
-                speaker,
-                new PlanRequest
-                {
-                    Question = options.Question,
-                    // DEC-061: this run's earlier turns, so a follow-up question can be understood.
-                    EarlierTurns = options.NoContext ? Array.Empty<EarlierTurn>() : Session.Snapshot().Select(t => new EarlierTurn(t.Question, t.Taught)).ToArray(),
-                    Screen = MapGuidanceToGrounding(guidance),
-                    VirtualDesktop = NativeFns.VirtualDesktop(),
-                    // The whole catalogue on --lesson, one model or none when the route chose (DEC-036).
-                    Scene3d = scene3d,
-                    // With 3D on, the cards can also draw one schematic for an object the library lacks (DEC-050).
-                    SchematicGeometry = scene3d is null ? null : PartLibrary.Schematics.Check,
-                },
-                new FollowUpOptions { IdleTimeout = LessonPickIdle },
-                ct).ConfigureAwait(false);
-
-            for (var i = 0; i < conversation.Turns.Count; i++)
-            {
-                if (i > 0)
-                {
-                    var pick = conversation.Picks[i - 1];
-                    Console.WriteLine($"follow-up {i}  : the student clicked '{pick.PartId}' on '{pick.ModelId}'");
-                }
-
-                PrintLesson(conversation.Turns[i], options.NoSpeak);
-            }
-
-            Console.WriteLine($"  follow-ups  : {conversation.Picks.Count}, ended {conversation.End}");
-
-            // DEC-059: the first lesson is the one asked for; its exact plan text makes it replayable.
-            var first = conversation.Turns[0].Plan;
-            record.LessonTitle = first?.Lesson.Plan?.Title;
-            record.PlanJson = first?.PlanJson;
-            record.Picks.AddRange(conversation.Picks.Select(p => $"{p.InstanceId}.{p.PartId}"));
-            record.Outcome = $"{conversation.Turns[^1].Outcome}, {conversation.Picks.Count} follow-up(s), ended {conversation.End}";
-            if (conversation.End == FollowUpEnd.Cancelled)
-            {
-                // Cancelled while the finished lesson waited for a click: the lesson itself played, but the
-                // run was aborted, and the exit code says so as it would mid-lesson.
-                return 13;
-            }
-
-            var report = conversation.Turns[^1];
-            return report.Outcome switch
-            {
-                LessonTurnOutcome.Played or LessonTurnOutcome.PlayedFallback or LessonTurnOutcome.Stopped => 0,
-                LessonTurnOutcome.Rejected => 1,
-                LessonTurnOutcome.AuthError => 12,
-                LessonTurnOutcome.ProviderError => 3,
-                LessonTurnOutcome.Cancelled => 13,
-                _ => 4,
-            };
+            turn = await DrawOnStageAsync(planner, stage, monitor, request, speak, DrawingFinishWait, ct).ConfigureAwait(false);
         }
-        catch (VoiceAuthenticationException ex)
+        catch (ProviderException ex) when (ex.Kind == ProviderErrorKind.AuthFailed)
         {
-            Console.WriteLine($"KEY ERROR (speech): {ex.Message}");
+            // ProviderException.ToString is the provider layer's own secret-free form.
+            Console.WriteLine($"KEY ERROR (lesson model): {ex}");
             return 12;
         }
-        catch (VoiceClientException ex)
+        catch (ProviderException ex)
         {
-            Console.WriteLine($"SPEECH ERROR (propagated not swallowed): {ex.Message}");
+            Console.WriteLine($"LESSON MODEL ERROR (propagated not swallowed): {ex}");
             return 3;
         }
         catch (OperationCanceledException)
@@ -243,57 +256,79 @@ internal static partial class ShellHost
         }
         catch (TimeoutException ex)
         {
-            // A card that never acknowledged a beat or a layout (LSU-2's budget). A surface defect, not a verdict.
-            Console.WriteLine($"LESSON SURFACE FAULT: {ex.Message}");
+            Console.WriteLine($"LESSON STAGE FAULT: the drawing did not finish ({ex.Message})");
             return 4;
         }
         catch (Exception ex)
         {
+            // The stage could not open (no WebView2 runtime, the page not deployed) or another defect.
             Console.WriteLine($"FAULT in the lesson leg: {ex.GetType().Name}: {ex.Message}");
             return 4;
         }
+
+        PrintDrawing(turn, options.NoSpeak);
+        if (turn.Result.Outcome != DrawingOutcome.Program)
+        {
+            Console.WriteLine(turn.Result.Outcome == DrawingOutcome.None
+                ? "lesson      : the model says a picture does not answer this (NONE); the Tutor answers instead"
+                : "lesson      : no drawing program came back; the Tutor answers instead");
+            record.Leg = NoteLeg.Tutor;
+            return await TeachAndSpeakAsync(tutor, voice, options, guidance, record, ct).ConfigureAwait(false);
+        }
+
+        if (turn.FirstLine is { Length: > 0 } title)
+        {
+            record.LessonTitle = title.Length > MaxTitleChars ? title[..MaxTitleChars].TrimEnd() + "…" : title;
+        }
+
+        var how = turn.FollowUp ? (turn.Kept == true ? "a follow-up drawn after the drawing" : "a follow-up drawn afresh") : "drawn";
+        record.Outcome = turn.Closed ? $"{how}, closed by the person" : turn.SpeechError is null ? how : $"{how}, the voice cut short";
+        return turn.SpeechError switch
+        {
+            null => 0,
+            VoiceAuthenticationException ex => Report($"KEY ERROR (speech): {ex.Message}", 12),
+            VoiceClientException ex => Report($"SPEECH ERROR (propagated not swallowed): {ex.Message}", 3),
+            var ex => Report($"FAULT in the lesson's speech: {ex.GetType().Name}: {ex.Message}", 4),
+        };
     }
 
-    private static void PrintLesson(LessonTurnReport report, bool silent)
+    private static int Report(string line, int code)
     {
-        Console.WriteLine($"lesson      : {report.Outcome}{(silent ? " (--no-speak: paced, not voiced)" : string.Empty)}");
-        if (report.Plan is { } plan)
-        {
-            Console.WriteLine($"  plan        : {plan.Lesson.Outcome}  attempts={plan.Attempts}  model={plan.ModelId}  " +
-                              $"tokens={plan.InputTokens}/{plan.OutputTokens}  latency={plan.Latency.TotalMilliseconds:F0} ms");
-            Console.WriteLine($"  image       : {(plan.UsedImage ? "sent" : $"not sent ({plan.ImageNote ?? "none in the grounding"})")}");
-            if (plan.RepairError is { } repair)
-            {
-                Console.WriteLine($"  repair      : failed, first answer kept ({repair})");
-            }
+        Console.WriteLine(line);
+        return code;
+    }
 
-            if (plan.ReleasedBeats > 0)
-            {
-                Console.WriteLine($"  streamed    : {plan.ReleasedBeats} beat(s) released while the lesson was written; first at {plan.FirstBeatLatency?.TotalMilliseconds:F0} ms");
-            }
-            else if (plan.StreamNote is { } streamNote)
-            {
-                Console.WriteLine($"  streamed    : {streamNote}");
-            }
+    private static void PrintDrawing(DrawingTurn turn, bool silent)
+    {
+        var result = turn.Result;
+        var drawn = turn.Kept switch
+        {
+            null => "nothing drawn",
+            true => "a follow-up, drawn after the drawing (keep)",
+            false when turn.FollowUp => "a follow-up, drawn afresh",
+            false => "drawn",
+        };
+        Console.WriteLine($"lesson      : {result.Outcome}, {drawn}{(silent && turn.Kept is not null ? " (--no-speak: paced, not voiced)" : string.Empty)}");
+        Console.WriteLine($"  model       : {result.ModelId}  tokens={result.InputTokens}/{result.OutputTokens}  latency={result.Latency.TotalMilliseconds:F0} ms  " +
+                          $"streamed={result.Streamed}  program={result.Program.Length} chars");
+        Console.WriteLine($"  image       : {(result.UsedImage ? "sent" : $"not sent ({result.ImageNote ?? "none"})")}");
+        if (result.FirstProgramLatency is { } first)
+        {
+            Console.WriteLine($"  first code  : {first.TotalMilliseconds:F0} ms after the lesson was asked for");
         }
 
-        if (report.FirstBeatShown is { } shown)
+        if (turn.Voice is { } voice)
         {
-            // DEC-042: the wait the student actually sees, from the start of the turn to the first beat on
-            // the cards. The 2.5 s target is measured against this line.
-            Console.WriteLine($"  first beat  : {shown.TotalMilliseconds:F0} ms after the lesson was asked for");
+            Console.WriteLine($"  voice       : {voice.Spoken} line(s) spoken{(voice.CutShort ? ", cut short (the rest was drawn at once)" : string.Empty)}");
         }
 
-        if (report.Playback is { } playback)
+        if (turn.Closed)
         {
-            Console.WriteLine($"  playback    : {playback.Status}  beats={playback.Beats.Count}  degraded={playback.Beats.Count(b => b.Degraded)}  " +
-                              $"fallback={playback.SpokeFallback}");
+            Console.WriteLine("  closed      : the person closed the drawing");
         }
-
-        if (report.Error is { } error)
+        else if (turn.Kept is not null)
         {
-            // ProviderException.ToString — the provider layer's own secret-free form.
-            Console.WriteLine($"  error       : {error}");
+            Console.WriteLine("  stage       : the drawing stays up; ask over it (Ctrl+Alt) or click a part for a follow-up, x to close");
         }
     }
 }

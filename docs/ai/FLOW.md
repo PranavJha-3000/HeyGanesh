@@ -299,32 +299,37 @@ PlanRequest { Question, Screen?: { Description, TargetBox, Jpeg }, VirtualDeskto
 ```
 ProviderException / OperationCanceledException propagate unchanged.
 
-## Lesson leg (App Shell `--lesson` — built and offline-verified, live run key-gated; FEATURE-007 Phase 4.5, DEC-027)
+## Lesson leg (App Shell `--lesson` and routed lessons, on the drawing stage since FEATURE-011 step 7, DEC-074; live run key-gated)
 
 ```
 RunSessionAsync → verdict reported (+ overlay shown) → [Failed? exit 1, nothing taught]
   → TeachAsync(tutor, lesson, routing, …)                ShellHost.Lesson.cs — one dispatch, both call sites
-      ChooseLegAsync: await the route (if started) → TurnLegs.Choose(route, --lesson, --no-route)   (DEC-036)
+      a drawing is up on the verdict's monitor (DrawingStage.FollowUpOn) and a lesson model exists
+        → "route : skipped — a follow-up …" → TeachWithLessonAsync (the route is not waited for)
+      else ChooseLegAsync: await the route (if started) → TurnLegs.Choose(route, --lesson, --no-route)   (DEC-036)
         cancelled while routing → CANCELLED, exit 13
         Highlight (route: point) → "teach : skipped — … the highlight was the answer", exit 0
         Tutor (no router / no route / --no-route / route: explain) → TeachAndSpeakAsync   the Tutor leg, unchanged
-        Lesson → TeachWithLessonAsync with Scene3d = CatalogFor(leg): full (--lesson, or a schematic route, DEC-051) | one model | null (2D)
-      lesson.Planner is null (DEEPSEEK_API_KEY missing) → "lesson : skipped", exit 0
-      else TeachWithLessonAsync
-        PlanRequest { Question, Screen = MapGuidanceToGrounding(verdict), VirtualDesktop = NativeFns.VirtualDesktop(), Scene3d = scene3d }   (DEC-033; DEC-036 for scene3d)
-        LessonTurn.RunWithFollowUpsAsync(planner, CardSurfaceHost(marks: overlay), DelegateLessonSpeaker(voice.SpeakAsync), request, { IdleTimeout = 30 s }, ct)
-          (the first turn is the path below; a finished 3D lesson then waits 30 s for a click → follow-up on the same cards, see "Click a part to ask")
-          VisualPlanner.PlanStreamingAsync   (DEC-042; a non-streaming model = PlanAsync)  ProviderException → AuthError / ProviderError; OCE → Cancelled  (no card opened)
-            a beat released first → PlayStreamedTurnAsync: open cards → LessonPlayer.PlayStreamAsync(queue) while planning
-              continues; planning ends → unreleased beats queued, queue closed; StreamNote → Stopped (Error = note)
-          Lesson.Outcome == Rejected         → Rejected (no card opened, nothing said)
-          CardSurfaceHost.OpenAsync          → fresh CardSurface for this turn
-          LessonPlayer.PlayAsync             draw then speak per beat; Voice's SpeakAsync is the clock
-          finally: cards disposed            no card outlives the turn (LT-6)
-        PrintLesson per turn (+ "follow-up N : the student clicked …") → exit from the LAST turn: 0 Played/PlayedFallback/Stopped · 1 Rejected · 12 AuthError/Voice key · 3 ProviderError/Voice fault · 13 Cancelled (also FollowUpEnd.Cancelled) · 4 card timeout/defect
-        Ctrl+Alt while it waits: REFUSED (one turn at a time), with the 3D hint (DEC-033)
+        Lesson → TeachWithLessonAsync   (the route's 2D/3D/model choice is not passed on; step 8 drops it)
+  TeachWithLessonAsync
+      lesson.Planner is null (no deepseek key) → "lesson : skipped", exit 0
+      no captured frame (--no-retain-captures) → the Tutor answers
+      DrawingRequest { Question, Canvas = Captures[0].Output W×H, ScreenJpeg, PointedAtBox = ToCanvas(box), PointedAtDescription, ScreenText = Captures[0].TextLines, EarlierTurns }
+      → DrawAndReportAsync → ShellHost.DrawOnStageAsync(planner, stage, Captures[0].Monitor, request, speak = voice.SpeakAsync | null on --no-speak)   ShellHost.Drawing.cs
+          FollowUp = stage.FollowUpOn(monitor)    the questions + program on the stage, or null
+          stage.ControllerOnAsync(monitor)        opens DrawStageWindow over the monitor (scale = GetDpiForMonitor / 96) or reuses it, while the model writes
+          DrawingPlanner.DrawAsync(request, onProgram → queue)   streamed; onProgram only queues
+            feeder: program text → keep? (null: wait for more) → DrawStageVoice.RunAsync (speech only) → ContinueAsync (keep) | BeginAsync(W, H) → FeedAsync(newest text, done)
+          NONE / no program → nothing fed; over a drawing → stage cleared → DrawAndReportAsync hands the turn to TeachAndSpeakAsync
+          Program → wait for the voice AND the page's finished (cap 5 min → TimeoutException) → stage.Remember(question, program, kept)
+          provider fault / OCE / timeout → stage cleared, rethrown
+      → PrintDrawing → exit 0 drawn · 12 lesson-model AuthFailed or speech key · 3 provider or speech fault · 13 cancelled · 4 stage could not open / did not finish
+  the drawing stays up; Ctrl+Alt is free; the next question over it is a follow-up (above)
+  a figure part clicked (stage thread) → TriggerPump.OnFigurePart → [a turn running? ignored] → PartQuestion (cleaned, ≤ 60) → TeachPartAsync
+      → DrawAndReportAsync on the drawing's own monitor and canvas, no screenshot; NONE → the Tutor with an empty context; kept in Session, no note
+  the close button → DrawStageController clears and hides → Closed → DrawingStage.Forget (the next question is not a follow-up)
 ```
-CreateLessonPlanner (composition root, once per process): DEEPSEEK_API_KEY present → ProviderRegistry { deepseek → OpenAiCompatLlmClient(api.deepseek.com, EnvironmentSecretStore) } → Tutor role deepseek-flash → VisualPlanner.FromRegistry (owns and disposes the client). The fake-model route through the same LessonTurn is tools/LessonTurnSmoke.
+CreateLessonClient (composition root, once per process): the deepseek key present → OpenAiCompatLlmClient(api.deepseek.com, deepseek-flash, Streaming, KeyRingSecretStore), owned and disposed by the shell; `new DrawingPlanner(client)`. `DrawingStage(OpenStageAsync)` is always created and opens no window until the first lesson; it is disposed at shutdown, after the turn in flight was drained. The offline route through the same turn is `tools/TraySmoke --assert-drawing-leg` (SH-29). The old cards path (`LessonTurn`, VisualPlanner, "Click a part to ask") is no longer used by the shell; it stays until FEATURE-011 step 10.
 
 ## Schematic models (VisualPlan 1.2, DEC-048; planner DEC-049; drawn and requested by the shell DEC-050; chosen by the router DEC-051)
 

@@ -742,3 +742,10 @@
 - **Rollback point:** `e3a8abe` (step 7), or revert this step's commit.
 - **Files to restore:** `git checkout e3a8abe -- src/Intelligence/HeyGanesh.TurnRouter tools/TurnRouterSmoke src/Experience/HeyGanesh.App AGENTS.md docs/ai`.
 - **Re-check after revert:** TurnRouterSmoke TR-2 15, TR-3 15, TR-4 7, TR-6 11; `dotnet build tools/TraySmoke -c Debug -warnaserror` 0/0.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 9: notes and replay keep the drawing, DEC-076)
+
+- **Change:** `src/Foundation/HeyGanesh.Notes/TurnNote.cs` gains `StoredDrawing` (the `drawing:WxH` format); the App Shell stores a drawn lesson's whole program (`DrawingTurn.Drawn`, `TurnRecord.Drawing`) and `ShellHost.Replay.cs` replays a stored drawing on a stage window instead of validating a VisualPlan for the cards (`ShellHost.cs` hands it the cursor monitor); the tray's `RecentLessonsModel`/`RecentLessons` offer Replay only for a drawing and explain older rows. `tools/TraySmoke` RL-1..RL-4, NB-1, SH-29 and its csproj (no fixtures link); `tools/NotesSmoke` NS-2. Docs: DEC-076, FLOW, ARCHITECTURE, FEATURE-011, TEST-CHECKLIST, CI.md, ci.yml (G-24 gains `--assert-replay`), AGENTS.md, HANDOVER. No schema change: notes written by this step are plain text an older build lists but cannot replay.
+- **Rollback point:** step 8's commit (`4a20772`), or revert this step's commit.
+- **Files to restore:** `git checkout 4a20772 -- src/Foundation/HeyGanesh.Notes src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke tools/NotesSmoke .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** TraySmoke `--assert-recent-model` 8, `--assert-replay-prepare` 4, `--assert-drawing-leg` 14; NotesSmoke `--assert-store` 8.

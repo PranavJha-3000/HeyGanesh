@@ -1,3 +1,11 @@
+## 2026-11-07 · claude-opus-5-5 (notes and replay keep the drawing, FEATURE-011 step 9, DEC-076)
+
+Did: A drawn lesson's note stores `drawing:WxH` + the whole program now drawn (`HeyGanesh.Notes.StoredDrawing`, no schema change). Tray Recent lessons replays only a stored drawing, on its own stage window over the cursor's monitor, no model call, closed 4 s after the end; older VisualPlan rows say they were made by an older version. RL-3 is offline now (CI G-24).
+Left: Step 10 (delete the old stack; the App's LessonSession/PartLibrary references are now unused). RL-5 by hand (owner).
+Watch: A replay window can overlap a live drawing on the same monitor (only Ctrl+Alt is paused, not a turn in flight). No automated row replays on a real stage window. A kept follow-up's note holds the joined program; the first turn's note holds only its own.
+Next: FEATURE-011 step 10.
+Verified: Notes, NotesSmoke, App, Tray, TraySmoke build -warnaserror 0/0. NS-1 4, NS-2 9, NS-3 4, NS-4 3, NS-5 2, NS-6 3; TraySmoke source 8, log 7, keys-model 13, startup 10, notes-map 6, session 5, drawing-leg 15, recent-model 8, replay-prepare 4, replay 6, recent-window 12 (local), notes-shell 6 (local). Shell exits 0/12/0/13/12/12/0. Two mutations caught.
+
 ## 2026-11-07 · claude-opus-5-5 (the Turn Router asks intent only, FEATURE-011 step 8, DEC-075)
 
 Did: `HeyGanesh.TurnRouter` asks one Jev choice (point / explain / lesson); the dimension and model questions, catalogue, schematic route and 3D fields are removed; `LegChoice` is `(Leg, Why)`. The App Shell offers no models, prints a shorter route line, and its header says the drawing picks 2D or 3D. TR-2/3/4/6 rewritten.

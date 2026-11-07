@@ -324,3 +324,11 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Rows: TR-2 11, TR-3 8, TR-4 5, TR-6 7 (TR-1 3, TR-5 5 unchanged). The shell's offline rows keep their exits (0/12/0/0/1/13/12/12/12/0/12; SH-21 with a dummy key: `route : ON …`, the dummy printed 0 times, exit 0). TraySmoke TY-1 and SH-29 pass.
   - Mutation caught: a second question put back into the request fails TR-2.
   - Next: step 9, notes and replay of programs.
+- 2026-11-07 · claude-opus-5-5: **step 9 done (DEC-076).** Notes and replay keep the drawing.
+  - A drawn lesson's note stores `drawing:WxH` + the whole program now drawn (a kept follow-up's is the earlier program, then its own) in the existing `LessonPlan` column; no schema change. The format is `HeyGanesh.Notes.StoredDrawing`.
+  - Recent lessons offers Replay only for a stored drawing. Replay draws it on its own stage window over the cursor's monitor at the stored canvas, with the shell's voice (Fish key) or the page's pacing, no model call; the window closes 4 s after the end or on its x. Older (VisualPlan) rows say they were made by an older version.
+  - Rows: RL-1 8, RL-2 4, RL-3 6 (now offline on SH-29's fake page, in CI G-24), RL-4 12 (local), NB-1 6, NS-2 9, SH-29 15; NS-1, NS-3..NS-6, TY-1, TY-2, TK-1, TS-1, NB-2 (`--assert-notes-shell` 6), NB-4 unchanged and passing. Shell offline exits unchanged.
+  - Mutations caught: no older-row refusal (RL-2, RL-3); `Drawn` not joining a kept follow-up (SH-29).
+  - Plan drift: §3 said "pace `speech` with the shell's voice, or `estimate` when silent", as built; it did not say where or for how long a replay is shown. The cursor's monitor and a 4 s hold are this step's choice (DEC-076 says why).
+  - Not done here: a replay on a real stage window (RL-5, the owner's; DS-2..DS-6 cover the window and pacing). The App still references the old stack's projects, unused; they go in step 10.
+  - Next: step 10, delete the old stack.

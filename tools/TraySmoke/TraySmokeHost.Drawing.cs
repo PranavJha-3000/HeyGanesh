@@ -60,6 +60,8 @@ internal static partial class TraySmokeHost
             "a follow-up with keep() is asked over the earlier program and drawn after it (continueStream, no clear)", failures);
         failures = Check(stage.FollowUpOn(monitor) is { } both && both.Questions.Count == 2 && both.Program.Contains("rocket", StringComparison.Ordinal) && both.Program.Contains("nozzle", StringComparison.Ordinal),
             "the drawing now answers both questions and holds both programs", failures);
+        failures = Check(first.Drawn == first.Result.Program && kept.Drawn == first.Result.Program + "\n" + kept.Result.Program,
+            "each turn reports the whole program now drawn, for its note (DEC-076): a kept follow-up's is the earlier one, then its own", failures);
 
         // 3. A follow-up drawn afresh: a new beginning, and the drawing answers only the new question.
         model.Next(Js("step(1)\nsay('A jet breathes air instead.')"));

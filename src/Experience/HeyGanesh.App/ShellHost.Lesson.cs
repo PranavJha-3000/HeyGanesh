@@ -275,6 +275,11 @@ internal static partial class ShellHost
             return await TeachAndSpeakAsync(tutor, voice, options, guidance, record, ct).ConfigureAwait(false);
         }
 
+        if (turn.Drawn is { Length: > 0 } drawn)
+        {
+            record.Drawing = StoredDrawing.Store(request.CanvasWidth, request.CanvasHeight, drawn);
+        }
+
         if (turn.FirstLine is { Length: > 0 } title)
         {
             record.LessonTitle = title.Length > MaxTitleChars ? title[..MaxTitleChars].TrimEnd() + "…" : title;

@@ -101,8 +101,8 @@ internal sealed class TurnRecord
 
     public string? LessonTitle { get; set; }
 
-    /// <summary>The first lesson's plan JSON (PlanResult.PlanJson), for replay.</summary>
-    public string? PlanJson { get; set; }
+    /// <summary>The drawing as stored for replay (<see cref="StoredDrawing"/>, DEC-076); null when nothing was drawn.</summary>
+    public string? Drawing { get; set; }
 
     /// <summary>Follow-up clicks, as "instance.part".</summary>
     public List<string> Picks { get; } = new();
@@ -137,7 +137,7 @@ internal static class TurnNotes
             Confidence = guidance.Confidence.ToString(),
             Answer = record.Answer,
             LessonTitle = record.LessonTitle,
-            LessonPlan = record.PlanJson,
+            LessonPlan = record.Drawing,
             Picks = record.Picks.ToArray(),
             Outcome = record.Outcome ?? $"exit {exitCode}",
         };

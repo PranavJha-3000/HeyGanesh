@@ -15,6 +15,7 @@ namespace HeyGanesh.App;
 /// How one drawing turn went. <see cref="Kept"/> is null when nothing was drawn, true when a follow-up kept the drawing
 /// and drew after it, false when the stage was drawn afresh. <see cref="Voice"/> is null when silent (pace estimate) or
 /// nothing was drawn. <see cref="SpeechError"/> is the speaker's fault, if the voice was cut short by one.
+/// <see cref="Drawn"/> is the whole program now drawn (an earlier one first, when keep() drew after it), for the note.
 /// </summary>
 internal sealed record DrawingTurn(
     DrawingResult Result,
@@ -23,7 +24,8 @@ internal sealed record DrawingTurn(
     DrawStageVoiceResult? Voice,
     Exception? SpeechError,
     bool Closed,
-    string? FirstLine);
+    string? FirstLine,
+    string? Drawn = null);
 
 /// <summary>
 /// The drawing stage between turns (DEC-074): one window over one monitor, opened on the first drawing and kept, plus
@@ -313,7 +315,9 @@ internal static partial class ShellHost
                 stage.Remember(request.Question, result.Program, kept == true, request.CanvasWidth, request.CanvasHeight);
             }
 
-            return new DrawingTurn(result, followUp is not null, kept, spoken, speechError, wasClosed, Volatile.Read(ref firstLine));
+            // keep() is a no-op in the worker, so the earlier program and this one, joined, replay as one drawing.
+            var drawn = kept == true && followUp is not null ? followUp.Program + "\n" + result.Program : result.Program;
+            return new DrawingTurn(result, followUp is not null, kept, spoken, speechError, wasClosed, Volatile.Read(ref firstLine), drawn);
         }
         catch
         {

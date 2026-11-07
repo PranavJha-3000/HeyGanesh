@@ -50,7 +50,10 @@ public sealed record TurnNote
 
     public string? LessonTitle { get; init; }
 
-    /// <summary>The validated lesson plan's JSON, so the lesson can be replayed without the model.</summary>
+    /// <summary>
+    /// What a lesson drew, so it can be replayed without the model. Since DEC-076 a drawing program in
+    /// <see cref="StoredDrawing"/>'s form; older rows hold a VisualPlan's JSON, which can no longer be replayed.
+    /// </summary>
     public string? LessonPlan { get; init; }
 
     /// <summary>The parts clicked for follow-ups, as "instance.part".</summary>
@@ -58,6 +61,56 @@ public sealed record TurnNote
 
     /// <summary>How the turn ended, in words (for example "Played" or "NoPick").</summary>
     public string Outcome { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// How a drawing program is kept in <see cref="TurnNote.LessonPlan"/> (DEC-076): a first line <c>drawing:WxH</c>
+/// (the canvas the program was written for, in pixels), then the program exactly as drawn. No schema change: anything
+/// without the marker is a lesson from before the drawing stage (VisualPlan JSON) and is not a drawing.
+/// </summary>
+public static class StoredDrawing
+{
+    public const string Marker = "drawing:";
+
+    /// <summary>The largest canvas side accepted when reading back (a stored size is data, not trusted).</summary>
+    public const int MaxSide = 16384;
+
+    public static string Store(int width, int height, string program)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(program);
+        if (width is < 1 or > MaxSide || height is < 1 or > MaxSide)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width), $"a canvas side must be 1..{MaxSide}");
+        }
+
+        return $"{Marker}{width}x{height}\n{program}";
+    }
+
+    /// <summary>True for a stored drawing with a sane canvas and a program; false for anything else, older rows included.</summary>
+    public static bool TryRead(string? stored, out int width, out int height, out string program)
+    {
+        width = height = 0;
+        program = string.Empty;
+        if (stored is null || !stored.StartsWith(Marker, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var end = stored.IndexOf('\n');
+        var size = (end < 0 ? stored : stored[..end])[Marker.Length..].Split('x');
+        if (end < 0 || size.Length != 2
+            || !int.TryParse(size[0], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out width)
+            || !int.TryParse(size[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out height)
+            || width is < 1 or > MaxSide || height is < 1 or > MaxSide
+            || string.IsNullOrWhiteSpace(stored[(end + 1)..]))
+        {
+            width = height = 0;
+            return false;
+        }
+
+        program = stored[(end + 1)..];
+        return true;
+    }
 }
 
 /// <summary>Store settings.</summary>

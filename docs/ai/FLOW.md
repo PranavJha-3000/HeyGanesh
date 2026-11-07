@@ -379,7 +379,7 @@ Shell (DEC-059):
   RunSessionAsync → verdict not Failed → TeachAndNoteAsync:
     record = new TurnRecord → TeachAsync(..., record): route = leg.Why;
       Highlight → leg, outcome · Tutor → TeachAndSpeakAsync fills Answer, outcome ·
-      Lesson → TeachWithLessonAsync fills title, PlanJson (first lesson's PlanResult.PlanJson), picks, outcome
+      Lesson → DrawAndReportAsync fills title (first spoken line), Drawing = StoredDrawing.Store(W, H, turn.Drawn), outcome   (DEC-076)
     → TurnNotes.From(question, session, now, verdict, record, exit code): null for 12 / 13 / Failed / no question
     → Notes.Record(note) → "notes : saved #N"   (a failure is "notes : not saved (...)", the exit code unchanged)
     (before the store: !--no-context → Session.Add(note): kept only if it taught something, the newest 3)   (DEC-061)
@@ -391,12 +391,13 @@ Shell (DEC-059):
 Recent lessons (DEC-060), in the tray:
   menu "Recent lessons…" → TrayApp.OpenRecent → RecentLessonsModel(NotesStore.Open(default path)) → RecentLessons window
     rows = Recent(200), newest first; details = the turn in words; Delete / Clear all (Clear all asks first)
-    Replay (a lesson with a stored plan) → paused = true (Ctrl+Alt refused) →
-      ShellHost.ReplayAsync(plan): PrepareReplay = Parse + Validate(desktop, RequireGroundedMarks, Scene3d, Schematics.Check)
-        Rejected → the reason, no window opened
-        else CardSurfaceHost.OpenAsync → LessonPlayer.PlayAsync(lesson, speaker) → close the cards
-          speaker = the shell's VoiceService when a Fish key is set (a failure paces that sentence), else silent pacing
-    → status line ("replayed "<title>": Completed, N beat(s)") → paused = false
+    Replay (only a row StoredDrawing.TryRead accepts) → paused = true (Ctrl+Alt refused) →        (DEC-076)
+      ShellHost.ReplayAsync(stored): ReplayMonitor (the shell's capture.GetCursorMonitor; null → "the app is not running")
+        PrepareReplay: nothing stored / no "drawing:" marker ("made by an older version …") / damaged → the reason, no window
+        else OpenStageAsync(monitor) → DrawStageController: [DrawStageVoice.RunAsync(speak)] → BeginAsync(W, H, speech | estimate)
+             → FeedAsync(program, done) → await voice + finished (≤ 5 min, else "did not finish") → hold 4 s or close → window disposed
+          speak = the shell's VoiceService when a Fish key is set (a line it cannot say is paced instead), else null (pace estimate)
+    → status line ("replayed N line(s) …") → paused = false
 ```
 
 ## Installer (DEC-055)

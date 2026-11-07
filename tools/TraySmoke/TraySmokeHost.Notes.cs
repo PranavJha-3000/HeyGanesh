@@ -25,11 +25,12 @@ internal static partial class TraySmokeHost
         var miss = TurnNotes.From("explain entropy", "s-1", at, noMatch, new TurnRecord(), 0);
         failures = Check(miss is { Found: false, Element: null, Outcome: "exit 0" }, "an honest no-match keeps no element; with no outcome said, the exit code stands in", failures);
 
-        var lesson = new TurnRecord { Leg = NoteLeg.Lesson, LessonTitle = "How a four-stroke engine works", PlanJson = "{\"schema\":\"heyganesh.visualplan/1.1\"}", Outcome = "Played, 1 follow-up(s), ended NoPick" };
+        var drawing = StoredDrawing.Store(1280, 720, "step(1)\nsay('Four strokes turn the crank.')");
+        var lesson = new TurnRecord { Leg = NoteLeg.Lesson, LessonTitle = "Four strokes turn the crank.", Drawing = drawing, Outcome = "drawn" };
         lesson.Picks.Add("engine.connecting-rod");
         var taught = TurnNotes.From("how does an engine work?", "s-1", at, found, lesson, 0);
-        failures = Check(taught is { Leg: NoteLeg.Lesson, LessonTitle: "How a four-stroke engine works", LessonPlan: "{\"schema\":\"heyganesh.visualplan/1.1\"}" } && taught.Picks.SequenceEqual(new[] { "engine.connecting-rod" }),
-            "a lesson turn keeps its title, the exact plan text, and the parts clicked", failures);
+        failures = Check(taught is { Leg: NoteLeg.Lesson, LessonTitle: "Four strokes turn the crank." } && taught.LessonPlan == drawing && taught.Picks.SequenceEqual(new[] { "engine.connecting-rod" }),
+            "a lesson turn keeps its title, the stored drawing exactly (DEC-076), and the parts clicked", failures);
 
         var none = new[]
         {

@@ -85,8 +85,8 @@
   <ItemGroup>
     <!--
       The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught (intent only since DEC-075).
-      PartLibrary is no longer offered to the router; the tray's replay of stored VisualPlan lessons still
-      checks schematics with it until step 9. Both are pure policy/data with no NuGet.
+      PartLibrary is no longer used by the shell (the router offers no models since DEC-075, the replay draws
+      programs since DEC-076); the reference goes with the old stack in FEATURE-011 step 10.
     -->
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.TurnRouter\HeyGanesh.TurnRouter.csproj" />
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />

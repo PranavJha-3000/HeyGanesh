@@ -721,3 +721,10 @@
 - **Rollback point:** `93e5232` (step 4), or revert this step's commit.
 - **Files to restore:** `git checkout 93e5232 -- src/Intelligence/HeyGanesh.LessonPlanner tools/LessonPlannerSmoke .github/workflows/ci.yml AGENTS.md docs/ai`.
 - **Re-check after revert:** LessonPlannerSmoke rows LP-1..LP-13 with their usual counts (`--assert-source` 3).
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 6: PlannerEval for programs, DEC-073)
+
+- **Change:** `tools/PlannerEval` scores drawing programs: static checks on the program's `say()` lines and strings (K-2, K-3, K-4, K-8, K-9, K-10, K-11), run checks P-1..P-5 on a hidden drawing stage, and `--record --drawing` through `DrawingPlanner` on every provider; replay re-scores a drawing recording. It now references `HeyGanesh.DrawStage`, whose csproj lets it see the stage's host-script call (InternalsVisibleTo). The third local edit to vendored code: `Page/stage.js` exposes the accepted marks read-only to the host (`VENDOR.md`, DS-1). New rows PE-9 `--assert-program-checks` (offline, CI G-22) and PE-11 `--assert-program-run` (local); PE-10 is the owner's live recording. Docs: DEC-073, FEATURE-011, TEST-CHECKLIST, CI.md, AGENTS.md, HANDOVER. The VisualPlan checks K-1..K-12 and their rows are unchanged.
+- **Rollback point:** `aced38a` (step 5), or revert this step's commit.
+- **Files to restore:** `git checkout aced38a -- tools/PlannerEval tools/DrawStageSmoke src/Experience/HeyGanesh.DrawStage .github/workflows/ci.yml AGENTS.md docs/ai`; delete any file this step added (`git status` lists them).
+- **Re-check after revert:** PlannerEval `--assert-set` 7, `--assert-checks` 26, `--assert-record-stub` 9, `--assert-drift` 5; DS-1 15; `stage.js` hash equals step 5's again.

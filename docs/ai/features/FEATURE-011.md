@@ -294,3 +294,18 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Failed attempt, logged: LP-14 first expected two ``` in the follow-up prompt, but the vendored template has three of its own. The check now compares with the template.
   - Not done here: a live run on a real model. That is step 6 (PlannerEval `--record --drawing`, PE-10).
   - Next: step 6, PlannerEval for programs.
+- 2026-11-07 · claude-opus-5-5: **step 6 done (DEC-073).** PlannerEval scores drawing programs.
+  - `ProgramChecks`: static K-2, K-3, K-4, K-8, K-9, K-10, K-11 on the say() lines and strings; run checks P-1..P-5.
+  - `ProgramStage`: one hidden stage runs each program and reads its errors, refused marks, lines and accepted marks.
+  - `EvalRun.RunDrawingAsync` and `--record --drawing` on every provider. Replay re-scores the static checks and keeps the recorded run checks.
+  - The third local edit: `stage.js` exposes the accepted marks to the host (`window.stageMarks()`), in VENDOR.md, checked by DS-1 (now 16).
+  - Rows: PE-9 `--assert-program-checks` 28 (offline, CI G-22), PE-11 `--assert-program-run` 12 (local, 3 of 3 runs). PE-1, PE-2, PE-4 and PE-5 keep their counts. DS-1 16, DS-5 3 and DS-6 8 pass.
+  - Mutations caught: `stageMarks` removed; no repeat test for K-11; P-4's size limit off; replay dropping run checks; P-2 ignoring refusals.
+  - Plan drift: §6 named PE-9 and PE-10 only. PE-11 is added, because the run checks need a real stage to be proven and CI has none.
+  - Plan drift: the marks come from a page edit, not the painted SVG (DEC-073 says why).
+  - Failed attempts, logged:
+    - the good programs first failed their own check: a raw string in a CRLF file carries CRLF, and the planner hands the block over with its last newline;
+    - numbers built in C# are ints, which `GetValue<double>` refuses. Both are fixed in the host.
+  - Found: the DS-1 row in TEST-CHECKLIST still said 13 and "no package or project reference" from step 1. Corrected with this step's count.
+  - Not done here: PE-10, a live recording (the owner's).
+  - Next: step 7, the App Shell lesson leg switches to the stage.

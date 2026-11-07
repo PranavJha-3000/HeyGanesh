@@ -203,6 +203,8 @@ tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnR
 dotnet build tools/PlannerEval -c Debug
 tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --assert-checks
 #   -> 26 PASS, exit 0   (also: --assert-set 7, --assert-record-stub 9, --assert-drift 5)
+#   drawing programs (DEC-073): --assert-program-checks 28 (offline, CI); local, a hidden stage: --assert-program-run 12
+#   live drawings (owner, PE-10): --record <dir> --drawing --provider claude-code --cases E-01,E-03
 # Live recording (DEC-044, owner): needs DEEPSEEK_API_KEY (presence/length only); without it: KEY MISSING, exit 12.
 tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --record --cases E-01,E-03
 #   -> per-case lines + report.txt under %LOCALAPPDATA%/HeyGanesh/eval/<stamp>; then --replay <dir> [--baseline <dir>] offline
@@ -246,7 +248,7 @@ tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Claud
 dotnet build src/Experience/HeyGanesh.DrawStage -c Debug
 dotnet build tools/DrawStageSmoke -c Debug
 tools/DrawStageSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.DrawStageSmoke.exe --assert-source
-#   -> 15 PASS, SOURCE AUDIT OK, exit 0   (CI G-27)
+#   -> 16 PASS, SOURCE AUDIT OK, exit 0   (CI G-27)
 #   local, interactive desktop (the real stage window, DEC-069): --assert-window 13; --snapshot <dir> draws two samples as PNGs (review by eye)
 #   sandbox and mark check (DEC-070), local: --assert-sandbox 13 (about 40 s), --assert-marks 3
 #   controller + speech clock (DEC-071), local: --assert-pace 8; by hand: --demo rocket.js --voice sapi

@@ -40,7 +40,7 @@ edited hash.
 | `samples/rocket.js` | 1796 | `1f69aecba6f8ae4bfd22eaa86b996535a65b190bb628c6684ce1c40074b30cf7` | `windows/src/OpenClicky.Windows/Assets/DrawStage/samples/rocket.js` |
 | `stage-worker.js` | 11131 | `3c0ae3e56d56573e3ae3146195fd0d12b3d68eb43d011e67d6173b10247db8a0` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage-worker.js` |
 | `stage.css` | 7131 | `63531d35d8b6a2d0cdbf4c1589f7c840a3853bededc5ad8c248245027720e98e` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.css` |
-| `stage.js` | 47287 | `69626bc75a080f11374d318fadac44b0079b589eea6fe6015a796dbc05cdb61a` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.js` |
+| `stage.js` | 47564 | `7795b7eb1cc1d699dab29590f03c7a8e6b5f9fa898d4650b9d1889681a31472f` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.js` |
 | `vendor/three/LICENSE` | 1081 | `4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/LICENSE` |
 | `vendor/three/README.txt` | 241 | `4c3b9deaa72b1c3a588c77eed1cc8c42c2dcecfb553ef44163c8e045894f88bc` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/README.txt` |
 | `vendor/three/RoomEnvironment.js` | 3622 | `625d0d8ac8690a73799ea0e2c577d6260162e0da97698c4fe9b03715909ac214` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/RoomEnvironment.js` |
@@ -56,6 +56,8 @@ edited hash.
   sizes and text, at most 4 figures and 300 parts, `photo()` and `f.piece()` refused); `ran()` reads the result only in
   the shape expected and skips a refused mark with a `log` line. `reset()`/`restartStream()` zero the new counters.
   Nothing upstream was removed.
+  Then (FEATURE-011 step 6, DEC-073): `window.stageMarks()`, after the state line, returns the accepted marks as JSON
+  for PlannerEval's run checks, read by a host script. The program runs in the worker and cannot call it.
 - `stage.css` (2026-11-07 · claude-opus-5-5, FEATURE-011 step 4, DEC-071). Upstream 6916 bytes,
   `7893b2a1e2a27f33b0044c0f277df84f7410aeb1f1d68bc50d2d9e52316838e8`. Added one rule after the `[hidden]` rule:
   `#tools button.picture, #tools button.video, #tools button.pip { display: none !important; }`, so only the close

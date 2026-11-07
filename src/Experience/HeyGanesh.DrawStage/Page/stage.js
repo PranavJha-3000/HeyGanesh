@@ -55,6 +55,9 @@
   let source = '', scanned = 0, feedDone = false, stopped = false;
   let pending = [];              // complete statements not run yet
   let lines = [], items = [], released = 0, penFreeAt = 0, finishing = false, finishedSent = false, ranSent = false;
+  // Hey Ganesh (DEC-073): the marks accepted so far, for PlannerEval's run checks (a host script reads it). The program
+  // runs in the worker and cannot reach the page, so only the app can call this.
+  window.stageMarks = () => JSON.stringify(items.map(item => item.mark));
   let markCount = 0, errors = 0, uid = 0;
   let remembered = false, recording = false;
   let workerSeconds = 0, figuresSeen = 0, partsSeen = 0, skippedLogged = 0;

@@ -35,6 +35,8 @@ internal static partial class PlannerEvalHost
                 "--assert-checks" => await RunAssertChecksAsync(),
                 "--assert-record-stub" => await RunAssertRecordStubAsync(),
                 "--assert-drift" => RunAssertDrift(),
+                "--assert-program-checks" => await RunAssertProgramChecksAsync(),
+                "--assert-program-run" => await RunAssertProgramRunAsync(),
                 "--record" => await RunRecordAsync(args[1..]),
                 "--replay" => await RunReplayAsync(args[1..]),
                 "--help" or "-h" or "/?" => PrintUsage(),
@@ -63,6 +65,9 @@ internal static partial class PlannerEvalHost
         Console.WriteLine("  --assert-drift   the live client's settings match the App Shell's lesson client, exit 0");
         Console.WriteLine("  --record [dir] [--cases E-01,M-02]  LIVE: plan the cases with DeepSeek (DEEPSEEK_API_KEY) and write a recording; no key -> exit 12");
         Console.WriteLine("        [--provider claude-code|codex [--model <m>]]  instead plan on your Claude or ChatGPT plan through its CLI (DEC-065/DEC-066); signed out -> exit 12");
+        Console.WriteLine("        [--drawing]  ask for drawing programs (DrawingPlanner, DEC-073) instead of lesson plans; run checks P-1..P-5 on a hidden stage when one opens");
+        Console.WriteLine("  --assert-program-checks  the program checks are real: good programs pass, each seed fails its own check, the run-check rules hold, exit 0");
+        Console.WriteLine("  --assert-program-run     LOCAL: the run checks on the real stage, hidden (WebView2), exit 0");
         Console.WriteLine("  --replay <dir> [--baseline <dir>]   re-score a recording offline; with a baseline: exit 1 on a regression, 3 when the prompt changed");
         return 0;
     }

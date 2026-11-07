@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-073](#dec-073--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | PlannerEval scores drawing programs (FEATURE-011 step 6): static checks K-2/3/4/8/9/10/11 on the program's say() lines and strings (offline, CI), run checks P-1..P-5 on a hidden real stage (local), `--record --drawing` through DrawingPlanner on every provider; a replay re-scores the static checks and keeps the recorded run checks; stage.js exposes the accepted marks read-only to the host (third local edit) | accepted |
 | [DEC-072](#dec-072--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing planner (FEATURE-011 step 5): DrawingPlanner in LessonPlanner asks any ILlmClient for a program in the drawing language, streamed or whole; openclicky's prompts are embedded from the vendored files and filled from code (our name, no photo(), the untrusted-data rule); screen text, the pointed-at name, earlier turns and a follow-up's program go in fenced; NONE and prose never reach the stage | accepted |
 | [DEC-071](#dec-071--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage's controller and speech clock (FEATURE-011 step 4): DrawStageController (ported, trimmed to what is offered) turns page messages into events and handles the close button (clear, hide, Closed); DrawStageVoice speaks each line in order through any Func<string, CancellationToken, Task> and sends lineStarted / lineEnded, finishNow when the voice fails; stage.css hides Picture, Video and PiP | accepted |
 | [DEC-070](#dec-070--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage trusts nothing the program worker returns (FEATURE-011 step 3): stage.js checks every mark before painting it (known kind, finite numbers near the canvas, bounded sizes and text, at most 4 figures and 300 parts, photo() and f.piece() refused), a program gets 20 s of worker time in all, and the window answers every off-page request 403 and counts it | accepted |
@@ -83,6 +84,34 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-073 — 2026-11-07 — claude-opus-5-5
+
+**Decision — drawing programs are scored in two layers, and the stage tells the host which marks it accepted.** FEATURE-011 step 6; the owner: "continue with build step 6".
+
+- **Static checks (`ProgramChecks`, offline):** the program's `say()` lines and string literals are read from its text. K-2 (3 to 8 lines, at most 45 words each), K-3, K-4, K-8, K-10 and K-11 keep their meaning on them. K-9 reads the whole program, comments and names included. NONE or prose is no drawing: K-2 fails and names the outcome.
+  - shortcut: a `say()` in a loop or built from a variable is missed or counted once. When a stage ran the program, its real lines are used instead.
+- **Run checks (`ProgramStage`, local):** one hidden `DrawStageWindow` runs each program at estimate pace.
+  - P-1: every statement ran with no error.
+  - P-2: no mark refused by the page's check (DEC-070).
+  - P-3: a 3D figure exactly when the case expects 3D.
+  - P-4: for a grounded case, an arrow or line ends in the box (24 px slack), or a ring, dot, rect or highlight sits in it and is at most 3 times its size, so a card that covers it does not count.
+  - P-5: at most 50 parts, the prompt's `partsAtMost`.
+  - K-1, K-5, K-6, K-7 and K-12 are retired with the catalogue (FEATURE-011 §6). The VisualPlan checks and their rows are unchanged until step 10.
+- **The page edit:** `window.stageMarks()` returns the accepted marks as JSON, and PlannerEval reads it through the stage's internal host-script call (`InternalsVisibleTo`). The program runs in the worker, which cannot reach the page. It is the third local edit, recorded in VENDOR.md and checked by DS-1.
+- **Recording:** `--record [dir] --drawing [--provider deepseek|claude-code|codex]` draws each case through `DrawingPlanner`. The canvas is the eval desktop (2560 × 1440), with the grounded box and the screen text as given. A follow-up is asked about the program last drawn for its previous case. A stage is opened when the machine can show one; otherwise the run says so and scores the static checks only.
+  - A replay is offline: it re-scores the static checks from the recorded replies and keeps the run checks the stage gave at recording time.
+  - Old VisualPlan recordings are replayed as before (`Drawing` false).
+- **Rows:**
+  - PE-9 `--assert-program-checks` 28, offline, CI G-22. Good programs pass; six seeds and a word-for-word follow-up each fail exactly one check; NONE; P-1..P-5 on hand-made stage runs; what P-4 counts; a drawing recording replayed with no difference, keeping a recorded run check.
+  - PE-11 `--assert-program-run` 12, local: the same good programs pass P-1..P-5 on the real stage, its lines equal the static ones, and five bad programs each fail their own check.
+  - PE-10 is the owner's live recording.
+
+**Rejected.**
+- Reading marks from the painted SVG: a `<g>` does not say its kind, and 3D parts paint no shape.
+- Wrapping the page's `Worker` from a host script to copy results: it is more fragile than two lines, and the copies would be the unchecked, forgeable worker results.
+- Running the stage in CI: no desktop session or WebView2 there. The static layer is what CI can hold.
+- Re-running the stage on replay: a replay must work offline (G-22 replays a committed baseline).
+
 ## DEC-072 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the drawing planner asks for a program, with openclicky's prompts filled from code.** FEATURE-011 step 5; the owner: "Yes, build step 5".

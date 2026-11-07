@@ -244,7 +244,7 @@ jobs:
           dotnet build tools\PlannerEval -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\PlannerEval\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PlannerEval.exe'
-          foreach ($m in @('--assert-set', '--assert-checks', '--assert-record-stub', '--assert-drift')) {
+          foreach ($m in @('--assert-set', '--assert-checks', '--assert-record-stub', '--assert-drift', '--assert-program-checks')) {
             & $exe $m
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

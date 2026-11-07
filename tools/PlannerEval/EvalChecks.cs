@@ -31,12 +31,12 @@ public static class EvalChecks
     // K-12: what a lesson must say when it draws a schematic (DEC-049): that it is a simplified sketch, so the
     // student never takes invented shapes for a real design.
     private static readonly string[] SchematicWords = { "simplified", "schematic", "not to scale", "rough sketch", "sketch" };
-    private static readonly Regex AnswerFirst = new(@"^\W*(yes|no|partly)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    internal static readonly Regex AnswerFirst = new(@"^\W*(yes|no|partly)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     // K-4: a misconception named in order to correct it ("it's a myth that heavier objects fall faster") is good
     // teaching, not a slip. A listed phrase only counts in a sentence with none of these cues. Bare "no" and
     // "not" are left out on purpose: they are in too many sentences that do state the myth.
-    private static readonly Regex Corrects = new(@"\b(myth|misconception|not true|false|wrong|isn't|doesn't|don't|can't|cannot|never)\b",
+    internal static readonly Regex Corrects = new(@"\b(myth|misconception|not true|false|wrong|isn't|doesn't|don't|can't|cannot|never)\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public static IReadOnlyList<CheckResult> Score(EvalCase c, PlanResult result, VisualPlan? previous, string? sentPrompt)
@@ -149,12 +149,12 @@ public static class EvalChecks
         return string.Join("\n", parts);
     }
 
-    private static IEnumerable<string> Sentences(string text) => Regex.Split(text, @"(?<=[.!?])\s+|\n");
+    internal static IEnumerable<string> Sentences(string text) => Regex.Split(text, @"(?<=[.!?])\s+|\n");
 
-    private static int Words(string text) => text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+    internal static int Words(string text) => text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 
     /// <summary>Case-insensitive, and a whole word where the term starts or ends with a letter or digit ("on" never matches "one").</summary>
-    private static bool Has(string text, string term)
+    internal static bool Has(string text, string term)
     {
         var pattern = (char.IsLetterOrDigit(term[0]) ? @"\b" : string.Empty) + Regex.Escape(term) + (char.IsLetterOrDigit(term[^1]) ? @"\b" : string.Empty);
         return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);

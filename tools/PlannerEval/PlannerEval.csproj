@@ -28,6 +28,8 @@
     <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
     <!-- FEATURE-010 (DEC-065): record with provider claude-code plans on the owner's Claude plan. -->
     <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.ClaudeCode\HeyGanesh.Providers.ClaudeCode.csproj" />
+    <!-- FEATURE-011 step 6 (DEC-073): drawing programs run on the real stage, hidden, for the run checks P-1..P-5. -->
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,5 +37,13 @@
     <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="eval-set-v1.json;seeds.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- As in DrawStageSmoke: the WebView2 package's WPF control assembly reaches this host transitively and conflicts
+       with the in-box WindowsBase (MSB3277); the stage uses only the Core API, so that reference is removed. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

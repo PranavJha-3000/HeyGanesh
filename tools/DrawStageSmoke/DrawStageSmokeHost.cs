@@ -135,6 +135,8 @@ internal static class DrawStageSmokeHost
         failures = Check(Regex.IsMatch(stage, @"PROGRAM_SECONDS\s*=\s*20\b") && stage.Contains("const problem = markProblem(mark);", StringComparison.Ordinal)
                 && stage.Contains("if (m.do === 'photo') return", StringComparison.Ordinal) && stage.Contains("if (m.kind === 'piece') return", StringComparison.Ordinal),
             "stage.js checks every mark before painting it, refuses photo() and f.piece(), and gives a program 20 s of worker time (DEC-070)", failures);
+        failures = Check(stage.Contains("window.stageMarks = () => JSON.stringify(items.map(item => item.mark));", StringComparison.Ordinal),
+            "stage.js lets the host read the accepted marks, and nothing else (PlannerEval's run checks, DEC-073)", failures);
         failures = Check(Regex.IsMatch(File.ReadAllText(Path.Combine(page, "stage.css")), @"#tools button\.picture, #tools button\.video, #tools button\.pip \{\s*display: none !important;"),
             "stage.css hides the Picture, Video and PiP buttons; only close is offered (DEC-071)", failures);
 

@@ -35,6 +35,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="HeyGanesh.Tools.DrawStageSmoke" />
+    <!-- FEATURE-011 step 6 (DEC-073): PlannerEval's run checks read the accepted marks through the host-script call. -->
+    <InternalsVisibleTo Include="HeyGanesh.Tools.PlannerEval" />
   </ItemGroup>
 
   <ItemGroup>

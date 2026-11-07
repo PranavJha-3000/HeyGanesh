@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (PlannerEval for drawing programs, FEATURE-011 step 6, DEC-073)
+
+Did: PlannerEval scores drawing programs. There are static checks (K-2/3/4/8/9/10/11 on the say() lines and strings) and run checks P-1..P-5 on a hidden real stage (`ProgramStage`). `--record --drawing` works on deepseek, claude-code and codex; a replay keeps the recorded run checks. `stage.js` exposes the accepted marks to the host (third local edit, VENDOR.md). New rows: PE-9 (CI G-22) and PE-11 (local).
+Left: PE-10, the live drawing recording (owner): `PlannerEval --record <dir> --drawing --provider claude-code --cases E-01,E-03`. Steps 7–10.
+Watch: Replay never re-runs the stage, so P-1..P-5 in a replay are whatever the recording saw. K-2 counts say() calls statically when no stage ran (a say() in a loop counts once). P-4 is geometric only: it cannot tell a pointer from a stroke that happens to end in the box.
+Next: The owner runs PE-10, then FEATURE-011 step 7 (App Shell lesson leg on the stage), on the owner's go-ahead.
+Verified: PlannerEval + DrawStage + DrawStageSmoke build -warnaserror 0/0. PE-1 7, PE-2 26, PE-4 9, PE-5 5, PE-9 28 PASS; PE-11 12 PASS three times; DS-1 16, DS-5 3, DS-6 8 PASS; no-key `--record --drawing` exit 12 with nothing written. Five mutations each fail a row.
+
 ## 2026-11-07 · claude-opus-5-5 (drawing planner, FEATURE-011 step 5, DEC-072)
 
 Did: `DrawingPlanner` in LessonPlanner (question → program in the drawing language through any ILlmClient, streamed or whole; vendored prompts embedded and filled from code; context fenced; NONE / NoProgram; keep() for follow-ups). LP-14/15/16, in CI G-14.

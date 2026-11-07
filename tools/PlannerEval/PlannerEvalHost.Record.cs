@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using HeyGanesh.LessonPlanner;
 using HeyGanesh.Providers.ClaudeCode;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Security;
@@ -31,9 +32,14 @@ internal static partial class PlannerEvalHost
         string[]? only = null;
         var provider = "deepseek";
         string? model = null;
+        var drawing = false;
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--cases" && i + 1 < args.Length)
+            if (args[i] == "--drawing")
+            {
+                drawing = true;
+            }
+            else if (args[i] == "--cases" && i + 1 < args.Length)
             {
                 only = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             }
@@ -59,13 +65,13 @@ internal static partial class PlannerEvalHost
         {
             // DEC-065: no key at all; the CLI's own sign-in pays. A signed-out CLI fails the first case with
             // AuthFailed, which RecordAsync turns into exit 12 like a missing key.
-            return await RecordOnAsync(new ClaudeCodeLlmClient(new ClaudeCodeOptions { ModelId = model }), "claude-code plan (CLI sign-in, no key)", dir, only);
+            return await RecordOnAsync(new ClaudeCodeLlmClient(new ClaudeCodeOptions { ModelId = model }), "claude-code plan (CLI sign-in, no key)", dir, only, drawing);
         }
 
         if (provider == "codex")
         {
             // DEC-066: the same, on the ChatGPT plan through codex exec; not streamed, so first beat = whole lesson.
-            return await RecordOnAsync(new CodexLlmClient(new CodexOptions { ModelId = model }), "codex plan (CLI sign-in, no key)", dir, only);
+            return await RecordOnAsync(new CodexLlmClient(new CodexOptions { ModelId = model }), "codex plan (CLI sign-in, no key)", dir, only, drawing);
         }
 
         // The key comes from the app's key ring (DEC-046) and is described by presence, length and source only,
@@ -80,11 +86,11 @@ internal static partial class PlannerEvalHost
             return 12;
         }
 
-        return await RecordOnAsync(LiveClient.Create(ring), key, dir, only);
+        return await RecordOnAsync(LiveClient.Create(ring), key, dir, only, drawing);
     }
 
     /// <summary>The selected cases over <paramref name="client"/> (disposed here), stoppable with Ctrl+C.</summary>
-    private static async Task<int> RecordOnAsync(ILlmClient client, string keyState, string? dir, string[]? only)
+    private static async Task<int> RecordOnAsync(ILlmClient client, string keyState, string? dir, string[]? only, bool drawing)
     {
         using var _ = client;
         var set = LoadSet();
@@ -96,6 +102,24 @@ internal static partial class PlannerEvalHost
         }
 
         dir ??= DefaultDir();
+
+        // Drawings also run on a hidden stage for P-1..P-5 when this machine can show one; without it the static
+        // checks still score every case (DEC-073).
+        ProgramStage? stage = null;
+        if (drawing)
+        {
+            try
+            {
+                stage = await ProgramStage.OpenAsync();
+                Console.WriteLine("stage: open (hidden); run checks P-1..P-5 on");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Console.WriteLine($"stage: not available ({ex.GetType().Name}); run checks P-1..P-5 skipped, static checks only");
+            }
+        }
+
+        using var _stage = stage;
         using var cts = new CancellationTokenSource();
         ConsoleCancelEventHandler stop = (_, e) =>
         {
@@ -105,8 +129,8 @@ internal static partial class PlannerEvalHost
         Console.CancelKeyPress += stop;
         try
         {
-            Console.WriteLine($"recording {cases.Count} case(s) with {client.ProviderId}/{client.ModelId} into {dir}");
-            return await RecordAsync(set, cases, client, dir, keyState, cts.Token);
+            Console.WriteLine($"recording {cases.Count} {(drawing ? "drawing" : "lesson")} case(s) with {client.ProviderId}/{client.ModelId} into {dir}");
+            return await RecordAsync(set, cases, client, dir, keyState, cts.Token, drawing, stage);
         }
         finally
         {
@@ -174,16 +198,17 @@ internal static partial class PlannerEvalHost
     /// Plans the cases in order over <paramref name="client"/> and writes the recording. An authentication
     /// failure or cancellation stops the run, and what was planned so far is still written.
     /// </summary>
-    private static async Task<int> RecordAsync(EvalSet set, IReadOnlyList<EvalCase> cases, ILlmClient client, string dir, string keyState, CancellationToken ct)
+    private static async Task<int> RecordAsync(EvalSet set, IReadOnlyList<EvalCase> cases, ILlmClient client, string dir, string keyState, CancellationToken ct, bool drawing = false, ProgramStage? stage = null)
     {
         var runs = new List<CaseRun>();
         var lessons = new Dictionary<string, VisualPlan>(StringComparer.Ordinal);
+        var drawings = new Dictionary<string, DrawingFollowUp>(StringComparer.Ordinal);
         var code = 0;
         try
         {
             foreach (var c in cases)
             {
-                var run = await EvalRun.RunOneAsync(c, client, lessons, ct);
+                var run = drawing ? await EvalRun.RunDrawingAsync(c, client, drawings, stage, ct) : await EvalRun.RunOneAsync(c, client, lessons, ct);
                 runs.Add(run);
                 var failed = run.Checks.Where(k => !k.Value).Select(k => k.Key).ToList();
                 Console.WriteLine($"  {c.Id}: {(run.Error is not null ? $"ERROR {run.Error}" : failed.Count == 0 ? "all pass" : "failed " + string.Join(", ", failed))}");
@@ -215,6 +240,7 @@ internal static partial class PlannerEvalHost
     {
         var recorded = EvalReport.LoadCases(dir).ToDictionary(r => r.Id, StringComparer.Ordinal);
         var lessons = new Dictionary<string, VisualPlan>(StringComparer.Ordinal);
+        var drawings = new Dictionary<string, DrawingFollowUp>(StringComparer.Ordinal);
         var runs = new List<CaseRun>();
         var notReplayed = recorded.Keys.Where(id => set.Cases.All(c => c.Id != id)).Select(id => $"{id}: not in {set.Version}").ToList();
         var differences = new List<string>();
@@ -228,7 +254,15 @@ internal static partial class PlannerEvalHost
                 continue;
             }
 
-            var run = await EvalRun.RunOneAsync(c, new FakeLlm(StreamingText, rec.Answers.ToArray()), lessons);
+            var answers = new FakeLlm(StreamingText, rec.Answers.ToArray());
+            var run = rec.Drawing ? await EvalRun.RunDrawingAsync(c, answers, drawings, null) : await EvalRun.RunOneAsync(c, answers, lessons);
+            if (rec.Drawing)
+            {
+                // A replay is offline: the run checks keep what the stage said when the case was recorded (DEC-073).
+                var ranChecks = rec.Checks.Where(k => k.Key.StartsWith("P-", StringComparison.Ordinal));
+                run = run with { Checks = run.Checks.Concat(ranChecks).ToDictionary(k => k.Key, k => k.Value) };
+            }
+
             run = run with { FirstBeatMs = rec.FirstBeatMs, LatencyMs = rec.LatencyMs, InputTokens = rec.InputTokens, OutputTokens = rec.OutputTokens };
             if (!rec.Checks.OrderBy(k => k.Key).SequenceEqual(run.Checks.OrderBy(k => k.Key)))
             {
@@ -479,5 +513,5 @@ internal static partial class PlannerEvalHost
     }
 
     private static string Fmt(Dictionary<string, bool> checks) =>
-        string.Join(" ", checks.OrderBy(k => int.Parse(k.Key[2..])).Select(k => $"{k.Key}{(k.Value ? "+" : "-")}"));
+        string.Join(" ", checks.OrderBy(k => k.Key[0]).ThenBy(k => int.Parse(k.Key[2..])).Select(k => $"{k.Key}{(k.Value ? "+" : "-")}"));
 }

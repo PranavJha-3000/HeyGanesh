@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-069](#dec-069--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage window (FEATURE-011 step 2): a Win32 popup with no redirection bitmap, a Windows.UI.Composition tree and WebView2 in composition mode, transparent, click-through except over the boxes the page reports, never activated, capture-excluded, on its own STA thread; the page served by a resource handler so the worker gets its own CSP; the DrawStage assembly takes the already-pinned WebView2 1.0.4314.35 | accepted |
 | [DEC-068](#dec-068--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | three.js r172 (MIT) vendored as files for the drawing stage's 3D figures, byte-equal to npm `three@0.172.0`; Babylon 9.30 and Anatomy leave with the old stack (FEATURE-011 step 10); porting `figure3d.js` to Babylon rejected | accepted |
 | [DEC-067](#dec-067--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Lessons move to openclicky's drawing stage (FEATURE-011): the model writes a drawing-language program run in a no-network worker and drawn in time with speech; VisualPlan, cards, Babylon scene, Part Library and LessonTurn go; mark check, capture exclusion, PerMonitorV2, grounding by prompt, notes replay of programs, the router's intent and the eval harness survive; `photo()` and `f.piece()` dropped; click-to-ask by part name | accepted |
 | [DEC-066](#dec-066--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Codex plan provider (FEATURE-010 step 2): `CodexLlmClient` runs `codex exec` read-only and ephemeral with the person's config, tools and web search off; system prompt on stdin (cmd.exe's 8 191 cap); not streamed; npm `.cmd` shims launched through their Node script or an escaped cmd.exe line; same assembly as DEC-065 | accepted |
@@ -79,6 +80,26 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-069 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the drawing stage runs in a transparent, click-through window over one monitor.** FEATURE-011 step 2; the owner: "Yes, build step 2".
+
+- **How:** `HeyGanesh.DrawStage.DrawStageWindow`, ported from openclicky's Windows host (MIT). The window is a Win32 popup (`WS_EX_NOREDIRECTIONBITMAP | LAYERED | TRANSPARENT | TOOLWINDOW | TOPMOST | NOACTIVATE`). Its only content is a Windows.UI.Composition visual tree. WebView2 runs as a `CoreWebView2CompositionController` with a transparent background, so the page's alpha reaches the desktop. A WinForms or WPF host cannot do this: a WebView2 control draws nothing in a layered window and covers the screen in an opaque one. The composition projections come with the existing TFM.
+- **Isolation:**
+  - `CaptureExclusion.TryExcludeFromCapture` is a hard gate (open fails without it).
+  - DevTools, context menus, host objects and accelerator keys are off.
+  - Any navigation off `https://drawstage.heyganesh.invalid/` is cancelled, and new windows are refused.
+  - A `WebResourceRequested` handler serves only `.html`/`.js`/`.css` under the deployed page folder. Other hosts, `http`, other types, missing files and `../` escapes get 404.
+  - `stage-worker.js` is served with its own CSP (`script-src 'unsafe-eval'; worker-src 'none'; connect-src 'none'`). A worker follows its own response's policy, not the page's `<meta>`, which is why a folder mapping (as on our cards) is not enough here.
+- **Mouse:** click-through (`HTTRANSPARENT`, `WS_EX_TRANSPARENT`) except over the boxes the page reports in its `figures` message (3D figures, cards). Over a box the window takes the mouse and forwards it with `SendMouseInput`; a 40 ms pointer watch decides. Page boxes are clipped to the monitor in double before conversion (a huge number would overflow `int`), and malformed numbers read as 0. `WM_MOUSEACTIVATE` answers `MA_NOACTIVATE`.
+- **Threading:** its own STA thread with a WinForms loop (`StageThread`; LessonSurface's `UiThread` pattern, copied because LessonSurface goes in step 10), which also pumps the composition DispatcherQueue. A separate WebView2 profile, `webview2-drawstage`, under the data folder.
+- **Dependency:** the same pinned `Microsoft.Web.WebView2` 1.0.4314.35 as LessonSurface (DEC-020), not a new package. Two assemblies take it until step 10 deletes LessonSurface. DS-1 pins the stage project to exactly that package and to the Abstractions and ScreenCapture references.
+
+**Rejected.**
+- Hosting the page in our opaque card window: the drawing could not sit on the real screen.
+- A virtual host folder mapping: no response headers, so no worker CSP.
+- Sharing the cards' `webview2` profile: a second environment with different options in the same folder fails.
+
 ## DEC-068 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the drawing stage's 3D figures run on three.js r172, vendored as files.** FEATURE-011 §4; the owner: "Approve, use three.js".

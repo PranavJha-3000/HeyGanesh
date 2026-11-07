@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (drawing stage window, FEATURE-011 step 2, DEC-069)
+
+Did: `DrawStageWindow` (transparent, click-through, capture-excluded WebView2 composition window over one monitor, own STA thread; page served by a resource handler, worker gets its own CSP, navigation fenced) and `StageThread` in `HeyGanesh.DrawStage`, which now takes the already-pinned WebView2 1.0.4314.35. DS-2 `--assert-window`, DS-3 `--snapshot`.
+Left: Steps 3–10. The page's Picture/Video/PiP/close buttons show and nothing handles them yet (a step 3 or step 4 choice, see FEATURE-011). Not wired into the shell.
+Watch: The smoke host also needs the `DropWebView2Wpf` target (MSB3277 is transitive). Page boxes must be clipped in double before casting. DS-2 and DS-3 open a full-monitor window for a few seconds. A mutation that lets navigation through really fetches example.com.
+Next: FEATURE-011 step 3 (sandbox rows DS-4, mark check DS-5, whole-program time cap), on the owner's go-ahead.
+Verified: DrawStage + DrawStageSmoke build -warnaserror 0/0. DS-1 13, DS-2 13, DS-3 2 PASS, exit 0; PNGs reviewed. Three mutations (exclusion, worker CSP, navigation cancel) each fail DS-2. Forbidden/secret scans pass.
+
 ## 2026-11-07 · claude-opus-5-5 (adopt openclicky's drawing stage, FEATURE-011 steps 0–1, DEC-067/DEC-068)
 
 Did: Plan approved, with three.js. Step 0: ROLLBACK entries, DEC-067 (adopt draw-stage; survivors; `photo()` dropped; click-to-ask by part name) and DEC-068 (three.js r172 vendored). Step 1: new content-only `src/Experience/HeyGanesh.DrawStage` holds openclicky's Windows page copy, prompts, samples and three.js r172, 23 files pinned in `VENDOR.md`. New `tools/DrawStageSmoke` DS-1, CI G-27. Branch `claude/adopt-draw-stage-3043c2`, cut from `d358484`.

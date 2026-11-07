@@ -693,3 +693,10 @@
 - **Rollback point:** `f05ceda` (the plan commit), or revert this step's commit.
 - **Files to restore:** delete `src/Experience/HeyGanesh.DrawStage` and `tools/DrawStageSmoke`; `git checkout f05ceda -- .gitattributes .github/workflows/ci.yml AGENTS.md docs/ai`.
 - **Re-check after revert:** `git status` clean; G-26 and the other gates unchanged (none depended on this step).
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 2: the drawing stage window, DEC-069)
+
+- **Change:** `src/Experience/HeyGanesh.DrawStage` gains `DrawStageWindow` (a transparent, click-through, topmost, never-activated, capture-excluded popup over one monitor, hosting the vendored page in WebView2 composition mode on its own STA thread) and `StageThread`; its csproj gains the already-pinned `Microsoft.Web.WebView2` 1.0.4314.35 (the same package and version as LessonSurface, DEC-020), WinForms, and references to ScreenCapture and Abstractions. `tools/DrawStageSmoke` gains DS-2 `--assert-window` and DS-3 `--snapshot`; DS-1 now expects those references. Docs: DEC-069, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER. Nothing outside the stage project and its smoke host references it.
+- **Rollback point:** `a81f785` (step 1), or revert this step's commit.
+- **Files to restore:** `git checkout a81f785 -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`, then delete any new file `git status` lists under those folders.
+- **Re-check after revert:** DS-1 13 PASS, exit 0.

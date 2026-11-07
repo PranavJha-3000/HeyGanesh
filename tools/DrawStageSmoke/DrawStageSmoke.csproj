@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Verification host for the drawing stage (FEATURE-011, DEC-067). Not product code. Step 1 has one offline row,
-    DS-1 (- -assert-source): the vendored page matches VENDOR.md file by file and keeps its no-network fences.
+    Verification host for the drawing stage (FEATURE-011, DEC-067). Not product code. DS-1 (- -assert-source) is
+    offline: the vendored page matches VENDOR.md file by file and keeps its no-network fences. DS-2 (- -assert-window)
+    and DS-3 (- -snapshot) open the real stage window (DEC-069) and need an interactive desktop.
     It references the stage project so the page is copied beside this EXE, as it will be beside the App Shell.
   -->
 
@@ -12,6 +13,7 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>HeyGanesh.Tools.DrawStageSmoke</RootNamespace>
     <AssemblyName>HeyGanesh.Tools.DrawStageSmoke</AssemblyName>
   </PropertyGroup>
@@ -19,5 +21,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Experience\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
   </ItemGroup>
+
+  <!-- The WebView2 package's WPF control assembly reaches this host transitively and conflicts with the in-box
+       WindowsBase (MSB3277), as in LessonSurfaceSmoke; the stage uses only the Core API, so that reference is removed. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

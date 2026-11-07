@@ -19,6 +19,8 @@ internal static class DrawStageSmokeHost
             return mode switch
             {
                 "--assert-source" => RunAssertSource(),
+                "--assert-window" => DrawStageSmokeWindow.RunAssertWindow(),
+                "--snapshot" when args.Length > 1 => DrawStageSmokeWindow.RunSnapshot(args[1]),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -41,16 +43,20 @@ internal static class DrawStageSmokeHost
         Console.WriteLine("Usage: DrawStageSmoke <mode>");
         Console.WriteLine("  --assert-source   every page file matches VENDOR.md and none is unlisted; CSP has no network; no URL in the page's");
         Console.WriteLine("                    own files; the worker fences the network and workers; licences ship; the build copies the page; exit 0");
+        Console.WriteLine("  --assert-window   (local, interactive desktop) the stage window over the cursor monitor: styles, capture exclusion,");
+        Console.WriteLine("                    click-through except over reported boxes, never activated, navigation fenced, the page serves");
+        Console.WriteLine("                    only its files and the worker its own CSP, a program draws; exit 0");
+        Console.WriteLine("  --snapshot <dir>  (local) draws two samples on the stage and saves each as a PNG in <dir> for review; exit 0");
         return 0;
     }
 
-    private static int Check(bool ok, string label, int failures)
+    internal static int Check(bool ok, string label, int failures)
     {
         Console.WriteLine($"  {(ok ? "PASS" : "FAIL")}  {label}");
         return ok ? failures : failures + 1;
     }
 
-    private static int Summarize(int failures, string okLabel)
+    internal static int Summarize(int failures, string okLabel)
     {
         Console.WriteLine(failures == 0 ? $"{okLabel} (exit 0)" : $"FAILED: {failures} check(s) (exit 1)");
         return failures == 0 ? 0 : 1;
@@ -125,10 +131,13 @@ internal static class DrawStageSmokeHost
         failures = Check(attributes.Contains("src/Experience/HeyGanesh.DrawStage/Page/** -text", StringComparison.Ordinal),
             ".gitattributes marks the page -text", failures);
 
-        // Step 1 is content only.
+        // Step 2 (DEC-069): only the already-pinned WebView2 package, and only CaptureExclusion's and PixelRect's assemblies.
         var csproj = File.ReadAllText(Path.Combine(dir, "HeyGanesh.DrawStage.csproj"));
-        failures = Check(!csproj.Contains("<PackageReference", StringComparison.Ordinal) && !csproj.Contains("<ProjectReference", StringComparison.Ordinal),
-            "the stage project has no PackageReference and no ProjectReference", failures);
+        var packages = Regex.Matches(csproj, @"<PackageReference\s+Include=""([^""]+)""\s+Version=""([^""]+)""").Select(m => $"{m.Groups[1].Value} {m.Groups[2].Value}").ToArray();
+        var projects = Regex.Matches(csproj, @"<ProjectReference\s+Include=""[^""]*\\([^\\""]+)\.csproj""").Select(m => m.Groups[1].Value).OrderBy(p => p, StringComparer.Ordinal).ToArray();
+        failures = Check(packages.SequenceEqual(new[] { "Microsoft.Web.WebView2 1.0.4314.35" })
+                && projects.SequenceEqual(new[] { "HeyGanesh.Abstractions", "HeyGanesh.ScreenCapture" }),
+            $"the stage project takes only WebView2 1.0.4314.35 (DEC-020) and references only Abstractions and ScreenCapture ({string.Join(", ", packages.Concat(projects))})", failures);
 
         // The build copies the page beside a consumer, byte for byte.
         var built = DrawStagePage.Directory;

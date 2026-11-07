@@ -8,8 +8,10 @@
     (DEC-068) for 3D figures. Page/ is copied to DrawStagePage/ in the output and pinned file by file in VENDOR.md
     (DS-1, tools/DrawStageSmoke - -assert-source).
 
-    Step 1 holds content only: no package or project reference. The window that hosts the page (step 2) and the
-    controller that feeds it (step 4) come later.
+    Step 2 (DEC-069): DrawStageWindow hosts the page over one monitor. WebView2 is the same pinned package and version
+    as LessonSurface's (DEC-020), not a new dependency; once LessonSurface is deleted (FEATURE-011 step 10) this is
+    again the only assembly that takes it. DS-1 pins it to exactly this one package. ScreenCapture gives
+    CaptureExclusion; WinForms (a framework reference) gives the stage thread its message loop.
   -->
 
   <PropertyGroup>
@@ -17,12 +19,34 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>HeyGanesh.DrawStage</RootNamespace>
     <AssemblyName>HeyGanesh.DrawStage</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Platform\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="HeyGanesh.Tools.DrawStageSmoke" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Page\**\*" Link="DrawStagePage\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- As in LessonSurface: the package references its WPF control assembly for .NET 5+, which conflicts with the in-box
+       WindowsBase (MSB3277). The stage uses only the Core API, so that one reference is removed. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

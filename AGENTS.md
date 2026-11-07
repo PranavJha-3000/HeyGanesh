@@ -241,11 +241,12 @@ tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Claud
 # Codex (DEC-066): --assert-codex-args 11, --assert-codex-run 4, --assert-codex-errors 9, --assert-launch 4 (the .cmd launch), offline.
 #   --live-codex "hi" -> LIVE OK; needs `npm i -g @openai/codex` then `codex login` (not installed: exit 1, signed out: exit 12)
 # Drawing stage (FEATURE-011, DEC-067/DEC-068): openclicky's draw-stage page + three.js r172, vendored and pinned in VENDOR.md.
-# Step 1 is content only (not wired in yet). Build library then host SEQUENTIALLY (CS2012).
+# Step 1 is content only (not wired in yet).# Steps 1-2: the page and its window (not wired into the shell yet). Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Experience/HeyGanesh.DrawStage -c Debug
 dotnet build tools/DrawStageSmoke -c Debug
 tools/DrawStageSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.DrawStageSmoke.exe --assert-source
 #   -> 13 PASS, SOURCE AUDIT OK, exit 0   (CI G-27)
+#   local, interactive desktop (the real stage window, DEC-069): --assert-window 13; --snapshot <dir> draws two samples as PNGs (review by eye)
 # Notes store (DEC-058): offline, temporary databases, Windows' own winsqlite3. Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Foundation/HeyGanesh.Notes -c Debug
 dotnet build tools/NotesSmoke -c Debug

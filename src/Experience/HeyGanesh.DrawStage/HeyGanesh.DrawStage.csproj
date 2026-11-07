@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Drawing stage (FEATURE-011, DEC-067): openclicky's draw-stage page, vendored unchanged in step 1.
+
+    The lesson model writes a small program in a drawing language; the page runs it statement by statement in a
+    no-network Web Worker and draws the resulting marks as pen strokes, timed to each spoken line, with three.js r172
+    (DEC-068) for 3D figures. Page/ is copied to DrawStagePage/ in the output and pinned file by file in VENDOR.md
+    (DS-1, tools/DrawStageSmoke - -assert-source).
+
+    Step 1 holds content only: no package or project reference. The window that hosts the page (step 2) and the
+    controller that feeds it (step 4) come later.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.DrawStage</RootNamespace>
+    <AssemblyName>HeyGanesh.DrawStage</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Page\**\*" Link="DrawStagePage\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -236,3 +236,8 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
 ### Status
 
 - 2026-11-07 · claude-opus-5-5: plan written; waiting for the owner. Nothing built.
+- 2026-11-07 · claude-opus-5-5: **approved** ("Approve, use three.js"). Decisions 3 and 4 were taken as recommended in the plan: `photo()` is dropped in v1, and click-to-ask uses the part's const name. Recorded in DEC-067 and DEC-068.
+- 2026-11-07 · claude-opus-5-5: **step 0 done.** ROLLBACK entries for the sequence and for step 1 (rollback point `d358484`), plus DEC-067 and DEC-068.
+- 2026-11-07 · claude-opus-5-5: **step 1 done.** `src/Experience/HeyGanesh.DrawStage` (content-only) holds the page, prompts, samples and three.js r172, 23 files pinned in `VENDOR.md`. `tools/DrawStageSmoke --assert-source` (DS-1) gives 13 PASS, and CI gate G-27 runs it. Each of three mutations fails it: a changed byte, an unlisted file, a planted address.
+  - Trap found and fixed: a Windows clone (autocrlf) and `git archive` both turn LF into CRLF, so the first copy's hashes matched nothing upstream. The files were re-exported with `git -c core.autocrlf=false -c core.eol=lf archive`. three.js module, core and licence now equal npm's published hashes.
+  - Next: step 2 (`DrawStageWindow`).

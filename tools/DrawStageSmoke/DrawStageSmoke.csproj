@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification host for the drawing stage (FEATURE-011, DEC-067). Not product code. Step 1 has one offline row,
+    DS-1 (- -assert-source): the vendored page matches VENDOR.md file by file and keeps its no-network fences.
+    It references the stage project so the page is copied beside this EXE, as it will be beside the App Shell.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HeyGanesh.Tools.DrawStageSmoke</RootNamespace>
+    <AssemblyName>HeyGanesh.Tools.DrawStageSmoke</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
+  </ItemGroup>
+
+</Project>

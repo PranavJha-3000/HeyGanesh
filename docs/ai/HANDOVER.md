@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (adopt openclicky's drawing stage, FEATURE-011 steps 0–1, DEC-067/DEC-068)
+
+Did: Plan approved, with three.js. Step 0: ROLLBACK entries, DEC-067 (adopt draw-stage; survivors; `photo()` dropped; click-to-ask by part name) and DEC-068 (three.js r172 vendored). Step 1: new content-only `src/Experience/HeyGanesh.DrawStage` holds openclicky's Windows page copy, prompts, samples and three.js r172, 23 files pinned in `VENDOR.md`. New `tools/DrawStageSmoke` DS-1, CI G-27. Branch `claude/adopt-draw-stage-3043c2`, cut from `d358484`.
+Left: Steps 2–10 (window, sandbox + mark check, controller, DrawingPlanner, eval, shell switch, router, replay, delete the old stack). Nothing is wired in, and the old VisualPlan path is untouched.
+Watch: A Windows clone and `git archive` both rewrite LF to CRLF and break the pinned hashes. Re-vendor with `git -c core.autocrlf=false -c core.eol=lf archive`. The page is `-text` in `.gitattributes`. Any edit to a vendored file must update `VENDOR.md` (DS-1 fails otherwise).
+Next: FEATURE-011 step 2, `DrawStageWindow` (transparent, click-through, capture-excluded WebView2 in composition mode), on the owner's go-ahead.
+Verified: DrawStage and DrawStageSmoke build -warnaserror 0/0. DS-1 13 PASS, exit 0. A changed byte, an unlisted file and a planted address each fail it (restored from copies). Other gates were not re-run: no existing file they read changed except `.gitattributes`, `ci.yml` and docs.
+
 ## 2026-11-07 · claude-opus-5-5 (Codex plan provider, FEATURE-010 step 2, DEC-066)
 
 Did: `CodexLlmClient` (codex exec on the ChatGPT plan: read-only, ephemeral, config, tools and web search off, system prompt on stdin, not streamed) in the plan-provider assembly. `PlanCli` gains `Locate` and openclicky's npm-shim / cmd.exe launcher, so `.cmd` installs of either CLI work. CX-1..CX-5 offline. PlannerEval `--provider codex`. CC-4 and PE-8 now pass live on the owner's Claude plan (CLI signed in).

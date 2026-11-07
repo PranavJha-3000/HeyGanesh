@@ -680,3 +680,16 @@
 - **Rollback point:** `e01794f` (step 1 on `feat/plan-providers`), or revert this step's commit.
 - **Files to restore:** `git checkout e01794f -- src/Providers/HeyGanesh.Providers.ClaudeCode tools/ClaudeCodeSmoke tools/PlannerEval AGENTS.md docs/ai`, then delete any new file `git status` lists.
 - **Re-check after revert:** ClaudeCodeSmoke `--assert-args` 15, `--assert-stream` 6, `--assert-errors` 10; PlannerEval `--assert-drift` 5.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011: the whole draw-stage sequence, DEC-067 / DEC-068)
+
+- **Change (whole sequence):** FEATURE-011 steps 1-10 replace the lesson drawing and 3D system with openclicky's drawing stage. Steps 1-9 only add or switch; step 10 deletes the old stack and gets its own entry first.
+- **Rollback point:** `d358484` (HEAD of `feat/plan-providers`, FEATURE-010 step 2). The sequence runs on `claude/adopt-draw-stage-3043c2`, one commit per step, so any step reverts on its own with `git revert <step commit>`.
+- **Re-check after a full revert:** the CI gates as they were at `d358484` (G-13..G-17, G-22 especially); `--lesson` runs the VisualPlan path.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 1: vendor the drawing stage, DEC-067 / DEC-068)
+
+- **Change:** new `src/Experience/HeyGanesh.DrawStage` (content-only project: openclicky's page, prompts, samples and three.js r172, pinned in `VENDOR.md`); new `tools/DrawStageSmoke` (DS-1); one line in `.gitattributes`; gate G-27 in `ci.yml`. Docs: DEC-067, DEC-068, FEATURE-011, TEST-CHECKLIST, CI.md, ARCHITECTURE, AGENTS.md, HANDOVER. Nothing references the new project except the smoke host; no product path changes.
+- **Rollback point:** `f05ceda` (the plan commit), or revert this step's commit.
+- **Files to restore:** delete `src/Experience/HeyGanesh.DrawStage` and `tools/DrawStageSmoke`; `git checkout f05ceda -- .gitattributes .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** `git status` clean; G-26 and the other gates unchanged (none depended on this step).

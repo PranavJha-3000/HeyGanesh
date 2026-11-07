@@ -9,6 +9,8 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-068](#dec-068--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | three.js r172 (MIT) vendored as files for the drawing stage's 3D figures, byte-equal to npm `three@0.172.0`; Babylon 9.30 and Anatomy leave with the old stack (FEATURE-011 step 10); porting `figure3d.js` to Babylon rejected | accepted |
+| [DEC-067](#dec-067--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Lessons move to openclicky's drawing stage (FEATURE-011): the model writes a drawing-language program run in a no-network worker and drawn in time with speech; VisualPlan, cards, Babylon scene, Part Library and LessonTurn go; mark check, capture exclusion, PerMonitorV2, grounding by prompt, notes replay of programs, the router's intent and the eval harness survive; `photo()` and `f.piece()` dropped; click-to-ask by part name | accepted |
 | [DEC-066](#dec-066--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Codex plan provider (FEATURE-010 step 2): `CodexLlmClient` runs `codex exec` read-only and ephemeral with the person's config, tools and web search off; system prompt on stdin (cmd.exe's 8 191 cap); not streamed; npm `.cmd` shims launched through their Node script or an escaped cmd.exe line; same assembly as DEC-065 | accepted |
 | [DEC-065](#dec-065--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Plan providers (FEATURE-010 step 1): an `ILlmClient` over the `claude` CLI on the person's Claude plan, ported from openclicky (MIT); one tool-less, session-less `-p` run per call, system prompt by file, API-key and nesting variables stripped; used by PlannerEval `--record --provider claude-code` only | accepted |
 | [DEC-064](#dec-064--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | 3D scene window in the FEATURE-009 look (step 3): shared `tokens.css`, glass frame and opaque stage, pill labels, red highlight and accent pick glows read from the tokens by scene.js; flat accent mark so the orientation probe's colour search stays clean | accepted |
@@ -77,6 +79,44 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-068 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the drawing stage's 3D figures run on three.js r172, vendored as files.** FEATURE-011 §4; the owner: "Approve, use three.js".
+
+- **What:** `three.module.min.js`, `three.core.min.js`, `RoomEnvironment.js` and `LICENSE` under `src/Experience/HeyGanesh.DrawStage/Page/vendor/three/`, about 700 KB, MIT. No NuGet and no npm at build time; served from the page folder, as Babylon is today. The module, core and licence are byte-equal to the hashes jsdelivr publishes for npm `three@0.172.0`. `RoomEnvironment.js` carries openclicky's one-line import change. DS-1 pins every file.
+- **Why:** `figure3d.js` (openclicky's figure engine: lathe, extrude, tube, metaball `blob`, PMREM room lighting, clipping-plane `cut`) is written against three.js and runs unchanged, so upstream fixes carry over.
+- **Net vendor size goes down:** Babylon 9.30 and the Anatomy kit are deleted with the old lesson stack (FEATURE-011 step 10).
+
+**Rejected.**
+- Keep Babylon and port `figure3d.js`: no new dependency, but about 1,300 lines rewritten against another engine's geometry, lighting and clipping APIs, with a high risk of looking worse, and it would drift from upstream.
+
+## DEC-067 — 2026-11-07 — claude-opus-5-5
+
+**Decision — lessons are drawn by openclicky's drawing stage (draw-stage, MIT, commit `5b838ad`).** FEATURE-011; the owner: "use majority of their drawing and 3d system and scrape ours keep only the best and relevant parts", then approved the plan as written ("Approve, use three.js").
+
+- **Adopted:** the drawing language; the statement scanner and the pen paced to each spoken line; the Web Worker sandbox (2 s per statement, 2000 marks, fixed `random()`); the three.js figure engine; the prompts with the `NONE` way out and the follow-up `keep()`; click on a part. The page is the Windows app's copy, which is stricter than the shared `draw-stage/` folder.
+- **Removed (by step 10, after the new path is live):** the VisualPlan contract and `LessonPlayer`, `VisualPlanner` and its prompt, the cards and the Babylon scene, the Part Library, and `LessonTurn`'s click wait.
+- **Survives:**
+  - a check on the worker's marks before painting (step 3; the part of DEC-023 that still applies);
+  - capture exclusion and PerMonitorV2;
+  - grounding, as the Element Selection box given to the model in canvas units;
+  - notes and replay, which store the program text;
+  - the router's point / explain / lesson question;
+  - the Tutor, for `NONE`;
+  - session context;
+  - PlannerEval, with checks on programs.
+- **Dropped:**
+  - `photo()`: the model writes the search query after seeing the screen, so a fetch would be a channel out of the screen;
+  - `f.piece()`: network 3D generators;
+  - Picture/Video saving.
+- **Click-to-ask:** a click asks about the part's name from the program's const, cleaned, capped and fenced as untrusted. There are no vetted descriptions any more. The owner accepted the plan with this stated.
+- **New risk accepted:** the page needs `'unsafe-eval'` for the worker. It is bounded by the worker fence, two CSPs with `connect-src 'none'`, a virtual host with navigation cancelled, the mark check, and a whole-program time cap (step 3).
+
+**Rejected.**
+- The hybrid (their renderer fed our VisualPlan): it keeps the stiffness and the catalogue-limited 3D.
+- Hosting the stage in our opaque card window: the drawing could not sit on the real screen.
+- A JS engine in C#: it needs a new dependency and duplicates the worker.
+
 ## DEC-066 — 2026-11-07 — claude-opus-5-5
 
 **Decision — the lesson model can also run on the person's ChatGPT plan through `codex exec`.** FEATURE-010 step 2; the owner: "Yes, build step 2".

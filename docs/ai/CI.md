@@ -32,6 +32,7 @@
 | **G-24 Tray offline** | build `tools\TraySmoke`, then `--assert-source` (TY-1), `--assert-log` (TY-2) `--assert-keys-model` (TK-1) `--assert-startup` (TS-1, a throwaway HKCU key, deleted after) `--assert-notes-map` (NB-1, DEC-059), `--assert-session` (NB-4, DEC-061), `--assert-recent-model` and `--assert-replay-prepare` (RL-1, RL-2, DEC-060), DEC-052..DEC-054; TY-3..TY-5, TK-2, TK-3 and TS-2 need an interactive desktop and stay local | `tray=pass` | exit 0 for every mode |
 | **G-25 Installer package** | `powershell.exe -File installer\build.ps1` (IN-1, DEC-055): a self-contained win-x64 publish of the tray into `artifacts\installer\app`, the scripts beside it, and the files a package needs checked; the runner downloads the .NET runtime packs from nuget.org; the install round trip (IN-2) is local | `installer=pass` | exit 0, `PACKAGE OK` |
 | **G-26 Notes store offline** | build `tools\NotesSmoke`, then `--assert-source` `--assert-store` `--assert-migrate` `--assert-concurrent` `--assert-corrupt` `--assert-retention` (NS-1..NS-6, DEC-058): Windows' own `winsqlite3`, temporary databases only | `notesStore=pass` | exit 0 for every mode |
+| **G-27 Drawing stage source** | build `tools\DrawStageSmoke`, then `--assert-source` (DS-1, FEATURE-011, DEC-067 / DEC-068): the vendored openclicky page and three.js r172 match `VENDOR.md` file by file, with their no-network fences in place | `drawStage=pass` | exit 0 |
 
 ## Local-Only Notes
 

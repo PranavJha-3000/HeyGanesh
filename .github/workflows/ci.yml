@@ -253,3 +253,14 @@ jobs:
           } else {
             Write-Output 'no baseline yet: tools\PlannerEval\baseline is committed after the first reviewed live recording'
           }
+
+      # G-27: the drawing stage (FEATURE-011, DEC-067 / DEC-068) - the vendored openclicky page, prompts, samples and
+      # three.js r172 match VENDOR.md file by file, nothing unlisted is present, and the page keeps its no-network CSP
+      # and worker fences. The window rows (DS-2 and later) need a desktop and stay local.
+      - name: G-27 Drawing stage source
+        shell: pwsh
+        run: |
+          dotnet build tools\DrawStageSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\DrawStageSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.DrawStageSmoke.exe' --assert-source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

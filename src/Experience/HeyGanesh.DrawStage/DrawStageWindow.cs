@@ -32,7 +32,7 @@ namespace HeyGanesh.DrawStage;
 /// follows its own response's policy, not the page's &lt;meta&gt;. Every member runs on the stage's own thread.
 /// </para>
 /// </summary>
-public sealed class DrawStageWindow : IDisposable
+public sealed class DrawStageWindow : IDrawStageSurface, IDisposable
 {
     /// <summary>The page's origin, served by <see cref="PageFile"/>; .invalid can never resolve on a network.</summary>
     public const string PageHost = "drawstage.heyganesh.invalid";

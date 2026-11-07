@@ -266,3 +266,15 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Found: a forged result that matches the running statement takes that statement's place, and in a stream the ones after it (`seq` is not a secret). Only checked marks are painted either way. DEC-070 records why `seq` is not made the boundary.
   - The page's Picture / Video / PiP / close buttons: decided by the owner ("Handle close, hide rest"), built in step 4 (see its plan above).
   - Next: step 4, `DrawStageController` and the speech clock.
+- 2026-11-07 · claude-opus-5-5: **step 4 done (DEC-071).** New in `HeyGanesh.DrawStage`:
+  - `DrawStageMessages`: the message shapes, ported and trimmed;
+  - `DrawStageController`: events, the close button handled (clear, hide, `Closed`), anything not offered logged;
+  - `DrawStageVoice`: speaks lines in order with `lineStarted` / `lineEnded`, `finishNow` when the voice fails, stops on `Closed`;
+  - `IDrawStageSurface`, implemented by `DrawStageWindow`.
+
+  `stage.css` hides Picture, Video and PiP (the second local edit, in VENDOR.md).
+  - Rows: DS-1 15, DS-6 `--assert-pace` 8 (3 of 3 runs), DS-7 `--demo` run silently once. DS-2 13, DS-4 13 and DS-5 3 still pass.
+  - Mutations caught: no `lineStarted`; no `finishNow` on a failed voice; close ignored; the CSS rule removed.
+  - First attempt, logged: DS-6 expected `finished` after the last line's voice ended, and it came 0.25 s before. The page ends a line whose `lineEnded` has not come at its estimated length. That is upstream's design, so the check now asks for "after the last line started, within 3 s of its end". Step 7 must wait for both the voice and `finished`.
+  - Plan drift: DS-6 runs on the real stage (local), not offline. The pacing is the page's, so a fake surface would test nothing.
+  - Next: step 5, `DrawingPlanner` in LessonPlanner.

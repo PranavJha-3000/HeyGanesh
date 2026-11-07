@@ -39,7 +39,7 @@ edited hash.
 | `samples/rocket-engine-3d.js` | 1861 | `88cc11bd1a435c2c0de25c0045f6e3b6229c7875b827ec5f1761d1df3065b827` | `windows/src/OpenClicky.Windows/Assets/DrawStage/samples/rocket-engine-3d.js` |
 | `samples/rocket.js` | 1796 | `1f69aecba6f8ae4bfd22eaa86b996535a65b190bb628c6684ce1c40074b30cf7` | `windows/src/OpenClicky.Windows/Assets/DrawStage/samples/rocket.js` |
 | `stage-worker.js` | 11131 | `3c0ae3e56d56573e3ae3146195fd0d12b3d68eb43d011e67d6173b10247db8a0` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage-worker.js` |
-| `stage.css` | 6916 | `7893b2a1e2a27f33b0044c0f277df84f7410aeb1f1d68bc50d2d9e52316838e8` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.css` |
+| `stage.css` | 7131 | `63531d35d8b6a2d0cdbf4c1589f7c840a3853bededc5ad8c248245027720e98e` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.css` |
 | `stage.js` | 47287 | `69626bc75a080f11374d318fadac44b0079b589eea6fe6015a796dbc05cdb61a` | `windows/src/OpenClicky.Windows/Assets/DrawStage/stage.js` |
 | `vendor/three/LICENSE` | 1081 | `4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/LICENSE` |
 | `vendor/three/README.txt` | 241 | `4c3b9deaa72b1c3a588c77eed1cc8c42c2dcecfb553ef44163c8e045894f88bc` | `windows/src/OpenClicky.Windows/Assets/DrawStage/vendor/three/README.txt` |
@@ -56,5 +56,9 @@ edited hash.
   sizes and text, at most 4 figures and 300 parts, `photo()` and `f.piece()` refused); `ran()` reads the result only in
   the shape expected and skips a refused mark with a `log` line. `reset()`/`restartStream()` zero the new counters.
   Nothing upstream was removed.
+- `stage.css` (2026-11-07 · claude-opus-5-5, FEATURE-011 step 4, DEC-071). Upstream 6916 bytes,
+  `7893b2a1e2a27f33b0044c0f277df84f7410aeb1f1d68bc50d2d9e52316838e8`. Added one rule after the `[hidden]` rule:
+  `#tools button.picture, #tools button.video, #tools button.pip { display: none !important; }`, so only the close
+  button shows and the page never sends `save`. Nothing upstream was removed.
 
 Vendored 2026-11-07 · claude-opus-5-5 with the owner's approval ("Approve, use three.js").

@@ -23,6 +23,8 @@ internal static class DrawStageSmokeHost
                 "--snapshot" when args.Length > 1 => DrawStageSmokeWindow.RunSnapshot(args[1]),
                 "--assert-sandbox" => DrawStageSmokeWindow.RunAssertSandbox(),
                 "--assert-marks" => DrawStageSmokeWindow.RunAssertMarks(),
+                "--assert-pace" => DrawStageSmokeWindow.RunAssertPace(),
+                "--demo" when args.Length > 1 => DrawStageSmokeWindow.RunDemo(args[1], args.Skip(2).SequenceEqual(new[] { "--voice", "sapi" })),
                 "--help" or "-h" or "/?" => PrintUsage(),
                 _ => Usage(mode),
             };
@@ -52,6 +54,9 @@ internal static class DrawStageSmokeHost
         Console.WriteLine("  --assert-sandbox  (local) programs that reach for the network, workers or the fences fail; a busy statement stops at");
         Console.WriteLine("                    2 s, a program at 20 s in all, 2000 marks at most; no request leaves the page's host; exit 0");
         Console.WriteLine("  --assert-marks    (local) bad and forged marks are skipped with a log line, good ones drawn; exit 0");
+        Console.WriteLine("  --assert-pace     (local) the controller and voice clock: lines spoken in order, each beat drawn while heard, 'finished'");
+        Console.WriteLine("                    after the last; a failing voice draws the rest; the close button clears and hides; exit 0");
+        Console.WriteLine("  --demo <sample> [--voice sapi]  (local, by hand) a sample drawn and spoken; exit 0");
         return 0;
     }
 
@@ -130,6 +135,8 @@ internal static class DrawStageSmokeHost
         failures = Check(Regex.IsMatch(stage, @"PROGRAM_SECONDS\s*=\s*20\b") && stage.Contains("const problem = markProblem(mark);", StringComparison.Ordinal)
                 && stage.Contains("if (m.do === 'photo') return", StringComparison.Ordinal) && stage.Contains("if (m.kind === 'piece') return", StringComparison.Ordinal),
             "stage.js checks every mark before painting it, refuses photo() and f.piece(), and gives a program 20 s of worker time (DEC-070)", failures);
+        failures = Check(Regex.IsMatch(File.ReadAllText(Path.Combine(page, "stage.css")), @"#tools button\.picture, #tools button\.video, #tools button\.pip \{\s*display: none !important;"),
+            "stage.css hides the Picture, Video and PiP buttons; only close is offered (DEC-071)", failures);
 
         // MIT: both licences travel with the copied files.
         failures = Check(File.ReadAllText(Path.Combine(page, "LICENSE-openclicky")).Contains("MIT License", StringComparison.Ordinal)

@@ -707,3 +707,10 @@
 - **Rollback point:** `ddd58cf` (step 2), or revert this step's commit.
 - **Files to restore:** `git checkout ddd58cf -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`.
 - **Re-check after revert:** DS-1 13, DS-2 13 PASS; `stage.js` hash equals upstream again (`bde25b57…`).
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 4: DrawStageController, voice clock, close button)
+
+- **Change:** `src/Experience/HeyGanesh.DrawStage` gains `DrawStageController` (what the page is told and when, the page's events, the close button handled), `DrawStageMessages` (message shapes, ported from openclicky) and `DrawStageVoice` (speaks each line in order and tells the page when it starts and ends). The second local edit to vendored code: one rule in `Page/stage.css` hides the Picture, Video and PiP buttons; `VENDOR.md` records it. `DrawStageWindow` implements the controller's surface interface. `tools/DrawStageSmoke` gains DS-6 `--assert-pace` and DS-7 `--demo`; DS-1 checks the CSS edit. Docs: DEC-071, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER. Nothing outside the stage project and its smoke host references it.
+- **Rollback point:** `d04460e` (step 3 and the button decision), or revert this step's commit.
+- **Files to restore:** `git checkout d04460e -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`.
+- **Re-check after revert:** DS-1 14, DS-4 13, DS-5 3 PASS; `stage.css` hash equals upstream again.

@@ -9,6 +9,7 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-071](#dec-071--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage's controller and speech clock (FEATURE-011 step 4): DrawStageController (ported, trimmed to what is offered) turns page messages into events and handles the close button (clear, hide, Closed); DrawStageVoice speaks each line in order through any Func<string, CancellationToken, Task> and sends lineStarted / lineEnded, finishNow when the voice fails; stage.css hides Picture, Video and PiP | accepted |
 | [DEC-070](#dec-070--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage trusts nothing the program worker returns (FEATURE-011 step 3): stage.js checks every mark before painting it (known kind, finite numbers near the canvas, bounded sizes and text, at most 4 figures and 300 parts, photo() and f.piece() refused), a program gets 20 s of worker time in all, and the window answers every off-page request 403 and counts it | accepted |
 | [DEC-069](#dec-069--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage window (FEATURE-011 step 2): a Win32 popup with no redirection bitmap, a Windows.UI.Composition tree and WebView2 in composition mode, transparent, click-through except over the boxes the page reports, never activated, capture-excluded, on its own STA thread; the page served by a resource handler so the worker gets its own CSP; the DrawStage assembly takes the already-pinned WebView2 1.0.4314.35 | accepted |
 | [DEC-068](#dec-068--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | three.js r172 (MIT) vendored as files for the drawing stage's 3D figures, byte-equal to npm `three@0.172.0`; Babylon 9.30 and Anatomy leave with the old stack (FEATURE-011 step 10); porting `figure3d.js` to Babylon rejected | accepted |
@@ -81,6 +82,30 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-071 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the stage gets a controller, a speech clock, and only a close button.** FEATURE-011 step 4. The owner chose "Handle close, hide rest" for the page's buttons, then said "Yes, build step 4".
+
+- **`DrawStageController`** is ported from openclicky (MIT) and trimmed. It drops photos, pieces, saving, recording, measuring and the ready queue: `DrawStageWindow.OpenAsync` has already waited for `ready`.
+  - Methods (async, posted in order on the stage thread): `BeginAsync`, `ContinueAsync`, `FeedAsync`, `LineStartedAsync`, `LineEndedAsync`, `FinishNowAsync`, `ClearAsync`.
+  - Events: `LineAdded`, `ProgramRan`, `LineDue`, `Finished`, `FigurePartClicked`, `Closed`, `Logged`. They are raised on the window's thread.
+  - It talks to the window through `IDrawStageSurface`, which `DrawStageWindow` implements.
+  - Any other page message (`save`, `photoWanted`, `pieceWanted`) is logged and ignored.
+- **The close button:** the page's `close` message clears the drawing, hides the window, then raises `Closed`, which stops the voice. The button's "(Esc)" hint stays as upstream wrote it, but the window is never activated, so Esc cannot reach it.
+- **The hidden buttons:** one rule in `stage.css` hides Picture, Video and PiP (the second local edit, in VENDOR.md), so `save` is never sent.
+- **`DrawStageVoice.RunAsync(stage, speak, ct)`** is the speech clock that openclicky keeps inside its answer flow, here on its own:
+  - It queues each `LineAdded` and speaks the lines in order through any `Func<string, CancellationToken, Task>`, sending `lineStarted` before and `lineEnded` after each line.
+  - It ends at `programRan` (every line is known by then: one ordered message channel), on `Closed`, or on the caller's token (which throws).
+  - A failing speaker sends `finishNow`, so the rest is drawn at once and nothing more is spoken.
+  - The shell's TTS plugs in at step 7.
+- **Found:** when the last line's `lineEnded` has not come, the page ends that line at its estimated length (2.6 words a second). So `finished` can arrive a little before a slow voice ends (DS-6: about 0.25 s). The shell must wait for both the voice and `finished`.
+- **Rows:** DS-1 checks the CSS edit (15). DS-6 `--assert-pace` 8, local. DS-7 `--demo <sample> [--voice sapi]` by hand.
+
+**Rejected.**
+- Driving the voice from the page's `lineDue`: openclicky speaks ahead from `line`, which lets audio be fetched early. `lineDue` is kept as an event.
+- Handling PiP: it is a page-only feature, but it moves the drawing off what the model saw. Hidden for now, and step 11 may restyle.
+- Keeping upstream's static `Shared` instance: the shell owns one controller per window.
+
 ## DEC-070 — 2026-11-07 — claude-opus-5-5
 
 **Decision — nothing the program worker returns is trusted; the page checks it.** FEATURE-011 step 3; the owner: "Yes, build step 3".

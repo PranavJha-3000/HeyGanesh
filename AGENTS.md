@@ -241,13 +241,14 @@ tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.Claud
 # Codex (DEC-066): --assert-codex-args 11, --assert-codex-run 4, --assert-codex-errors 9, --assert-launch 4 (the .cmd launch), offline.
 #   --live-codex "hi" -> LIVE OK; needs `npm i -g @openai/codex` then `codex login` (not installed: exit 1, signed out: exit 12)
 # Drawing stage (FEATURE-011, DEC-067/DEC-068): openclicky's draw-stage page + three.js r172, vendored and pinned in VENDOR.md.
-# Steps 1-3: the page, its window and its sandbox (not wired into the shell yet). Build library then host SEQUENTIALLY (CS2012).
+# Steps 1-4: the page, its window, its sandbox, the controller and speech clock (not wired into the shell yet). Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Experience/HeyGanesh.DrawStage -c Debug
 dotnet build tools/DrawStageSmoke -c Debug
 tools/DrawStageSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.DrawStageSmoke.exe --assert-source
-#   -> 14 PASS, SOURCE AUDIT OK, exit 0   (CI G-27)
+#   -> 15 PASS, SOURCE AUDIT OK, exit 0   (CI G-27)
 #   local, interactive desktop (the real stage window, DEC-069): --assert-window 13; --snapshot <dir> draws two samples as PNGs (review by eye)
 #   sandbox and mark check (DEC-070), local: --assert-sandbox 13 (about 40 s), --assert-marks 3
+#   controller + speech clock (DEC-071), local: --assert-pace 8; by hand: --demo rocket.js --voice sapi
 # Notes store (DEC-058): offline, temporary databases, Windows' own winsqlite3. Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Foundation/HeyGanesh.Notes -c Debug
 dotnet build tools/NotesSmoke -c Debug

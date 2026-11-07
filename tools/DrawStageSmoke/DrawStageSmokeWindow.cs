@@ -13,7 +13,7 @@ namespace HeyGanesh.Tools.DrawStageSmoke;
 /// interactive desktop and the WebView2 runtime. Each uses a throwaway WebView2 profile, deleted afterwards. Neither
 /// moves the cursor or presses a key.
 /// </summary>
-internal static class DrawStageSmokeWindow
+internal static partial class DrawStageSmokeWindow
 {
     // DS-2: the window's shape, isolation and fences, and one program drawn end to end.
     public static int RunAssertWindow() => WithStage((stage, messages) =>

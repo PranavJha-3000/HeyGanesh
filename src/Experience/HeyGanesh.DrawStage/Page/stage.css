@@ -94,6 +94,11 @@ html, body {
   display: none;
 }
 
+/* Hey Ganesh (DEC-071): only the close button is offered; Picture, Video and PiP are hidden, so save is never sent. */
+#tools button.picture, #tools button.video, #tools button.pip {
+  display: none !important;
+}
+
 /* While the drawing glides into the corner (PiP) or back, its buttons wait for it. */
 body.gliding #tools, body.gliding .grip {
   visibility: hidden;

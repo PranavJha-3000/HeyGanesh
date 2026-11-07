@@ -1,4 +1,12 @@
 
+## 2026-11-07 · claude-opus-5-5 (drawing stage controller and speech clock, FEATURE-011 step 4, DEC-071)
+
+Did: `DrawStageController` (ported, trimmed; close button clears, hides, raises `Closed`), `DrawStageMessages`, `DrawStageVoice` (lines spoken in order with lineStarted/lineEnded, finishNow on a failed voice), `IDrawStageSurface` on `DrawStageWindow`; `stage.css` hides Picture/Video/PiP (VENDOR.md). DS-6 `--assert-pace`, DS-7 `--demo`; DS-1 checks the CSS edit.
+Left: Steps 5–10 (next: `DrawingPlanner`). Not wired into the shell. Esc does not close the drawing (the window never activates).
+Watch: `finished` can come ~0.25 s before a slow voice ends (the page uses an estimate for a line not yet ended): the shell must await both. Controller events fire on the stage thread. Git Bash `sed -i` strips CRLF from C# files: use Python for edits.
+Next: FEATURE-011 step 5 (`DrawingPlanner`, LP-14..16), on the owner's go-ahead.
+Verified: DrawStage + DrawStageSmoke build -warnaserror 0/0. DS-1 15, DS-2 13, DS-4 13, DS-5 3, DS-6 8 (×3) PASS, exit 0; DS-7 silent run exit 0. Four mutations each fail DS-6.
+
 ## 2026-11-07 · claude-opus-5-5 (drawing stage sandbox and mark check, FEATURE-011 step 3, DEC-070)
 
 Did: `stage.js`'s first local edit (VENDOR.md records it): every mark from the worker is checked before it is painted, `photo()`/`f.piece()` refused, 20 s of worker time per program. `DrawStageWindow` answers off-page requests 403 and counts them. DS-4 `--assert-sandbox`, DS-5 `--assert-marks`; DS-1 checks the edit.

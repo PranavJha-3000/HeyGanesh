@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hey Ganesh: an AI tutor that draws on your screen</title>
-  <meta name="description" content="Hold Ctrl+Alt, ask out loud, and Hey Ganesh points at what you mean, explains it in a voice, or sketches the idea over your desktop. Free for Windows.">
+  <meta name="description" content="Academic Vighnaharta: the remover of learning obstacles. Hold Ctrl+Alt, ask out loud, and Hey Ganesh points at what you mean, explains it in a voice, or sketches the idea over your desktop. Free for Windows.">
   <meta name="color-scheme" content="light">
   <meta property="og:title" content="Hey Ganesh: an AI tutor that draws on your screen">
   <meta property="og:description" content="Hold Ctrl+Alt, ask out loud, and watch the answer appear on your screen. Free for Windows.">
@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/heyganesh.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Young+Serif&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Young+Serif&family=Noto+Serif+Devanagari:wght@500&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,6 +35,7 @@
 
   <section class="hero wrap">
     <div class="hero-text">
+      <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Academic Vighnaharta <span lang="hi" class="deva">विघ्नहर्ता</span></p>
       <h1>An AI tutor that draws on your screen</h1>
       <p class="lede">Hold Ctrl+Alt and ask out loud. Hey Ganesh points at the thing you mean, explains it in a voice, or sketches the idea over whatever you're working on.</p>
       <div class="actions">
@@ -86,7 +87,14 @@
     </figure>
   </section>
 
-  <section id="how" class="section wrap">
+  <section class="vigna" data-reveal>
+    <div class="wrap vigna-in">
+      <p class="vigna-name">Academic<br>Vighnaharta</p>
+      <p class="vigna-gloss"><span lang="hi" class="deva">विघ्नहर्ता</span> means the remover of obstacles. Every learner hits a wall: the term nobody explained, the diagram that never clicked, the menu you cannot find. Hey Ganesh stands next to you and clears it, out loud, on your own screen.</p>
+    </div>
+  </section>
+
+  <section id="how" class="section wrap" data-reveal>
     <h2>Three steps, no window to open</h2>
     <ol class="steps">
       <li>
@@ -104,7 +112,7 @@
     </ol>
   </section>
 
-  <section id="what" class="section wrap">
+  <section id="what" class="section wrap" data-reveal>
     <h2>It looks at your screen, so you don't have to describe it</h2>
     <div class="three">
       <article>
@@ -122,7 +130,7 @@
     </div>
   </section>
 
-  <section id="gnani" class="section wrap">
+  <section id="gnani" class="section wrap" data-reveal>
     <h2>Listens and speaks with Gnani AI</h2>
     <div class="split">
       <p class="measure">Add a Gnani key and Hey Ganesh uses two of Gnani's speech models, so you don't have to run anything else yourself. Both are built for Indian languages, and Hey Ganesh is set up for English and Hindi.</p>
@@ -134,7 +142,7 @@
     <p class="fine">Built for the Gnani Great Indian AI Internship Challenge. #GnaniAI #GreatIndianAIInternshipChallenge</p>
   </section>
 
-  <section id="download" class="section wrap">
+  <section id="download" class="section wrap" data-reveal>
     <h2>Install it in a minute</h2>
     <div class="install">
       <ol class="steps steps-tight">
@@ -170,7 +178,7 @@
     </div>
   </section>
 
-  <section id="faq" class="section wrap">
+  <section id="faq" class="section wrap" data-reveal>
     <h2>Questions</h2>
     <div class="faq">
       <details>
@@ -203,7 +211,7 @@
     <img src="assets/heyganesh.svg" alt="" width="28" height="28">
     <span>Hey Ganesh</span>
   </a>
-  <p class="fine">AI Tutor for Windows. <a href="https://github.com/PranavJha-3000/HeyGanesh">Source on GitHub</a></p>
+  <p class="fine">Academic Vighnaharta. AI tutor for Windows. <a href="https://github.com/PranavJha-3000/HeyGanesh">Source on GitHub</a></p>
 </footer>
 
 <script src="app.js"></script>

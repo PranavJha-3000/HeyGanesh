@@ -9,7 +9,8 @@ internal sealed record LessonRow(long Id, string When, string Question, string T
 
 /// <summary>
 /// What the Recent lessons window shows and does, with no UI (DEC-060), so every rule is checked offline (RL-1). It
-/// reads the notes store; it never shows a plan's JSON, only what was asked and taught.
+/// reads the notes store; it never shows a stored lesson's text (a drawing program, or an older row's plan JSON), only
+/// what was asked and taught. Only a stored drawing can be replayed (DEC-076).
 /// </summary>
 internal sealed class RecentLessonsModel : IDisposable
 {
@@ -26,7 +27,7 @@ internal sealed class RecentLessonsModel : IDisposable
         n.At.ToLocalTime().ToString("ddd d MMM, HH:mm", CultureInfo.CurrentCulture),
         n.Question,
         Taught(n),
-        !string.IsNullOrWhiteSpace(n.LessonPlan))).ToList();
+        StoredDrawing.TryRead(n.LessonPlan, out _, out _, out _))).ToList();
 
     /// <summary>The whole turn, in words, for the details pane. Empty for an id that is gone.</summary>
     public string Detail(long id)
@@ -46,7 +47,10 @@ internal sealed class RecentLessonsModel : IDisposable
         {
             case NoteLeg.Lesson:
                 text.AppendLine($"Taught with a lesson: {n.LessonTitle ?? "(untitled)"}");
-                text.AppendLine(string.IsNullOrWhiteSpace(n.LessonPlan) ? "This lesson was not stored, so it cannot be replayed." : "Replay draws and speaks it again, with no model call.");
+                text.AppendLine(
+                    string.IsNullOrWhiteSpace(n.LessonPlan) ? "This lesson was not stored, so it cannot be replayed."
+                    : StoredDrawing.TryRead(n.LessonPlan, out _, out _, out _) ? "Replay draws and speaks it again, with no model call."
+                    : "This lesson was made by an older version of Hey Ganesh (lesson cards), so it cannot be replayed.");
                 if (n.Picks.Count > 0)
                 {
                     text.AppendLine($"Parts you clicked: {string.Join(", ", n.Picks)}");
@@ -66,8 +70,8 @@ internal sealed class RecentLessonsModel : IDisposable
         return text.ToString();
     }
 
-    /// <summary>The stored plan for <see cref="Rows"/>' replayable rows; null otherwise.</summary>
-    public string? PlanJson(long id) => _store.Get(id)?.LessonPlan;
+    /// <summary>The stored lesson as kept (a drawing for <see cref="Rows"/>' replayable rows); null when none was stored.</summary>
+    public string? StoredLesson(long id) => _store.Get(id)?.LessonPlan;
 
     public bool Delete(long id) => _store.Delete(id);
 

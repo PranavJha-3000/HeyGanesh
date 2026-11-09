@@ -74,63 +74,16 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
-      # G-13..G-15: the lesson hosts are read from the built EXE, as TEST-CHECKLIST does. All three use
-      # fake canvases / fake models; LessonSurfaceSmoke and LT-6/LT-7/LT-9 draw real cards and stay local-only.
-      - name: G-13 Visual Lesson Engine offline
-        shell: pwsh
-        run: |
-          dotnet build tools\LessonSmoke -c Debug -warnaserror
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $exe = 'tools\LessonSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-parse', '--assert-limits', '--assert-refs', '--assert-degrade', '--assert-fixtures',
-                              '--assert-play', '--assert-play-degraded', '--assert-controls', '--assert-plot', '--assert-grounded', '--assert-scene3d', '--assert-schematic')) {
-            & $exe $mode
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-
+      # G-13, G-15, G-16 and G-17 (Visual Lesson Engine, Lesson Turn, Part Library, Lesson Surface) were retired with the
+      # old lesson stack in FEATURE-011 step 10 (DEC-077). G-14 keeps the Lesson Planner's source audit and its
+      # drawing planner rows, read from the built EXE as TEST-CHECKLIST does.
       - name: G-14 Lesson Planner offline
         shell: pwsh
         run: |
           dotnet build tools\LessonPlannerSmoke -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\LessonPlannerSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonPlannerSmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-prompt', '--assert-multimodal', '--assert-plan', '--assert-repair',
-                              '--assert-errors', '--assert-followup', '--assert-hardening', '--assert-prompt-3d', '--assert-stream', '--assert-prompt-schematic', '--assert-earlier')) {
-            & $exe $mode
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-
-      - name: G-15 Lesson Turn offline
-        shell: pwsh
-        run: |
-          dotnet build tools\LessonTurnSmoke -c Debug -warnaserror
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $exe = 'tools\LessonTurnSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonTurnSmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-turn', '--assert-turn-degraded', '--assert-turn-rejected', '--assert-turn-errors', '--assert-followup-pick', '--assert-turn-stream')) {
-            & $exe $mode
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-
-      - name: G-16 Part Library offline
-        shell: pwsh
-        run: |
-          dotnet build tools\PartLibrarySmoke -c Debug -warnaserror
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $exe = 'tools\PartLibrarySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PartLibrarySmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-library', '--assert-physics', '--assert-catalog', '--assert-schematic')) {
-            & $exe $mode
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-
-      # G-17: the Lesson Surface rows that need no desktop. The scene/window rows (LSU-2..LSU-6, LSU-9..LSU-15) create
-      # real windows and stay local-only.
-      - name: G-17 Lesson Surface offline
-        shell: pwsh
-        run: |
-          dotnet build tools\LessonSurfaceSmoke -c Debug -warnaserror
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $exe = 'tools\LessonSurfaceSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.LessonSurfaceSmoke.exe'
-          foreach ($mode in @('--assert-source', '--assert-scene-math')) {
+          foreach ($mode in @('--assert-source', '--assert-drawing-prompt', '--assert-drawing-stream', '--assert-drawing-none')) {
             & $exe $mode
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -204,7 +157,7 @@ jobs:
           dotnet build tools\TraySmoke -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\TraySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TraySmoke.exe'
-          foreach ($m in @('--assert-source', '--assert-log', '--assert-keys-model', '--assert-startup', '--assert-notes-map', '--assert-session', '--assert-recent-model', '--assert-replay-prepare')) {
+          foreach ($m in @('--assert-source', '--assert-log', '--assert-keys-model', '--assert-startup', '--assert-notes-map', '--assert-session', '--assert-drawing-leg', '--assert-recent-model', '--assert-replay-prepare', '--assert-replay')) {
             & $exe $m
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -232,8 +185,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
-      # G-22: the planner evaluation set (DEC-043/DEC-044) - the set is well formed; every automatic check both passes
-      # and fails; the recording path works through the real client against a loopback stub with no key in any file;
+      # G-22: the planner evaluation set (DEC-043/DEC-044, drawings since DEC-073/DEC-077) - the set is well formed;
+      # every program check both passes and fails; the recording path works through the real client against a loopback stub with no key in any file;
       # the live client matches the App Shell's. Once the owner commits a reviewed live recording as
       # tools\PlannerEval\baseline, it is replayed too: a check that passed there and fails now exits 1, a changed
       # planner prompt exits 3 (re-record with --record). No key is used here.
@@ -243,7 +196,7 @@ jobs:
           dotnet build tools\PlannerEval -c Debug -warnaserror
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $exe = 'tools\PlannerEval\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.PlannerEval.exe'
-          foreach ($m in @('--assert-set', '--assert-checks', '--assert-record-stub', '--assert-drift')) {
+          foreach ($m in @('--assert-set', '--assert-record-stub', '--assert-drift', '--assert-program-checks')) {
             & $exe $m
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -253,3 +206,14 @@ jobs:
           } else {
             Write-Output 'no baseline yet: tools\PlannerEval\baseline is committed after the first reviewed live recording'
           }
+
+      # G-27: the drawing stage (FEATURE-011, DEC-067 / DEC-068) - the vendored openclicky page, prompts, samples and
+      # three.js r172 match VENDOR.md file by file, nothing unlisted is present, and the page keeps its no-network CSP
+      # and worker fences. The window rows (DS-2 and later) need a desktop and stay local.
+      - name: G-27 Drawing stage source
+        shell: pwsh
+        run: |
+          dotnet build tools\DrawStageSmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\DrawStageSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.DrawStageSmoke.exe' --assert-source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

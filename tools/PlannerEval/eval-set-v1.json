@@ -55,7 +55,7 @@
     },
 
     {
-      "id": "M-01", "subject": "math", "golden": "chain-rule.json",
+      "id": "M-01", "subject": "math",
       "question": "why is the derivative of ln(3x^2-1) equal to 6x/(3x^2-1)?",
       "screen": { "description": "A calculus slide: d/dx ln(3x^2 - 1). The expression is circled on the slide.", "target": [ 1200, 840, 160, 60 ] },
       "canvas": "2d",
@@ -142,7 +142,7 @@
     },
 
     {
-      "id": "B-01", "subject": "biology", "golden": "photosynthesis.json",
+      "id": "B-01", "subject": "biology",
       "question": "How does photosynthesis make sugar?",
       "canvas": "2d",
       "mention": [ ["light"], ["carbon dioxide", "CO2"], ["glucose", "sugar"] ],
@@ -168,7 +168,7 @@
     },
 
     {
-      "id": "S-01", "subject": "cs", "golden": "tensor-2d.json",
+      "id": "S-01", "subject": "cs",
       "question": "What is a 2-D tensor?",
       "canvas": "2d",
       "mention": [ ["grid", "table", "matrix"], ["shape"] ]
@@ -193,7 +193,7 @@
     },
 
     {
-      "id": "G-01", "subject": "engineering", "golden": "engine-3d.json",
+      "id": "G-01", "subject": "engineering",
       "question": "Show me how a four-stroke engine works in 3D.",
       "canvas": "3d", "model": "four-stroke-engine",
       "mention": [ ["piston"], ["crankshaft"] ]

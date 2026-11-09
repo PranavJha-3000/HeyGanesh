@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Drawing stage (FEATURE-011, DEC-067): openclicky's draw-stage page, vendored unchanged in step 1.
+
+    The lesson model writes a small program in a drawing language; the page runs it statement by statement in a
+    no-network Web Worker and draws the resulting marks as pen strokes, timed to each spoken line, with three.js r172
+    (DEC-068) for 3D figures. Page/ is copied to DrawStagePage/ in the output and pinned file by file in VENDOR.md
+    (DS-1, tools/DrawStageSmoke - -assert-source).
+
+    Step 2 (DEC-069): DrawStageWindow hosts the page over one monitor. WebView2 is the same pinned package and version
+    LessonSurface took (DEC-020), not a new dependency; since LessonSurface was deleted (FEATURE-011 step 10, DEC-077)
+    this is the only assembly that takes it. DS-1 pins it to exactly this one package. ScreenCapture gives
+    CaptureExclusion; WinForms (a framework reference) gives the stage thread its message loop.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>HeyGanesh.DrawStage</RootNamespace>
+    <AssemblyName>HeyGanesh.DrawStage</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Platform\HeyGanesh.ScreenCapture\HeyGanesh.ScreenCapture.csproj" />
+    <ProjectReference Include="..\..\Foundation\HeyGanesh.Abstractions\HeyGanesh.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="HeyGanesh.Tools.DrawStageSmoke" />
+    <!-- FEATURE-011 step 6 (DEC-073): PlannerEval's run checks read the accepted marks through the host-script call. -->
+    <InternalsVisibleTo Include="HeyGanesh.Tools.PlannerEval" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Page\**\*" Link="DrawStagePage\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- As LessonSurface did: the package references its WPF control assembly for .NET 5+, which conflicts with the in-box
+       WindowsBase (MSB3277). The stage uses only the Core API, so that one reference is removed. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

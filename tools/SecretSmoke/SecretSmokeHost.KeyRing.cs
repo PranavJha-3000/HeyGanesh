@@ -20,8 +20,8 @@ internal static partial class SecretSmokeHost
         var env = new Dictionary<string, string?>(StringComparer.Ordinal);
         using var ring = new KeyRing(store, v => env.GetValueOrDefault(v));
 
-        failures = KCheck(string.Join(",", KeyRing.Known.Select(k => $"{k.Name}={k.EnvironmentVariable}")) == "deepseek=DEEPSEEK_API_KEY,typesafe=TYPESAFE_API_KEY,fish=FISH_AUDIO_API_KEY",
-            "three known keys, each with its environment variable", failures);
+        failures = KCheck(string.Join(",", KeyRing.Known.Select(k => $"{k.Name}={k.EnvironmentVariable}")) == "deepseek=DEEPSEEK_API_KEY,typesafe=TYPESAFE_API_KEY,fish=FISH_AUDIO_API_KEY,gnani=GNANI_API_KEY",
+            "four known keys, each with its environment variable", failures);
 
         var missing = ring.Describe("deepseek");
         failures = KCheck(missing.Source == KeySource.Missing && ring.Read("deepseek") is null && missing.ToString() == "MISSING",

@@ -68,11 +68,6 @@ public sealed record EvalCase
     /// </summary>
     public int? MinBeats { get; init; }
 
-    /// <summary>The golden lesson in tools/LessonSmoke/fixtures that answers this case, if any.</summary>
-    public string? Golden { get; init; }
-
-    /// <summary>3D (and "either") cases are offered the Part Library catalogue, as the App Shell offers it for a 3D route.</summary>
-    public bool OffersScene3d => Canvas != ExpectedCanvas.TwoD;
 }
 
 public sealed record EvalSet(string Version, IReadOnlyList<EvalCase> Cases)
@@ -95,7 +90,7 @@ public sealed record EvalSet(string Version, IReadOnlyList<EvalCase> Cases)
     /// Why the set cannot be scored, or none. A set that fails here is never run: a duplicate id would
     /// merge two reports, and a follow-up to a missing case would be scored without its previous lesson.
     /// </summary>
-    public IReadOnlyList<string> Problems(IReadOnlySet<string> libraryModels)
+    public IReadOnlyList<string> Problems()
     {
         var problems = new List<string>();
         if (Cases.Count != ExpectedCount)
@@ -114,11 +109,6 @@ public sealed record EvalSet(string Version, IReadOnlyList<EvalCase> Cases)
             if (c.Previous is { } p && !seen.Contains(p))
             {
                 problems.Add($"{c.Id}: previous {p} is not an earlier case");
-            }
-
-            if (c.Model is { } m && !libraryModels.Contains(m))
-            {
-                problems.Add($"{c.Id}: model {m} is not in the Part Library");
             }
 
             if (c.Model is not null && c.Canvas != ExpectedCanvas.ThreeD)

@@ -55,6 +55,7 @@ public sealed class KeyRing : IDisposable
         new KeyName("deepseek", "DEEPSEEK_API_KEY"),
         new KeyName("typesafe", "TYPESAFE_API_KEY"),
         new KeyName("fish", "FISH_AUDIO_API_KEY"),
+        new KeyName("gnani", "GNANI_API_KEY"),
     };
 
     private readonly ISecretStore _store;

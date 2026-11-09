@@ -135,19 +135,20 @@ internal static class NotesSmokeHost
         failures = Check(store.Count() == 0 && store.Recent(10).Count == 0 && store.MovedAside is null, "a new store is empty and nothing was moved aside", failures);
 
         const string Tricky = "what's '); DROP TABLE turns;-- and \"quotes\", ünïcode, 日本語, emoji 🐘?";
+        const string DrawnProgram = "step(1)\r\nsay(\"it's a \\\"quoted\\\" line\")\nconst x = 'ünïcode';";
         var lesson = new TurnNote
         {
             At = new DateTimeOffset(2026, 10, 30, 14, 5, 6, TimeSpan.FromHours(5.5)),
             Session = "s-1",
             Question = Tricky,
             Leg = NoteLeg.Lesson,
-            Route = "lesson 3D four-stroke-engine",
+            Route = "routed: lesson",
             VerdictSource = "ElementSelection",
             Found = true,
             Element = "Save button",
             Confidence = "High",
             LessonTitle = "How a four-stroke engine works",
-            LessonPlan = "{\"schema\":\"heyganesh.visualplan/1.2\",\"title\":\"with \\\"quotes\\\"\"}",
+            LessonPlan = StoredDrawing.Store(1920, 1080, DrawnProgram),
             Picks = new[] { "engine.connecting-rod", "engine.piston" },
             Outcome = "NoPick",
         };
@@ -155,6 +156,8 @@ internal static class NotesSmokeHost
         var back = store.Get(id);
         failures = Check(back is not null && back with { Id = 0, Picks = lesson.Picks } == lesson && back.Picks.SequenceEqual(lesson.Picks) && back.At == lesson.At,
             "every field reads back exactly, the time as the same instant, the picks in order", failures);
+        failures = Check(StoredDrawing.TryRead(back?.LessonPlan, out var w, out var h, out var program) && w == 1920 && h == 1080 && program == DrawnProgram,
+            "a stored drawing (DEC-076) reads back as the same canvas and the same program, quotes and line breaks kept", failures);
         failures = Check(store.Count() == 1, "the injection-shaped question is stored as text and the table still exists (values are bound, never spliced)", failures);
 
         var tutor = store.Record(Note("why is the sky blue?", 1) with { Found = false, VerdictSource = "Vision" });

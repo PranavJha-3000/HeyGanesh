@@ -1,3 +1,131 @@
+## 2026-11-09 · claude-sonnet-5-5 (landing page, DEC-080)
+
+Did: `site/` static landing page: hero with an animated pen-drawn lesson, three steps, what it does, the Gnani voice section, install steps, FAQ. Checked in the browser pane at desktop and phone width (no sideways scroll); fixed a stray dot left by undrawn strokes.
+Left: the GitHub Release with `HeyGanesh-win-x64.zip` (the button 404s until it exists), hosting (GitHub Pages from `site/`), the brag video, the submission text. Not run: CI scan gates over `site/`, a keyboard-only pass, other browsers than the pane's.
+Watch: the pane throttles animations when hidden, so a screenshot can catch the drawing mid-way; give it 15 s. The page promises things the app only configures: English and Hindi, "free", about 190 MB (from `package.txt`).
+Done 2026-11-09: released as v1.0.0 (https://github.com/PranavJha-3000/HeyGanesh/releases/tag/v1.0.0, commit 41d69fd, branch claude/adopt-draw-stage-3043c2, not merged to main). Next: switch on Pages from `site/`, then the brag video. The zip is `artifacts/HeyGanesh-win-x64.zip` (built 2026-11-09 14:07 with `installer\build.ps1 -Zip`, 77,900,347 bytes, sha256 a9c7f772...033f0, a copy of the script's `installer-win-x64.zip`; built from the uncommitted working tree, so it includes the Gnani Timbre/Prisma work), switch on Pages, then the brag video. TraySmoke --assert-install 16 PASS on this package.
+Verified: pane render at 799 px and 375 px wide, all sections read, console not checked.
+
+## 2026-11-09 · claude-sonnet-5-5 (Gnani Prisma STT, DEC-079)
+
+Did: `GnaniSttListener` + `GnaniSttOptions` (Voice) behind `IVoiceListener`: records from the microphone seam, ends on 1 s of quiet after speech, posts a WAV to `/stt/v3` (prisma-v3.0, en-IN,hi-IN, codemix). The shell listens with it (and speaks with Timbre) when the gnani key is set; no Gateway needed then. VO-13 `VoiceSmoke --assert-gnani-stt`.
+Left: live Prisma and Timbre calls (need a Gnani key; none was available here). Landing page, the brag video and the submission text are next; Evon is out (no API on the challenge page). Not run: a real microphone through the listener, the tray window rows, CI scan gates, a mutation check on VO-13.
+Watch: the end-of-speech rule is plain amplitude: a loud room holds the clip open to 29 s, a quiet voice may read as silence (`GnaniSttOptions.SpeechRms`). Prisma and Timbre are both on api.vachana.ai per the docs; if a live call 401s or 404s, check the host and the `X-API-Key-ID` header first. Gnani allows one active request per key.
+Next: the landing page with a GitHub Release download, then the brag video (ffmpeg is missing on this machine).
+Verified: Voice, VoiceSmoke, TraySmoke (App, Tray) build -warnaserror 0/0. VO-13 18 PASS (four runs); VO-12 13, VO-9, VO-11, gcp-events, no-backend, tutor-authority PASS; TraySmoke source, keys-model, notes-shell PASS; `HeyGanesh.App.exe --once --question x` with no keys: header shows the gnani key line, KEY ERROR, exit 12.
+
+## 2026-11-09 · claude-sonnet-5-5 (Gnani Timbre TTS, DEC-078)
+
+Did: `GnaniTtsClient` + `GnaniTtsOptions` (Voice) behind `ITtsClient`; `gnani` key in `KeyRing.Known` (tray menu, key screen, `--keys`); the shell speaks through Timbre when the gnani key is set, else Fish (also the tray replay's speaker check). VO-12 `VoiceSmoke --assert-gnani-tts`. Four pinned key-list rows updated for the fourth key (SecretSmoke keyring, TraySmoke keys-model, startup, menu).
+Left: a live Timbre call (needs a Gnani key). Prisma STT (REST, replaces the qwen Gateway) and the landing page are next; Evon has no API in the challenge page ("on Hugging Face"), so it is out unless the owner has access. Submissions close 2026-11-10.
+Watch: Gnani's docs say `api.vachana.ai` + `X-API-Key-ID`; its marketing page says `api.gnani.ai` + Bearer. The docs were followed and are unproven live. Gnani allows one active request per key, so overlapping speech is a 429.
+Next: Prisma STT as an `IVoiceListener`.
+Verified: Voice, VoiceSmoke, SecretSmoke, TraySmoke build -warnaserror 0/0. VO-12 13 PASS; VO-9 (Fish) still OK; SecretSmoke --assert-keyring OK; TraySmoke keys-model, source, log, startup, tray OK; `HeyGanesh.App.exe --keys` lists gnani, exit 0. Not run: TraySmoke --assert-keys-window/--assert-keys-pause/--assert-recent-window, CI scan gates.
+
+## 2026-11-09 · claude-opus-5-5 (the old lesson stack is deleted, FEATURE-011 step 10, DEC-077)
+
+Did: Deleted VisualLessonEngine, PartLibrary, LessonSurface, LessonSession and their smoke hosts (and their sln entries, ci.yml G-13/G-15/G-16/G-17). LessonPlanner is DrawingPlanner only; PlannerEval scores drawings only (PE-2 and seeds.json gone, PE-4 on drawings). The App references LessonPlanner directly; the installer checks `DrawStagePage`. Dead rows retired in TEST-CHECKLIST.
+Left: FEATURE-011's live rows (SH-22, SH-28, RL-5, PE-10, NB-3, NB-5) are the owner's. Optional step 11 (restyle `stage.css`) not started.
+Watch: Old `bin/` folders still hold `LessonPage/` and the deleted assemblies from earlier builds; they are untracked and harmless, but a clean clone has none. `pwsh` is not installed here: ci.yml's scan gates must be run with `powershell -File` locally, or they report exit 0 without running. An old PlannerEval recording with lesson plans replays those cases as "not replayed".
+Next: the owner runs SH-28 (a live drawn lesson) and RL-5 (a replay on a real stage window).
+Verified: `dotnet build HeyGanesh.sln -c Debug -warnaserror` 0/0; every ci.yml gate locally (G-1..G-27 as listed, G-22 PASS 48 with the expected regression lines inside PE-4); scan-forbidden, scan-secrets and -ZeroNuGet pass; LP-1 3, LP-14..16; PE-1 6, PE-4 10, PE-5 5, PE-9 28, PE-11 12 (local, hidden stage); TraySmoke install 16; shell exits 0/12/0/13/12/12/0. Two mutations caught.
+
+## 2026-11-07 · claude-opus-5-5 (notes and replay keep the drawing, FEATURE-011 step 9, DEC-076)
+
+Did: A drawn lesson's note stores `drawing:WxH` + the whole program now drawn (`HeyGanesh.Notes.StoredDrawing`, no schema change). Tray Recent lessons replays only a stored drawing, on its own stage window over the cursor's monitor, no model call, closed 4 s after the end; older VisualPlan rows say they were made by an older version. RL-3 is offline now (CI G-24).
+Left: Step 10 (delete the old stack; the App's LessonSession/PartLibrary references are now unused). RL-5 by hand (owner).
+Watch: A replay window can overlap a live drawing on the same monitor (only Ctrl+Alt is paused, not a turn in flight). No automated row replays on a real stage window. A kept follow-up's note holds the joined program; the first turn's note holds only its own.
+Next: FEATURE-011 step 10.
+Verified: Notes, NotesSmoke, App, Tray, TraySmoke build -warnaserror 0/0. NS-1 4, NS-2 9, NS-3 4, NS-4 3, NS-5 2, NS-6 3; TraySmoke source 8, log 7, keys-model 13, startup 10, notes-map 6, session 5, drawing-leg 15, recent-model 8, replay-prepare 4, replay 6, recent-window 12 (local), notes-shell 6 (local). Shell exits 0/12/0/13/12/12/0. Two mutations caught.
+
+## 2026-11-07 · claude-opus-5-5 (the Turn Router asks intent only, FEATURE-011 step 8, DEC-075)
+
+Did: `HeyGanesh.TurnRouter` asks one Jev choice (point / explain / lesson); the dimension and model questions, catalogue, schematic route and 3D fields are removed; `LegChoice` is `(Leg, Why)`. The App Shell offers no models, prints a shorter route line, and its header says the drawing picks 2D or 3D. TR-2/3/4/6 rewritten.
+Left: Step 9 (notes + replay of programs), step 10 (delete the old stack). SH-22 and SH-28 are live (owner).
+Watch: The App still references PartLibrary, only for the tray's VisualPlan replay (goes in step 9/10). A provider answering an unasked question is ignored, not refused.
+Next: FEATURE-011 step 9.
+Verified: TurnRouter, TurnRouterSmoke and TraySmoke (App, Tray) build -warnaserror 0/0. TR-1 3, TR-2 11, TR-3 8, TR-4 5, TR-5 5, TR-6 7 PASS. Shell rows exit 0/12/0/0/1/13/12/12/12/0/12; SH-21 dummy key `route : ON`, 0 occurrences, exit 0; cancel 1/60 → 13. TY-1, SH-29 PASS. One mutation fails TR-2.
+
+## 2026-11-07 · claude-opus-5-5 (the App Shell's lesson leg on the drawing stage, FEATURE-011 step 7, DEC-074)
+
+Did: `--lesson` and routed lessons draw on the drawing stage: DrawingPlanner → DrawStageController + DrawStageVoice → DrawStageWindow over the verdict's monitor (`ShellHost.Drawing.cs`, `ShellHost.Lesson.cs` rewritten). A drawing stays up; a question over it or a part click is a follow-up (keep() or redraw); NONE → the Tutor (a follow-up's drawing cleared); close ends it; Ctrl+Alt is free after a lesson. New offline row SH-29 (CI G-24); SH-18 updated; SH-28 live.
+Left: SH-28, the live run (owner). Step 8 (router to intent only), step 9 (notes + replay of programs: a drawn lesson's note has no program yet, so Recent lessons cannot replay it), step 10 (delete the old stack; `ShellHost.Route.cs` `CatalogFor` is now unused and goes with it).
+Watch: No automated row drives a real `DrawStageWindow` through the shell (SH-29 uses a fake page). A follow-up skips the route on purpose. A click turn has no verdict: no screenshot, no note. The finish wait is 5 min, then exit 4 with the stage cleared.
+Next: The owner runs SH-28 (keys + Fish + Gateway + a person at the desk), then FEATURE-011 step 8 on the owner's go-ahead.
+Verified: App and TraySmoke build -warnaserror 0/0. Shell rows exit 0/12/0/0/1/13/12/12/12/0/12; SH-18 dummy key 0 occurrences, exit 12. SH-29 14 PASS (two mutations each fail it). TY-1, NB-1, NB-4, RL-1, RL-2 pass. DS-1 16, DS-5 3, DS-6 8, LP-14 10, LP-15 5, LP-16 4, PE-9 28, PE-11 12 PASS.
+
+
+## 2026-11-07 · claude-opus-5-5 (PlannerEval for drawing programs, FEATURE-011 step 6, DEC-073)
+
+Did: PlannerEval scores drawing programs. There are static checks (K-2/3/4/8/9/10/11 on the say() lines and strings) and run checks P-1..P-5 on a hidden real stage (`ProgramStage`). `--record --drawing` works on deepseek, claude-code and codex; a replay keeps the recorded run checks. `stage.js` exposes the accepted marks to the host (third local edit, VENDOR.md). New rows: PE-9 (CI G-22) and PE-11 (local).
+Left: PE-10, the live drawing recording (owner): `PlannerEval --record <dir> --drawing --provider claude-code --cases E-01,E-03`. Steps 7–10.
+Watch: Replay never re-runs the stage, so P-1..P-5 in a replay are whatever the recording saw. K-2 counts say() calls statically when no stage ran (a say() in a loop counts once). P-4 is geometric only: it cannot tell a pointer from a stroke that happens to end in the box.
+Next: The owner runs PE-10, then FEATURE-011 step 7 (App Shell lesson leg on the stage), on the owner's go-ahead.
+Verified: PlannerEval + DrawStage + DrawStageSmoke build -warnaserror 0/0. PE-1 7, PE-2 26, PE-4 9, PE-5 5, PE-9 28 PASS; PE-11 12 PASS three times; DS-1 16, DS-5 3, DS-6 8 PASS; no-key `--record --drawing` exit 12 with nothing written. Five mutations each fail a row.
+
+## 2026-11-07 · claude-opus-5-5 (drawing planner, FEATURE-011 step 5, DEC-072)
+
+Did: `DrawingPlanner` in LessonPlanner (question → program in the drawing language through any ILlmClient, streamed or whole; vendored prompts embedded and filled from code; context fenced; NONE / NoProgram; keep() for follow-ups). LP-14/15/16, in CI G-14.
+Left: Steps 6–10 (next: PlannerEval for programs). No live model has written a program through it yet. Not wired into the shell.
+Watch: The prompts are embedded from `HeyGanesh.DrawStage/Page/prompt`: editing a vendored prompt changes the planner (LP-14 and VENDOR.md both pin it). A placeholder added upstream makes `Fill` throw by design. Python `'\\n'` inside a heredoc becomes a real newline in C#: use the Edit tool for such lines.
+Next: FEATURE-011 step 6 (PlannerEval program checks PE-9, live PE-10), on the owner's go-ahead.
+Verified: LessonPlanner + LessonPlannerSmoke build -warnaserror 0/0. All 15 LessonPlannerSmoke rows PASS, LP-1..LP-13 at their usual counts. Six mutations each fail LP-14..16.
+
+## 2026-11-07 · claude-opus-5-5 (drawing stage controller and speech clock, FEATURE-011 step 4, DEC-071)
+
+Did: `DrawStageController` (ported, trimmed; close button clears, hides, raises `Closed`), `DrawStageMessages`, `DrawStageVoice` (lines spoken in order with lineStarted/lineEnded, finishNow on a failed voice), `IDrawStageSurface` on `DrawStageWindow`; `stage.css` hides Picture/Video/PiP (VENDOR.md). DS-6 `--assert-pace`, DS-7 `--demo`; DS-1 checks the CSS edit.
+Left: Steps 5–10 (next: `DrawingPlanner`). Not wired into the shell. Esc does not close the drawing (the window never activates).
+Watch: `finished` can come ~0.25 s before a slow voice ends (the page uses an estimate for a line not yet ended): the shell must await both. Controller events fire on the stage thread. Git Bash `sed -i` strips CRLF from C# files: use Python for edits.
+Next: FEATURE-011 step 5 (`DrawingPlanner`, LP-14..16), on the owner's go-ahead.
+Verified: DrawStage + DrawStageSmoke build -warnaserror 0/0. DS-1 15, DS-2 13, DS-4 13, DS-5 3, DS-6 8 (×3) PASS, exit 0; DS-7 silent run exit 0. Four mutations each fail DS-6.
+
+## 2026-11-07 · claude-opus-5-5 (drawing stage sandbox and mark check, FEATURE-011 step 3, DEC-070)
+
+Did: `stage.js`'s first local edit (VENDOR.md records it): every mark from the worker is checked before it is painted, `photo()`/`f.piece()` refused, 20 s of worker time per program. `DrawStageWindow` answers off-page requests 403 and counts them. DS-4 `--assert-sandbox`, DS-5 `--assert-marks`; DS-1 checks the edit.
+Left: Steps 4–10. The page's Picture/Video/PiP/close buttons still show with nothing handling them (owner's choice, with step 4). Not wired into the shell.
+Watch: A forged worker result can take the running statement's place (`seq` is not a secret); only the mark check is a boundary. Any further edit to a vendored file must update its VENDOR.md row and "Local edits". DS-4 takes about 40 s.
+Next: FEATURE-011 step 4 (`DrawStageController` + speech clock, DS-6/DS-7), on the owner's go-ahead.
+Verified: DrawStage + DrawStageSmoke build -warnaserror 0/0. DS-1 14, DS-2 13 (×3), DS-4 13, DS-5 3 PASS, exit 0. Mutations: no mark check, no program cap and no worker CSP each fail their row.
+
+## 2026-11-07 · claude-opus-5-5 (drawing stage window, FEATURE-011 step 2, DEC-069)
+
+Did: `DrawStageWindow` (transparent, click-through, capture-excluded WebView2 composition window over one monitor, own STA thread; page served by a resource handler, worker gets its own CSP, navigation fenced) and `StageThread` in `HeyGanesh.DrawStage`, which now takes the already-pinned WebView2 1.0.4314.35. DS-2 `--assert-window`, DS-3 `--snapshot`.
+Left: Steps 3–10. The page's Picture/Video/PiP/close buttons show and nothing handles them yet (a step 3 or step 4 choice, see FEATURE-011). Not wired into the shell.
+Watch: The smoke host also needs the `DropWebView2Wpf` target (MSB3277 is transitive). Page boxes must be clipped in double before casting. DS-2 and DS-3 open a full-monitor window for a few seconds. A mutation that lets navigation through really fetches example.com.
+Next: FEATURE-011 step 3 (sandbox rows DS-4, mark check DS-5, whole-program time cap), on the owner's go-ahead.
+Verified: DrawStage + DrawStageSmoke build -warnaserror 0/0. DS-1 13, DS-2 13, DS-3 2 PASS, exit 0; PNGs reviewed. Three mutations (exclusion, worker CSP, navigation cancel) each fail DS-2. Forbidden/secret scans pass.
+
+## 2026-11-07 · claude-opus-5-5 (adopt openclicky's drawing stage, FEATURE-011 steps 0–1, DEC-067/DEC-068)
+
+Did: Plan approved, with three.js. Step 0: ROLLBACK entries, DEC-067 (adopt draw-stage; survivors; `photo()` dropped; click-to-ask by part name) and DEC-068 (three.js r172 vendored). Step 1: new content-only `src/Experience/HeyGanesh.DrawStage` holds openclicky's Windows page copy, prompts, samples and three.js r172, 23 files pinned in `VENDOR.md`. New `tools/DrawStageSmoke` DS-1, CI G-27. Branch `claude/adopt-draw-stage-3043c2`, cut from `d358484`.
+Left: Steps 2–10 (window, sandbox + mark check, controller, DrawingPlanner, eval, shell switch, router, replay, delete the old stack). Nothing is wired in, and the old VisualPlan path is untouched.
+Watch: A Windows clone and `git archive` both rewrite LF to CRLF and break the pinned hashes. Re-vendor with `git -c core.autocrlf=false -c core.eol=lf archive`. The page is `-text` in `.gitattributes`. Any edit to a vendored file must update `VENDOR.md` (DS-1 fails otherwise).
+Next: FEATURE-011 step 2, `DrawStageWindow` (transparent, click-through, capture-excluded WebView2 in composition mode), on the owner's go-ahead.
+Verified: DrawStage and DrawStageSmoke build -warnaserror 0/0. DS-1 13 PASS, exit 0. A changed byte, an unlisted file and a planted address each fail it (restored from copies). Other gates were not re-run: no existing file they read changed except `.gitattributes`, `ci.yml` and docs.
+
+## 2026-11-07 · claude-opus-5-5 (Codex plan provider, FEATURE-010 step 2, DEC-066)
+
+Did: `CodexLlmClient` (codex exec on the ChatGPT plan: read-only, ephemeral, config, tools and web search off, system prompt on stdin, not streamed) in the plan-provider assembly. `PlanCli` gains `Locate` and openclicky's npm-shim / cmd.exe launcher, so `.cmd` installs of either CLI work. CX-1..CX-5 offline. PlannerEval `--provider codex`. CC-4 and PE-8 now pass live on the owner's Claude plan (CLI signed in).
+Left: CX-4 live (owner: `npm i -g @openai/codex`, `codex login`). Steps 3 and 4. Still not wired into the App Shell, tray or Tutor.
+Watch: CX-5 only became sensitive with `%PATH%` in the argument: inside quotes cmd.exe already ignores `&` and the pipe, so a test without a `%VAR%` passes even with no escaping. Codex flags come from openclicky's 0.152.1; a newer Codex may differ. The cached-token sum for Codex is an assumption.
+Next: Owner installs and signs in to Codex, then `ClaudeCodeSmoke --live-codex "hi"`; then plan step 3.
+Verified: Builds -warnaserror 0/0. CC-1 15, CC-2 6, CC-3 10, CX-1 11, CX-2 4, CX-3 9, CX-5 4, all exit 0; CX-5 fails with the `^` escaping removed (mutation, restored). PlannerEval set, checks, record-stub, drift OK. Live: CC-4 OK (2.2 s first text, 3.9 s total); CX-4 not installed, exit 1.
+
+## 2026-11-07 · claude-opus-5-5 (plan providers, FEATURE-010 step 1, DEC-065)
+
+Did: Assessed openclicky (MIT). New `HeyGanesh.Providers.ClaudeCode`: an `ILlmClient` that runs `claude -p` on the owner's Claude plan (stream-json, no tools, no session, system prompt by file, API-key and `CLAUDECODE` variables stripped). New `tools/ClaudeCodeSmoke` (CC-1..CC-4). PlannerEval `--record --provider claude-code [--model m]` (PE-8); DeepSeek stays the default and `LiveClient`/PE-5 are unchanged. On branch `feat/plan-providers`, cut from `feat/apple-look` at `6832a0f`.
+Left: CC-4 and PE-8 live rows. The standalone `claude` CLI is signed out on this PC (`claude auth status` loggedIn false; "OAuth session expired"); the owner runs `claude` then `/login`. Steps 2 (Codex, not installed), 3 (record openclicky's drawing language) and 4 (side-by-side rendering; needs the owner's OK to copy `draw-stage` + three.js into `tools/`). Not wired into the App Shell, tray or Tutor.
+Watch: Every provider call starts the CLI cold, so expect a slow first beat. PlannerEval's AuthFailed line still says "refused the key" for claude-code. `dotnet sln add` rewrites the whole `.sln` (left untouched; most hosts are not in it). `sed -i` drops CRLF here; edit docs with a script that keeps line endings.
+Next: Owner signs the CLI in, then run `ClaudeCodeSmoke --live` and `PlannerEval --record <dir> --provider claude-code --cases E-01,E-03`, and plan step 2.
+Verified: Library, smoke and PlannerEval build -warnaserror 0/0. CC-1 15, CC-2 6, CC-3 10 PASS. PlannerEval set 7, checks 26, record-stub 9, drift 5 unchanged. Live: signed-out path gives exit 12 in both hosts.
+
+## 2026-10-31 · claude-opus-5-5 (an Apple-grade look, FEATURE-009 steps 1–3, DEC-062..DEC-064)
+
+Did: Mockup approved; tokens in FEATURE-009 (DEC-062). Step 2: lesson card restyled, rounded (`fe4f01d`). Step 2b spike: Acrylic blurs on a never-active card and through a transparent WebView2. Step 2c (DEC-063): real Acrylic glass frame, opaque board (`ac6849a`). Both are pushed on `feat/apple-look`. Step 3 (DEC-064): shared `Page/tokens.css`; the 3D scene window gets the glass frame, opaque stage, chips, pill labels, red highlight and accent pick glows (scene.js reads colours from the tokens), and a flat mark so the orientation probe stays clean. LSU-9 19 → 21.
+Left: Steps 4 (overlay), 5 (tray), 6 (features). **Open item (pre-existing bug, not from this work):** LSU-18 fails every run. A real click on the F-35B tail's offered point picks the fuselage, though the page's own ±2 px check says the point picks the tail. It is identical on `ac6849a` (= `main`'s scene page). LSU-15 passes 9/9. Owner checks: glass card and 3D window by eye, dark and light, once on battery. The dark-mode marker reads olive (owner's token decision). Step 3 is committed locally only.
+Watch: Colours belong in `tokens.css` only; scene.js reads them with `token()`. The orientation probe finds blue as `b>200, r<90, g<120` anywhere on the page, so no gradient or blue art in the scene title bar. Never call `BringToFront()` on a card: it activates it. Windows are capture-excluded, so no tool can screenshot the blur. `sed -i` in Git Bash can drop CRLF; check `file` after edits.
+Next: A look at a real 3D lesson (`--demo-3d --voice sapi`), then plan step 4 (overlay, ROLLBACK first). The LSU-18 tail-pick bug is its own debugging task.
+Verified: Builds -warnaserror 0/0. LSU source 20, scene-math 7, render 17, window 11, security 4, marks 2, scene 21, scene-idle 4, orientation 3, scene-nowebgl 8, scene-svg 8, scene-schematic 10; all exit 0. Card snapshot byte-identical after the token move. 3D snapshots, with and without WebGL, reviewed in dark mode. All 22 CI gates locally after steps 2, 2c and 3 (see the step 3 commit).
 
 ## 2026-10-31 · claude-opus-5-5 (LSU-18 click-to-ask on a schematic fixed in the row, BUG-002)
 

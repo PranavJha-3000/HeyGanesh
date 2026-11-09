@@ -9,6 +9,21 @@
 
 | ID | Date | Model / version | Decision | Status |
 |----|------|-----------------|----------|--------|
+| [DEC-076](#dec-076--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Notes and replay keep the drawing (FEATURE-011 step 9): a drawn lesson's note stores `drawing:WxH` + the whole program now drawn in the existing `LessonPlan` column (no schema change); Recent lessons replays only a stored drawing, on its own stage window over the cursor's monitor with no model call, closed 4 s after the end; older VisualPlan rows say they were made by an older version | accepted |
+| [DEC-075](#dec-075--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The Turn Router asks intent only (FEATURE-011 step 8): point / explain / lesson in one Jev choice; the dimension and model questions, `RouteRequest.Models`/`Schematics`, `LessonDimension`, `RouteModel`, `LessonCanvas` and the route's 3D fields are removed, because the drawing program chooses 2D or 3D itself | accepted |
+| [DEC-074](#dec-074--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The App Shell's lesson leg draws on the drawing stage (FEATURE-011 step 7): `--lesson` and routed lessons use DrawingPlanner + DrawStageController/DrawStageVoice/DrawStageWindow; a drawing stays up and the next question over it (same monitor) or a part click is a follow-up (keep() or redraw), asked without waiting for the route; NONE or no program hands the turn to the Tutor (a follow-up's drawing is cleared); close ends it; no click wait, so Ctrl+Alt is free after a lesson | accepted |
+| [DEC-073](#dec-073--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | PlannerEval scores drawing programs (FEATURE-011 step 6): static checks K-2/3/4/8/9/10/11 on the program's say() lines and strings (offline, CI), run checks P-1..P-5 on a hidden real stage (local), `--record --drawing` through DrawingPlanner on every provider; a replay re-scores the static checks and keeps the recorded run checks; stage.js exposes the accepted marks read-only to the host (third local edit) | accepted |
+| [DEC-072](#dec-072--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing planner (FEATURE-011 step 5): DrawingPlanner in LessonPlanner asks any ILlmClient for a program in the drawing language, streamed or whole; openclicky's prompts are embedded from the vendored files and filled from code (our name, no photo(), the untrusted-data rule); screen text, the pointed-at name, earlier turns and a follow-up's program go in fenced; NONE and prose never reach the stage | accepted |
+| [DEC-071](#dec-071--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage's controller and speech clock (FEATURE-011 step 4): DrawStageController (ported, trimmed to what is offered) turns page messages into events and handles the close button (clear, hide, Closed); DrawStageVoice speaks each line in order through any Func<string, CancellationToken, Task> and sends lineStarted / lineEnded, finishNow when the voice fails; stage.css hides Picture, Video and PiP | accepted |
+| [DEC-070](#dec-070--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage trusts nothing the program worker returns (FEATURE-011 step 3): stage.js checks every mark before painting it (known kind, finite numbers near the canvas, bounded sizes and text, at most 4 figures and 300 parts, photo() and f.piece() refused), a program gets 20 s of worker time in all, and the window answers every off-page request 403 and counts it | accepted |
+| [DEC-069](#dec-069--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | The drawing stage window (FEATURE-011 step 2): a Win32 popup with no redirection bitmap, a Windows.UI.Composition tree and WebView2 in composition mode, transparent, click-through except over the boxes the page reports, never activated, capture-excluded, on its own STA thread; the page served by a resource handler so the worker gets its own CSP; the DrawStage assembly takes the already-pinned WebView2 1.0.4314.35 | accepted |
+| [DEC-068](#dec-068--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | three.js r172 (MIT) vendored as files for the drawing stage's 3D figures, byte-equal to npm `three@0.172.0`; Babylon 9.30 and Anatomy leave with the old stack (FEATURE-011 step 10); porting `figure3d.js` to Babylon rejected | accepted |
+| [DEC-067](#dec-067--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Lessons move to openclicky's drawing stage (FEATURE-011): the model writes a drawing-language program run in a no-network worker and drawn in time with speech; VisualPlan, cards, Babylon scene, Part Library and LessonTurn go; mark check, capture exclusion, PerMonitorV2, grounding by prompt, notes replay of programs, the router's intent and the eval harness survive; `photo()` and `f.piece()` dropped; click-to-ask by part name | accepted |
+| [DEC-066](#dec-066--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Codex plan provider (FEATURE-010 step 2): `CodexLlmClient` runs `codex exec` read-only and ephemeral with the person's config, tools and web search off; system prompt on stdin (cmd.exe's 8 191 cap); not streamed; npm `.cmd` shims launched through their Node script or an escaped cmd.exe line; same assembly as DEC-065 | accepted |
+| [DEC-065](#dec-065--2026-11-07--claude-opus-5-5) | 2026-11-07 | claude-opus-5-5 | Plan providers (FEATURE-010 step 1): an `ILlmClient` over the `claude` CLI on the person's Claude plan, ported from openclicky (MIT); one tool-less, session-less `-p` run per call, system prompt by file, API-key and nesting variables stripped; used by PlannerEval `--record --provider claude-code` only | accepted |
+| [DEC-064](#dec-064--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | 3D scene window in the FEATURE-009 look (step 3): shared `tokens.css`, glass frame and opaque stage, pill labels, red highlight and accent pick glows read from the tokens by scene.js; flat accent mark so the orientation probe's colour search stays clean | accepted |
+| [DEC-063](#dec-063--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Glass lesson card (FEATURE-009 step 2c): DWM Acrylic behind a transparent WebView2, page frame tint over it, opaque board; solid fallback when Windows refuses or transparency is reduced; proven on a never-active card by the step 2b spike | accepted |
+| [DEC-062](#dec-062--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | One Apple-grade visual language for every surface (FEATURE-009): approved light/dark tokens, system font for chrome and hand for ink, pills and 14 px corners, critically damped springs, solid fallback for reduced transparency; rolled out one surface per step | accepted |
 | [DEC-061](#dec-061--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Session context: this run's last 3 taught turns, kept in memory, go to the Tutor and the lesson planner as a fenced, flattened, capped untrusted block; no block (an unchanged prompt) when there are none; `--no-context` | accepted |
 | [DEC-060](#dec-060--2026-10-31--claude-opus-5-5) | 2026-10-31 | claude-opus-5-5 | Recent lessons in the tray: list, details, Delete, Clear all, and Replay of a stored lesson with no model call; the stored plan is validated again with grounded marks required (the old screen's marks are dropped); Ctrl+Alt paused during a replay | accepted |
 | [DEC-059](#dec-059--2026-10-30--claude-opus-5-5) | 2026-10-30 | claude-opus-5-5 | The App Shell records each taught turn as a note (none for key errors, cancelled turns or Failed verdicts); the planner keeps the kept plan's exact JSON (`PlanResult.PlanJson`) so a lesson can be replayed; `--no-notes`; a store or write failure never fails a turn | accepted |
@@ -72,6 +87,337 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-080 — 2026-11-09 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** A static landing page lives in `site/` (index.html, style.css, app.js, the brand mark), no build step and no dependency beyond two Google Fonts (Young Serif, Geist). The download button points at the GitHub Release asset `https://github.com/PranavJha-3000/HeyGanesh/releases/latest/download/HeyGanesh-win-x64.zip`, the name `installer/build.ps1 -Zip` already writes. The hero is the product itself: a pen-stroke drawing (a wrench on a bolt, F, r, tau) animated in CSS with captions standing for the spoken lesson; Replay restarts it; reduced motion shows the finished drawing. The page says plainly that it needs a DeepSeek and a TypeSafe key, that the installer is unsigned, and that it is Windows only.
+- **Why:** the Gnani challenge (closes 2026-11-10) needs a demo, and the owner wants a download page for non-technical people, in YouLearn's style (white page, pill buttons, calm tone).
+- **Alternatives rejected:** an APK (HeyGanesh is a Windows desktop app); a one-click setup `.exe` (no installer toolchain here and no time before the deadline: the zip plus `install.ps1` stays, with the Terminal fallback shown); a screenshot hero (the drawn diagram shows what the app does and cannot go stale); a framework or bundler (nothing on the page needs one).
+- **Known gaps:** the Release asset does not exist yet, so the button 404s until the zip is uploaded (`powershell -File installer\build.ps1 -Zip`, then a GitHub Release tagged and the zip attached). Not hosted anywhere yet (GitHub Pages from `site/` is the obvious choice). The English-and-Hindi claim follows the configured language codes and is not proven by a live call.
+- **Date:** 2026-11-09
+- **Model version:** claude-sonnet-5-5
+
+## DEC-079 — 2026-11-09 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** Gnani's Prisma is a second `IVoiceListener` (`GnaniSttListener`, `GnaniSttOptions` in `HeyGanesh.Voice`), used by the App Shell when the `gnani` key is set; otherwise the qwen Gateway listener stays the default. It records one utterance from the microphone seam, ends it by a local energy rule (mean amplitude 500 of 32768 counts as speech, 1 s of quiet after speech ends it, 3 blocks of pre-roll, 29 s cap, `NoSpeechTimeout` for nobody speaking), wraps the PCM16 in a WAV and posts it multipart to `POST https://api.vachana.ai/stt/v3` (header `X-API-Key-ID`; `model=prisma-v3.0`, `language_code=en-IN,hi-IN`, `format=codemix`). An empty transcript is `IsNoSpeech`; 401/402/403 are authentication, 429 a rate limit, anything else `VoiceClientException`. A missing key fails before the microphone opens.
+- **Why:** it removes the external Gateway for the demo (one key does listening and speaking) and Prisma is one of the three models the Gnani challenge asks for.
+- **Alternatives rejected:** the Prisma WebSocket (real server-side end-of-speech and partials, but a new transport and a far bigger change for a one-day deadline); a push-to-talk release signal (the `IVoiceListener` contract has none, DEC-013); a provider-side VAD (REST has none).
+- **Known gaps:** no live Prisma call yet (no key here). The energy rule is simple: a noisy room can hold the clip open to the cap and a very quiet speaker can read as silence (`SpeechRms` is the knob). The request's `format=codemix` is a v3.0-only field.
+- **Date:** 2026-11-09
+- **Model version:** claude-sonnet-5-5
+
+## DEC-078 — 2026-11-09 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** Gnani's Timbre is a second `ITtsClient` (`GnaniTtsClient`, `GnaniTtsOptions` in `HeyGanesh.Voice`), selected by the App Shell when the `gnani` key is set, otherwise Fish. Endpoint and header follow docs.gnani.ai: `POST https://api.vachana.ai/api/v1/tts/inference`, header `X-API-Key-ID`, model `timbre-v3.0` (voice `Shivani`, language `auto`, 48 kHz mono 16-bit linear_pcm WAV, so `WavPcmReader` is unchanged). The key is `gnani` / `GNANI_API_KEY` in `KeyRing.Known` (tray menu, key screen and `--keys` list it). HTTP 401/402/403 are authentication errors, 429 a rate limit (Gnani allows one active request per key), other statuses `VoiceClientException`.
+- **Why:** the Gnani Great Indian AI Internship Challenge (submissions close 2026-11-10) asks for a working app on Prisma, Timbre or Evon; Timbre is the smallest fully documented seam.
+- **Alternatives rejected:** a new `Providers.Gnani` assembly (Voice has no project references by design, Fish lives there too); copying the marketing page's `api.gnani.ai/v1/tts/inference` with a Bearer token (it contradicts the API docs and its own OpenAPI file); streaming (SSE/WebSocket) for now, since a whole WAV is what the player takes.
+- **Known gap:** no live Timbre call has been made (no key in this session). The offline row VO-12 proves the request and the error mapping against a stub only.
+- **Date:** 2026-11-09
+- **Model version:** claude-sonnet-5-5
+
+## DEC-077 — 2026-11-09 — claude-opus-5-5
+
+**Decision — the old lesson stack is deleted.** FEATURE-011 step 10; the owner: "Complete step 8-10 in new session". Carries out FEATURE-011 §3's removals; supersedes DEC-023, DEC-025, DEC-026, DEC-027, DEC-028..DEC-034, DEC-041, DEC-042, DEC-048..DEC-050 and DEC-057 as descriptions of code that exists (they stay in this file as history). Rollback point: step 9's commit `12080aa` (ROLLBACK.md).
+
+- **Deleted projects:** `HeyGanesh.VisualLessonEngine` (VisualPlan contract, validator, `LessonPlayer`, `PlotExpression`), `HeyGanesh.PartLibrary` (the three computed models, `Schematics`), `HeyGanesh.LessonSurface` (WebView2 cards, the Babylon 9.30 and Anatomy vendor, the no-WebGL drawing), `HeyGanesh.LessonSession` (`LessonTurn`, click-to-ask), and their hosts `LessonSmoke`, `LessonSurfaceSmoke`, `LessonTurnSmoke`, `PartLibrarySmoke`. The four leave `HeyGanesh.sln` (the hosts were never in it).
+- **Kept and trimmed.** `HeyGanesh.LessonPlanner` keeps `DrawingPlanner` and `EarlierTurn` (session context, DEC-061); `VisualPlanner`, `PlannerPrompt`, `PlanStreamScanner` and the VisualPlan request/result types go, and it references Providers.Core only. `PlannerPrompt.Untrusted` (one line, `<<<`/`>>>` neutralised, bounded) moves unchanged into `DrawingPlanner`, which already used it; LP-14 checks the fences. `LessonPlannerSmoke` keeps LP-1 and LP-14..LP-16. `PlannerEval` keeps only the drawing path: `--assert-checks` (PE-2), `seeds.json`, the VisualPlan scorer and loop, the golden-lesson link and the Part Library go; `--record` always draws (`--drawing` is still accepted); a replay keeps a lesson-plan case recorded before this step as recorded (it cannot be re-scored); PE-4 records the six good drawing programs through the real client against the stub. The four `"golden"` keys leave `eval-set-v1.json` (they named deleted files; nothing scored changes).
+- **The App** references `HeyGanesh.LessonPlanner` directly (it arrived through LessonSession) and drops PartLibrary. WebView2 still arrives transitively, now only through `HeyGanesh.DrawStage`, the one assembly with the package. `installer/build.ps1` requires `DrawStagePage\` instead of the cards' `LessonPage\`.
+- **CI.** ci.yml loses G-13, G-15, G-16 and G-17; G-14 runs LP-1 and the three drawing rows; G-22 drops `--assert-checks`. TEST-CHECKLIST retires LS-1..LS-14, LSU-1..LSU-18, PL-1..PL-6, LT-1..LT-10, LP-2..LP-13, PE-2, SH-19 and SH-20, each saying why and where the rows are in git.
+- **Rows now:** LP-1 3, PE-1 7 → 6 (no golden or Part Library check; a broken set has two problems), PE-4 9 → 10 (drawings; an old lesson-plan case is kept as recorded), PE-5 5, PE-9 28.
+
+**Rejected.**
+- Keeping `PlannerPrompt` as a file for its one helper: a whole VisualPlan prompt file for a five-line function the drawing planner owns.
+- Converting the VisualPlan golden lessons into programs to keep PE-2: PE-9 already proves every drawing check passes and fails on hand-written programs.
+- Moving the deleted hosts' rows to "local-only" instead of retiring them: there is nothing left for them to run.
+- Re-scoring a lesson-plan case in an old recording as a drawing: its answer is JSON, so every drawing check would fail and read as a regression the drawing planner never caused.
+
+## DEC-076 — 2026-11-07 — claude-opus-5-5
+
+**Decision — notes and replay keep the drawing program.** FEATURE-011 step 9; the owner: "Complete step 8-10 in new session". Amends DEC-059 (what a lesson note stores) and DEC-060 (what Replay plays); the plan in FEATURE-011 §3 ("Notes + Tray replay: keep, reworked").
+
+- **The format (`HeyGanesh.Notes.StoredDrawing`).** `TurnNote.LessonPlan` holds `drawing:<W>x<H>`, a newline, then the program exactly as drawn. W×H is the canvas the program was written for (the verdict's screenshot); the program's coordinates mean nothing without it. No schema change: a row without the marker is a lesson from before the stage (VisualPlan JSON). `TryRead` refuses a missing, zero, negative or oversized (> 16384) side and an empty program; a stored size is data, not trusted. The format lives in Notes so the shell (writer) and the tray (which decides whether Replay is offered) read one rule.
+- **What is stored.** `DrawingTurn.Drawn` is the whole program now on the stage: a kept follow-up's is the earlier program, a newline, then its own (keep() is a no-op in the worker, so the joined text replays as one drawing), and a redraw's is its own. `DrawAndReportAsync` stores it whenever a program came back, closed early or not. NONE, no program and a skipped leg store nothing. A click's follow-up still makes no note (no verdict, DEC-074). `TurnRecord.PlanJson` is renamed `Drawing`.
+- **Replay (`ShellHost.ReplayAsync`).** `PrepareReplay` reads the stored text with no window: nothing stored → "this turn has no stored lesson to replay"; no marker → "this lesson was made by an older version of Hey Ganesh (lesson cards), so it cannot be replayed"; a damaged drawing → a reason. A drawing opens a `DrawStageWindow` over the cursor's monitor (the running shell's capture service, `GetCursorMonitor`), begins at the stored W×H and feeds the program whole: the stage's sandbox and mark check (DEC-070) apply as to a live drawing, and no model is called. Speech is the shell's voice when a Fish key is set (a line it cannot say is paced instead, as before); otherwise pace `estimate`. The replay ends when the voice and the page's `finished` are in, then holds the drawing 4 s (`ReplayHold`) so the last line can be seen, or ends at once on the close button; the window is closed however it ends. A page that never finishes within 5 min is "did not finish", window closed. With no running shell there is no monitor, and Replay says so.
+- **The tray.** `RecentLessonsModel` offers Replay only for a row `StoredDrawing.TryRead` accepts. The details say "Replay draws and speaks it again", "was not stored", or "made by an older version … cannot be replayed"; never the program. `PlanJson(id)` is renamed `StoredLesson(id)`. Ctrl+Alt stays paused while a replay runs (DEC-060).
+- **Rows.** RL-1 8 (new seed: a drawing, an unstored lesson and an older cards lesson), RL-2 4 (stored drawing, older row, damaged, `Store`), RL-3 now **offline** on SH-29's fake page, 6, and in CI G-24; RL-4 11 → 12 (the older row's Replay is off and says why); NB-1 6 (the stored drawing kept exactly); NS-2 8 → 9 (a stored drawing round-trips the store); SH-29 14 → 15 (`Drawn` joins a kept follow-up). The TraySmoke host no longer links the VisualPlan fixtures.
+
+**Rejected.**
+- A new column (or a schema bump) for the program: the existing text column holds it, and an older Hey Ganesh reading a new row shows a lesson it cannot replay instead of refusing the whole file (DEC-058's newer-schema rule).
+- Replaying on the shell's own `DrawingStage`, so the replay could be asked about: a live turn can be drawing on it when Replay is clicked (only Ctrl+Alt is paused, not a turn in flight), and two writers to one stage would interleave. A separate window that closes after the replay matches DEC-060's cards, which closed at the end.
+- Converting old VisualPlan rows into programs: the converter would be the hybrid FEATURE-011 §8 rejected, for rows that only a few test runs made.
+- Keeping the window up until closed by hand: Ctrl+Alt would stay paused (or the stage would overlap a live drawing) for as long as it is up.
+
+## DEC-075 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the Turn Router asks intent only.** FEATURE-011 step 8; the owner: "Complete step 8-10 in new session". Supersedes the dimension and model parts of DEC-035 and all of DEC-051; the intent question, the 0.5 gate, the refusal of an id never offered, error pass-through and `TurnLegs.Choose`'s flag rules (DEC-036) are unchanged.
+
+- **The call.** One Jev request with one typed choice, `intent`: point / explain / lesson. The lesson option now reads "Teach with a spoken drawing, flat or 3D: …" (it said "drawn step-by-step cards"). State carries `window_title`, `screen_match` and `question_words`; `model_count` is gone with the models.
+- **Removed from `HeyGanesh.TurnRouter`:** `LessonDimension`, `RouteModel`, `RouteRequest.Models` and `.Schematics`, `TurnRoute.Dimension`, `.ModelId`, `.Schematic`, `.DimensionScore`, `.ModelScore`, the `dimension` / `model` question ids and the `none` option, `LessonCanvas`, and `LegChoice.Canvas` / `.ModelId`. `LegChoice` is `(Leg, Why)`. A routed lesson's reason is "routed: lesson".
+- **Why.** Since DEC-074 the lesson leg draws a program on the stage, and the program decides flat or 3D (a `figure` or not). The route's 3D choice and catalogue model were already ignored by the shell; asking for them cost tokens and latency and implied a catalogue that step 10 deletes.
+- **Answers to questions not asked** (a stray `dimension` or `model` answer from the provider) are ignored, not refused: only the intent answer is read, and its id must be one offered.
+- **The App Shell** builds the request with the question and the screen match only, prints `route : <intent>  intent=<score>  jev=… latency=…`, and its header says `ON: Jev chooses point / explain / lesson; a drawing picks 2D or 3D itself …`. `CatalogFor` (unused since step 7) and `RouteModels` are deleted. The App keeps its PartLibrary reference until step 9: the tray's replay of stored VisualPlan lessons still checks schematics with it.
+- **Rows:** TR-2 15 → 11, TR-3 15 → 8, TR-4 7 → 5, TR-6 11 → 7; TR-1 3 and TR-5 5 unchanged. SH-21's exits and lines are unchanged except the `route : ON` wording; SH-22 (live) now expects `route : lesson` with no 2D/3D or model.
+
+**Rejected.**
+- Keeping the dimension question as a hint to the drawing planner: the program already chooses, and a hint the planner may contradict adds a second source of truth.
+- Refusing a route when the provider answers a question that was not asked: Jev answering only what it is asked is the provider's contract; a stray extra answer says nothing about the intent answer, which is still checked against its offered ids.
+
+## DEC-074 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the App Shell's lesson leg draws on the drawing stage.** FEATURE-011 step 7; the owner: "yes build step 7 in new session".
+
+- **The leg.** `--lesson` and a routed lesson ask `DrawingPlanner` (deepseek-flash through the OpenAI-compatible adapter, streamed, built from the key ring as before) and draw on a `DrawStageWindow` over the verdict's monitor, through `DrawStageController`, with `DrawStageVoice` speaking each line through Voice's `SpeakAsync` (pace `speech`; `--no-speak` is pace `estimate`, nothing spoken). `VisualPlanner` → `LessonTurn` → cards is no longer used by the shell; it stays in the tree until step 10, and the tray's replay of stored VisualPlan lessons is unchanged until step 9.
+- **What the model is given.** The canvas is the screenshot the verdict was resolved against (`Captures[0]`, its `OutputWidth` × `OutputHeight`); the grounded box goes in canvas units (`ToCanvas`) with its description; the screen text is that capture's OCR lines; earlier turns as before (DEC-061). DrawingPlanner fences all of it. With `--no-retain-captures` there is no screenshot to size the drawing, so the Tutor answers.
+- **The turn (`ShellHost.DrawOnStageAsync`).** The stage opens (or is reused) while the model writes. `onProgram` only queues; one reader posts to the stage, skipping to the newest text. A first lesson begins the stage; a follow-up waits until `KeepsTheDrawing` can tell, then continues (keep()) or begins afresh. The turn ends when both the voice and the page's `finished` are in (the page can say finished about 0.25 s before a slow voice ends, DEC-071), capped at 5 minutes, after which it is a stage fault (exit 4) with the stage cleared. A provider fault or cancellation clears the stage too.
+- **The drawing stays up (`DrawingStage`).** It keeps the window and what is drawn on it (the questions and the program; a kept follow-up adds both). The next question asked by voice while it is up, on the same monitor, is a follow-up and goes to the lesson leg without waiting for the route: the follow-up prompt already decides keep, redraw or NONE, and the route's 2D / 3D / model choice is dropped in step 8. A drawing on another monitor replaces the window. The close button (`Closed`) forgets it.
+- **NONE or no program** draws nothing, and the turn goes to the Tutor's spoken answer (`TeachAndSpeakAsync`), whose exit code it takes. Over a drawing, NONE means "not about this drawing", so the drawing is cleared first; leaving it would make the next question a follow-up to a drawing the talk has left.
+- **A click on a part** (`FigurePartClicked`, raised on the stage thread) becomes one more turn through the pump's gate, ignored while any turn runs. The part's name is untrusted page text: `PartQuestion` keeps only letters, digits, spaces, hyphens and apostrophes, at most 60, as "Tell me more about the <part>." There is no verdict for a click, so it has no screenshot or screen text, its Tutor fallback has an empty context, and it is kept in this run's memory but not saved as a note (a note records a verdict; step 9 reworks notes).
+- **Ctrl+Alt** is refused only while a turn runs (now: until the drawing has finished and its voice has ended). Nothing waits 30 s for a click any more.
+- **Exit codes** keep the alphabet: 0 drawn (or closed); 12 a key error (lesson model `AuthFailed`, or the speech key); 3 a provider or speech fault; 13 cancelled; 4 the stage could not open, did not finish, or another defect. "1 with --lesson" (a Rejected plan) no longer happens: a model that draws nothing goes to the Tutor.
+- **Notes.** A drawn lesson is a `Lesson` note titled by its first spoken line (120 characters at most), with no `LessonPlan`: storing and replaying the program is step 9, so "Recent lessons" cannot replay a drawing yet.
+- **Rows:** SH-29 `TraySmoke --assert-drawing-leg` 14 (offline, CI G-24): the shell's own turn and stage against a scripted model and a fake page. SH-18 updated (same exits, new header text). SH-28 is the owner's live row; it replaces SH-20 for the shell.
+
+**Rejected.**
+- Keeping the route in charge of a question asked over a drawing: the route would send most follow-ups ("and the nozzle?") to the Tutor or a fresh lesson, and the drawing on screen would no longer match the answer. The follow-up prompt's NONE is the way out.
+- Leaving the drawing up after NONE: the next question would be asked as a follow-up to a drawing the conversation has left.
+- Saving a click's turn as a note with a made-up verdict: the note would claim a screen match that never happened.
+- A real stage window in the offline row: CI has no desktop session or WebView2. The window is covered by DS-2..DS-6; the shell's use of it is the live row.
+
+## DEC-073 — 2026-11-07 — claude-opus-5-5
+
+**Decision — drawing programs are scored in two layers, and the stage tells the host which marks it accepted.** FEATURE-011 step 6; the owner: "continue with build step 6".
+
+- **Static checks (`ProgramChecks`, offline):** the program's `say()` lines and string literals are read from its text. K-2 (3 to 8 lines, at most 45 words each), K-3, K-4, K-8, K-10 and K-11 keep their meaning on them. K-9 reads the whole program, comments and names included. NONE or prose is no drawing: K-2 fails and names the outcome.
+  - shortcut: a `say()` in a loop or built from a variable is missed or counted once. When a stage ran the program, its real lines are used instead.
+- **Run checks (`ProgramStage`, local):** one hidden `DrawStageWindow` runs each program at estimate pace.
+  - P-1: every statement ran with no error.
+  - P-2: no mark refused by the page's check (DEC-070).
+  - P-3: a 3D figure exactly when the case expects 3D.
+  - P-4: for a grounded case, an arrow or line ends in the box (24 px slack), or a ring, dot, rect or highlight sits in it and is at most 3 times its size, so a card that covers it does not count.
+  - P-5: at most 50 parts, the prompt's `partsAtMost`.
+  - K-1, K-5, K-6, K-7 and K-12 are retired with the catalogue (FEATURE-011 §6). The VisualPlan checks and their rows are unchanged until step 10.
+- **The page edit:** `window.stageMarks()` returns the accepted marks as JSON, and PlannerEval reads it through the stage's internal host-script call (`InternalsVisibleTo`). The program runs in the worker, which cannot reach the page. It is the third local edit, recorded in VENDOR.md and checked by DS-1.
+- **Recording:** `--record [dir] --drawing [--provider deepseek|claude-code|codex]` draws each case through `DrawingPlanner`. The canvas is the eval desktop (2560 × 1440), with the grounded box and the screen text as given. A follow-up is asked about the program last drawn for its previous case. A stage is opened when the machine can show one; otherwise the run says so and scores the static checks only.
+  - A replay is offline: it re-scores the static checks from the recorded replies and keeps the run checks the stage gave at recording time.
+  - Old VisualPlan recordings are replayed as before (`Drawing` false).
+- **Rows:**
+  - PE-9 `--assert-program-checks` 28, offline, CI G-22. Good programs pass; six seeds and a word-for-word follow-up each fail exactly one check; NONE; P-1..P-5 on hand-made stage runs; what P-4 counts; a drawing recording replayed with no difference, keeping a recorded run check.
+  - PE-11 `--assert-program-run` 12, local: the same good programs pass P-1..P-5 on the real stage, its lines equal the static ones, and five bad programs each fail their own check.
+  - PE-10 is the owner's live recording.
+
+**Rejected.**
+- Reading marks from the painted SVG: a `<g>` does not say its kind, and 3D parts paint no shape.
+- Wrapping the page's `Worker` from a host script to copy results: it is more fragile than two lines, and the copies would be the unchecked, forgeable worker results.
+- Running the stage in CI: no desktop session or WebView2 there. The static layer is what CI can hold.
+- Re-running the stage on replay: a replay must work offline (G-22 replays a committed baseline).
+
+## DEC-072 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the drawing planner asks for a program, with openclicky's prompts filled from code.** FEATURE-011 step 5; the owner: "Yes, build step 5".
+
+- **`DrawingPlanner.DrawAsync(request, onProgram, ct)`** in `HeyGanesh.LessonPlanner`, next to `VisualPlanner` (unchanged until step 10).
+  - The request: the question, the canvas size (the screenshot's), and optionally the screenshot, the pointed-at box and its name, the screen text, earlier turns, and a follow-up (the drawing on the stage: its questions and program).
+  - The result: `Program`, `None` or `NoProgram`, with the program and keep() for a follow-up, plus model, tokens and timings.
+  - It works through any `ILlmClient`. A client with `Streaming` (Claude Code) has its reply read as it comes, and `onProgram` gets the program so far each time it grows. A client without it (Codex) gives one whole reply, handed over once.
+  - Provider faults and cancellation propagate. The program is not checked here: the stage sandboxes it and checks every mark (DEC-070).
+- **Prompts:** openclicky's `drawing-language.md`, `question.md` and `follow-up.md` are embedded from `HeyGanesh.DrawStage/Page/prompt`, byte for byte (LP-14). They are read from the assembly, not from disk, so LP-1's no-I/O audit still holds, and no project reference is added.
+  - Placeholders are filled from code at openclicky's "detailed" level: 3 to 6 beats, 70 calls, 50 parts, captions below 86 % of H.
+  - The template's placeholders must be exactly the ones filled, in one pass, so a changed vendored prompt fails loudly, and a value containing `{{…}}` is never filled again.
+  - Two changes are made in code, so the vendored files stay exact: the name becomes Hey Ganesh, and the `photo()` line is dropped. An untrusted-data rule is added at the end.
+- **Untrusted context:** the screen text, the pointed-at name and earlier turns go in `<<<BEGIN …>>>` fences, flattened and capped with the old planner's `Untrusted`. The question is flattened to one line. A follow-up's earlier program is capped, and its ``` is neutralised so it cannot close its block. The screenshot goes only to a model with `Vision`; otherwise the prompt says none is attached.
+- **Reading the reply:** `ProgramIn` is ported from openclicky. While streaming, it holds back a closing fence that is still arriving, so the stage never gets a backtick or the prose around the block.
+  - `NONE` counts only as the reply's first word (`NONE.` yes, `NONEXISTENT` and "None of…" no).
+  - Prose or an empty block is `NoProgram`.
+  - `KeepsTheDrawing` (keep() first, after comments) is openclicky's rule.
+- **Rows:** LP-14 `--assert-drawing-prompt` 10, LP-15 `--assert-drawing-stream` 5, LP-16 `--assert-drawing-none` 4. They are offline, and CI gate G-14 runs them.
+
+**Rejected.**
+- Reading the prompt files from the output folder at run time: LP-1 forbids file I/O in the planner, and an embedded copy cannot go missing.
+- Copying openclicky's prompt as C# text, as upstream does: two copies would drift. The vendored files stay the one copy, pinned by VENDOR.md and by LP-14.
+- Checking the program statically here: step 6 adds program checks to PlannerEval. At run time the stage's sandbox is the boundary.
+
+## DEC-071 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the stage gets a controller, a speech clock, and only a close button.** FEATURE-011 step 4. The owner chose "Handle close, hide rest" for the page's buttons, then said "Yes, build step 4".
+
+- **`DrawStageController`** is ported from openclicky (MIT) and trimmed. It drops photos, pieces, saving, recording, measuring and the ready queue: `DrawStageWindow.OpenAsync` has already waited for `ready`.
+  - Methods (async, posted in order on the stage thread): `BeginAsync`, `ContinueAsync`, `FeedAsync`, `LineStartedAsync`, `LineEndedAsync`, `FinishNowAsync`, `ClearAsync`.
+  - Events: `LineAdded`, `ProgramRan`, `LineDue`, `Finished`, `FigurePartClicked`, `Closed`, `Logged`. They are raised on the window's thread.
+  - It talks to the window through `IDrawStageSurface`, which `DrawStageWindow` implements.
+  - Any other page message (`save`, `photoWanted`, `pieceWanted`) is logged and ignored.
+- **The close button:** the page's `close` message clears the drawing, hides the window, then raises `Closed`, which stops the voice. The button's "(Esc)" hint stays as upstream wrote it, but the window is never activated, so Esc cannot reach it.
+- **The hidden buttons:** one rule in `stage.css` hides Picture, Video and PiP (the second local edit, in VENDOR.md), so `save` is never sent.
+- **`DrawStageVoice.RunAsync(stage, speak, ct)`** is the speech clock that openclicky keeps inside its answer flow, here on its own:
+  - It queues each `LineAdded` and speaks the lines in order through any `Func<string, CancellationToken, Task>`, sending `lineStarted` before and `lineEnded` after each line.
+  - It ends at `programRan` (every line is known by then: one ordered message channel), on `Closed`, or on the caller's token (which throws).
+  - A failing speaker sends `finishNow`, so the rest is drawn at once and nothing more is spoken.
+  - The shell's TTS plugs in at step 7.
+- **Found:** when the last line's `lineEnded` has not come, the page ends that line at its estimated length (2.6 words a second). So `finished` can arrive a little before a slow voice ends (DS-6: about 0.25 s). The shell must wait for both the voice and `finished`.
+- **Rows:** DS-1 checks the CSS edit (15). DS-6 `--assert-pace` 8, local. DS-7 `--demo <sample> [--voice sapi]` by hand.
+
+**Rejected.**
+- Driving the voice from the page's `lineDue`: openclicky speaks ahead from `line`, which lets audio be fetched early. `lineDue` is kept as an event.
+- Handling PiP: it is a page-only feature, but it moves the drawing off what the model saw. Hidden for now, and step 11 may restyle.
+- Keeping upstream's static `Shared` instance: the shell owns one controller per window.
+
+## DEC-070 — 2026-11-07 — claude-opus-5-5
+
+**Decision — nothing the program worker returns is trusted; the page checks it.** FEATURE-011 step 3; the owner: "Yes, build step 3".
+
+- **The threat:** the model's program runs in the worker, and `postMessage` must stay there (it is how the worker answers). So a program can post a result of its own. `seq` is not a secret: a forged result that matches the running statement takes its place, and in a stream it can take the statements after it too (DS-5 shows one). The fences (DS-1) keep the program off the network. This decision bounds what it can make the page paint.
+- **Mark check (`stage.js`, the first local edit, listed in VENDOR.md):** `markProblem` refuses:
+  - a mark of an unknown kind, or with a position or points that are not finite or lie more than twice the canvas off it;
+  - sizes beyond twice that reach, text size above 200, or line width above 100;
+  - text above 300 characters, or titles and captions above 120;
+  - more than 4 figures, or more than 300 parts;
+  - an unknown part kind or motion, or part parameters above 20 kB of JSON;
+  - `photo()` and `f.piece()`, which are not offered (DEC-067: the host fetches nothing from model text).
+
+  A refused mark is skipped with a `log` line (at most 20 per drawing). It still counts, so `say()` lines stay with their marks. Warnings, errors and `say()` text are read only as the shape expected and are capped. Colours need no check: `tone()` already falls back for anything that is not a known name or hex. Material names fall back in figure3d.
+- **Program time cap:** `PROGRAM_SECONDS = 20` of worker time in all, checked after each statement, on top of upstream's 2 s per statement. A follow-up stream gets its own 20 s.
+- **Off-page requests (`DrawStageWindow`):** a second resource filter (`*`) answers every request for another host 403, locally, and counts it in `OffPageRequests`. The CSPs should stop any request before it is made, so the count stays 0. If a fence ever fails, the request still never reaches the network, and DS-4 fails on the count. This was shown by dropping the worker CSP: `import()` of an address was answered 403 and counted 1.
+- **Rows:** DS-1 gains a check for the edit (14). DS-4 `--assert-sandbox` 13, DS-5 `--assert-marks` 3, both local.
+
+**Rejected.**
+- Making `seq` unguessable: model code can replace the worker's `onmessage` and read every run. The check on what is painted is the boundary that holds.
+- Removing `postMessage` from the worker: the worker could no longer answer.
+- Checking marks in the worker's API: the program can forge results anyway, so the check belongs on the page's side.
+
+## DEC-069 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the drawing stage runs in a transparent, click-through window over one monitor.** FEATURE-011 step 2; the owner: "Yes, build step 2".
+
+- **How:** `HeyGanesh.DrawStage.DrawStageWindow`, ported from openclicky's Windows host (MIT). The window is a Win32 popup (`WS_EX_NOREDIRECTIONBITMAP | LAYERED | TRANSPARENT | TOOLWINDOW | TOPMOST | NOACTIVATE`). Its only content is a Windows.UI.Composition visual tree. WebView2 runs as a `CoreWebView2CompositionController` with a transparent background, so the page's alpha reaches the desktop. A WinForms or WPF host cannot do this: a WebView2 control draws nothing in a layered window and covers the screen in an opaque one. The composition projections come with the existing TFM.
+- **Isolation:**
+  - `CaptureExclusion.TryExcludeFromCapture` is a hard gate (open fails without it).
+  - DevTools, context menus, host objects and accelerator keys are off.
+  - Any navigation off `https://drawstage.heyganesh.invalid/` is cancelled, and new windows are refused.
+  - A `WebResourceRequested` handler serves only `.html`/`.js`/`.css` under the deployed page folder. Other hosts, `http`, other types, missing files and `../` escapes get 404.
+  - `stage-worker.js` is served with its own CSP (`script-src 'unsafe-eval'; worker-src 'none'; connect-src 'none'`). A worker follows its own response's policy, not the page's `<meta>`, which is why a folder mapping (as on our cards) is not enough here.
+- **Mouse:** click-through (`HTTRANSPARENT`, `WS_EX_TRANSPARENT`) except over the boxes the page reports in its `figures` message (3D figures, cards). Over a box the window takes the mouse and forwards it with `SendMouseInput`; a 40 ms pointer watch decides. Page boxes are clipped to the monitor in double before conversion (a huge number would overflow `int`), and malformed numbers read as 0. `WM_MOUSEACTIVATE` answers `MA_NOACTIVATE`.
+- **Threading:** its own STA thread with a WinForms loop (`StageThread`; LessonSurface's `UiThread` pattern, copied because LessonSurface goes in step 10), which also pumps the composition DispatcherQueue. A separate WebView2 profile, `webview2-drawstage`, under the data folder.
+- **Dependency:** the same pinned `Microsoft.Web.WebView2` 1.0.4314.35 as LessonSurface (DEC-020), not a new package. Two assemblies take it until step 10 deletes LessonSurface. DS-1 pins the stage project to exactly that package and to the Abstractions and ScreenCapture references.
+
+**Rejected.**
+- Hosting the page in our opaque card window: the drawing could not sit on the real screen.
+- A virtual host folder mapping: no response headers, so no worker CSP.
+- Sharing the cards' `webview2` profile: a second environment with different options in the same folder fails.
+
+## DEC-068 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the drawing stage's 3D figures run on three.js r172, vendored as files.** FEATURE-011 §4; the owner: "Approve, use three.js".
+
+- **What:** `three.module.min.js`, `three.core.min.js`, `RoomEnvironment.js` and `LICENSE` under `src/Experience/HeyGanesh.DrawStage/Page/vendor/three/`, about 700 KB, MIT. No NuGet and no npm at build time; served from the page folder, as Babylon is today. The module, core and licence are byte-equal to the hashes jsdelivr publishes for npm `three@0.172.0`. `RoomEnvironment.js` carries openclicky's one-line import change. DS-1 pins every file.
+- **Why:** `figure3d.js` (openclicky's figure engine: lathe, extrude, tube, metaball `blob`, PMREM room lighting, clipping-plane `cut`) is written against three.js and runs unchanged, so upstream fixes carry over.
+- **Net vendor size goes down:** Babylon 9.30 and the Anatomy kit are deleted with the old lesson stack (FEATURE-011 step 10).
+
+**Rejected.**
+- Keep Babylon and port `figure3d.js`: no new dependency, but about 1,300 lines rewritten against another engine's geometry, lighting and clipping APIs, with a high risk of looking worse, and it would drift from upstream.
+
+## DEC-067 — 2026-11-07 — claude-opus-5-5
+
+**Decision — lessons are drawn by openclicky's drawing stage (draw-stage, MIT, commit `5b838ad`).** FEATURE-011; the owner: "use majority of their drawing and 3d system and scrape ours keep only the best and relevant parts", then approved the plan as written ("Approve, use three.js").
+
+- **Adopted:** the drawing language; the statement scanner and the pen paced to each spoken line; the Web Worker sandbox (2 s per statement, 2000 marks, fixed `random()`); the three.js figure engine; the prompts with the `NONE` way out and the follow-up `keep()`; click on a part. The page is the Windows app's copy, which is stricter than the shared `draw-stage/` folder.
+- **Removed (by step 10, after the new path is live):** the VisualPlan contract and `LessonPlayer`, `VisualPlanner` and its prompt, the cards and the Babylon scene, the Part Library, and `LessonTurn`'s click wait.
+- **Survives:**
+  - a check on the worker's marks before painting (step 3; the part of DEC-023 that still applies);
+  - capture exclusion and PerMonitorV2;
+  - grounding, as the Element Selection box given to the model in canvas units;
+  - notes and replay, which store the program text;
+  - the router's point / explain / lesson question;
+  - the Tutor, for `NONE`;
+  - session context;
+  - PlannerEval, with checks on programs.
+- **Dropped:**
+  - `photo()`: the model writes the search query after seeing the screen, so a fetch would be a channel out of the screen;
+  - `f.piece()`: network 3D generators;
+  - Picture/Video saving.
+- **Click-to-ask:** a click asks about the part's name from the program's const, cleaned, capped and fenced as untrusted. There are no vetted descriptions any more. The owner accepted the plan with this stated.
+- **New risk accepted:** the page needs `'unsafe-eval'` for the worker. It is bounded by the worker fence, two CSPs with `connect-src 'none'`, a virtual host with navigation cancelled, the mark check, and a whole-program time cap (step 3).
+
+**Rejected.**
+- The hybrid (their renderer fed our VisualPlan): it keeps the stiffness and the catalogue-limited 3D.
+- Hosting the stage in our opaque card window: the drawing could not sit on the real screen.
+- A JS engine in C#: it needs a new dependency and duplicates the worker.
+
+## DEC-066 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the lesson model can also run on the person's ChatGPT plan through `codex exec`.** FEATURE-010 step 2; the owner: "Yes, build step 2".
+
+- **How:** `CodexLlmClient : ILlmClient`, in the same `HeyGanesh.Providers.ClaudeCode` assembly as DEC-065 (both are plan-CLI clients sharing `PlanCli`; renaming the assembly was left alone as churn). One `codex exec` per call in a fresh temp folder: `--skip-git-repo-check --ephemeral --ignore-user-config --ignore-rules --sandbox read-only --json`, openclicky's eleven `--disable` features, web search off and low reasoning effort. Images go as files with `-i`; the answer is read from `-o last-message.txt`, falling back to the last `agent_message` event; tokens come from `turn.completed`.
+- **System prompt on stdin, not `-c developer_instructions`:** npm installs Codex as `codex.cmd`. When its Node script cannot be found, cmd.exe runs it and caps the line at 8 191 characters, and the planner's prompt is longer. Tradeoff: the instructions carry user-level weight. Marked `shortcut:` until a Codex instructions-file setting is verified live.
+- **Not streamed:** capabilities are Text and Vision, so the planner takes its whole-answer path and the first beat arrives with the whole lesson. FEATURE-010 step 3 measures what that costs.
+- **Launcher:** `PlanCli.Resolve` (ported from openclicky) starts an `.exe` directly. It runs an npm shim's Node script with node, and any other `.cmd` through `cmd.exe /d /s /c` with every argument quoted and `^`-escaped. CX-5 shows that `%PATH%` is not expanded, and that removing the escaping fails the row. This also pays off DEC-065's `claude.cmd` shortcut.
+- **Errors:** the same mapping as DEC-065. Signed out, `codex login` or 401 -> AuthFailed; usage or rate limit (the inner message of a JSON 429 body) -> RateLimited; everything else not retryable.
+
+**Rejected.**
+- `-c developer_instructions=...`: the 8 191-character cap above.
+- Codex's app-server mode: it streams, but is a long-running protocol for a one-shot call.
+- The OpenAI API with the token Codex stores: outside the terms, and it moves a credential into HeyGanesh.
+
+## DEC-065 — 2026-11-07 — claude-opus-5-5
+
+**Decision — the lesson model can run on the person's Claude plan through the `claude` CLI.** FEATURE-010 step 1; the owner: "Yes, build step 1".
+
+- **How:** `HeyGanesh.Providers.ClaudeCode.ClaudeCodeLlmClient : ILlmClient` runs `claude -p` once per call in a fresh temp folder, with stream-json in and out, partial messages, `--tools ""`, `--safe-mode`, `--strict-mcp-config`, `--disable-slash-commands`, `--no-session-persistence` and no permission prompts. The request is one stream-json user message: each turn's images, then its text, with earlier turns labelled, because a single `-p` turn has no history. The system prompt goes through `--system-prompt-file`, since the planner's prompt can pass Windows' 32 767-character command line.
+- **No key:** the CLI's own sign-in pays. `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `OPENAI_API_KEY`, `CODEX_HOME` and the `CLAUDECODE` / `CLAUDE_CODE_*` nesting variables are removed from the child's environment, so an API key cannot override the plan and a run started inside Claude Code does not talk to the outer session. The API Key Isolation invariant holds trivially: no credential passes through HeyGanesh.
+- **Errors:** signed out or an expired OAuth session -> `AuthFailed` (exit 12 in the hosts); usage limit -> `RateLimited`; past the timeout (180 s) -> `Timeout`, with the whole process tree killed; anything else -> `Transport`, not retryable, so a wrapper never re-runs a plan call by itself. A request with tools -> `CapabilityMissing`.
+- **Reported:** tokens from the result event (input counts cache reads and writes) and `total_cost_usd` as `LastCostUsd`, the API-equivalent cost, for FEATURE-010's cheaper-or-not comparison. Nothing is billed per call on a plan.
+- **Scope:** PlannerEval `--record --provider claude-code [--model m]` only. `LiveClient` and PE-5 are unchanged, and DeepSeek stays the default. The App Shell, tray and Tutor are untouched; wiring them is its own later step.
+- **Source:** ported from openclicky's Windows app (`ClaudeCodeAnswerProvider.cs`, `PlanCLIs.cs`; MIT, credited in each file).
+
+**Rejected.**
+- Calling the Anthropic API with the token Claude Code stores: undocumented, outside the terms, and it moves a credential into HeyGanesh.
+- The Claude Agent SDK: needs Node or Python packages (no new dependencies).
+- `--system-prompt` on the command line: breaks on long prompts.
+- openclicky's npm-shim launcher: only a real `claude.exe` is found (native installer or PATH). Marked as a `shortcut:` in `PlanCli.LocateClaude`.
+
+## DEC-064 — 2026-10-31 — claude-opus-5-5
+
+**Decision — the 3D scene window takes the lesson card's look, with one shared token file.** FEATURE-009 step 3; the owner: "Yes, implement step 3".
+
+- **One source of colour:** `Page/tokens.css` holds the FEATURE-009 tokens (moved out of `lesson.css`; the card snapshot is byte-identical before and after). Both pages link it first. `scene.js` reads the colours Babylon needs (`--board`, `--pill`, `--hairline`, `--text`, `--text-2`, `--red`, `--accent`, `--ui`) with `getComputedStyle`, so no hex value is copied into script. It repaints the stage and the labels when Windows switches light/dark.
+- **The window:** glass frame (`CardWindow` now applies DEC-063 to the scene page too), an opaque inset stage with 10 px corners for both the canvas and the no-WebGL drawing, chips for the tags (a caveat tag such as "not yet reviewed" is amber), pill labels with a hairline leader. A lesson highlight glows red, as the cards' ink rings. A clicked part glows accent instead of teal.
+- **A flat mark:** the orientation self-test finds its blue marker by colour anywhere in the page image (`b > 200, r < 90, g < 120`). The card's gradient mark has pixels that match, so the scene window's mark is flat accent (g = 122 / 132, no match). LSU-11 passes.
+- **Left alone:** the Part Library palette, the generated colour ramps in `scene-svg.css`, the vendored kit, and the pure-colour orientation markers.
+
+**Rejected.**
+- Copying the tokens into `scene.css`: two copies drift.
+- A transparent canvas, so the model floats on the glass: labels and thin parts get hard to read over a busy, blurred desktop.
+- Hiding the mark during the probe: test-only logic in the page.
+
+## DEC-063 — 2026-10-31 — claude-opus-5-5
+
+**Decision — the lesson card's frame is real glass: Windows' Acrylic backdrop, tinted by the page.** FEATURE-009 step 2c; the owner: "Yes, implement 2c".
+
+- **How:** for the lesson page only, `CardWindow` sets rounded corners, immersive dark mode from the app theme, extends the DWM frame over the whole client area and sets `DWMWA_SYSTEMBACKDROP_TYPE` = `DWMSBT_TRANSIENTWINDOW`. The form background is black (DWM shows the backdrop there) and the WebView2 background transparent. `lesson.css` paints the frame tint once, on `html` (dark `rgba(30,30,34,.64)`, light `rgba(248,248,250,.72)`); the board stays opaque, so ink never sits on a moving background.
+- **Fallbacks:** if either DWM call fails, the window paints the solid frame colour, as in step 2, and never shows black. `prefers-reduced-transparency` or `prefers-contrast: more` makes the tint solid. On battery with energy saver on, Windows draws Acrylic as flat grey; the tint still sits on it.
+- **Evidence:** the step 2b spike (FEATURE-009 log) showed Acrylic blurring on a window that is not the foreground window, and showing through a transparent WebView2 page, measured from screen pixels with controls. This disproved the step 2 assumption that it would go solid.
+
+**Rejected.**
+- The undocumented `SetWindowCompositionAttribute` accent blur: it works too, but it is unsupported and can break with a Windows update.
+- Mica: it tints from the wallpaper and does not blur what is behind the card.
+- A blur drawn by the page itself (`backdrop-filter`): a page cannot see the desktop behind its window.
+
+**Not verifiable by our tools.** Cards are excluded from capture (`WDA_EXCLUDEFROMCAPTURE`), so no screenshot can show the blur on a real card. LSU-2 checks that the backdrop reads back as Acrylic; a person checks the look.
+
+## DEC-062 — 2026-10-31 — claude-opus-5-5
+
+**Decision — every Hey Ganesh surface moves to one visual language, defined by the tokens in FEATURE-009.** The owner approved the mockup ("Approve, plan step 2").
+
+- **What it is:** near-white or near-black surfaces, one system blue, red only for ink; Segoe UI Variable for window chrome, Ink Free kept for what the tutor writes; pills and 14 px corners; critically damped springs. It follows the Windows light/dark setting; reduced motion and reduced transparency each have a defined fallback.
+- **How it lands:** one surface per step (FEATURE-009 sequence): lesson card, 3D window, overlay, tray dialogs. Features that change behaviour (listening orb, cards growing from the ring, word-by-word captions) are not part of this decision and get their own plans.
+- **Why these choices:** ranked from duckyhelper.com and look-at-it.in, filtered through Apple's design rules: the system font before a custom one, colour only where it means something, motion that can be interrupted. No web font, no library: the pages keep `font-src 'self'` and the zero-dependency rule.
+
+**Rejected.**
+- Keeping the cream graph paper: it reads as a separate product from the rest of the app, and it has no dark form.
+- A web font (Figtree, Inter, Outfit, as the reference sites use): a new vendored asset, and Segoe UI Variable is the platform's own tuned face.
+- Rebuilding the windows in WinUI 3 or WPF with a Fluent library: new dependencies for a look that DWM attributes and CSS reach.
+- Copying either site's assets, names or marketing layout.
+
 ## DEC-061 — 2026-10-31 — claude-opus-5-5
 
 **Decision — a follow-up is understood from this run's last 3 taught turns, sent as untrusted context.** Step 12d of the build sequence (the owner: "Build 12d first").

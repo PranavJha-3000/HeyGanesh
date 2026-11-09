@@ -1,17 +1,16 @@
 using HeyGanesh.Abstractions;
 using HeyGanesh.ElementSelection;
-using HeyGanesh.PartLibrary;
 using HeyGanesh.TurnRouter;
-using HeyGanesh.VisualLessonEngine;
 using Router = HeyGanesh.TurnRouter.TurnRouter;
 
 namespace HeyGanesh.App;
 
 // The routing leg (DEC-036): after a produced verdict, one Jev call decides whether the turn is
-// pointed at, explained or taught, and on which canvas. The decision itself is TurnLegs.Choose, a pure
-// function TurnRouterSmoke checks case by case (TR-6); this file only builds the request, survives a
-// failed router, and prints what was decided. A router fault never fails the turn: the verdict was
-// already answered, so the turn falls back to the leg it would have run without a router.
+// pointed at, explained or taught; since DEC-075 the drawing program chooses 2D or 3D itself. The
+// decision is TurnLegs.Choose, a pure function TurnRouterSmoke checks case by case (TR-6); this file
+// only builds the request, survives a failed router, and prints what was decided. A router fault never
+// fails the turn: the verdict was already answered, so the turn falls back to the leg it would have run
+// without a router.
 
 internal static partial class ShellHost
 {
@@ -26,10 +25,6 @@ internal static partial class ShellHost
         options.Lesson || options.NoRoute || !HasKey("typesafe")
             ? null
             : new Router(jev);
-
-    /// <summary>The 3D models the router may offer: the Part Library's, by title and subject.</summary>
-    private static IReadOnlyList<RouteModel> RouteModels { get; } =
-        ModelLibrary.V1.Select(m => new RouteModel(m.Id, m.Title, m.Subject)).ToArray();
 
     /// <summary>
     /// Starts the route as soon as the verdict is known, so it runs while the highlight is on screen.
@@ -48,9 +43,6 @@ internal static partial class ShellHost
         {
             Question = options.Question,
             ScreenMatchFound = guidance.Found,
-            Models = RouteModels,
-            // The lesson leg can draw a lesson's own schematic whenever it offers 3D (DEC-050/DEC-051).
-            Schematics = true,
         }, ct);
     }
 
@@ -94,8 +86,7 @@ internal static partial class ShellHost
 
             if (route is not null)
             {
-                Console.WriteLine($"route       : {route}  intent={Score(route.IntentScore)} 3d={Score(route.DimensionScore)} " +
-                                  $"model={Score(route.ModelScore)}  jev={route.JevModel}  latency={route.Latency.TotalMilliseconds:F0} ms");
+                Console.WriteLine($"route       : {route}  intent={Score(route.IntentScore)}  jev={route.JevModel}  latency={route.Latency.TotalMilliseconds:F0} ms");
             }
         }
 
@@ -108,17 +99,6 @@ internal static partial class ShellHost
         return leg;
     }
 
-    /// <summary>
-    /// The planner's 3D offer for a leg: none (2D), one model, or the whole catalogue (--lesson, and a
-    /// schematic leg, DEC-051). Any non-null offer also carries Schematics.Check (RunLessonAsync).
-    /// </summary>
-    private static ModelCatalog? CatalogFor(LegChoice leg) => leg.Canvas switch
-    {
-        LessonCanvas.FullCatalogue or LessonCanvas.Schematic => LessonSurface.CardSurface.Scene3dCatalog,
-        LessonCanvas.OneModel => new ModelCatalog(LessonSurface.CardSurface.Scene3dCatalog.Models.Where(m => m.Id == leg.ModelId)),
-        _ => null,
-    };
-
     private static string Score(double? score) => score is { } s ? s.ToString("0.00") : "-";
 
     /// <summary>Whether CreateRouter() will compose a router: the header says so before any turn runs.</summary>
@@ -128,6 +108,6 @@ internal static partial class ShellHost
     private static string RouteHeader(ShellOptions options, bool typesafeKey) =>
         options.Lesson ? "off (--lesson forces a lesson)"
         : options.NoRoute ? "off (--no-route: the Tutor leg, as before the router)"
-        : typesafeKey ? $"ON: Jev chooses point / explain / lesson, 2D or 3D, over {RouteModels.Count} models (TYPESAFE_API_KEY present, value suppressed)"
+        : typesafeKey ? "ON: Jev chooses point / explain / lesson; a drawing picks 2D or 3D itself (TYPESAFE_API_KEY present, value suppressed)"
         : "off (TYPESAFE_API_KEY MISSING)";
 }

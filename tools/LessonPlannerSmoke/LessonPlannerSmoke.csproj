@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Verification host for the Lesson Planner (FEATURE-007 Phase 4).
+    Verification host for the Lesson Planner's DrawingPlanner (FEATURE-011 step 5, DEC-072).
 
-    Not product code: it proves the planner's prompt contract, multimodal handling, grounded-mark
-    rule, repair turn and error pass-through against a recording fake ILlmClient and recorded model
-    answers — no provider, no key, no network. Fixtures are linked from tools/LessonSmoke so the
-    "recorded model answers" are the same golden lessons every other host checks.
+    Not product code: it proves the drawing planner's prompts, its streamed program reading and its NONE handling
+    against a recording fake ILlmClient and scripted answers — no provider, no key, no network. The VisualPlan
+    rows and the golden-lesson fixtures they read went with the VisualPlan planner (FEATURE-011 step 10, DEC-077).
   -->
 
   <PropertyGroup>
@@ -21,12 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
-    <!-- LP-9 checks the 3D prompt against the real catalogue (DEC-032). The planner itself never references it. -->
-    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

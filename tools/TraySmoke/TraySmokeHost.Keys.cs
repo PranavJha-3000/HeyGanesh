@@ -20,8 +20,8 @@ internal static partial class TraySmokeHost
         var model = new KeyScreenModel(ring);
         var said = new List<string>();
 
-        failures = Check(model.Keys.Select(k => k.Name).SequenceEqual(new[] { "deepseek", "typesafe", "fish" }) && model.Keys.All(k => model.Status(k.Name) == "missing"),
-            "three keys, each 'missing' to start", failures);
+        failures = Check(model.Keys.Select(k => k.Name).SequenceEqual(new[] { "deepseek", "typesafe", "fish", "gnani" }) && model.Keys.All(k => model.Status(k.Name) == "missing"),
+            "four keys, each 'missing' to start", failures);
         failures = Check(model.NeedsSetup, "with DeepSeek and TypeSafe missing, the screen opens by itself", failures);
 
         said.Add(model.Save("deepseek", "  " + MadeUp + " \r\n"));

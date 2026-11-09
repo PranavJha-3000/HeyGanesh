@@ -645,3 +645,114 @@
 - **Rollback point:** branch `feat/notes-v1` at `79d6a92` (the commit before this step).
 - **Files to restore:** `git checkout 79d6a92 -- src/Intelligence/HeyGanesh.TutorEngine src/Intelligence/HeyGanesh.LessonPlanner src/Experience/HeyGanesh.App tools/TutorSmoke tools/LessonPlannerSmoke tools/TraySmoke .github/workflows AGENTS.md docs/ai`; delete any new file `git status` lists.
 - **Re-check after revert:** TutorSmoke `--assert-prompt`, LessonPlannerSmoke `--assert-prompt` 10, PlannerEval `--assert-drift` 5; the local CI runner reports 22 gates, all exit 0.
+
+## 2026-10-31 · claude-opus-5-5 (FEATURE-009 step 2: lesson card restyle, DEC-062)
+
+- **Change:** the lesson card page moves to the FEATURE-009 tokens (`Page/lesson.css`, `Page/lesson.html`); the card window gets rounded corners and a theme-matched background for the lesson page only (`CardWindow.cs`, `CardNative.cs`); `CardSnapshot` gains `CornerPreference` (`CardSurfaceOptions.cs`, `CardSurface.cs`); LSU-2 gains one row (`tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`). No new dependency; `lesson.js`, the CSP and every element id are unchanged.
+- **Rollback point:** `3e7690e` (HEAD of `feat/notes-v1` before this step), or revert this step's commit.
+- **Files to restore:** `git checkout 3e7690e -- src/Experience/HeyGanesh.LessonSurface/Page/lesson.css src/Experience/HeyGanesh.LessonSurface/Page/lesson.html src/Experience/HeyGanesh.LessonSurface/CardWindow.cs src/Experience/HeyGanesh.LessonSurface/CardNative.cs src/Experience/HeyGanesh.LessonSurface/CardSurface.cs src/Experience/HeyGanesh.LessonSurface/CardSurfaceOptions.cs tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`
+- **Re-check after revert:** build `src/Experience/HeyGanesh.LessonSurface` then `tools/LessonSurfaceSmoke` (sequentially, CS2012); `--assert-source` 20, `--assert-render` 17, `--assert-window` 9, `--assert-security` 4, `--assert-marks` 2; `--demo all --voice timed --snapshot <dir>` shows the cream paper again.
+
+## 2026-10-31 · claude-opus-5-5 (FEATURE-009 step 2c: glass lesson card, DEC-063)
+
+- **Change:** the lesson card window gets DWM Acrylic (`DWMWA_SYSTEMBACKDROP_TYPE` 3, frame extended over the client area, immersive dark mode by the app theme), a black form background and a transparent WebView2 background (`CardWindow.cs`, `CardNative.cs`); `lesson.css` frame colour becomes the glass tint with solid fallbacks; `CardSnapshot.BackdropType` (`CardSurfaceOptions.cs`, `CardSurface.cs`); LSU-2 gains one row (`LessonSurfaceSmokeHost.Window.cs`). Lesson page only; no new dependency.
+- **Rollback point:** `fe4f01d` (step 2 on `feat/apple-look`), or revert this step's commit.
+- **Files to restore:** `git checkout fe4f01d -- src/Experience/HeyGanesh.LessonSurface/CardWindow.cs src/Experience/HeyGanesh.LessonSurface/CardNative.cs src/Experience/HeyGanesh.LessonSurface/CardSurface.cs src/Experience/HeyGanesh.LessonSurface/CardSurfaceOptions.cs src/Experience/HeyGanesh.LessonSurface/Page/lesson.css tools/LessonSurfaceSmoke/LessonSurfaceSmokeHost.Window.cs`
+- **Re-check after revert:** build LessonSurface then LessonSurfaceSmoke (sequentially); `--assert-window` 10, `--assert-render` 17, `--assert-source` 20; a real card is solid again.
+
+## 2026-10-31 · claude-opus-5-5 (FEATURE-009 step 3: 3D scene window restyle, DEC-064)
+
+- **Change:** shared `Page/tokens.css` (new; the token block moves out of `lesson.css`, `lesson.html` links it); the scene page (`scene.html`, `scene.css`, `scene-svg.css` label/highlight lines only, `scene.js` colours read from the tokens) gets the glass frame, solid stage, pill labels; `CardWindow` applies glass and corners to the scene page too; `SceneSnapshot.CornerPreference`/`BackdropType` (`CardSurfaceOptions.cs`, `CardSurface.cs`); LSU-9 gains two rows (`LessonSurfaceSmokeHost.Scene.cs`). No new dependency; vendored files untouched.
+- **Rollback point:** `ac6849a` (step 2c on `feat/apple-look`), or revert this step's commit.
+- **Files to restore:** `git checkout ac6849a -- src/Experience/HeyGanesh.LessonSurface tools/LessonSurfaceSmoke`, then delete `src/Experience/HeyGanesh.LessonSurface/Page/tokens.css` if it remains.
+- **Re-check after revert:** build LessonSurface then LessonSurfaceSmoke (sequentially); `--assert-scene` 19, `--assert-orientation` 3, `--assert-scene-svg` 8, `--assert-render` 17; the scene window is paper again.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-010 step 1: Claude Code plan provider, DEC-065)
+
+- **Change:** new `src/Providers/HeyGanesh.Providers.ClaudeCode` (an `ILlmClient` that runs the `claude` CLI on the person's Claude plan, ported from openclicky, MIT); new `tools/ClaudeCodeSmoke` (fake-CLI rows + one live row); `tools/PlannerEval` gains `--provider claude-code` for `--record` (default stays DeepSeek). Docs: DEC-065, FEATURE-010, ARCHITECTURE, TEST-CHECKLIST, AGENTS.md, HANDOVER. No new dependency; the App Shell, tray and Tutor are untouched.
+- **Rollback point:** `6832a0f` (HEAD of `feat/apple-look`; this step is on `feat/plan-providers`), or revert this step's commit.
+- **Files to restore:** `git checkout 6832a0f -- tools/PlannerEval AGENTS.md docs/ai`, then delete `src/Providers/HeyGanesh.Providers.ClaudeCode` and `tools/ClaudeCodeSmoke`.
+- **Re-check after revert:** build `tools/PlannerEval`; `--assert-record-stub` 9, `--assert-drift` 5.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-010 step 2: Codex plan provider, DEC-066)
+
+- **Change:** `src/Providers/HeyGanesh.Providers.ClaudeCode` gains `CodexLlmClient` (runs `codex exec` on the person's ChatGPT plan) and, in `PlanCli`, a generic `Locate` and openclicky's npm-shim / cmd.exe launcher (so `claude.cmd` and `codex.cmd` installs work); `tools/ClaudeCodeSmoke` gains fake-codex rows CX-1..CX-3, the launcher row CX-5 and `--live-codex` (CX-4); PlannerEval `--provider codex`. Docs: DEC-066, FEATURE-010, TEST-CHECKLIST, AGENTS.md, HANDOVER. No new dependency.
+- **Rollback point:** `e01794f` (step 1 on `feat/plan-providers`), or revert this step's commit.
+- **Files to restore:** `git checkout e01794f -- src/Providers/HeyGanesh.Providers.ClaudeCode tools/ClaudeCodeSmoke tools/PlannerEval AGENTS.md docs/ai`, then delete any new file `git status` lists.
+- **Re-check after revert:** ClaudeCodeSmoke `--assert-args` 15, `--assert-stream` 6, `--assert-errors` 10; PlannerEval `--assert-drift` 5.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011: the whole draw-stage sequence, DEC-067 / DEC-068)
+
+- **Change (whole sequence):** FEATURE-011 steps 1-10 replace the lesson drawing and 3D system with openclicky's drawing stage. Steps 1-9 only add or switch; step 10 deletes the old stack and gets its own entry first.
+- **Rollback point:** `d358484` (HEAD of `feat/plan-providers`, FEATURE-010 step 2). The sequence runs on `claude/adopt-draw-stage-3043c2`, one commit per step, so any step reverts on its own with `git revert <step commit>`.
+- **Re-check after a full revert:** the CI gates as they were at `d358484` (G-13..G-17, G-22 especially); `--lesson` runs the VisualPlan path.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 1: vendor the drawing stage, DEC-067 / DEC-068)
+
+- **Change:** new `src/Experience/HeyGanesh.DrawStage` (content-only project: openclicky's page, prompts, samples and three.js r172, pinned in `VENDOR.md`); new `tools/DrawStageSmoke` (DS-1); one line in `.gitattributes`; gate G-27 in `ci.yml`. Docs: DEC-067, DEC-068, FEATURE-011, TEST-CHECKLIST, CI.md, ARCHITECTURE, AGENTS.md, HANDOVER. Nothing references the new project except the smoke host; no product path changes.
+- **Rollback point:** `f05ceda` (the plan commit), or revert this step's commit.
+- **Files to restore:** delete `src/Experience/HeyGanesh.DrawStage` and `tools/DrawStageSmoke`; `git checkout f05ceda -- .gitattributes .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** `git status` clean; G-26 and the other gates unchanged (none depended on this step).
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 2: the drawing stage window, DEC-069)
+
+- **Change:** `src/Experience/HeyGanesh.DrawStage` gains `DrawStageWindow` (a transparent, click-through, topmost, never-activated, capture-excluded popup over one monitor, hosting the vendored page in WebView2 composition mode on its own STA thread) and `StageThread`; its csproj gains the already-pinned `Microsoft.Web.WebView2` 1.0.4314.35 (the same package and version as LessonSurface, DEC-020), WinForms, and references to ScreenCapture and Abstractions. `tools/DrawStageSmoke` gains DS-2 `--assert-window` and DS-3 `--snapshot`; DS-1 now expects those references. Docs: DEC-069, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER. Nothing outside the stage project and its smoke host references it.
+- **Rollback point:** `a81f785` (step 1), or revert this step's commit.
+- **Files to restore:** `git checkout a81f785 -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`, then delete any new file `git status` lists under those folders.
+- **Re-check after revert:** DS-1 13 PASS, exit 0.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 3: mark check, program time cap, off-page requests, DEC-070)
+
+- **Change:** the first local edit to vendored code: `Page/stage.js` checks every mark the worker returns before painting it, guards the worker's result shape, and stops a program after 20 s of worker time in all; `VENDOR.md` records the edit and the new hash. `DrawStageWindow` answers every request that is not for the page's host with 403 and counts it. `tools/DrawStageSmoke` gains DS-4 `--assert-sandbox` and DS-5 `--assert-marks`; DS-1 checks the edit is in place. Docs: DEC-070, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER.
+- **Rollback point:** `ddd58cf` (step 2), or revert this step's commit.
+- **Files to restore:** `git checkout ddd58cf -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`.
+- **Re-check after revert:** DS-1 13, DS-2 13 PASS; `stage.js` hash equals upstream again (`bde25b57…`).
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 4: DrawStageController, voice clock, close button)
+
+- **Change:** `src/Experience/HeyGanesh.DrawStage` gains `DrawStageController` (what the page is told and when, the page's events, the close button handled), `DrawStageMessages` (message shapes, ported from openclicky) and `DrawStageVoice` (speaks each line in order and tells the page when it starts and ends). The second local edit to vendored code: one rule in `Page/stage.css` hides the Picture, Video and PiP buttons; `VENDOR.md` records it. `DrawStageWindow` implements the controller's surface interface. `tools/DrawStageSmoke` gains DS-6 `--assert-pace` and DS-7 `--demo`; DS-1 checks the CSS edit. Docs: DEC-071, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER. Nothing outside the stage project and its smoke host references it.
+- **Rollback point:** `d04460e` (step 3 and the button decision), or revert this step's commit.
+- **Files to restore:** `git checkout d04460e -- src/Experience/HeyGanesh.DrawStage tools/DrawStageSmoke AGENTS.md docs/ai`.
+- **Re-check after revert:** DS-1 14, DS-4 13, DS-5 3 PASS; `stage.css` hash equals upstream again.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 5: DrawingPlanner, DEC-072)
+
+- **Change:** `src/Intelligence/HeyGanesh.LessonPlanner` gains `DrawingPlanner` (question in, drawing program out, streamed or whole, NONE detected) beside the old `VisualPlanner`, which is unchanged. Its csproj embeds the three vendored prompt files from `HeyGanesh.DrawStage/Page/prompt` as resources (no new reference, no package). `tools/LessonPlannerSmoke` gains LP-14 `--assert-drawing-prompt`, LP-15 `--assert-drawing-stream`, LP-16 `--assert-drawing-none`; CI gate G-14 runs them. Docs: DEC-072, FEATURE-011, TEST-CHECKLIST, CI.md, AGENTS.md, HANDOVER. Nothing calls the new planner yet.
+- **Rollback point:** `93e5232` (step 4), or revert this step's commit.
+- **Files to restore:** `git checkout 93e5232 -- src/Intelligence/HeyGanesh.LessonPlanner tools/LessonPlannerSmoke .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** LessonPlannerSmoke rows LP-1..LP-13 with their usual counts (`--assert-source` 3).
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 6: PlannerEval for programs, DEC-073)
+
+- **Change:** `tools/PlannerEval` scores drawing programs: static checks on the program's `say()` lines and strings (K-2, K-3, K-4, K-8, K-9, K-10, K-11), run checks P-1..P-5 on a hidden drawing stage, and `--record --drawing` through `DrawingPlanner` on every provider; replay re-scores a drawing recording. It now references `HeyGanesh.DrawStage`, whose csproj lets it see the stage's host-script call (InternalsVisibleTo). The third local edit to vendored code: `Page/stage.js` exposes the accepted marks read-only to the host (`VENDOR.md`, DS-1). New rows PE-9 `--assert-program-checks` (offline, CI G-22) and PE-11 `--assert-program-run` (local); PE-10 is the owner's live recording. Docs: DEC-073, FEATURE-011, TEST-CHECKLIST, CI.md, AGENTS.md, HANDOVER. The VisualPlan checks K-1..K-12 and their rows are unchanged.
+- **Rollback point:** `aced38a` (step 5), or revert this step's commit.
+- **Files to restore:** `git checkout aced38a -- tools/PlannerEval tools/DrawStageSmoke src/Experience/HeyGanesh.DrawStage .github/workflows/ci.yml AGENTS.md docs/ai`; delete any file this step added (`git status` lists them).
+- **Re-check after revert:** PlannerEval `--assert-set` 7, `--assert-checks` 26, `--assert-record-stub` 9, `--assert-drift` 5; DS-1 15; `stage.js` hash equals step 5's again.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 7: the App Shell's lesson leg draws on the stage, DEC-074)
+
+- **Change:** the App Shell's lesson leg (`--lesson` and routed lessons) asks `DrawingPlanner` and draws on `DrawStageWindow` through `DrawStageController` + `DrawStageVoice`, in place of `VisualPlanner` -> `LessonTurn` -> cards. A drawing stays up; the next question asked over it, or a click on a figure's part, is a follow-up (keep() or redraw); NONE or no program hands the turn to the Tutor; the close button ends the drawing. Ctrl+Alt is no longer held for a 30 s click wait. Files: `src/Experience/HeyGanesh.App/ShellHost.Lesson.cs`, `ShellHost.cs`, `ShellHost.Session.cs`, `ShellHost.Args.cs`, `NativeFns.cs`, a new `ShellHost.Drawing.cs`, the App csproj (a DrawStage reference); `tools/TraySmoke` gains the offline row SH-29 `--assert-drawing-leg` (CI G-24). Docs: DEC-074, FLOW, FEATURE-011, TEST-CHECKLIST, CI.md, AGENTS.md, HANDOVER. The old VisualPlanner/LessonTurn code stays in place, unused by the shell (deleted in step 10); the Tray's replay of old lessons is unchanged (step 9).
+- **Rollback point:** `88368e6` (step 6), or revert this step's commit.
+- **Files to restore:** `git checkout 88368e6 -- src/Experience/HeyGanesh.App tools/TraySmoke .github/workflows/ci.yml AGENTS.md docs/ai`; delete `src/Experience/HeyGanesh.App/ShellHost.Drawing.cs` and any other file this step added (`git status` lists them).
+- **Re-check after revert:** `dotnet build src/Experience/HeyGanesh.App -c Debug -warnaserror` -> 0/0; SH-18 with its old header line (`3D: 3 models, click a part to ask`), exit 12; TraySmoke `--assert-source` 8, `--assert-session` 5; LessonTurnSmoke `--assert-turn` 4.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 8: the Turn Router asks intent only, DEC-075)
+
+- **Change:** `src/Intelligence/HeyGanesh.TurnRouter` loses the dimension and model questions and every 3D field (`LessonDimension`, `RouteModel`, `RouteRequest.Models`/`Schematics`, `TurnRoute.Dimension`/`ModelId`/`Schematic`/scores, `LessonCanvas`, `LegChoice.Canvas`/`ModelId`). The App Shell's `ShellHost.Route.cs` stops offering models and prints the shorter route line; `ShellHost.Lesson.cs` drops a stale comment; the App csproj comment is updated. `tools/TurnRouterSmoke` TR-2/3/4/6 rewritten for one question. Docs: DEC-075, FLOW, ARCHITECTURE, FEATURE-011, TEST-CHECKLIST, AGENTS.md, HANDOVER.
+- **Rollback point:** `e3a8abe` (step 7), or revert this step's commit.
+- **Files to restore:** `git checkout e3a8abe -- src/Intelligence/HeyGanesh.TurnRouter tools/TurnRouterSmoke src/Experience/HeyGanesh.App AGENTS.md docs/ai`.
+- **Re-check after revert:** TurnRouterSmoke TR-2 15, TR-3 15, TR-4 7, TR-6 11; `dotnet build tools/TraySmoke -c Debug -warnaserror` 0/0.
+
+## 2026-11-07 · claude-opus-5-5 (FEATURE-011 step 9: notes and replay keep the drawing, DEC-076)
+
+- **Change:** `src/Foundation/HeyGanesh.Notes/TurnNote.cs` gains `StoredDrawing` (the `drawing:WxH` format); the App Shell stores a drawn lesson's whole program (`DrawingTurn.Drawn`, `TurnRecord.Drawing`) and `ShellHost.Replay.cs` replays a stored drawing on a stage window instead of validating a VisualPlan for the cards (`ShellHost.cs` hands it the cursor monitor); the tray's `RecentLessonsModel`/`RecentLessons` offer Replay only for a drawing and explain older rows. `tools/TraySmoke` RL-1..RL-4, NB-1, SH-29 and its csproj (no fixtures link); `tools/NotesSmoke` NS-2. Docs: DEC-076, FLOW, ARCHITECTURE, FEATURE-011, TEST-CHECKLIST, CI.md, ci.yml (G-24 gains `--assert-replay`), AGENTS.md, HANDOVER. No schema change: notes written by this step are plain text an older build lists but cannot replay.
+- **Rollback point:** step 8's commit (`4a20772`), or revert this step's commit.
+- **Files to restore:** `git checkout 4a20772 -- src/Foundation/HeyGanesh.Notes src/Experience/HeyGanesh.App src/Experience/HeyGanesh.Tray tools/TraySmoke tools/NotesSmoke .github/workflows/ci.yml AGENTS.md docs/ai`.
+- **Re-check after revert:** TraySmoke `--assert-recent-model` 8, `--assert-replay-prepare` 4, `--assert-drawing-leg` 14; NotesSmoke `--assert-store` 8.
+
+## 2026-11-09 · claude-opus-5-5 (FEATURE-011 step 10: the old lesson stack is deleted, DEC-077)
+
+- **Change:** deletes `src/Intelligence/HeyGanesh.VisualLessonEngine`, `src/Intelligence/HeyGanesh.PartLibrary`, `src/Experience/HeyGanesh.LessonSurface`, `src/Experience/HeyGanesh.LessonSession` and their hosts `tools/LessonSmoke`, `tools/LessonSurfaceSmoke`, `tools/LessonTurnSmoke`, `tools/PartLibrarySmoke`, and their `HeyGanesh.sln` entries. `src/Intelligence/HeyGanesh.LessonPlanner` keeps only `DrawingPlanner` (and `EarlierTurn`); `VisualPlanner`, `PlannerPrompt`, `PlanStreamScanner` and the VisualPlan types go. `tools/LessonPlannerSmoke` keeps LP-1 and the drawing rows; `tools/PlannerEval` keeps only the drawing path (`seeds.json`, the VisualPlan checks and the golden-lesson link go; `--record` always draws). The App references LessonPlanner directly instead of through LessonSession, and drops PartLibrary. `installer/build.ps1` checks for `DrawStagePage` instead of `LessonPage`. ci.yml loses G-13, G-15, G-16, G-17 and trims G-14 and G-22. Docs: DEC-077, AGENTS.md, ARCHITECTURE, FLOW, TEST-CHECKLIST (the dead rows retired, saying so), CI.md, FEATURE-011, HANDOVER.
+- **Rollback point:** step 9's commit (`12080aa`), or revert this step's commit. Nothing on disk changes shape: notes, keys and the tray's settings are untouched.
+- **Files to restore:** `git revert <step 10 commit>` brings every deleted project back whole; a partial restore is `git checkout 12080aa -- src tools installer HeyGanesh.sln .github AGENTS.md docs/ai`.
+- **Re-check after revert:** `dotnet build HeyGanesh.sln -c Debug -warnaserror` 0/0; ci.yml G-13..G-17 and G-22 as before (LessonSmoke `--assert-source` 6, PlannerEval `--assert-checks` 26).

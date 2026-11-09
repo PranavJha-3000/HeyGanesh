@@ -12,9 +12,9 @@
       * DEC-011 — the Screen Overlay reports a failure but "the future shell decides what the user
         sees". The shell is that decision-maker.
 
-    No direct PackageReference, like every module. One package arrives TRANSITIVELY since DEC-027:
-    Microsoft.Web.WebView2, through LessonSession -> LessonSurface, the single NuGet exception DEC-020/
-    DEC-025 already accepted for the lesson cards. The core modules (hotkey, capture, ES, Vision) stay
+    No direct PackageReference, like every module. One package arrives TRANSITIVELY: Microsoft.Web.WebView2,
+    through DrawStage since FEATURE-011 step 10 (DEC-077), the single NuGet exception DEC-020/DEC-025 accepted
+    for the lesson surface and DEC-069 kept for the drawing stage. The core modules (hotkey, capture, ES, Vision) stay
     zero-NuGet; SH-2 still greps this file for a direct reference. WinUI 3 / Windows App SDK remains the
     eventual shell direction (DEC-011) and is deferred again by DEC-012 — nothing in the pipeline
     renders a window today (the overlay already is the UI, and it is Win32), and taking the SDK here
@@ -62,12 +62,14 @@
 
   <ItemGroup>
     <!--
-      The lesson leg (DEC-027): LessonSession runs one lesson turn (plan -> cards -> play); the shell
-      only maps the verdict to grounding and hands Voice in as the speaker. OpenAiCompat is the adapter
-      CreateLessonPlanner() builds the lesson model from (DeepSeek, DEEPSEEK_API_KEY via
-      EnvironmentSecretStore); it brings Providers.Core and Security with it.
+      The lesson leg (FEATURE-011 step 7, DEC-074): it draws with DrawingPlanner (LessonPlanner) on DrawStageWindow,
+      with DrawStageController and DrawStageVoice; the shell only maps the verdict to grounding and hands Voice in as
+      the speaker. Since step 10 (DEC-077) LessonPlanner is referenced directly: LessonSession, which used to bring
+      it, is deleted. OpenAiCompat is the adapter the lesson model is built from (DeepSeek, through the key ring);
+      it brings Providers.Core and Security with it.
     -->
-    <ProjectReference Include="..\HeyGanesh.LessonSession\HeyGanesh.LessonSession.csproj" />
+    <ProjectReference Include="..\..\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
+    <ProjectReference Include="..\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
     <!-- The key commands use Security's KeyRing directly (DEC-045), so the reference is stated, not inherited. -->
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
@@ -77,11 +79,9 @@
 
   <ItemGroup>
     <!--
-      The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught; PartLibrary gives it the
-      models' titles and subjects to offer. Both are pure policy/data with no NuGet.
+      The routing leg (DEC-036): TurnRouter asks Jev how a turn is taught (intent only since DEC-075).
     -->
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.TurnRouter\HeyGanesh.TurnRouter.csproj" />
-    <ProjectReference Include="..\..\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -93,7 +93,7 @@
     <InternalsVisibleTo Include="HeyGanesh.Tools.TraySmoke" />
   </ItemGroup>
 
-  <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
+  <!-- Same MSB3277 trap as DrawStage: the WebView2 package's WPF reference flows to every consumer. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />

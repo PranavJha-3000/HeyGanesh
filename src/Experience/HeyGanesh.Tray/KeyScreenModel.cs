@@ -35,6 +35,7 @@ internal sealed class KeyScreenModel
         "deepseek" => "DeepSeek: lessons, explanations, and the Vision check (required)",
         "typesafe" => "TypeSafe: finding things on screen and choosing how to teach (required)",
         "fish" => "Fish Audio: the spoken voice (optional)",
+        "gnani" => "Gnani: Prisma listening and Timbre voice, used before the Gateway and Fish when set (optional)",
         _ => name,
     };
 

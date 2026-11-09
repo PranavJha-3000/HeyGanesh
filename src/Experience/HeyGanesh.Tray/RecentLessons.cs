@@ -98,7 +98,7 @@ internal sealed class RecentLessons : Form
 
     private async Task ReplayAsync(LessonRow row)
     {
-        if (_replaying || _model.PlanJson(row.Id) is not { } plan)
+        if (_replaying || _model.StoredLesson(row.Id) is not { } plan)
         {
             return;
         }

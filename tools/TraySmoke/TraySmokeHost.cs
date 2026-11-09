@@ -29,6 +29,7 @@ internal static partial class TraySmokeHost
                 "--assert-install" => RunAssertInstall(args.Length > 1 ? args[1] : null),
                 "--assert-notes-map" => RunAssertNotesMap(),
                 "--assert-session" => RunAssertSession(),
+                "--assert-drawing-leg" => await RunAssertDrawingLegAsync(),
                 "--assert-notes-shell" => RunAssertNotesShell(),
                 "--assert-recent-model" => RunAssertRecentModel(),
                 "--assert-replay-prepare" => RunAssertReplayPrepare(),
@@ -67,9 +68,10 @@ internal static partial class TraySmokeHost
         Console.WriteLine("  --assert-install [package]  LOCAL: install.ps1 / uninstall.ps1 from a built package into temp folders and throwaway HKCU keys; exit 0");
         Console.WriteLine("  --assert-notes-map    the shell's turn-to-note mapping, every case, through a real temporary store (DEC-059); exit 0");
         Console.WriteLine("  --assert-session      the shell's memory of this run: only taught turns, the newest 3, a line each (DEC-061); exit 0");
-        Console.WriteLine("  --assert-recent-model   what Recent lessons lists and says: newest first, replayable only with a stored plan, details, delete, clear (DEC-060); exit 0");
-        Console.WriteLine("  --assert-replay-prepare a stored plan is validated again before it may play; bad ones refused with a reason; exit 0");
-        Console.WriteLine("  --assert-replay         LOCAL: a stored lesson replays on the real cards with no model; a bad one opens nothing; exit 0");
+        Console.WriteLine("  --assert-drawing-leg  the shell's drawing leg over a scripted model and a fake page: first lesson, keep(), redraw, NONE, close, clicks (DEC-074); exit 0");
+        Console.WriteLine("  --assert-recent-model   what Recent lessons lists and says: newest first, replayable only with a stored drawing, details, delete, clear (DEC-060/076); exit 0");
+        Console.WriteLine("  --assert-replay-prepare a stored drawing is read back before anything opens; older (cards) rows and damaged ones refused with a reason; exit 0");
+        Console.WriteLine("  --assert-replay         a stored drawing replays on a (fake) stage with no model, spoken in order; a refused one opens nothing; exit 0");
         Console.WriteLine("  --assert-recent-window  LOCAL: the real Recent lessons window from the tray: list, replay pauses Ctrl+Alt, delete, clear; exit 0");
         Console.WriteLine("  --assert-notes-shell  LOCAL: the real HeyGanesh.App.exe with temporary data folders: header, --no-notes, no note on a key error, a broken db kept; refuses to run with keys; exit 0");
         return 0;

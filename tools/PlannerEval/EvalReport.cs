@@ -19,7 +19,7 @@ internal static class EvalReport
     public static JsonObject Summarize(string setVersion, string model, IReadOnlyList<CaseRun> runs)
     {
         var perCheck = new JsonObject();
-        foreach (var id in runs.SelectMany(r => r.Checks.Keys).Distinct().OrderBy(k => int.Parse(k[2..])))
+        foreach (var id in runs.SelectMany(r => r.Checks.Keys).Distinct().OrderBy(k => k[0]).ThenBy(k => int.Parse(k[2..])))
         {
             var applicable = runs.Where(r => r.Checks.ContainsKey(id)).ToList();
             perCheck[id] = new JsonObject { ["passed"] = applicable.Count(r => r.Checks[id]), ["of"] = applicable.Count };

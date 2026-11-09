@@ -21,14 +21,15 @@ Subsystems, and the seams between them are load-bearing:
 | Element Selection (PRIMARY) | `src/Perception/HeyGanesh.ElementSelection/` | PRIMARY coordinate-detection path — UIA enumeration (plus up to 40 filtered lines of OCR'd screen text, DEC-039) and a Jev choice over a ranked manifest; the entry point is `SelectAsync(question, target?, ct)`, not Vision's `LocateAsync`. Vision is the fallback. |
 | Vision / Coordinate Detection (FALLBACK) | `src/Perception/HeyGanesh.Vision/` | UI element locating and screen-space coordinate detection. The code sends ModelId `deepseek-flash` (VisionOptions.ModelId). Do not conflate this with a display name; the prior label "DeepSeek V4.1 Flash" in this file is a descriptive reference, not the ModelId value sent to the provider. |
 | **Jev choice model** | **Integrated within `ElementSelection`** | **The Jev choice model routes Element Selection's ranked UIA candidates (`c001..`) to a selection; implemented via `IJevClient` / `TypeSafeJevClient` with `ModelId "jev-1.13.0"`; not a separate assembly. |
-| Turn Router | `src/Intelligence/HeyGanesh.TurnRouter/` | One Jev call per turn decides point / explain / lesson, 2D or 3D, and the catalogue model (DEC-035), or a schematic when no listed model fits (DEC-051); below 0.5 or an id never offered is "no route". The App Shell routes each turn with it when `TYPESAFE_API_KEY` is set (DEC-036); `--lesson` / `--no-route` skip it. |
+| Turn Router | `src/Intelligence/HeyGanesh.TurnRouter/` | One Jev call per turn decides point / explain / lesson (DEC-035); since DEC-075 the drawing program chooses 2D or 3D, so the router asks nothing more. Below 0.5 or an id never offered is "no route". The App Shell routes each turn with it when `TYPESAFE_API_KEY` is set (DEC-036); `--lesson` / `--no-route` skip it. |
 | Tutor Engine | `src/Intelligence/HeyGanesh.TutorEngine/` | Academic/technical teaching layer: question (+ optional bounded, untrusted screen grounding/visuals) → explanation. The only component allowed to answer the user; no screen actuation; provider seam fakes-verified + one live provider (DeepSeek `deepseek-flash`) behind `TutorClientFactory.CreateDeepSeek` (DEC-015/DEC-017). |
-| Visual Lesson Engine | `src/Intelligence/HeyGanesh.VisualLessonEngine/` + `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.LessonSurface/` + `src/Experience/HeyGanesh.LessonSession/` + `src/Intelligence/HeyGanesh.PartLibrary/` | VisualPlan v1 contract (parse/validate/degrade, DEC-023), `PlotExpression`, `LessonPlayer` runtime, the WebView2 card surface (DEC-020/DEC-025), the `VisualPlanner` (DEC-026) and `LessonTurn` (plan → cards → play, DEC-027); the 3D scene contract (VisualPlan 1.1, DEC-028), the Part Library of computed 3D teaching models (DEC-029), the Babylon.js scene window (DEC-030), click-a-part follow-ups (DEC-031) and a planner prompt that offers 3D (DEC-032). Wired into the App Shell behind `--lesson`, 3D included (DEC-033); the lesson model is built from `DEEPSEEK_API_KEY` or the leg reports its skip (FEATURE-007). |
+| Visual Lesson Engine | `src/Intelligence/HeyGanesh.LessonPlanner/` + `src/Experience/HeyGanesh.DrawStage/` | A lesson is a spoken drawing (FEATURE-011): `DrawingPlanner` asks the lesson model for a program in openclicky's drawing language (DEC-072), and the drawing stage runs it in a sandboxed worker with a mark check before the pen, paced by the speech (DEC-067..DEC-071). The App Shell's `--lesson` and routed lessons draw on it (DEC-074); the program picks 2D or 3D itself (DEC-075). The lesson model is built from the DeepSeek key or the leg reports its skip. The VisualPlan stack before it (VisualLessonEngine, LessonSurface cards and the Babylon scene, Part Library, LessonSession) was deleted in step 10 (DEC-077). |
 | Screen Overlay | `src/Platform/HeyGanesh.ScreenOverlay/` | Per-monitor click-through visual overlay window with capture exclusion. |
 | Voice Pipeline | `src/Experience/HeyGanesh.Voice/` | Speech-to-Text (STT) and Text-to-Speech (TTS) voice pipeline. |
-| Notes Persistence | `src/Foundation/HeyGanesh.Notes/` | The notes store (DEC-058): one row per turn (question, leg, route, verdict in words, the Tutor's answer or the lesson plan's JSON, follow-up picks, outcome) in `%LOCALAPPDATA%/HeyGanesh/notes.db`, through Windows' own `winsqlite3.dll` by P/Invoke (zero NuGet). Never screenshots, screen text or keys. WAL + busy timeout so the tray and the console exe can both write; schema in `user_version`; an unreadable file is moved aside, a newer schema refused. Since step 12b (DEC-059) the App Shell, and so the tray, records each taught turn (not key errors or cancelled turns), with the lesson's exact plan JSON (`PlanResult.PlanJson`) for replay; header line `notes :`, `--no-notes` turns it off; a store that cannot open or a failed write is a line, never a failed turn. |
-| Tray | `src/Experience/HeyGanesh.Tray/` | Hey Ganesh as a desktop app (DEC-052): a notification-area icon with no console. It runs the App Shell's own composition through `ShellHost.RunAsync(args, stop, hookLive)`; Quit stops it like Ctrl+C. The shell's lines go to `logs/shell-<stamp>.log` (newest 5 kept); one tray per session (a second launch exits 3). Console-only flags (`--once`, `--help`, key commands) stay on `HeyGanesh.App.exe`. The key screen (DEC-053, "Keys…", and by itself when the DeepSeek or TypeSafe key is missing) stores keys through the key ring; Ctrl+Alt is refused while it is open. "Start at login" (DEC-054) writes or removes the per-user Run value `HeyGanesh`, only when chosen. "Recent lessons…" (DEC-060) lists saved turns and replays a stored lesson with no model call (validated again, screen marks dropped); Ctrl+Alt is paused while it plays. |
+| Notes Persistence | `src/Foundation/HeyGanesh.Notes/` | The notes store (DEC-058): one row per turn (question, leg, route, verdict in words, the Tutor's answer or the drawn lesson's program (`drawing:WxH` + program, DEC-076; older rows hold VisualPlan JSON), follow-up picks, outcome) in `%LOCALAPPDATA%/HeyGanesh/notes.db`, through Windows' own `winsqlite3.dll` by P/Invoke (zero NuGet). Never screenshots, screen text or keys. WAL + busy timeout so the tray and the console exe can both write; schema in `user_version`; an unreadable file is moved aside, a newer schema refused. Since step 12b (DEC-059) the App Shell, and so the tray, records each taught turn (not key errors or cancelled turns), with the drawn lesson's whole program for replay (DEC-076); header line `notes :`, `--no-notes` turns it off; a store that cannot open or a failed write is a line, never a failed turn. |
+| Tray | `src/Experience/HeyGanesh.Tray/` | Hey Ganesh as a desktop app (DEC-052): a notification-area icon with no console. It runs the App Shell's own composition through `ShellHost.RunAsync(args, stop, hookLive)`; Quit stops it like Ctrl+C. The shell's lines go to `logs/shell-<stamp>.log` (newest 5 kept); one tray per session (a second launch exits 3). Console-only flags (`--once`, `--help`, key commands) stay on `HeyGanesh.App.exe`. The key screen (DEC-053, "Keys…", and by itself when the DeepSeek or TypeSafe key is missing) stores keys through the key ring; Ctrl+Alt is refused while it is open. "Start at login" (DEC-054) writes or removes the per-user Run value `HeyGanesh`, only when chosen. "Recent lessons…" (DEC-060) lists saved turns and replays a stored drawing on a stage window with no model call (DEC-076; a lesson from before the stage says it cannot be replayed); Ctrl+Alt is paused while it plays. |
 | API key security proxy | `src/Foundation/HeyGanesh.Security/` (`KeyRing`) | One place for provider keys (DEC-045/DEC-046): Windows Credential Manager first, the environment variable as fallback, reported by presence/length/source only. App Shell `--keys`, `--set-key <name>`, `--remove-key <name>`. The shell's Jev, Vision, Fish, lesson and router clients read through it per request; the Tutor still reads `DEEPSEEK_API_KEY` until step 9. |
+| Plan providers (Claude Code, Codex) | `src/Providers/HeyGanesh.Providers.ClaudeCode/` | `ILlmClient`s on the person's Claude plan (DEC-065) and ChatGPT plan (`CodexLlmClient`, `codex exec`, not streamed, DEC-066): runs the `claude` CLI headless per call (`-p`, stream-json, no tools, no session, temp folder), with API-key and nesting variables stripped, so no key is needed. Ported from openclicky (MIT). Only PlannerEval `--record --provider claude-code|codex` uses them so far (FEATURE-010). |
 
 Canonical architecture definition: `docs/ai/ARCHITECTURE.md`. Interaction flow: `docs/ai/FLOW.md`.
 
@@ -145,70 +146,32 @@ dotnet run --project tools/TutorSmoke -c Debug -- --assert-tutor-payload
 # (the offline shape); with the key it prints the live TutorResult and exits 0.
 dotnet run --project tools/TutorSmoke -c Debug -- --live-explain "what does git rebase actually do"
 
-# Visual Lesson Engine verification host (VisualPlan v1 contract, FEATURE-007 Phase 1 -- offline, no key,
-# no renderer). Build library and host SEQUENTIALLY (CS2012). Read exit codes from the built EXE.
-dotnet build src/Intelligence/HeyGanesh.VisualLessonEngine -c Debug
-dotnet build tools/LessonSmoke -c Debug
-tools/LessonSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSmoke.exe --assert-source
-#   -> 6 PASS, exit 0   (also: --assert-parse 9, --assert-limits 20, --assert-refs 15, --assert-degrade 7, --assert-fixtures 6)
-#   playback (fake canvas + gated fake speaker): --assert-play 5, --assert-play-degraded 5, --assert-controls 11, --assert-plot 16, --assert-grounded 6, --assert-scene3d 22 (schema 1.1 3D contract, DEC-028), --assert-schematic 22 (schema 1.2 schematics, DEC-048/DEC-050)
-
-# Lesson Surface host (real WebView2 cards on the desktop; needs an interactive session, no key).
-# Build library then host SEQUENTIALLY. Cards are capture-excluded: use --snapshot to see them as PNGs.
-dotnet build src/Experience/HeyGanesh.LessonSurface -c Debug
-dotnet build tools/LessonSurfaceSmoke -c Debug
-tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --assert-render
-#   -> 17 PASS, exit 0   (also: --assert-source 20, --assert-window 9, --assert-security 4, --assert-marks 2)
-#   3D scene window (DEC-030): --assert-scene-math 7 (offline), --assert-scene 19, --assert-scene-idle 4,
-#   --assert-orientation 3, --assert-scene-nowebgl 8, --assert-scene-svg 8 (no-WebGL drawing, DEC-034), --assert-scene-schematic 10 (a lesson's schematic, DEC-050);
-#   manual: --snapshot-3d <dir> [--no-webgl], --demo-3d --voice sapi
-#   click a part to ask (DEC-031): --assert-pick 9 -- MOVES THE REAL CURSOR; run with nobody using the mouse
-#   a lesson schematic's parts too (DEC-057): --assert-pick-schematic 4 -- MOVES THE REAL CURSOR
-tools/LessonSurfaceSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonSurfaceSmoke.exe --demo all --voice sapi
-#   -> the three golden lessons drawn and spoken on screen (manual row LSU-6)
-
-# Lesson Planner host (offline: recording fake ILlmClient + recorded answers, no key). Build library then host.
+# Lesson Planner host (the drawing planner, DEC-072; offline: recording fake ILlmClient + scripted answers, no key). Build library then host.
 dotnet build src/Intelligence/HeyGanesh.LessonPlanner -c Debug
 dotnet build tools/LessonPlannerSmoke -c Debug
-tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonPlannerSmoke.exe --assert-prompt
-#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-multimodal 5, --assert-plan 5, --assert-repair 6, --assert-errors 3, --assert-followup 2, --assert-hardening 7, --assert-prompt-3d 10, --assert-stream 14, --assert-prompt-schematic 7, --assert-earlier 7)
-
-# Lesson Turn host (one lesson turn: fake model + fake or REAL cards, no key; LT-6/LT-7 need an interactive desktop).
-# Build library then host SEQUENTIALLY (CS2012). The App Shell carries no fakes (DEC-012): this host is where the turn is tested.
-dotnet build src/Experience/HeyGanesh.LessonSession -c Debug
-dotnet build tools/LessonTurnSmoke -c Debug
-tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --assert-turn
-#   -> 4 PASS, exit 0   (also: --assert-source 4, --assert-turn-degraded 4, --assert-turn-rejected 2, --assert-turn-errors 6, --assert-turn-surface 6, --assert-followup-pick 15, --assert-turn-stream 11)
-#   manual: --demo-pick --voice sapi   (the engine lesson, then click parts to ask about them, same window; LT-9)
-tools/LessonTurnSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonTurnSmoke.exe --demo-turn --voice sapi
-#   -> the whole turn drawn and spoken on screen (manual row LT-7)
-
-# Part Library host (3D teaching models, DEC-029 -- offline, no key, no renderer). Build library then host SEQUENTIALLY (CS2012).
-dotnet build src/Intelligence/HeyGanesh.PartLibrary -c Debug
-dotnet build tools/PartLibrarySmoke -c Debug
-tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --assert-physics
-#   -> 19 PASS, exit 0   (also: --assert-source 5, --assert-library 20, --assert-catalog 6, --assert-schematic 7)
-tools/PartLibrarySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PartLibrarySmoke.exe --dump all
-#   -> plain-text review of every model's parts and descriptions (manual row PL-5; no model is Reviewed yet)
+tools/LessonPlannerSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.LessonPlannerSmoke.exe --assert-drawing-prompt
+#   -> 10 PASS, exit 0   (also: --assert-source 3, --assert-drawing-stream 5, --assert-drawing-none 4; the VisualPlan rows were retired, DEC-077)
 
 # Turn Router host (DEC-035 -- offline: recording fake Jev client, scripted answers, no key). Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Intelligence/HeyGanesh.TurnRouter -c Debug
 dotnet build tools/TurnRouterSmoke -c Debug
 tools/TurnRouterSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TurnRouterSmoke.exe --assert-request
-#   -> 15 PASS, exit 0   (also: --assert-source 3, --assert-map 15, --assert-gate 7, --assert-errors 5, --assert-legs 11; a 3D schematic route, DEC-051)
+#   -> 11 PASS, exit 0   (also: --assert-source 3, --assert-map 8, --assert-gate 5, --assert-errors 5, --assert-legs 7; intent only, DEC-075)
 
-# Planner evaluation set (DEC-043 -- 30 questions + automatic checks K-1..K-12; offline, recording fake model, no key).
+# Planner evaluation set (DEC-043 -- 30 questions; drawing programs scored since DEC-073, only drawings since DEC-077; offline, recording fake model, no key).
 dotnet build tools/PlannerEval -c Debug
-tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --assert-checks
-#   -> 26 PASS, exit 0   (also: --assert-set 7, --assert-record-stub 9, --assert-drift 5)
+tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --assert-program-checks
+#   -> 28 PASS, exit 0   (also: --assert-set 6, --assert-record-stub 10, --assert-drift 5; local, a hidden stage: --assert-program-run 12)
+#   live drawings (owner, PE-10): --record <dir> --provider claude-code --cases E-01,E-03  (--drawing is still accepted)
 # Live recording (DEC-044, owner): needs DEEPSEEK_API_KEY (presence/length only); without it: KEY MISSING, exit 12.
 tools/PlannerEval/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.PlannerEval.exe --record --cases E-01,E-03
 #   -> per-case lines + report.txt under %LOCALAPPDATA%/HeyGanesh/eval/<stamp>; then --replay <dir> [--baseline <dir>] offline
 
-# App Shell lesson leg (DEC-027): --lesson teaches with drawn, spoken cards instead of the Tutor's prose.
+# App Shell lesson leg (DEC-027; on the drawing stage since DEC-074, the cards deleted in DEC-077): --lesson teaches with a spoken drawing over the screen instead of the Tutor's prose.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --lesson --question "x"
 #   keys unset -> header 'lesson : ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING ...', KEY ERROR (Element Selection), exit 12 (SH-18)
-#   with keys: 3D lessons + click-to-ask follow-ups (30 s click wait; Ctrl+Alt refused meanwhile) -- live row SH-20
+#   with keys: the drawing stays up; ask over it (Ctrl+Alt) or click a part for a follow-up, x closes it; NONE -> the Tutor -- live row SH-28
+#   the leg's wiring, offline (scripted model, fake page): TraySmoke --assert-drawing-leg -> 14 PASS (SH-29, CI G-24)
 # Keys (DEC-045): one key ring, Credential Manager first, then the environment; values are never printed.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --keys
 #   -> deepseek / typesafe / fish: MISSING or "present (N chars, <source>)", exit 0
@@ -218,9 +181,9 @@ dotnet run --project tools/SecretSmoke -c Debug -- --assert-keyring
 # Tray (DEC-052): the app with no console. Build the host (it builds the tray and the shell first), read its exit codes.
 dotnet build tools/TraySmoke -c Debug -warnaserror
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-source
-#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key), --assert-notes-map 6, --assert-session 5, --assert-recent-model 8, --assert-replay-prepare 4 offline; --assert-notes-shell 6 (the real console exe, no keys); local-only, real hook for a few seconds: --assert-stop 6, --assert-tray 10, --assert-run 8,
+#   -> 8 PASS, exit 0   (also: --assert-log 7, --assert-keys-model 13, --assert-startup 10 (a throwaway HKCU key), --assert-notes-map 6, --assert-session 5, --assert-drawing-leg 15 (the shell's drawing leg, DEC-074), --assert-recent-model 8, --assert-replay-prepare 4, --assert-replay 6 (a stored drawing on a fake stage, DEC-076) offline; --assert-notes-shell 6 (the real console exe, no keys); local-only, real hook for a few seconds: --assert-stop 6, --assert-tray 10, --assert-run 8,
 #   --assert-keys-window 11 (shows the key window), --assert-keys-pause 3 (PRESSES Ctrl+Alt once), --assert-startup-menu 7,
-#   --assert-replay 4 (shows the lesson windows), --assert-recent-window 11)
+#   --assert-recent-window 12)
 #   by hand: src/Experience/HeyGanesh.Tray/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tray.exe  (icon menu: status, keys, Open log folder, Quit)
 # Installer (DEC-055): per-user, no admin. Build the package, then install it on a PC (or run the round trip locally).
 powershell -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
@@ -228,11 +191,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build.ps1
 tools/TraySmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.TraySmoke.exe --assert-install
 #   -> 16 PASS, exit 0 (temp folders and throwaway HKCU keys; starts the installed tray once)
 #   real install (owner): powershell -NoProfile -ExecutionPolicy Bypass -File artifacts\installer\install.ps1
+# Claude Code plan provider (DEC-065): offline rows run the host as a fake `claude`; --live uses the real CLI on your plan.
+# Build library then host SEQUENTIALLY (CS2012).
+dotnet build src/Providers/HeyGanesh.Providers.ClaudeCode -c Debug
+dotnet build tools/ClaudeCodeSmoke -c Debug
+tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.ClaudeCodeSmoke.exe --assert-args
+#   -> 15 PASS, exit 0   (also: --assert-stream 6, --assert-errors 10)
+tools/ClaudeCodeSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.ClaudeCodeSmoke.exe --live "In one sentence, what is torque?"
+#   -> LIVE OK with timings, tokens and the API-equivalent cost; signed out -> LIVE FAILED (AuthFailed), exit 12 (sign in: run `claude`, then /login)
+#   the eval on your plan: PlannerEval.exe --record <dir> --provider claude-code|codex [--model sonnet] --cases E-01,E-03
+# Codex (DEC-066): --assert-codex-args 11, --assert-codex-run 4, --assert-codex-errors 9, --assert-launch 4 (the .cmd launch), offline.
+#   --live-codex "hi" -> LIVE OK; needs `npm i -g @openai/codex` then `codex login` (not installed: exit 1, signed out: exit 12)
+# Drawing stage (FEATURE-011, DEC-067/DEC-068): openclicky's draw-stage page + three.js r172, vendored and pinned in VENDOR.md.
+# Steps 1-4: the page, its window, its sandbox, the controller and speech clock; the App Shell's lesson leg draws on it since step 7 (DEC-074). Build library then host SEQUENTIALLY (CS2012).
+dotnet build src/Experience/HeyGanesh.DrawStage -c Debug
+dotnet build tools/DrawStageSmoke -c Debug
+tools/DrawStageSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.DrawStageSmoke.exe --assert-source
+#   -> 16 PASS, SOURCE AUDIT OK, exit 0   (CI G-27)
+#   local, interactive desktop (the real stage window, DEC-069): --assert-window 13; --snapshot <dir> draws two samples as PNGs (review by eye)
+#   sandbox and mark check (DEC-070), local: --assert-sandbox 13 (about 40 s), --assert-marks 3
+#   controller + speech clock (DEC-071), local: --assert-pace 8; by hand: --demo rocket.js --voice sapi
 # Notes store (DEC-058): offline, temporary databases, Windows' own winsqlite3. Build library then host SEQUENTIALLY (CS2012).
 dotnet build src/Foundation/HeyGanesh.Notes -c Debug
 dotnet build tools/NotesSmoke -c Debug
 tools/NotesSmoke/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.Tools.NotesSmoke.exe --assert-store
-#   -> 8 PASS, exit 0   (also: --assert-source 4, --assert-migrate 4, --assert-concurrent 3, --assert-corrupt 2, --assert-retention 3)
+#   -> 9 PASS, exit 0   (also: --assert-source 4, --assert-migrate 4, --assert-concurrent 3, --assert-corrupt 2, --assert-retention 3)
 # Turn routing (DEC-036): without --lesson and with TYPESAFE_API_KEY set, Jev picks point / explain / 2D or 3D lesson per turn.
 src/Experience/HeyGanesh.App/bin/Debug/net8.0-windows10.0.22621.0/HeyGanesh.App.exe --once --no-route --question "x"
 #   keys unset -> header 'route : off (--no-route ...)', KEY ERROR (Element Selection), exit 12 (SH-21); with keys: routed turns -- live row SH-22

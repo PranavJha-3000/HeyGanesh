@@ -77,9 +77,11 @@ internal static partial class ShellHost
         Console.WriteLine("--no-speak        teach but stay silent: skip the speech-out leg. The lesson (when one is");
         Console.WriteLine("                  produced) is still reported as text — headless scripted runs and anyone");
         Console.WriteLine("                  who does not want the desk speaking should use it.");
-        Console.WriteLine("--lesson          teach with a drawn, spoken visual lesson (cards + voice) instead of the");
-        Console.WriteLine("                  Tutor's prose. Needs DEEPSEEK_API_KEY for the lesson model; without it the");
-        Console.WriteLine("                  lesson leg reports its skip (DEC-027). Combine with --no-speak to pace silently.");
+        Console.WriteLine("--lesson          teach with a spoken drawing on the screen (the drawing stage + voice) instead");
+        Console.WriteLine("                  of the Tutor's prose. The drawing stays up: ask over it (Ctrl+Alt) or click a");
+        Console.WriteLine("                  part for a follow-up, x closes it (DEC-074). Needs DEEPSEEK_API_KEY for the");
+        Console.WriteLine("                  lesson model; without it the lesson leg reports its skip (DEC-027). Combine");
+        Console.WriteLine("                  with --no-speak to pace silently.");
         Console.WriteLine("                  Without it, and with TYPESAFE_API_KEY set, Jev routes each turn instead: point");
         Console.WriteLine("                  (the highlight is the answer), explain (the Tutor), or a 2D/3D lesson (DEC-036).");
         Console.WriteLine("--no-route        never ask Jev how to teach: the Tutor leg, as before the router existed.");
@@ -96,7 +98,7 @@ internal static partial class ShellHost
         Console.WriteLine("--max-candidates  candidate cap handed to Element Selection (default 120).");
         Console.WriteLine("--no-dpi          do not claim PerMonitorV2 awareness, so the overlay's refusal to draw on");
         Console.WriteLine("                  a non-aware host can be observed. Nothing in a normal run should use it.");
-        Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish): where it was found and");
+        Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish, gnani): where it was found and");
         Console.WriteLine("                  its length, never its value; then exit.");
         Console.WriteLine("--set-key <name>  store a key in Windows Credential Manager. It is typed or pasted with nothing");
         Console.WriteLine("                  shown, or piped on stdin; then exit. Every API client reads it from there");
@@ -113,8 +115,9 @@ internal static partial class ShellHost
         Console.WriteLine("error propagated rather than swallowed | 4 an unexpected fault | 12 a required API key");
         Console.WriteLine("is missing | 13 cancelled. The teach/speak leg after a non-Failed verdict reuses these");
         Console.WriteLine("codes: 12/3 are a key/provider error from the teaching seam or the speaker, 4 is a mapping");
-        Console.WriteLine("fault in the shell (or a lesson card fault), 1 with --lesson means no usable lesson came");
-        Console.WriteLine("back; the verdict is always reported (and drawn) before any of them can fire.");
+        Console.WriteLine("fault in the shell (or a drawing stage fault); with --lesson, a model that draws nothing");
+        Console.WriteLine("(NONE, or no program) hands the turn to the Tutor, whose code it is. The verdict is always");
+        Console.WriteLine("reported (and drawn) before any of them can fire.");
         Console.WriteLine("Key commands (--keys, --set-key, --remove-key): 0 done | 1 nothing was entered, or the key");
         Console.WriteLine("was refused (a space or line break inside) | 2 unknown key name | 4 Credential Manager refused.");
         Console.WriteLine();
@@ -133,7 +136,7 @@ internal static partial class ShellHost
     private static void PrintHeader(ShellOptions options)
     {
         // Keys come from the key ring (DEC-046): Credential Manager first, then the environment variable. The
-        // same answers decide which legs CreateRouter() and CreateLessonPlanner() compose.
+        // same answers decide which legs CreateRouter() and CreateLessonClient() compose.
         var typesafeKey = HasKey("typesafe");
         var deepseekKey = HasKey("deepseek");
         var gatewayUrl = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HEYGANESH_QWEN_GATEWAY_URL"));
@@ -163,8 +166,8 @@ internal static partial class ShellHost
         Console.WriteLine($"  target     : {(options.Foreground ? "foreground window" : "window under the cursor")}");
         Console.WriteLine($"  overlay    : {(options.Overlay ? $"{options.DurationMs} ms per found verdict" : "disabled (--no-overlay)")}");
         Console.WriteLine($"  keys       : TYPESAFE_API_KEY={Keys.Describe("typesafe")}  DEEPSEEK_API_KEY={Keys.Describe("deepseek")}");
-        Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
-                          $"FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
+        Console.WriteLine($"  voice      : {(HasKey("gnani") ? "listening with Gnani Prisma, speaking with Gnani Timbre  " : string.Empty)}HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
+                          $"GNANI_API_KEY={Keys.Describe("gnani")}  FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
         Console.WriteLine($"  tutor      : {TutorHeader()}");
         Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
         Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");
@@ -189,13 +192,13 @@ internal static partial class ShellHost
             : "ON but no OCR language is installed for this user, so no text is read";
     }
 
-    /// <summary>The header's lesson line; keep in step with CreateLessonPlanner() (DEC-027) and CreateRouter() (DEC-036).</summary>
+    /// <summary>The header's lesson line; keep in step with CreateLessonClient() (DEC-027, DEC-074) and CreateRouter() (DEC-036).</summary>
     private static string LessonHeader(bool on, bool routed, bool key) =>
         routed ? (key
-            ? "when the route chooses one: lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 2D, or 3D on the one model Jev picked, or a schematic when none fits"
+            ? "when the route chooses one, or over a drawing on screen: lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); drawn on the stage, 2D or 3D as the program decides"
             : "when the route chooses one: no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip")
         : !on ? "off (the Tutor leg teaches; --lesson draws instead)"
-        : key ? $"ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); 3D: {Scene3dModelCount} models, click a part to ask, or one schematic for anything else"
+        : key ? "ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); drawn on the stage, 2D or 3D as the program decides; ask over a drawing or click a part to follow up"
         : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
 
     private sealed record ShellOptions(

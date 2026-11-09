@@ -287,9 +287,9 @@ internal static partial class ShellHost
             {
                 if (_current is { IsCompleted: false })
                 {
-                    Console.WriteLine("REFUSED: a voice or guidance turn is already running (or its highlight " +
-                                      "is still on screen); one Ctrl+Alt hold maps to one turn. If a 3D lesson is " +
-                                      "waiting for a click, close it with its x button or wait up to 30 s.");
+                    Console.WriteLine("REFUSED: a voice or guidance turn is already running (or its highlight, " +
+                                      "answer or drawing is still under way); one Ctrl+Alt hold maps to one turn. " +
+                                      "A finished drawing does not hold Ctrl+Alt: ask over it.");
                     return;
                 }
 
@@ -297,6 +297,49 @@ internal static partial class ShellHost
                 var cts = NewUtteranceCts();
                 _phase = TurnPhase.Listening;
                 _current = Task.Run(() => RunVoiceTurnAsync(cts));
+            }
+        }
+
+        /// <summary>
+        /// A click on a part of the drawing (DEC-074), raised on the stage's thread: must return at once. It becomes
+        /// a follow-up turn through the same gate as Ctrl+Alt, so it is ignored while any turn runs. The part's name
+        /// is untrusted page text, cleaned by PartQuestion before it can reach a prompt.
+        /// </summary>
+        public void OnFigurePart(string part)
+        {
+            if (_lesson is null || PartQuestion(part) is not { } question)
+            {
+                return;
+            }
+
+            lock (_gate)
+            {
+                if (_current is { IsCompleted: false })
+                {
+                    Console.WriteLine("click ignored: a turn is already running; click the part again when it is done.");
+                    return;
+                }
+
+                var cts = NewUtteranceCts();
+                _phase = TurnPhase.Resolving;
+                _current = Task.Run(() => RunPartTurnAsync(question, cts));
+            }
+        }
+
+        /// <summary>One click's follow-up: no listen and no verdict, straight to the drawing (TeachPartAsync).</summary>
+        private async Task<int> RunPartTurnAsync(string question, CancellationTokenSource cts)
+        {
+            try
+            {
+                Console.WriteLine($"follow-up   : a part of the drawing was clicked: \"{question}\"");
+                return await TeachPartAsync(_tutor, _lesson!, _voice, _options, question, cts.Token).ConfigureAwait(false);
+            }
+            finally
+            {
+                lock (_gate)
+                {
+                    _phase = TurnPhase.Idle;
+                }
             }
         }
 

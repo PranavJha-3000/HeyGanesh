@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Planner evaluation set (build sequence step 7a, DEC-043).
+    Planner evaluation set (DEC-043/DEC-044; drawing programs since DEC-073).
 
-    Not product code: 30 student questions (eval-set-v1.json) and the automatic checks every planned
-    lesson is scored on. 7a proves the checks offline: golden lessons pass, answers built to break one
-    check fail exactly that check (seeds.json). The answers come from the planner host's recording
-    FakeLlmClient (linked, not copied); live recording and replay are step 7b.
+    Not product code: 30 student questions (eval-set-v1.json) and the automatic checks every drawing is scored
+    on. PE-9 proves the checks offline: good programs pass, programs built to break one check fail exactly that
+    check. The answers come from the planner host's recording FakeLlmClient (linked, not copied). The VisualPlan
+    checks, their seeds.json and the golden-lesson fixtures went with the VisualPlan stack (DEC-077).
   -->
 
   <PropertyGroup>
@@ -21,17 +21,26 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
-    <!-- 3D cases are offered the real catalogue, as the App Shell offers it. The planner itself never references it. -->
-    <ProjectReference Include="..\..\src\Intelligence\HeyGanesh.PartLibrary\HeyGanesh.PartLibrary.csproj" />
     <!-- 7b (DEC-044): the live recording uses the App Shell's lesson client, built the same way (LiveClient, checked by PE-5). -->
     <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
     <ProjectReference Include="..\..\src\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
+    <!-- FEATURE-010 (DEC-065): record with provider claude-code plans on the owner's Claude plan. -->
+    <ProjectReference Include="..\..\src\Providers\HeyGanesh.Providers.ClaudeCode\HeyGanesh.Providers.ClaudeCode.csproj" />
+    <!-- FEATURE-011 step 6 (DEC-073): drawing programs run on the real stage, hidden, for the run checks P-1..P-5. -->
+    <ProjectReference Include="..\..\src\Experience\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\LessonPlannerSmoke\FakeLlmClient.cs" Link="FakeLlmClient.cs" />
-    <None Include="..\LessonSmoke\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="eval-set-v1.json;seeds.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="eval-set-v1.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- As in DrawStageSmoke: the WebView2 package's WPF control assembly reaches this host transitively and conflicts
+       with the in-box WindowsBase (MSB3277); the stage uses only the Core API, so that reference is removed. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

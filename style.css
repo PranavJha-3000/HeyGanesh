@@ -69,7 +69,8 @@ a { color: inherit; text-underline-offset: 3px; }
   color: #5a4a2c;
 }
 .eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mark); }
-.deva { font-family: "Noto Serif Devanagari", var(--serif); text-transform: none; letter-spacing: 0; }
+.deva { font-family: "Noto Serif Devanagari", var(--serif); text-transform: none; letter-spacing: 0; line-height: 1; }
+.eyebrow .deva { font-size: 1.2em; position: relative; top: .12em; } /* the script sits high next to Latin caps; nudge it to the shared baseline */
 
 /* The tagline as a statement: dark band, the kraft glow behind it. */
 .vigna { background: var(--ink); color: #f6f1e6; position: relative; overflow: hidden; }
@@ -83,8 +84,9 @@ a { color: inherit; text-underline-offset: 3px; }
   background: radial-gradient(circle, rgba(214, 196, 162, .35), transparent 65%);
   pointer-events: none;
 }
-.vigna-in { position: relative; display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(24px, 5vw, 72px); align-items: end; padding-block: clamp(64px, 11vw, 140px); }
-.vigna-name { font: 400 clamp(3rem, 9vw, 7rem)/.95 var(--serif); letter-spacing: -.035em; }
+.vigna-in { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(24px, 5vw, 72px); align-items: end; padding-block: clamp(64px, 11vw, 140px); }
+/* "auto" column: the name keeps its own width and the paragraph gets what is left, so they cannot overlap. */
+.vigna-name { font: 400 clamp(3rem, 6.2vw, 5rem)/.98 var(--serif); letter-spacing: -.03em; }
 .vigna-gloss { color: #cfc6b3; font-size: clamp(1.05rem, 1.5vw, 1.25rem); max-width: 30em; }
 .vigna-gloss .deva { color: var(--kraft); font-size: 1.1em; }
 
@@ -266,7 +268,7 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* ---------- small screens ---------- */
 @media (max-width: 860px) {
-  .hero, .split, .install, .vigna-in { grid-template-columns: 1fr; }
+  .hero, .split, .install, .vigna-in { grid-template-columns: minmax(0, 1fr); }
   .steps, .three { grid-template-columns: 1fr; }
   .nav { display: none; }
   .top .btn { margin-left: auto; }

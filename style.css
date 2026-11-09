@@ -1,0 +1,225 @@
+/* Hey Ganesh landing page. Tokens first; the kraft paper and the indigo mark are the app's own colours:
+   the icon is ink on kraft, and the highlight box is the one thing the overlay draws. */
+:root {
+  --paper: #ffffff;
+  --ink: #1c1814;
+  --ink-soft: #5b554c;
+  --rule: #e3ded3;
+  --kraft: #d6c4a2;
+  --kraft-edge: #beaa86;
+  --mark: #27358f;
+
+  --serif: "Young Serif", Georgia, serif;
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --gutter: clamp(16px, 4vw, 40px);
+  --max: 1160px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; color-scheme: light; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 17px/1.6 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+img, svg { display: block; max-width: 100%; }
+
+a { color: inherit; text-underline-offset: 3px; }
+
+:focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { width: min(var(--max), 100% - 2 * var(--gutter)); margin-inline: auto; }
+
+/* ---------- top bar ---------- */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: min(var(--max), 100% - 2 * var(--gutter));
+  margin-inline: auto;
+  padding-block: 18px;
+}
+
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 400 20px/1 var(--serif); }
+
+.nav { display: flex; gap: 28px; margin-left: auto; }
+.nav a { text-decoration: none; font-weight: 500; font-size: 15px; color: var(--ink-soft); }
+.nav a:hover { color: var(--ink); }
+
+/* ---------- buttons: pills, as on the reference ---------- */
+.btn {
+  display: inline-block;
+  padding: 14px 26px;
+  border: 1px solid var(--ink);
+  border-radius: 100px;
+  font: 500 16px/1 var(--sans);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-ink { background: var(--ink); color: #fff; }
+.btn-ink:hover { background: #000; }
+.btn-line { background: #fff; color: var(--ink); border-color: var(--rule); }
+.btn-line:hover { border-color: var(--ink); }
+.btn-small { padding: 11px 20px; font-size: 15px; }
+
+/* ---------- type ---------- */
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.5rem, 5.4vw, 4rem); line-height: 1.04; }
+h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); line-height: 1.12; max-width: 26ch; text-wrap: balance; }
+h3 { font-size: 1.3rem; line-height: 1.25; }
+p { margin: 0; }
+
+.lede { font-size: clamp(1.1rem, 1.6vw, 1.3rem); color: var(--ink-soft); max-width: 34em; }
+.measure { max-width: 34em; }
+.fine { font-size: 14px; line-height: 1.55; color: var(--ink-soft); max-width: 46em; }
+
+code { font: 500 0.9em/1 ui-monospace, "Cascadia Mono", Consolas, monospace; background: #f3f0e8; padding: 2px 6px; border-radius: 6px; }
+
+/* ---------- hero ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+  padding-block: clamp(28px, 6vw, 72px) clamp(48px, 8vw, 104px);
+}
+.hero-text { display: grid; gap: 24px; justify-items: start; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ---------- the drawn demo ---------- */
+.demo { margin: 0; display: grid; gap: 14px; }
+
+.asked { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; font-size: 15px; }
+.keys { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); }
+kbd {
+  font: 500 13px/1 var(--sans);
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  border-bottom-width: 3px;
+  border-radius: 8px;
+  background: #fff;
+}
+.quote { font-family: var(--serif); font-size: 1.05rem; }
+
+.stage {
+  position: relative;
+  background: var(--kraft);
+  border: 1px solid var(--kraft-edge);
+  border-radius: 18px;
+  padding: 18px 18px 0;
+  overflow: hidden;
+}
+.stage svg { width: 100%; height: auto; }
+
+.says {
+  display: grid;
+  min-height: 5.6em;
+  padding: 14px 4px 18px;
+  border-top: 1px dashed var(--kraft-edge);
+  font: 400 clamp(1rem, 1.5vw, 1.2rem)/1.45 var(--serif);
+}
+.say { grid-area: 1 / 1; opacity: 0; max-width: 30em; }
+
+/* pen strokes: pathLength 1, so one dash is the whole stroke */
+.draw {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0; /* a hidden dash still leaves a round-cap dot; the animation turns opacity on as it starts */
+}
+.fade { opacity: 0; }
+.label { font: 400 30px var(--serif); fill: var(--ink); }
+.equation { font: 400 40px var(--serif); fill: var(--ink); }
+.mark { fill: none; stroke: var(--mark); stroke-width: 3; stroke-dasharray: 8 7; }
+
+.stage.play .draw { animation: draw var(--t) var(--d) cubic-bezier(.4, 0, .2, 1) forwards; }
+.stage.play .fade { animation: fade .5s var(--d) forwards; }
+.stage.play .say { animation: say var(--t) var(--d) forwards; }
+.stage.play .say.last { animation: fade .5s var(--d) forwards; }
+
+@keyframes draw { from { opacity: 1; stroke-dashoffset: 1; } to { opacity: 1; stroke-dashoffset: 0; } }
+@keyframes fade { to { opacity: 1; } }
+@keyframes say { 0% { opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
+
+.replay {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--kraft-edge);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, .55);
+  color: var(--ink);
+  font: 500 13px/1 var(--sans);
+  cursor: pointer;
+}
+.replay:hover { background: #fff; }
+
+/* ---------- sections ---------- */
+.section {
+  padding-block: clamp(56px, 9vw, 112px);
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: clamp(28px, 4vw, 48px);
+}
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); counter-reset: step; }
+.steps li { counter-increment: step; display: grid; gap: 10px; align-content: start; }
+.steps li::before { content: counter(step); font: 400 2.6rem/1 var(--serif); color: var(--kraft-edge); }
+.steps p { color: var(--ink-soft); max-width: 28em; }
+.steps-tight { grid-template-columns: 1fr; gap: 28px; }
+
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); }
+.three article { display: grid; gap: 10px; align-content: start; padding-top: 18px; border-top: 2px solid var(--ink); }
+.three p { color: var(--ink-soft); }
+
+.split { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: clamp(24px, 5vw, 72px); align-items: start; }
+.models { margin: 0; display: grid; gap: 18px; }
+.models div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.models dt { font: 400 1.7rem/1.1 var(--serif); }
+.models dd { margin: 0; color: var(--ink-soft); }
+
+.install { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+.needs { display: grid; gap: 12px; padding: 24px; border: 1px solid var(--rule); border-radius: 12px; }
+.needs ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+pre { margin: 0; overflow-x: auto; padding: 12px 14px; border-radius: 8px; background: #f3f0e8; font-size: 13px; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.faq { display: grid; max-width: 46em; }
+.faq details { border-bottom: 1px solid var(--rule); padding-block: 18px; }
+.faq summary { cursor: pointer; font: 400 1.2rem/1.35 var(--serif); list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--sans); color: var(--ink-soft); }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { margin-top: 12px; color: var(--ink-soft); }
+
+.foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding-block: 40px 56px; border-top: 1px solid var(--rule); }
+
+/* ---------- small screens ---------- */
+@media (max-width: 860px) {
+  .hero, .split, .install { grid-template-columns: 1fr; }
+  .steps, .three { grid-template-columns: 1fr; }
+  .nav { display: none; }
+  .top .btn { margin-left: auto; }
+}
+
+/* ---------- reduced motion: show the finished drawing, no replay ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .stage.play .draw, .stage.play .fade, .stage.play .say, .stage.play .say.last { animation: none; }
+  .draw { stroke-dashoffset: 0; opacity: 1; }
+  .fade { opacity: 1; }
+  .say { display: none; }
+  .say.last { display: block; opacity: 1; }
+  .replay { display: none; }
+}

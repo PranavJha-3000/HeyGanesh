@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hey Ganesh: an AI tutor that draws on your screen</title>
+  <meta name="description" content="Hold Ctrl+Alt, ask out loud, and Hey Ganesh points at what you mean, explains it in a voice, or sketches the idea over your desktop. Free for Windows.">
+  <meta name="color-scheme" content="light">
+  <meta property="og:title" content="Hey Ganesh: an AI tutor that draws on your screen">
+  <meta property="og:description" content="Hold Ctrl+Alt, ask out loud, and watch the answer appear on your screen. Free for Windows.">
+  <meta property="og:image" content="assets/heyganesh-256.png">
+  <link rel="icon" type="image/svg+xml" href="assets/heyganesh.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Young+Serif&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="#top" aria-label="Hey Ganesh, home">
+    <img src="assets/heyganesh.svg" alt="" width="36" height="36">
+    <span>Hey Ganesh</span>
+  </a>
+  <nav class="nav" aria-label="Main">
+    <a href="#how">How it works</a>
+    <a href="#what">What it does</a>
+    <a href="#gnani">Voice</a>
+    <a href="#faq">Questions</a>
+  </nav>
+  <a class="btn btn-ink btn-small" href="#download">Download</a>
+</header>
+
+<main id="top">
+
+  <section class="hero wrap">
+    <div class="hero-text">
+      <h1>An AI tutor that draws on your screen</h1>
+      <p class="lede">Hold Ctrl+Alt and ask out loud. Hey Ganesh points at the thing you mean, explains it in a voice, or sketches the idea over whatever you're working on.</p>
+      <div class="actions">
+        <a class="btn btn-ink" href="https://github.com/PranavJha-3000/HeyGanesh/releases/latest/download/HeyGanesh-win-x64.zip">Download for Windows</a>
+        <a class="btn btn-line" href="#how">See how it works</a>
+      </div>
+      <p class="fine">Free. Windows 10 and 11. About 80 MB to download.</p>
+    </div>
+
+    <figure class="demo">
+      <div class="asked">
+        <span class="keys"><kbd>Ctrl</kbd><span aria-hidden="true">+</span><kbd>Alt</kbd></span>
+        <span class="quote">“Why does a longer wrench loosen a bolt?”</span>
+      </div>
+
+      <div class="stage play">
+        <svg viewBox="0 0 640 400" role="img" aria-label="A hand-drawn diagram: a wrench on a bolt, a downward force F at the end of the handle, the distance r from the bolt, and the turning arrow tau.">
+          <!-- Everything here is drawn in the order the voice mentions it. -->
+          <path class="draw" pathLength="1" style="--d:.5s;--t:1s" d="M150 188 L184.6 208 L184.6 248 L150 268 L115.4 248 L115.4 208 Z"/>
+          <circle class="draw" pathLength="1" style="--d:1.2s;--t:.6s" cx="150" cy="228" r="13"/>
+          <path class="draw" pathLength="1" style="--d:1.6s;--t:1.6s" d="M186 215 H500 A14 14 0 0 1 500 243 H186"/>
+
+          <path class="draw" pathLength="1" style="--d:4.5s;--t:.8s" d="M500 120 V204"/>
+          <path class="draw" pathLength="1" style="--d:5.2s;--t:.3s" d="M490 190 L500 206 L510 190"/>
+          <text class="fade label" style="--d:5.5s" x="520" y="150">F</text>
+
+          <path class="draw" pathLength="1" style="--d:8s;--t:1s" d="M150 306 H500"/>
+          <path class="draw" pathLength="1" style="--d:8.9s;--t:.3s" d="M150 297 V315"/>
+          <path class="draw" pathLength="1" style="--d:8.9s;--t:.3s" d="M500 297 V315"/>
+          <text class="fade label" style="--d:9.1s" x="318" y="336">r</text>
+          <rect class="fade mark" style="--d:9.5s" x="128" y="282" width="394" height="62" rx="10"/>
+
+          <text class="fade equation" style="--d:10.6s" x="205" y="388">τ = F × r</text>
+
+          <path class="draw" pathLength="1" style="--d:11.8s;--t:1s" d="M150 150 A78 78 0 0 1 228 228"/>
+          <path class="draw" pathLength="1" style="--d:12.7s;--t:.3s" d="M218 216 L229 230 L241 217"/>
+          <text class="fade label" style="--d:13s" x="236" y="170">τ</text>
+        </svg>
+
+        <div class="says" aria-live="polite">
+          <p class="say" style="--d:.2s;--t:4s">This is a bolt, and this is a wrench.</p>
+          <p class="say" style="--d:4.2s;--t:3.4s">Push down here, at the end of the handle.</p>
+          <p class="say" style="--d:7.6s;--t:4s">The turning effect is the force times the distance from the bolt.</p>
+          <p class="say last" style="--d:11.6s">So a longer wrench loosens a stubborn bolt with less push.</p>
+        </div>
+
+        <button class="replay" type="button">Replay</button>
+      </div>
+    </figure>
+  </section>
+
+  <section id="how" class="section wrap">
+    <h2>Three steps, no window to open</h2>
+    <ol class="steps">
+      <li>
+        <h3>Hold Ctrl+Alt</h3>
+        <p>Press and hold both keys anywhere in Windows. Hey Ganesh sits in the notification area until you do.</p>
+      </li>
+      <li>
+        <h3>Ask out loud</h3>
+        <p>Say what you want to know, like “where is the Save button?” or “explain this graph”, then pause.</p>
+      </li>
+      <li>
+        <h3>Watch the answer</h3>
+        <p>A box lands on the thing you asked about, or a drawing builds on your screen while a voice talks you through it.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="what" class="section wrap">
+    <h2>It looks at your screen, so you don't have to describe it</h2>
+    <div class="three">
+      <article>
+        <h3>Finds it for you</h3>
+        <p>Hey Ganesh reads what is on the screen and outlines the button, menu or field you asked about. It never clicks or types for you. You stay in control.</p>
+      </article>
+      <article>
+        <h3>Explains out loud</h3>
+        <p>Questions about an idea get a short spoken answer, written with the thing on your screen in mind.</p>
+      </article>
+      <article>
+        <h3>Draws the idea</h3>
+        <p>When a picture helps, such as a lever, a circuit or a shape in 3D, it sketches the diagram over your desktop, timed to the voice. Past lessons replay from the tray icon without asking the AI again.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="gnani" class="section wrap">
+    <h2>Listens and speaks with Gnani AI</h2>
+    <div class="split">
+      <p class="measure">Add a Gnani key and Hey Ganesh uses two of Gnani's speech models, so you don't have to run anything else yourself. Both are built for Indian languages, and Hey Ganesh is set up for English and Hindi.</p>
+      <dl class="models">
+        <div><dt>Prisma</dt><dd>turns your voice into text</dd></div>
+        <div><dt>Timbre</dt><dd>speaks the answer back</dd></div>
+      </dl>
+    </div>
+    <p class="fine">Built for the Gnani Great Indian AI Internship Challenge. #GnaniAI #GreatIndianAIInternshipChallenge</p>
+  </section>
+
+  <section id="download" class="section wrap">
+    <h2>Install it in a minute</h2>
+    <div class="install">
+      <ol class="steps steps-tight">
+        <li>
+          <h3>Download the zip</h3>
+          <p><a class="btn btn-ink" href="https://github.com/PranavJha-3000/HeyGanesh/releases/latest/download/HeyGanesh-win-x64.zip">Download for Windows</a></p>
+        </li>
+        <li>
+          <h3>Extract it</h3>
+          <p>Right-click the zip and choose Extract All.</p>
+        </li>
+        <li>
+          <h3>Run the installer</h3>
+          <p>Right-click <code>install.ps1</code> and choose Run with PowerShell. It installs for your account only and needs no admin rights.</p>
+        </li>
+        <li>
+          <h3>Paste your keys</h3>
+          <p>Open Hey Ganesh from the Start menu. A window asks for your keys the first time. Then hold Ctrl+Alt and ask.</p>
+        </li>
+      </ol>
+
+      <aside class="needs">
+        <h3>What you need</h3>
+        <ul>
+          <li>Windows 10 or 11 and a microphone</li>
+          <li>A DeepSeek key and a TypeSafe key (required)</li>
+          <li>A Gnani key for the Prisma and Timbre voice (optional)</li>
+        </ul>
+        <p class="fine">Keys are kept in Windows Credential Manager. The app is not code-signed yet, so Windows SmartScreen may warn you: choose More info, then Run anyway.</p>
+        <p class="fine">If Windows blocks the script, open the folder in Terminal and run:</p>
+        <pre><code>powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1</code></pre>
+      </aside>
+    </div>
+  </section>
+
+  <section id="faq" class="section wrap">
+    <h2>Questions</h2>
+    <div class="faq">
+      <details>
+        <summary>What does it see?</summary>
+        <p>The screen the cursor is on, only when you ask. The names and text of what is on that screen, and in some cases a picture of it, go to the AI services whose keys you added. Hey Ganesh does not save screenshots or screen text. It keeps your question, the answer and any drawing in a notes file on your PC.</p>
+      </details>
+      <details>
+        <summary>Can it click or type for me?</summary>
+        <p>No. It only outlines and draws on top of your screen. Your mouse and keyboard stay yours.</p>
+      </details>
+      <details>
+        <summary>Is it safe to run?</summary>
+        <p>The code is public, so you can read it. The installer is not code-signed yet, which is why SmartScreen asks first. It installs to your own account and the uninstaller removes it.</p>
+      </details>
+      <details>
+        <summary>Does it work on Mac, Linux or phones?</summary>
+        <p>Not yet. Hey Ganesh is built for Windows 11 and also runs on Windows 10.</p>
+      </details>
+      <details>
+        <summary>Which languages can I ask in?</summary>
+        <p>English and Hindi, including a mix of the two. Gnani's models cover ten Indian languages, so more can be added.</p>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="#top">
+    <img src="assets/heyganesh.svg" alt="" width="28" height="28">
+    <span>Hey Ganesh</span>
+  </a>
+  <p class="fine">AI Tutor for Windows. <a href="https://github.com/PranavJha-3000/HeyGanesh">Source on GitHub</a></p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -193,7 +193,7 @@ internal static partial class PlannerEvalHost
         {
             var rec = Path.Combine(root, "rec");
             var replies = GoodPrograms.Select(g => "```js\n" + g.Program + "\n```").ToArray();
-            var code = await RecordAsync(set, GoodPrograms.Select(g => set[g.Case]).ToList(), new FakeLlm(StreamingText, replies), rec, "not used (fake model)", CancellationToken.None, drawing: true);
+            var code = await RecordAsync(set, GoodPrograms.Select(g => set[g.Case]).ToList(), new FakeLlm(StreamingText, replies), rec, "not used (fake model)", CancellationToken.None);
             var recorded = EvalReport.LoadCases(rec);
             var same = await ReplayAsync(set, rec, rec);
             failures = Check(code == 0 && recorded.Count == GoodPrograms.Length && recorded.All(r => r.Drawing && r.Outcome == "Program" && r.Checks.Values.All(v => v))

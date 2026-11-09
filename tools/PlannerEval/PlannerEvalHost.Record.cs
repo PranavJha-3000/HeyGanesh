@@ -4,7 +4,6 @@ using HeyGanesh.LessonPlanner;
 using HeyGanesh.Providers.ClaudeCode;
 using HeyGanesh.Providers.Core;
 using HeyGanesh.Security;
-using HeyGanesh.VisualLessonEngine;
 using FakeLlm = HeyGanesh.Tools.LessonPlannerSmoke.FakeLlmClient;
 
 namespace HeyGanesh.Tools.PlannerEval;
@@ -32,12 +31,11 @@ internal static partial class PlannerEvalHost
         string[]? only = null;
         var provider = "deepseek";
         string? model = null;
-        var drawing = false;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "--drawing")
             {
-                drawing = true;
+                // Every recording is drawings since DEC-077; the flag stays accepted so older command lines still run.
             }
             else if (args[i] == "--cases" && i + 1 < args.Length)
             {
@@ -65,13 +63,13 @@ internal static partial class PlannerEvalHost
         {
             // DEC-065: no key at all; the CLI's own sign-in pays. A signed-out CLI fails the first case with
             // AuthFailed, which RecordAsync turns into exit 12 like a missing key.
-            return await RecordOnAsync(new ClaudeCodeLlmClient(new ClaudeCodeOptions { ModelId = model }), "claude-code plan (CLI sign-in, no key)", dir, only, drawing);
+            return await RecordOnAsync(new ClaudeCodeLlmClient(new ClaudeCodeOptions { ModelId = model }), "claude-code plan (CLI sign-in, no key)", dir, only);
         }
 
         if (provider == "codex")
         {
-            // DEC-066: the same, on the ChatGPT plan through codex exec; not streamed, so first beat = whole lesson.
-            return await RecordOnAsync(new CodexLlmClient(new CodexOptions { ModelId = model }), "codex plan (CLI sign-in, no key)", dir, only, drawing);
+            // DEC-066: the same, on the ChatGPT plan through codex exec; not streamed, so the first program text is the whole program.
+            return await RecordOnAsync(new CodexLlmClient(new CodexOptions { ModelId = model }), "codex plan (CLI sign-in, no key)", dir, only);
         }
 
         // The key comes from the app's key ring (DEC-046) and is described by presence, length and source only,
@@ -86,11 +84,11 @@ internal static partial class PlannerEvalHost
             return 12;
         }
 
-        return await RecordOnAsync(LiveClient.Create(ring), key, dir, only, drawing);
+        return await RecordOnAsync(LiveClient.Create(ring), key, dir, only);
     }
 
     /// <summary>The selected cases over <paramref name="client"/> (disposed here), stoppable with Ctrl+C.</summary>
-    private static async Task<int> RecordOnAsync(ILlmClient client, string keyState, string? dir, string[]? only, bool drawing)
+    private static async Task<int> RecordOnAsync(ILlmClient client, string keyState, string? dir, string[]? only)
     {
         using var _ = client;
         var set = LoadSet();
@@ -106,17 +104,14 @@ internal static partial class PlannerEvalHost
         // Drawings also run on a hidden stage for P-1..P-5 when this machine can show one; without it the static
         // checks still score every case (DEC-073).
         ProgramStage? stage = null;
-        if (drawing)
+        try
         {
-            try
-            {
-                stage = await ProgramStage.OpenAsync();
-                Console.WriteLine("stage: open (hidden); run checks P-1..P-5 on");
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                Console.WriteLine($"stage: not available ({ex.GetType().Name}); run checks P-1..P-5 skipped, static checks only");
-            }
+            stage = await ProgramStage.OpenAsync();
+            Console.WriteLine("stage: open (hidden); run checks P-1..P-5 on");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Console.WriteLine($"stage: not available ({ex.GetType().Name}); run checks P-1..P-5 skipped, static checks only");
         }
 
         using var _stage = stage;
@@ -129,8 +124,8 @@ internal static partial class PlannerEvalHost
         Console.CancelKeyPress += stop;
         try
         {
-            Console.WriteLine($"recording {cases.Count} {(drawing ? "drawing" : "lesson")} case(s) with {client.ProviderId}/{client.ModelId} into {dir}");
-            return await RecordAsync(set, cases, client, dir, keyState, cts.Token, drawing, stage);
+            Console.WriteLine($"recording {cases.Count} drawing case(s) with {client.ProviderId}/{client.ModelId} into {dir}");
+            return await RecordAsync(set, cases, client, dir, keyState, cts.Token, stage);
         }
         finally
         {
@@ -195,20 +190,19 @@ internal static partial class PlannerEvalHost
     }
 
     /// <summary>
-    /// Plans the cases in order over <paramref name="client"/> and writes the recording. An authentication
-    /// failure or cancellation stops the run, and what was planned so far is still written.
+    /// Draws the cases in order over <paramref name="client"/> and writes the recording. An authentication
+    /// failure or cancellation stops the run, and what was drawn so far is still written.
     /// </summary>
-    private static async Task<int> RecordAsync(EvalSet set, IReadOnlyList<EvalCase> cases, ILlmClient client, string dir, string keyState, CancellationToken ct, bool drawing = false, ProgramStage? stage = null)
+    private static async Task<int> RecordAsync(EvalSet set, IReadOnlyList<EvalCase> cases, ILlmClient client, string dir, string keyState, CancellationToken ct, ProgramStage? stage = null)
     {
         var runs = new List<CaseRun>();
-        var lessons = new Dictionary<string, VisualPlan>(StringComparer.Ordinal);
         var drawings = new Dictionary<string, DrawingFollowUp>(StringComparer.Ordinal);
         var code = 0;
         try
         {
             foreach (var c in cases)
             {
-                var run = drawing ? await EvalRun.RunDrawingAsync(c, client, drawings, stage, ct) : await EvalRun.RunOneAsync(c, client, lessons, ct);
+                var run = await EvalRun.RunDrawingAsync(c, client, drawings, stage, ct);
                 runs.Add(run);
                 var failed = run.Checks.Where(k => !k.Value).Select(k => k.Key).ToList();
                 Console.WriteLine($"  {c.Id}: {(run.Error is not null ? $"ERROR {run.Error}" : failed.Count == 0 ? "all pass" : "failed " + string.Join(", ", failed))}");
@@ -232,14 +226,14 @@ internal static partial class PlannerEvalHost
     }
 
     /// <summary>
-    /// Feeds every recorded answer back through the current planner and checks, in set order. A case with a
-    /// provider error or a stream cut short keeps its recorded result (its answer text cannot reproduce it).
+    /// Feeds every recorded answer back through the current drawing planner and checks, in set order. A case with a
+    /// provider error or a stream cut short keeps its recorded result (its answer text cannot reproduce it), and so
+    /// does a lesson-plan case recorded before the VisualPlan stack was deleted (DEC-077): nothing can re-score it.
     /// Regressions are checks that passed in the baseline and fail now, or a lower total.
     /// </summary>
     private static async Task<ReplayOutcome> ReplayAsync(EvalSet set, string dir, string baselineDir)
     {
         var recorded = EvalReport.LoadCases(dir).ToDictionary(r => r.Id, StringComparer.Ordinal);
-        var lessons = new Dictionary<string, VisualPlan>(StringComparer.Ordinal);
         var drawings = new Dictionary<string, DrawingFollowUp>(StringComparer.Ordinal);
         var runs = new List<CaseRun>();
         var notReplayed = recorded.Keys.Where(id => set.Cases.All(c => c.Id != id)).Select(id => $"{id}: not in {set.Version}").ToList();
@@ -247,21 +241,20 @@ internal static partial class PlannerEvalHost
         foreach (var c in set.Cases.Where(c => recorded.ContainsKey(c.Id)))
         {
             var rec = recorded[c.Id];
-            if (rec.Error is not null || rec.Partial || rec.Answers.Count == 0)
+            if (rec.Error is not null || rec.Partial || rec.Answers.Count == 0 || !rec.Drawing)
             {
-                notReplayed.Add($"{c.Id}: {(rec.Error is not null ? $"provider error {rec.Error}" : "the live stream was cut short")}; its recorded result is kept");
+                var why = rec.Error is not null ? $"provider error {rec.Error}" : !rec.Drawing ? "a lesson plan from before the drawing stage" : "the live stream was cut short";
+                notReplayed.Add($"{c.Id}: {why}; its recorded result is kept");
                 runs.Add(rec);
                 continue;
             }
 
             var answers = new FakeLlm(StreamingText, rec.Answers.ToArray());
-            var run = rec.Drawing ? await EvalRun.RunDrawingAsync(c, answers, drawings, null) : await EvalRun.RunOneAsync(c, answers, lessons);
-            if (rec.Drawing)
-            {
-                // A replay is offline: the run checks keep what the stage said when the case was recorded (DEC-073).
-                var ranChecks = rec.Checks.Where(k => k.Key.StartsWith("P-", StringComparison.Ordinal));
-                run = run with { Checks = run.Checks.Concat(ranChecks).ToDictionary(k => k.Key, k => k.Value) };
-            }
+            var run = await EvalRun.RunDrawingAsync(c, answers, drawings, null);
+
+            // A replay is offline: the run checks keep what the stage said when the case was recorded (DEC-073).
+            var ranChecks = rec.Checks.Where(k => k.Key.StartsWith("P-", StringComparison.Ordinal));
+            run = run with { Checks = run.Checks.Concat(ranChecks).ToDictionary(k => k.Key, k => k.Value) };
 
             run = run with { FirstBeatMs = rec.FirstBeatMs, LatencyMs = rec.LatencyMs, InputTokens = rec.InputTokens, OutputTokens = rec.OutputTokens };
             if (!rec.Checks.OrderBy(k => k.Key).SequenceEqual(run.Checks.OrderBy(k => k.Key)))
@@ -298,17 +291,12 @@ internal static partial class PlannerEvalHost
         return new ReplayOutcome(runs, notReplayed, differences, regressions, promptChanged, summary);
     }
 
-    // PE-4: the whole recording path offline, through the real OpenAI-compatible client.
+    // PE-4: the whole recording path offline, through the real OpenAI-compatible client, on the good drawing programs.
     private static async Task<int> RunAssertRecordStubAsync()
     {
         var failures = 0;
         var set = LoadSet();
-        var answers = set.Cases.Where(c => c.Golden is not null).ToDictionary(c => c.Id, c => Golden(c.Golden!), StringComparer.Ordinal);
-        foreach (var s in LoadSeeds().Where(s => s["expect"]!.GetValue<string>() == "pass"))
-        {
-            answers.TryAdd(s["case"]!.GetValue<string>(), SeedAnswer(s));
-        }
-
+        var answers = GoodPrograms.ToDictionary(g => g.Case, g => "```js\n" + g.Program + "\n```", StringComparer.Ordinal);
         var cases = set.Cases.Where(c => answers.ContainsKey(c.Id)).ToList();
         var dummy = "pe4-dummy-" + Guid.NewGuid().ToString("N");
         var root = Path.Combine(Path.GetTempPath(), "heyganesh-pe4-" + Guid.NewGuid().ToString("N")[..8]);
@@ -330,7 +318,7 @@ internal static partial class PlannerEvalHost
 
             var runs = EvalReport.LoadCases(rec);
             failures = Check(code == 0 && runs.Count == cases.Count && runs.All(r => r.Error is null && r.Checks.Count > 0 && r.Checks.Values.All(v => v)),
-                $"{runs.Count} of {cases.Count} cases recorded through the real client, every check passing (exit {code})", failures);
+                $"{runs.Count} of {cases.Count} drawings recorded through the real client, every check passing (exit {code})", failures);
             failures = Check(stub.Requests.Count == cases.Count && stub.Requests.All(r => r.Path == "/chat/completions" && r.Authorization == $"Bearer {dummy}"),
                 $"one streamed request per case to /chat/completions, each carrying the key ({stub.Requests.Count} requests)", failures);
             var files = Directory.GetFiles(root, "*", SearchOption.AllDirectories);
@@ -342,14 +330,14 @@ internal static partial class PlannerEvalHost
             failures = Check(same.Differences.Count == 0 && same.Regressions.Count == 0 && !same.PromptChanged && same.NotReplayed.Count == 0,
                 $"replay reproduces every recorded result ({same.Differences.Count} differences, {same.Regressions.Count} regressions, prompt {(same.PromptChanged ? "changed" : "same")})", failures);
 
-            // The gate fires: a recorded answer that stops saying "shape" loses K-3 on S-01.
+            // The gate fires: a recorded answer that stops saying "acceleration" loses K-3 on X-01.
             var worse = Path.Combine(root, "worse");
             CopyDir(rec, worse);
-            var s01 = Path.Combine(worse, "cases", "S-01.json");
-            var run = JsonSerializer.Deserialize<CaseRun>(File.ReadAllText(s01), EvalReport.Json)!;
-            File.WriteAllText(s01, JsonSerializer.Serialize(run with { Answers = run.Answers.Select(a => a.Replace("shape", "form", StringComparison.Ordinal)).ToList() }, EvalReport.Json));
+            var x01 = Path.Combine(worse, "cases", "X-01.json");
+            var run = JsonSerializer.Deserialize<CaseRun>(File.ReadAllText(x01), EvalReport.Json)!;
+            File.WriteAllText(x01, JsonSerializer.Serialize(run with { Answers = run.Answers.Select(a => a.Replace("acceleration", "speed-up", StringComparison.Ordinal)).ToList() }, EvalReport.Json));
             var regressed = await ReplayAsync(set, worse, rec);
-            failures = Check(regressed.Regressions.Count == 2 && regressed.Regressions[0].StartsWith("S-01 K-3 passed in the baseline", StringComparison.Ordinal),
+            failures = Check(regressed.Regressions.Count == 2 && regressed.Regressions[0].StartsWith("X-01 K-3 passed in the baseline", StringComparison.Ordinal),
                 $"a worse answer is a regression against the baseline ({string.Join("; ", regressed.Regressions)})", failures);
 
             // The prompt pin fires: a baseline recorded under another prompt.
@@ -360,6 +348,16 @@ internal static partial class PlannerEvalHost
             File.WriteAllText(Path.Combine(other, "summary.json"), summary.ToJsonString(EvalReport.Json));
             var moved = await ReplayAsync(set, rec, other);
             failures = Check(moved.PromptChanged && moved.Regressions.Count == 0, "a baseline recorded under a different prompt is reported as a prompt change", failures);
+
+            // A lesson-plan case recorded before the VisualPlan stack was deleted (DEC-077) keeps its recorded result.
+            var old = Path.Combine(root, "old-lesson");
+            CopyDir(rec, old);
+            var e03 = Path.Combine(old, "cases", "E-03.json");
+            var lesson = JsonSerializer.Deserialize<CaseRun>(File.ReadAllText(e03), EvalReport.Json)!;
+            File.WriteAllText(e03, JsonSerializer.Serialize(lesson with { Drawing = false }, EvalReport.Json));
+            var kept = await ReplayAsync(set, old, old);
+            failures = Check(kept.NotReplayed.Count == 1 && kept.NotReplayed[0].StartsWith("E-03: a lesson plan from before the drawing stage", StringComparison.Ordinal) && kept.Regressions.Count == 0,
+                $"a lesson-plan case from before the drawing stage is kept as recorded, not re-scored ({string.Join("; ", kept.NotReplayed)})", failures);
 
             // The command line's verdicts: same 0, regression 1, prompt changed 3, no recording 2.
             var exits = new[]
@@ -373,7 +371,7 @@ internal static partial class PlannerEvalHost
 
             var recorded = EvalReport.LoadSummary(rec);
             failures = Check(recorded["firstBeatP50Ms"] is not null && recorded["firstBeatP90Ms"] is not null && recorded["promptHash"]!.GetValue<string>().Length == 64,
-                $"first beat p50 {recorded["firstBeatP50Ms"]?.GetValue<double>():F0} ms / p90 {recorded["firstBeatP90Ms"]?.GetValue<double>():F0} ms and the prompt hash are recorded", failures);
+                $"first program text p50 {recorded["firstBeatP50Ms"]?.GetValue<double>():F0} ms / p90 {recorded["firstBeatP90Ms"]?.GetValue<double>():F0} ms and the prompt hash are recorded", failures);
         }
         finally
         {
@@ -455,10 +453,6 @@ internal static partial class PlannerEvalHost
             : data;
         return Path.Combine(baseDir, "eval", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
     }
-
-    private static List<JsonNode> LoadSeeds() =>
-        JsonNode.Parse(File.ReadAllText(Here("seeds.json")), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip })!["seeds"]!
-            .AsArray().Select(s => s!).ToList();
 
     private static string? RepoRoot()
     {

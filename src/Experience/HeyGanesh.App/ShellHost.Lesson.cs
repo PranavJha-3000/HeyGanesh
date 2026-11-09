@@ -22,8 +22,7 @@ namespace HeyGanesh.App;
 // The shell keeps its two jobs (DEC-015/016): it maps the verdict to plain data (the screenshot's size, the grounded
 // box in canvas units, the screen text) and hands Voice's SpeakAsync in as the speech clock. The turn itself is
 // DrawOnStageAsync (ShellHost.Drawing.cs), which TraySmoke --assert-drawing-leg drives with fakes; this assembly
-// carries no fakes (DEC-012). The old VisualPlanner -> LessonTurn -> cards path is no longer used here; it stays in
-// the tree until FEATURE-011 step 10.
+// carries no fakes (DEC-012). The old VisualPlanner -> LessonTurn -> cards path was deleted in FEATURE-011 step 10 (DEC-077).
 
 internal static partial class ShellHost
 {

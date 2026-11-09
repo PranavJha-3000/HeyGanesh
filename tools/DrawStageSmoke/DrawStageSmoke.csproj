@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <!-- The WebView2 package's WPF control assembly reaches this host transitively and conflicts with the in-box
-       WindowsBase (MSB3277), as in LessonSurfaceSmoke; the stage uses only the Core API, so that reference is removed. -->
+       WindowsBase (MSB3277), as it did in the deleted LessonSurfaceSmoke; the stage uses only the Core API, so that reference is removed. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />

@@ -24,7 +24,7 @@
     <ProjectReference Include="..\..\src\Experience\HeyGanesh.Tray\HeyGanesh.Tray.csproj" />
   </ItemGroup>
 
-  <!-- Same MSB3277 trap as LessonSurface: the WebView2 package's WPF reference flows to every consumer. -->
+  <!-- Same MSB3277 trap as DrawStage: the WebView2 package's WPF reference flows to every consumer. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />

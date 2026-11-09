@@ -87,6 +87,22 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-077 — 2026-11-09 — claude-opus-5-5
+
+**Decision — the old lesson stack is deleted.** FEATURE-011 step 10; the owner: "Complete step 8-10 in new session". Carries out FEATURE-011 §3's removals; supersedes DEC-023, DEC-025, DEC-026, DEC-027, DEC-028..DEC-034, DEC-041, DEC-042, DEC-048..DEC-050 and DEC-057 as descriptions of code that exists (they stay in this file as history). Rollback point: step 9's commit `12080aa` (ROLLBACK.md).
+
+- **Deleted projects:** `HeyGanesh.VisualLessonEngine` (VisualPlan contract, validator, `LessonPlayer`, `PlotExpression`), `HeyGanesh.PartLibrary` (the three computed models, `Schematics`), `HeyGanesh.LessonSurface` (WebView2 cards, the Babylon 9.30 and Anatomy vendor, the no-WebGL drawing), `HeyGanesh.LessonSession` (`LessonTurn`, click-to-ask), and their hosts `LessonSmoke`, `LessonSurfaceSmoke`, `LessonTurnSmoke`, `PartLibrarySmoke`. The four leave `HeyGanesh.sln` (the hosts were never in it).
+- **Kept and trimmed.** `HeyGanesh.LessonPlanner` keeps `DrawingPlanner` and `EarlierTurn` (session context, DEC-061); `VisualPlanner`, `PlannerPrompt`, `PlanStreamScanner` and the VisualPlan request/result types go, and it references Providers.Core only. `PlannerPrompt.Untrusted` (one line, `<<<`/`>>>` neutralised, bounded) moves unchanged into `DrawingPlanner`, which already used it; LP-14 checks the fences. `LessonPlannerSmoke` keeps LP-1 and LP-14..LP-16. `PlannerEval` keeps only the drawing path: `--assert-checks` (PE-2), `seeds.json`, the VisualPlan scorer and loop, the golden-lesson link and the Part Library go; `--record` always draws (`--drawing` is still accepted); a replay keeps a lesson-plan case recorded before this step as recorded (it cannot be re-scored); PE-4 records the six good drawing programs through the real client against the stub. The four `"golden"` keys leave `eval-set-v1.json` (they named deleted files; nothing scored changes).
+- **The App** references `HeyGanesh.LessonPlanner` directly (it arrived through LessonSession) and drops PartLibrary. WebView2 still arrives transitively, now only through `HeyGanesh.DrawStage`, the one assembly with the package. `installer/build.ps1` requires `DrawStagePage\` instead of the cards' `LessonPage\`.
+- **CI.** ci.yml loses G-13, G-15, G-16 and G-17; G-14 runs LP-1 and the three drawing rows; G-22 drops `--assert-checks`. TEST-CHECKLIST retires LS-1..LS-14, LSU-1..LSU-18, PL-1..PL-6, LT-1..LT-10, LP-2..LP-13, PE-2, SH-19 and SH-20, each saying why and where the rows are in git.
+- **Rows now:** LP-1 3, PE-1 7 → 6 (no golden or Part Library check; a broken set has two problems), PE-4 9 → 10 (drawings; an old lesson-plan case is kept as recorded), PE-5 5, PE-9 28.
+
+**Rejected.**
+- Keeping `PlannerPrompt` as a file for its one helper: a whole VisualPlan prompt file for a five-line function the drawing planner owns.
+- Converting the VisualPlan golden lessons into programs to keep PE-2: PE-9 already proves every drawing check passes and fails on hand-written programs.
+- Moving the deleted hosts' rows to "local-only" instead of retiring them: there is nothing left for them to run.
+- Re-scoring a lesson-plan case in an old recording as a drawing: its answer is JSON, so every drawing check would fail and read as a regression the drawing planner never caused.
+
 ## DEC-076 — 2026-11-07 — claude-opus-5-5
 
 **Decision — notes and replay keep the drawing program.** FEATURE-011 step 9; the owner: "Complete step 8-10 in new session". Amends DEC-059 (what a lesson note stores) and DEC-060 (what Replay plays); the plan in FEATURE-011 §3 ("Notes + Tray replay: keep, reworked").

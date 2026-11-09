@@ -160,7 +160,7 @@ internal static partial class DrawStageSmokeWindow
         }
     }
 
-    /// <summary>The Windows SAPI voice by COM late binding, as in LessonSurfaceSmoke's demo. Demo-host only.</summary>
+    /// <summary>The Windows SAPI voice by COM late binding, as the deleted LessonSurfaceSmoke's demo had it. Demo-host only.</summary>
     private sealed class SapiVoice
     {
         private const int SvsfAsync = 1, SvsfPurgeBeforeSpeak = 2;

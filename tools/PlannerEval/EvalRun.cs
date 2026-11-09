@@ -3,9 +3,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using HeyGanesh.Abstractions;
 using HeyGanesh.LessonPlanner;
-using HeyGanesh.PartLibrary;
 using HeyGanesh.Providers.Core;
-using HeyGanesh.VisualLessonEngine;
 
 namespace HeyGanesh.Tools.PlannerEval;
 
@@ -56,86 +54,18 @@ public sealed record CaseRun
     public string? Program { get; init; }
 
     [JsonIgnore]
-    public VisualPlan? Plan { get; init; }
-
-    [JsonIgnore]
     public List<string> SystemPrompts { get; init; } = new();
 }
 
 /// <summary>
-/// The case loop shared by PE-2, <c>--record</c> and <c>--replay</c> (DEC-044): build the request the App
-/// Shell would build, plan it through the real streaming planner over whatever client the caller gives,
-/// score it. Follow-ups are sent the lesson last planned for their previous case.
+/// The case loop shared by PE-9, <c>--record</c> and <c>--replay</c> (DEC-044/DEC-073): build the drawing request
+/// the App Shell would build, draw it through the real DrawingPlanner over whatever client the caller gives, score
+/// it. Follow-ups are sent the program last drawn for their previous case. The VisualPlan loop went with the
+/// VisualPlan stack in FEATURE-011 step 10 (DEC-077).
 /// </summary>
 internal static class EvalRun
 {
     public static readonly PixelRect Desktop = new(0, 0, 2560, 1440);
-
-    public static PlanRequest Request(EvalCase c, VisualPlan? previous) => new()
-    {
-        Question = c.Question,
-        Screen = c.Screen is { } s ? new ScreenGrounding(s.Description, s.TargetBox, null, 0, 0) : null,
-        VirtualDesktop = Desktop,
-        PreviousPlan = previous,
-        Scene3d = c.OffersScene3d ? ModelLibrary.ToCatalog() : null,
-        // A 3D case may also get a schematic for an object the library lacks (DEC-049), as the shell's 3D canvas will.
-        SchematicGeometry = c.OffersScene3d ? Schematics.Check : null,
-    };
-
-    /// <summary>
-    /// Plans and scores one case. An authentication failure and cancellation propagate (the whole run is
-    /// over); any other provider fault is recorded on the case, so one bad call never loses the other 29.
-    /// </summary>
-    public static async Task<CaseRun> RunOneAsync(EvalCase c, ILlmClient client, IDictionary<string, VisualPlan> lessons, CancellationToken ct = default)
-    {
-        var previous = c.Previous is { } p && lessons.TryGetValue(p, out var prev) ? prev : null;
-        var recording = new RecordingLlmClient(client);
-        using var planner = new VisualPlanner(recording);
-        PlanResult result;
-        try
-        {
-            result = await planner.PlanStreamingAsync(Request(c, previous), null, ct).ConfigureAwait(false);
-        }
-        catch (ProviderException ex) when (ex.Kind != ProviderErrorKind.AuthFailed)
-        {
-            return new CaseRun
-            {
-                Id = c.Id,
-                Checks = new(),
-                Answers = recording.Answers,
-                Partial = recording.LastAnswerPartial,
-                Error = ex.Kind.ToString(),
-                LibraryMiss = c.LibraryMiss,
-                SystemPrompts = Prompts(recording),
-            };
-        }
-
-        var sent = recording.Requests.Count > 0 ? recording.Requests[0].Messages.Last(m => m.Role == "user").Text : null;
-        var checks = EvalChecks.Score(c, result, previous, sent);
-        if (result.Lesson.Plan is { } plan)
-        {
-            lessons[c.Id] = plan;
-        }
-
-        return new CaseRun
-        {
-            Id = c.Id,
-            Checks = checks.ToDictionary(r => r.Id, r => r.Passed),
-            // Lower case on purpose: an upper-case FAIL in a report line reads as a failed row to the CI log scan.
-            Details = checks.Select(r => $"{(r.Passed ? "pass" : "fail")} {r.Id} {r.Detail}").ToList(),
-            Answers = recording.Answers,
-            Partial = recording.LastAnswerPartial,
-            FirstBeatMs = result.FirstBeatLatency?.TotalMilliseconds,
-            LatencyMs = result.Latency.TotalMilliseconds,
-            InputTokens = result.InputTokens,
-            OutputTokens = result.OutputTokens,
-            Attempts = result.Attempts,
-            StreamNote = result.StreamNote,
-            LibraryMiss = c.LibraryMiss,
-            Plan = result.Lesson.Plan,
-            SystemPrompts = Prompts(recording),
-        };
-    }
 
     /// <summary>The drawing request the App Shell will build for a case (step 7): the eval desktop is the canvas.</summary>
     public static DrawingRequest DrawRequest(EvalCase c, DrawingFollowUp? followUp) => new()
@@ -149,7 +79,7 @@ internal static class EvalRun
     };
 
     /// <summary>
-    /// Draws and scores one case (DEC-073), as <see cref="RunOneAsync"/> plans one: an authentication failure and
+    /// Draws and scores one case (DEC-073): an authentication failure and
     /// cancellation propagate, any other provider fault is recorded on the case. A follow-up is asked about the program
     /// last drawn for its previous case. With <paramref name="stage"/> the program also runs on the real stage and gets
     /// P-1..P-5; without one (offline) only the static checks.

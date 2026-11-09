@@ -4,8 +4,7 @@ namespace HeyGanesh.DrawStage;
 /// The stage's own STA thread running a WinForms message loop. WebView2, the window and Windows.UI.Composition are
 /// thread-affine (composition also needs the DispatcherQueue this loop pumps), and the callers (the lesson turn, the
 /// hotkey worker) are not UI threads, so every window call is posted here. Owned by <see cref="DrawStageWindow"/>.
-/// The same pattern as LessonSurface's UiThread, copied rather than referenced because LessonSurface goes in
-/// FEATURE-011 step 10.
+/// The same pattern as the deleted LessonSurface's UiThread (FEATURE-011 step 10 removed it, DEC-077).
 /// </summary>
 internal sealed class StageThread : IDisposable
 {

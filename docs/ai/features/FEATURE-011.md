@@ -332,3 +332,10 @@ Each step lists its proof rows. The rows are added to TEST-CHECKLIST.md in that 
   - Plan drift: §3 said "pace `speech` with the shell's voice, or `estimate` when silent", as built; it did not say where or for how long a replay is shown. The cursor's monitor and a 4 s hold are this step's choice (DEC-076 says why).
   - Not done here: a replay on a real stage window (RL-5, the owner's; DS-2..DS-6 cover the window and pacing). The App still references the old stack's projects, unused; they go in step 10.
   - Next: step 10, delete the old stack.
+- 2026-11-09 · claude-opus-5-5: **step 10 done (DEC-077).** The old lesson stack is deleted.
+  - Gone: VisualLessonEngine, PartLibrary, LessonSurface (cards, Babylon, Anatomy), LessonSession, and their four smoke hosts; their solution entries; ci.yml G-13, G-15, G-16, G-17. LessonPlanner keeps `DrawingPlanner` (plus `EarlierTurn` and the `Untrusted` fence helper, moved in); PlannerEval keeps only the drawing path.
+  - The App references LessonPlanner directly and drops PartLibrary; WebView2 now comes only through DrawStage. The installer checks for `DrawStagePage`.
+  - Rows: LP-1 3, LP-14 10, LP-15 5, LP-16 4; PE-1 6, PE-4 10, PE-5 5, PE-9 28, PE-11 12 (local, hidden stage); dead rows retired in TEST-CHECKLIST with the reason. `HeyGanesh.sln` builds -warnaserror 0/0; every ci.yml gate passed locally (G-10, G-11 and the G-2 scan run with Windows PowerShell, since `pwsh` is not on this machine); TraySmoke `--assert-install` 16; the shell's offline exits unchanged (0/12/0/13/12/12/0).
+  - Mutations caught: an extra planner reference (LP-1); replay re-scoring an old lesson-plan case (PE-4).
+  - Plan drift: none in scope. PlannerEval's four `"golden"` keys were removed from the set file because they named deleted files.
+  - Not done here: the live rows (SH-22, SH-28, RL-5, PE-10, NB-3, NB-5), the owner's. Step 11 (restyle `stage.css`, optional) is not started.

@@ -9,8 +9,8 @@
     (DS-1, tools/DrawStageSmoke - -assert-source).
 
     Step 2 (DEC-069): DrawStageWindow hosts the page over one monitor. WebView2 is the same pinned package and version
-    as LessonSurface's (DEC-020), not a new dependency; once LessonSurface is deleted (FEATURE-011 step 10) this is
-    again the only assembly that takes it. DS-1 pins it to exactly this one package. ScreenCapture gives
+    LessonSurface took (DEC-020), not a new dependency; since LessonSurface was deleted (FEATURE-011 step 10, DEC-077)
+    this is the only assembly that takes it. DS-1 pins it to exactly this one package. ScreenCapture gives
     CaptureExclusion; WinForms (a framework reference) gives the stage thread its message loop.
   -->
 
@@ -43,7 +43,7 @@
     <Content Include="Page\**\*" Link="DrawStagePage\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- As in LessonSurface: the package references its WPF control assembly for .NET 5+, which conflicts with the in-box
+  <!-- As LessonSurface did: the package references its WPF control assembly for .NET 5+, which conflicts with the in-box
        WindowsBase (MSB3277). The stage uses only the Core API, so that one reference is removed. -->
   <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>

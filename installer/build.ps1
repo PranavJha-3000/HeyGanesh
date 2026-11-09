@@ -53,13 +53,13 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'uninstall.ps1') -Destination $o
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'uninstall.ps1') -Destination $app
 
 # A package that is missing any of these would install but not run: the runtime (self-contained), WinForms
-# for the tray, the lesson cards' page, and the WebView2 loader.
+# for the tray, the drawing stage's page, and the WebView2 loader.
 $required = @(
     'HeyGanesh.Tray.exe', 'HeyGanesh.Tray.dll', 'HeyGanesh.App.dll', 'coreclr.dll', 'System.Windows.Forms.dll',
     'Microsoft.Web.WebView2.Core.dll', 'uninstall.ps1'
 )
 $missing = @($required | Where-Object { -not (Test-Path (Join-Path $app $_)) })
-if (-not (Test-Path (Join-Path $app 'LessonPage'))) { $missing += 'LessonPage\' }
+if (-not (Test-Path (Join-Path $app 'DrawStagePage'))) { $missing += 'DrawStagePage\' }
 if (-not (Get-ChildItem -LiteralPath $app -Recurse -Filter 'WebView2Loader.dll' -ErrorAction SilentlyContinue)) { $missing += 'WebView2Loader.dll' }
 if ($missing.Count -gt 0) {
     Write-Host "INCOMPLETE: the package lacks $($missing -join ', ')"

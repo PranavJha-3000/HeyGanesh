@@ -1,3 +1,11 @@
+## 2026-11-09 · claude-opus-5-5 (the old lesson stack is deleted, FEATURE-011 step 10, DEC-077)
+
+Did: Deleted VisualLessonEngine, PartLibrary, LessonSurface, LessonSession and their smoke hosts (and their sln entries, ci.yml G-13/G-15/G-16/G-17). LessonPlanner is DrawingPlanner only; PlannerEval scores drawings only (PE-2 and seeds.json gone, PE-4 on drawings). The App references LessonPlanner directly; the installer checks `DrawStagePage`. Dead rows retired in TEST-CHECKLIST.
+Left: FEATURE-011's live rows (SH-22, SH-28, RL-5, PE-10, NB-3, NB-5) are the owner's. Optional step 11 (restyle `stage.css`) not started.
+Watch: Old `bin/` folders still hold `LessonPage/` and the deleted assemblies from earlier builds; they are untracked and harmless, but a clean clone has none. `pwsh` is not installed here: ci.yml's scan gates must be run with `powershell -File` locally, or they report exit 0 without running. An old PlannerEval recording with lesson plans replays those cases as "not replayed".
+Next: the owner runs SH-28 (a live drawn lesson) and RL-5 (a replay on a real stage window).
+Verified: `dotnet build HeyGanesh.sln -c Debug -warnaserror` 0/0; every ci.yml gate locally (G-1..G-27 as listed, G-22 PASS 48 with the expected regression lines inside PE-4); scan-forbidden, scan-secrets and -ZeroNuGet pass; LP-1 3, LP-14..16; PE-1 6, PE-4 10, PE-5 5, PE-9 28, PE-11 12 (local, hidden stage); TraySmoke install 16; shell exits 0/12/0/13/12/12/0. Two mutations caught.
+
 ## 2026-11-07 · claude-opus-5-5 (notes and replay keep the drawing, FEATURE-011 step 9, DEC-076)
 
 Did: A drawn lesson's note stores `drawing:WxH` + the whole program now drawn (`HeyGanesh.Notes.StoredDrawing`, no schema change). Tray Recent lessons replays only a stored drawing, on its own stage window over the cursor's monitor, no model call, closed 4 s after the end; older VisualPlan rows say they were made by an older version. RL-3 is offline now (CI G-24).

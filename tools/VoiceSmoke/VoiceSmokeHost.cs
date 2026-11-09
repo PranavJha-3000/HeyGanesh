@@ -23,6 +23,8 @@ internal static partial class VoiceSmokeHost
         AssertTutorAuthority,
         AssertNoBackend,
         AssertFishFormat,
+        AssertGnaniTts,
+        AssertGnaniStt,
         AssertPreroll,
     }
 
@@ -58,6 +60,8 @@ internal static partial class VoiceSmokeHost
                 Mode.AssertTutorAuthority => AssertTutorAuthority(),
                 Mode.AssertNoBackend => AssertNoBackend(),
                 Mode.AssertFishFormat => await AssertFishFormatAsync(),
+                Mode.AssertGnaniTts => await AssertGnaniTtsAsync(),
+                Mode.AssertGnaniStt => await AssertGnaniSttAsync(),
                 Mode.AssertPreroll => await AssertPrerollAsync(),
                 _ => PrintUsage(),
             };
@@ -108,6 +112,8 @@ internal static partial class VoiceSmokeHost
                 case "--assert-tutor-authority": mode = Mode.AssertTutorAuthority; break;
                 case "--assert-no-backend": mode = Mode.AssertNoBackend; break;
                 case "--assert-fish-format": mode = Mode.AssertFishFormat; break;
+                case "--assert-gnani-tts": mode = Mode.AssertGnaniTts; break;
+                case "--assert-gnani-stt": mode = Mode.AssertGnaniStt; break;
                 case "--assert-preroll": mode = Mode.AssertPreroll; break;
                 case "--help": case "-h": case "/?": mode = Mode.Help; break;
                 default: Console.WriteLine($"ignoring unknown argument '{args[i]}'"); break;
@@ -133,6 +139,8 @@ internal static partial class VoiceSmokeHost
         Console.WriteLine("  --assert-tutor-authority      assistant frames never become text, exit 0");
         Console.WriteLine("  --assert-no-backend           task.* classified + counted (abort guard), exit 0");
         Console.WriteLine("  --assert-fish-format          wav/44100 body + WAV parser contract, exit 0");
+        Console.WriteLine("  --assert-gnani-tts            Timbre body, X-API-Key-ID header, error mapping over a stub, exit 0");
+        Console.WriteLine("  --assert-gnani-stt            Prisma listener: end-of-speech rule, upload shape, silence, errors, exit 0");
         Console.WriteLine();
         Console.WriteLine("Env (names only here; values never echoed): FISH_AUDIO_API_KEY,");
         Console.WriteLine("HEYGANESH_QWEN_GATEWAY_URL. Live rows are human-run, not scripted.");

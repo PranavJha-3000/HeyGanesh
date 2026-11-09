@@ -98,7 +98,7 @@ internal static partial class ShellHost
         Console.WriteLine("--max-candidates  candidate cap handed to Element Selection (default 120).");
         Console.WriteLine("--no-dpi          do not claim PerMonitorV2 awareness, so the overlay's refusal to draw on");
         Console.WriteLine("                  a non-aware host can be observed. Nothing in a normal run should use it.");
-        Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish): where it was found and");
+        Console.WriteLine("--keys            show each provider key's state (deepseek, typesafe, fish, gnani): where it was found and");
         Console.WriteLine("                  its length, never its value; then exit.");
         Console.WriteLine("--set-key <name>  store a key in Windows Credential Manager. It is typed or pasted with nothing");
         Console.WriteLine("                  shown, or piped on stdin; then exit. Every API client reads it from there");
@@ -166,8 +166,8 @@ internal static partial class ShellHost
         Console.WriteLine($"  target     : {(options.Foreground ? "foreground window" : "window under the cursor")}");
         Console.WriteLine($"  overlay    : {(options.Overlay ? $"{options.DurationMs} ms per found verdict" : "disabled (--no-overlay)")}");
         Console.WriteLine($"  keys       : TYPESAFE_API_KEY={Keys.Describe("typesafe")}  DEEPSEEK_API_KEY={Keys.Describe("deepseek")}");
-        Console.WriteLine($"  voice      : HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
-                          $"FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
+        Console.WriteLine($"  voice      : {(HasKey("gnani") ? "listening with Gnani Prisma, speaking with Gnani Timbre  " : string.Empty)}HEYGANESH_QWEN_GATEWAY_URL={(gatewayUrl ? "present (value suppressed)" : "MISSING")}  " +
+                          $"GNANI_API_KEY={Keys.Describe("gnani")}  FISH_AUDIO_API_KEY={Keys.Describe("fish")} (TTS speaks the lesson when one is produced)");
         Console.WriteLine($"  tutor      : {TutorHeader()}");
         Console.WriteLine($"  route      : {RouteHeader(options, typesafeKey)}");
         Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");

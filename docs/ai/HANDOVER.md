@@ -1,3 +1,27 @@
+## 2026-11-09 · claude-sonnet-5-5 (landing page, DEC-080)
+
+Did: `site/` static landing page: hero with an animated pen-drawn lesson, three steps, what it does, the Gnani voice section, install steps, FAQ. Checked in the browser pane at desktop and phone width (no sideways scroll); fixed a stray dot left by undrawn strokes.
+Left: the GitHub Release with `HeyGanesh-win-x64.zip` (the button 404s until it exists), hosting (GitHub Pages from `site/`), the brag video, the submission text. Not run: CI scan gates over `site/`, a keyboard-only pass, other browsers than the pane's.
+Watch: the pane throttles animations when hidden, so a screenshot can catch the drawing mid-way; give it 15 s. The page promises things the app only configures: English and Hindi, "free", about 190 MB (from `package.txt`).
+Next: tag a release and attach `artifacts/HeyGanesh-win-x64.zip` (built 2026-11-09 14:07 with `installer\build.ps1 -Zip`, 77,900,347 bytes, sha256 a9c7f772...033f0, a copy of the script's `installer-win-x64.zip`; built from the uncommitted working tree, so it includes the Gnani Timbre/Prisma work), switch on Pages, then the brag video. TraySmoke --assert-install 16 PASS on this package.
+Verified: pane render at 799 px and 375 px wide, all sections read, console not checked.
+
+## 2026-11-09 · claude-sonnet-5-5 (Gnani Prisma STT, DEC-079)
+
+Did: `GnaniSttListener` + `GnaniSttOptions` (Voice) behind `IVoiceListener`: records from the microphone seam, ends on 1 s of quiet after speech, posts a WAV to `/stt/v3` (prisma-v3.0, en-IN,hi-IN, codemix). The shell listens with it (and speaks with Timbre) when the gnani key is set; no Gateway needed then. VO-13 `VoiceSmoke --assert-gnani-stt`.
+Left: live Prisma and Timbre calls (need a Gnani key; none was available here). Landing page, the brag video and the submission text are next; Evon is out (no API on the challenge page). Not run: a real microphone through the listener, the tray window rows, CI scan gates, a mutation check on VO-13.
+Watch: the end-of-speech rule is plain amplitude: a loud room holds the clip open to 29 s, a quiet voice may read as silence (`GnaniSttOptions.SpeechRms`). Prisma and Timbre are both on api.vachana.ai per the docs; if a live call 401s or 404s, check the host and the `X-API-Key-ID` header first. Gnani allows one active request per key.
+Next: the landing page with a GitHub Release download, then the brag video (ffmpeg is missing on this machine).
+Verified: Voice, VoiceSmoke, TraySmoke (App, Tray) build -warnaserror 0/0. VO-13 18 PASS (four runs); VO-12 13, VO-9, VO-11, gcp-events, no-backend, tutor-authority PASS; TraySmoke source, keys-model, notes-shell PASS; `HeyGanesh.App.exe --once --question x` with no keys: header shows the gnani key line, KEY ERROR, exit 12.
+
+## 2026-11-09 · claude-sonnet-5-5 (Gnani Timbre TTS, DEC-078)
+
+Did: `GnaniTtsClient` + `GnaniTtsOptions` (Voice) behind `ITtsClient`; `gnani` key in `KeyRing.Known` (tray menu, key screen, `--keys`); the shell speaks through Timbre when the gnani key is set, else Fish (also the tray replay's speaker check). VO-12 `VoiceSmoke --assert-gnani-tts`. Four pinned key-list rows updated for the fourth key (SecretSmoke keyring, TraySmoke keys-model, startup, menu).
+Left: a live Timbre call (needs a Gnani key). Prisma STT (REST, replaces the qwen Gateway) and the landing page are next; Evon has no API in the challenge page ("on Hugging Face"), so it is out unless the owner has access. Submissions close 2026-11-10.
+Watch: Gnani's docs say `api.vachana.ai` + `X-API-Key-ID`; its marketing page says `api.gnani.ai` + Bearer. The docs were followed and are unproven live. Gnani allows one active request per key, so overlapping speech is a 429.
+Next: Prisma STT as an `IVoiceListener`.
+Verified: Voice, VoiceSmoke, SecretSmoke, TraySmoke build -warnaserror 0/0. VO-12 13 PASS; VO-9 (Fish) still OK; SecretSmoke --assert-keyring OK; TraySmoke keys-model, source, log, startup, tray OK; `HeyGanesh.App.exe --keys` lists gnani, exit 0. Not run: TraySmoke --assert-keys-window/--assert-keys-pause/--assert-recent-window, CI scan gates.
+
 ## 2026-11-09 · claude-opus-5-5 (the old lesson stack is deleted, FEATURE-011 step 10, DEC-077)
 
 Did: Deleted VisualLessonEngine, PartLibrary, LessonSurface, LessonSession and their smoke hosts (and their sln entries, ci.yml G-13/G-15/G-16/G-17). LessonPlanner is DrawingPlanner only; PlannerEval scores drawings only (PE-2 and seeds.json gone, PE-4 on drawings). The App references LessonPlanner directly; the installer checks `DrawStagePage`. Dead rows retired in TEST-CHECKLIST.

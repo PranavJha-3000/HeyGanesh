@@ -118,7 +118,7 @@ internal static partial class ShellHost
     /// </summary>
     private static Func<string, CancellationToken, Task>? ReplaySpeaker()
     {
-        if (ReplayVoice is not { } voice || !HasKey("fish"))
+        if (ReplayVoice is not { } voice || !(HasKey("gnani") || HasKey("fish")))
         {
             return null;
         }

@@ -178,8 +178,13 @@ internal static partial class ShellHost
         // draining has already been awaited by RunHookedAsync, so nothing speaks into a dead service).
         // The Fish client is built here only to hand it the key ring's reader; declared before voice, so it
         // is disposed after the service that speaks through it (a service never disposes a client it was given).
-        using var tts = new FishTtsClient(new FishTtsOptions { ApiKey = Keys.Reader("fish") });
-        using var voice = new VoiceService(tts: tts);
+        // Gnani's Timbre speaks when its key is set, otherwise Fish (either may be absent: the leg then reports its skip).
+        using ITtsClient tts = HasKey("gnani")
+            ? new GnaniTtsClient(new GnaniTtsOptions { ApiKey = Keys.Reader("gnani") })
+            : new FishTtsClient(new FishTtsOptions { ApiKey = Keys.Reader("fish") });
+        // Prisma listens when the gnani key is set (no Gateway needed), otherwise the qwen Gateway (listener null = default).
+        using IVoiceListener? gnaniListener = HasKey("gnani") ? new GnaniSttListener(new GnaniSttOptions { ApiKey = Keys.Reader("gnani") }) : null;
+        using var voice = new VoiceService(listener: gnaniListener, tts: tts);
         // DEC-060: a replay from the tray speaks through this same voice, over the cursor's monitor (DEC-076).
         ReplayVoice = voice;
         ReplayMonitor = capture.GetCursorMonitor;

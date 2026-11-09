@@ -266,6 +266,345 @@ internal static partial class VoiceSmokeHost
         return failures == 0 ? 0 : 1;
     }
 
+    /// <summary>VO-12: the Gnani Timbre contract over a stub: body fields, X-API-Key-ID (no Bearer), key gate before I/O, error mapping, a WAV round trip.</summary>
+    private static async Task<int> AssertGnaniTtsAsync()
+    {
+        var failures = 0;
+        Console.WriteLine("=== VO: Gnani Timbre contract ===");
+
+        using (var probe = new GnaniTtsClient(GnaniTtsOptions.Default, new HttpClient(new StubHandler())))
+        {
+            var body = probe.BuildRequestBody("hello", voice: null).ToJsonString();
+            failures += Check("body names model timbre-v3.0 and voice Shivani", body.Contains("\"model\":\"timbre-v3.0\"") && body.Contains("\"voice\":\"Shivani\""));
+            failures += Check("body asks for a 48000 Hz mono 16-bit linear_pcm wav", body.Contains("\"sample_rate\":48000") && body.Contains("\"num_channels\":1") && body.Contains("\"sample_width\":2") && body.Contains("\"container\":\"wav\""));
+            failures += Check("a request voice overrides the default", probe.BuildRequestBody("x", "Avinash").ToJsonString().Contains("\"voice\":\"Avinash\""));
+            failures += Check("no key material enters the body", !body.Contains("GNANI_API_KEY", StringComparison.OrdinalIgnoreCase));
+        }
+
+        try
+        {
+            using var bad = new GnaniTtsClient(new GnaniTtsOptions { Speed = 2.0 });
+            failures += Check("speed outside 0.85..1.15 refused at construction", false);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            failures += Check("speed outside 0.85..1.15 refused at construction", true);
+        }
+
+        var saved = Environment.GetEnvironmentVariable("GNANI_API_KEY");
+        try
+        {
+            Environment.SetEnvironmentVariable("GNANI_API_KEY", null);
+            using var noKey = new GnaniTtsClient(GnaniTtsOptions.Default, new HttpClient(new StubHandler()));
+            failures += Check("missing key fails as VoiceAuthenticationException before any request",
+                await ThrowsAuth(noKey.SynthesizeAsync(new SpeakRequest { Text = "x" }, CancellationToken.None)));
+
+            var scripted = new ScriptedHandler(System.Net.HttpStatusCode.OK, WavFixture.Valid());
+            using var good = new GnaniTtsClient(new GnaniTtsOptions { ApiKey = () => "vo-gnani-dummy" }, new HttpClient(scripted));
+            long bytes = 0;
+            await foreach (var chunk in good.SynthesizeAsync(new SpeakRequest { Text = "x" }, CancellationToken.None))
+            {
+                bytes += chunk.Pcm.Length;
+            }
+
+            failures += Check("the key goes in X-API-Key-ID, not Authorization", scripted.ApiKeyHeader == "vo-gnani-dummy" && !scripted.HadAuthorization);
+            failures += Check("posts to /api/v1/tts/inference", scripted.Path == "/api/v1/tts/inference");
+            failures += Check("a WAV answer plays through WavPcmReader (8820 bytes)", bytes == 8820);
+
+            foreach (var (status, expectAuth, expectRate) in new[]
+            {
+                (System.Net.HttpStatusCode.Unauthorized, true, false),
+                (System.Net.HttpStatusCode.PaymentRequired, true, false),
+                (System.Net.HttpStatusCode.TooManyRequests, false, true),
+            })
+            {
+                using var failing = new GnaniTtsClient(new GnaniTtsOptions { ApiKey = () => "vo-gnani-dummy" }, new HttpClient(new ScriptedHandler(status, "{\"success\":false}"u8.ToArray())));
+                var auth = false;
+                var rate = false;
+                try
+                {
+                    await foreach (var _ in failing.SynthesizeAsync(new SpeakRequest { Text = "x" }, CancellationToken.None))
+                    {
+                    }
+                }
+                catch (VoiceAuthenticationException)
+                {
+                    auth = true;
+                }
+                catch (VoiceRateLimitException)
+                {
+                    rate = true;
+                }
+
+                failures += Check($"HTTP {(int)status} maps to {(expectAuth ? "authentication" : "rate limit")}", auth == expectAuth && rate == expectRate);
+            }
+
+            using var broken = new GnaniTtsClient(new GnaniTtsOptions { ApiKey = () => "vo-gnani-dummy" }, new HttpClient(new ScriptedHandler(System.Net.HttpStatusCode.InternalServerError, "oops"u8.ToArray())));
+            var typed = false;
+            try
+            {
+                await foreach (var _ in broken.SynthesizeAsync(new SpeakRequest { Text = "x" }, CancellationToken.None))
+                {
+                }
+            }
+            catch (VoiceClientException ex) when (ex.StatusCode == 500)
+            {
+                typed = true;
+            }
+
+            failures += Check("HTTP 500 is a typed VoiceClientException carrying the status", typed);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GNANI_API_KEY", saved);
+        }
+
+        Console.WriteLine(failures == 0 ? "GNANI TTS CONTRACT OK (exit 0)" : $"GNANI TTS CONTRACT BROKEN ({failures} failures, exit 1)");
+        return failures == 0 ? 0 : 1;
+    }
+
+    /// <summary>Answers every request with one scripted status and body, recording the key header and path.</summary>
+    private sealed class ScriptedHandler(System.Net.HttpStatusCode status, byte[] body) : HttpMessageHandler
+    {
+        public string? ApiKeyHeader { get; private set; }
+
+        public bool HadAuthorization { get; private set; }
+
+        public string? Path { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            ApiKeyHeader = request.Headers.TryGetValues("X-API-Key-ID", out var v) ? string.Join(",", v) : null;
+            HadAuthorization = request.Headers.Authorization is not null;
+            Path = request.RequestUri?.AbsolutePath;
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new ByteArrayContent(body) });
+        }
+    }
+
+    /// <summary>VO-13: the Gnani Prisma listener over a scripted microphone and a stub handler: end-of-speech rule, request shape, silence, errors, cancellation.</summary>
+    private static async Task<int> AssertGnaniSttAsync()
+    {
+        var failures = 0;
+        Console.WriteLine("=== VO: Gnani Prisma listener ===");
+        const string ok = "{\"success\":true,\"transcript\":\"where is the save button\",\"model\":\"prisma-v3.0\"}";
+        var keyed = new GnaniSttOptions { ApiKey = () => "vo-gnani-dummy" };
+        var quickVoice = new VoiceOptions { NoSpeechTimeout = TimeSpan.FromSeconds(1), MaxUtterance = TimeSpan.FromSeconds(5) };
+
+        // Pure helpers.
+        var wav = GnaniSttListener.BuildWav(new byte[3200], 16000);
+        failures += Check("BuildWav writes RIFF/WAVE, 16000 Hz mono, 44 + data bytes",
+            wav.Length == 3244 && System.Text.Encoding.ASCII.GetString(wav, 0, 4) == "RIFF" && System.Text.Encoding.ASCII.GetString(wav, 8, 4) == "WAVE" && BitConverter.ToInt32(wav, 24) == 16000 && BitConverter.ToInt16(wav, 22) == 1);
+        long parsed = 0;
+        await foreach (var chunk in WavPcmReader.ReadAsync(new MemoryStream(wav), CancellationToken.None))
+        {
+            parsed += chunk.Pcm.Length;
+        }
+
+        failures += Check("the clip it builds is a WAV this module's own reader accepts (3200 data bytes)", parsed == 3200);
+        failures += Check("Rms is 0 for silence and 3000 for a steady 3000", GnaniSttListener.Rms(new byte[3200]) == 0 && Math.Abs(GnaniSttListener.Rms(ScriptedMicrophone.Block(3000)) - 3000) < 1);
+        failures += Check("an empty transcript parses as empty, not as a fault", GnaniSttListener.ParseTranscript("{\"success\":true,\"transcript\":\"\"}") == string.Empty);
+
+        // A missing key fails before the microphone is ever opened.
+        var saved = Environment.GetEnvironmentVariable("GNANI_API_KEY");
+        try
+        {
+            Environment.SetEnvironmentVariable("GNANI_API_KEY", null);
+            var mic0 = new ScriptedMicrophone(Enumerable.Repeat(3000, 5));
+            using var noKey = new GnaniSttListener(GnaniSttOptions.Default, quickVoice, mic0, new HttpClient(new StubHandler()));
+            var threw = false;
+            try
+            {
+                await noKey.ListenOnceAsync(CancellationToken.None);
+            }
+            catch (VoiceAuthenticationException)
+            {
+                threw = true;
+            }
+
+            failures += Check("a missing key is an authentication fault and the microphone never opens", threw && mic0.Starts == 0);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GNANI_API_KEY", saved);
+        }
+
+        // Speech: 5 quiet, 8 loud, then quiet. Kept: 3 pre-roll + 8 loud + 10 quiet blocks (1 s of quiet ends it).
+        var upload = new UploadHandler(System.Net.HttpStatusCode.OK, ok);
+        var mic1 = new ScriptedMicrophone(Enumerable.Repeat(0, 5).Concat(Enumerable.Repeat(3000, 8)).Concat(Enumerable.Repeat(0, 15)));
+        using (var listener = new GnaniSttListener(keyed, quickVoice, mic1, new HttpClient(upload)))
+        {
+            var result = await listener.ListenOnceAsync(CancellationToken.None);
+            failures += Check("the transcript is the verdict", result.FinalText == "where is the save button" && !result.IsNoSpeech && !result.Failed && result.FrontendId == "gnani-prisma");
+            failures += Check("the microphone was started and stopped once", mic1.Starts == 1 && mic1.Stops == 1);
+            failures += Check("the clip holds 3 pre-roll + 8 loud + 10 quiet blocks (21 x 3200 bytes)", upload.WavDataBytes == 21 * 3200);
+            failures += Check("the request is multipart to /stt/v3 with model, language_code, format and audio_file",
+                upload.Path == "/stt/v3" && upload.Text.Contains("prisma-v3.0") && upload.Text.Contains("en-IN,hi-IN") && upload.Text.Contains("codemix") && upload.Text.Contains("name=audio_file"));
+            failures += Check("the key goes in X-API-Key-ID, not Authorization", upload.ApiKeyHeader == "vo-gnani-dummy" && !upload.HadAuthorization);
+        }
+
+        // Continuous loud speech is cut at MaxClip (2 s here = 20 blocks).
+        var capped = new UploadHandler(System.Net.HttpStatusCode.OK, ok);
+        var mic2 = new ScriptedMicrophone(Enumerable.Repeat(3000, 40));
+        using (var listener = new GnaniSttListener(new GnaniSttOptions { ApiKey = () => "vo-gnani-dummy", MaxClip = TimeSpan.FromSeconds(2) }, quickVoice, mic2, new HttpClient(capped)))
+        {
+            await listener.ListenOnceAsync(CancellationToken.None);
+            failures += Check("a clip never runs past MaxClip (20 blocks)", capped.WavDataBytes == 20 * 3200 && mic2.Stops == 1);
+        }
+
+        // Silence is a verdict, with no request sent.
+        var mic3 = new ScriptedMicrophone(Enumerable.Repeat(0, 30));
+        using (var listener = new GnaniSttListener(keyed, quickVoice, mic3, new HttpClient(new StubHandler())))
+        {
+            var result = await listener.ListenOnceAsync(CancellationToken.None);
+            failures += Check("nobody speaking is IsNoSpeech (not a failure), nothing is sent, the microphone is stopped", result.IsNoSpeech && !result.Failed && mic3.Stops == 1);
+        }
+
+        using (var listener = new GnaniSttListener(keyed, quickVoice, new ScriptedMicrophone(Enumerable.Repeat(3000, 3).Concat(Enumerable.Repeat(0, 15))), new HttpClient(new UploadHandler(System.Net.HttpStatusCode.OK, "{\"success\":true,\"transcript\":\"\"}"))))
+        {
+            var result = await listener.ListenOnceAsync(CancellationToken.None);
+            failures += Check("an empty transcript is IsNoSpeech", result.IsNoSpeech && !result.Failed);
+        }
+
+        // Provider faults are typed, and the microphone is released each time.
+        foreach (var (status, expect) in new[]
+        {
+            (System.Net.HttpStatusCode.Unauthorized, "auth"),
+            (System.Net.HttpStatusCode.PaymentRequired, "auth"),
+            (System.Net.HttpStatusCode.TooManyRequests, "rate"),
+            (System.Net.HttpStatusCode.InternalServerError, "client"),
+        })
+        {
+            var mic = new ScriptedMicrophone(Enumerable.Repeat(3000, 3).Concat(Enumerable.Repeat(0, 15)));
+            using var listener = new GnaniSttListener(keyed, quickVoice, mic, new HttpClient(new UploadHandler(status, "{\"success\":false}")));
+            var got = "none";
+            try
+            {
+                await listener.ListenOnceAsync(CancellationToken.None);
+            }
+            catch (VoiceAuthenticationException)
+            {
+                got = "auth";
+            }
+            catch (VoiceRateLimitException)
+            {
+                got = "rate";
+            }
+            catch (VoiceClientException ex) when (ex.StatusCode == 500)
+            {
+                got = "client";
+            }
+
+            failures += Check($"HTTP {(int)status} is a typed {expect} fault and the microphone is stopped", got == expect && mic.Stops == 1);
+        }
+
+        // Cancellation stops the microphone and propagates.
+        var mic4 = new ScriptedMicrophone(Enumerable.Empty<int>(), hang: true);
+        using (var listener = new GnaniSttListener(keyed, quickVoice, mic4, new HttpClient(new StubHandler())))
+        {
+            using var cts = new CancellationTokenSource(150);
+            var cancelled = false;
+            try
+            {
+                await listener.ListenOnceAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                cancelled = true;
+            }
+
+            failures += Check("cancelling a listen throws OperationCanceledException and stops the microphone", cancelled && mic4.Stops == 1);
+        }
+
+        Console.WriteLine(failures == 0 ? "GNANI STT LISTENER OK (exit 0)" : $"GNANI STT LISTENER BROKEN ({failures} failures, exit 1)");
+        return failures == 0 ? 0 : 1;
+    }
+
+    /// <summary>A microphone that plays a script of 100 ms blocks (one steady amplitude each) and counts its starts and stops.</summary>
+    private sealed class ScriptedMicrophone(IEnumerable<int> amplitudes, bool hang = false) : IMicrophoneSource
+    {
+        private readonly int[] _script = amplitudes.ToArray();
+        private volatile bool _stopped;
+
+        public int SampleRate => 16000;
+
+        public int Starts { get; private set; }
+
+        public int Stops { get; private set; }
+
+        public event EventHandler<MicrophoneFrameEventArgs>? Frame;
+
+        public static byte[] Block(int amplitude)
+        {
+            var pcm = new byte[3200];
+            for (var i = 0; i < 1600; i++)
+            {
+                BitConverter.TryWriteBytes(pcm.AsSpan(i * 2, 2), (short)amplitude);
+            }
+
+            return pcm;
+        }
+
+        public void Start()
+        {
+            Starts++;
+            _stopped = false;
+            if (hang)
+            {
+                return;
+            }
+
+            _ = Task.Run(async () =>
+            {
+                foreach (var amplitude in _script)
+                {
+                    if (_stopped)
+                    {
+                        return;
+                    }
+
+                    Frame?.Invoke(this, new MicrophoneFrameEventArgs(Block(amplitude)));
+                    await Task.Delay(2);
+                }
+            });
+        }
+
+        public void Stop()
+        {
+            Stops++;
+            _stopped = true;
+        }
+
+        public void Dispose()
+        {
+        }
+    }
+
+    /// <summary>Answers with one scripted status and JSON, recording the upload (bytes, path, key header).</summary>
+    private sealed class UploadHandler(System.Net.HttpStatusCode status, string json) : HttpMessageHandler
+    {
+        public string Text { get; private set; } = string.Empty;
+
+        public int WavDataBytes { get; private set; } = -1;
+
+        public string? Path { get; private set; }
+
+        public string? ApiKeyHeader { get; private set; }
+
+        public bool HadAuthorization { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var bytes = request.Content is null ? [] : await request.Content.ReadAsByteArrayAsync(cancellationToken);
+            Text = System.Text.Encoding.Latin1.GetString(bytes);
+            var riff = Text.IndexOf("RIFF", StringComparison.Ordinal);
+            WavDataBytes = riff >= 0 ? BitConverter.ToInt32(bytes, riff + 40) : -1;
+            Path = request.RequestUri?.AbsolutePath;
+            ApiKeyHeader = request.Headers.TryGetValues("X-API-Key-ID", out var v) ? string.Join(",", v) : null;
+            HadAuthorization = request.Headers.Authorization is not null;
+            return new HttpResponseMessage(status) { Content = new StringContent(json) };
+        }
+    }
+
     private static async Task<bool> ThrowsVoice(IAsyncEnumerable<TtsAudioChunk> source)
     {
         try

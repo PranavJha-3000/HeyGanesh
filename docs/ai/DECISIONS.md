@@ -87,6 +87,36 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-080 — 2026-11-09 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** A static landing page lives in `site/` (index.html, style.css, app.js, the brand mark), no build step and no dependency beyond two Google Fonts (Young Serif, Geist). The download button points at the GitHub Release asset `https://github.com/PranavJha-3000/HeyGanesh/releases/latest/download/HeyGanesh-win-x64.zip`, the name `installer/build.ps1 -Zip` already writes. The hero is the product itself: a pen-stroke drawing (a wrench on a bolt, F, r, tau) animated in CSS with captions standing for the spoken lesson; Replay restarts it; reduced motion shows the finished drawing. The page says plainly that it needs a DeepSeek and a TypeSafe key, that the installer is unsigned, and that it is Windows only.
+- **Why:** the Gnani challenge (closes 2026-11-10) needs a demo, and the owner wants a download page for non-technical people, in YouLearn's style (white page, pill buttons, calm tone).
+- **Alternatives rejected:** an APK (HeyGanesh is a Windows desktop app); a one-click setup `.exe` (no installer toolchain here and no time before the deadline: the zip plus `install.ps1` stays, with the Terminal fallback shown); a screenshot hero (the drawn diagram shows what the app does and cannot go stale); a framework or bundler (nothing on the page needs one).
+- **Known gaps:** the Release asset does not exist yet, so the button 404s until the zip is uploaded (`powershell -File installer\build.ps1 -Zip`, then a GitHub Release tagged and the zip attached). Not hosted anywhere yet (GitHub Pages from `site/` is the obvious choice). The English-and-Hindi claim follows the configured language codes and is not proven by a live call.
+- **Date:** 2026-11-09
+- **Model version:** claude-sonnet-5-5
+
+## DEC-079 — 2026-11-09 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** Gnani's Prisma is a second `IVoiceListener` (`GnaniSttListener`, `GnaniSttOptions` in `HeyGanesh.Voice`), used by the App Shell when the `gnani` key is set; otherwise the qwen Gateway listener stays the default. It records one utterance from the microphone seam, ends it by a local energy rule (mean amplitude 500 of 32768 counts as speech, 1 s of quiet after speech ends it, 3 blocks of pre-roll, 29 s cap, `NoSpeechTimeout` for nobody speaking), wraps the PCM16 in a WAV and posts it multipart to `POST https://api.vachana.ai/stt/v3` (header `X-API-Key-ID`; `model=prisma-v3.0`, `language_code=en-IN,hi-IN`, `format=codemix`). An empty transcript is `IsNoSpeech`; 401/402/403 are authentication, 429 a rate limit, anything else `VoiceClientException`. A missing key fails before the microphone opens.
+- **Why:** it removes the external Gateway for the demo (one key does listening and speaking) and Prisma is one of the three models the Gnani challenge asks for.
+- **Alternatives rejected:** the Prisma WebSocket (real server-side end-of-speech and partials, but a new transport and a far bigger change for a one-day deadline); a push-to-talk release signal (the `IVoiceListener` contract has none, DEC-013); a provider-side VAD (REST has none).
+- **Known gaps:** no live Prisma call yet (no key here). The energy rule is simple: a noisy room can hold the clip open to the cap and a very quiet speaker can read as silence (`SpeechRms` is the knob). The request's `format=codemix` is a v3.0-only field.
+- **Date:** 2026-11-09
+- **Model version:** claude-sonnet-5-5
+
+## DEC-078 — 2026-11-09 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** Gnani's Timbre is a second `ITtsClient` (`GnaniTtsClient`, `GnaniTtsOptions` in `HeyGanesh.Voice`), selected by the App Shell when the `gnani` key is set, otherwise Fish. Endpoint and header follow docs.gnani.ai: `POST https://api.vachana.ai/api/v1/tts/inference`, header `X-API-Key-ID`, model `timbre-v3.0` (voice `Shivani`, language `auto`, 48 kHz mono 16-bit linear_pcm WAV, so `WavPcmReader` is unchanged). The key is `gnani` / `GNANI_API_KEY` in `KeyRing.Known` (tray menu, key screen and `--keys` list it). HTTP 401/402/403 are authentication errors, 429 a rate limit (Gnani allows one active request per key), other statuses `VoiceClientException`.
+- **Why:** the Gnani Great Indian AI Internship Challenge (submissions close 2026-11-10) asks for a working app on Prisma, Timbre or Evon; Timbre is the smallest fully documented seam.
+- **Alternatives rejected:** a new `Providers.Gnani` assembly (Voice has no project references by design, Fish lives there too); copying the marketing page's `api.gnani.ai/v1/tts/inference` with a Bearer token (it contradicts the API docs and its own OpenAPI file); streaming (SSE/WebSocket) for now, since a whole WAV is what the player takes.
+- **Known gap:** no live Timbre call has been made (no key in this session). The offline row VO-12 proves the request and the error mapping against a stub only.
+- **Date:** 2026-11-09
+- **Model version:** claude-sonnet-5-5
+
 ## DEC-077 — 2026-11-09 — claude-opus-5-5
 
 **Decision — the old lesson stack is deleted.** FEATURE-011 step 10; the owner: "Complete step 8-10 in new session". Carries out FEATURE-011 §3's removals; supersedes DEC-023, DEC-025, DEC-026, DEC-027, DEC-028..DEC-034, DEC-041, DEC-042, DEC-048..DEC-050 and DEC-057 as descriptions of code that exists (they stay in this file as history). Rollback point: step 9's commit `12080aa` (ROLLBACK.md).

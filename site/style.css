@@ -37,14 +37,60 @@ a { color: inherit; text-underline-offset: 3px; }
 .wrap { width: min(var(--max), 100% - 2 * var(--gutter)); margin-inline: auto; }
 
 /* ---------- top bar ---------- */
+/* A translucent layer the page scrolls under (heavier blur than a chip, bright top edge). */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 24px;
-  width: min(var(--max), 100% - 2 * var(--gutter));
-  margin-inline: auto;
-  padding-block: 18px;
+  padding: 14px max(var(--gutter), calc((100% - var(--max)) / 2));
+  background: rgba(255, 255, 255, .68);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border-bottom: 1px solid rgba(28, 24, 20, .06);
 }
+
+/* ---------- motion tokens: critically damped settle, no overshoot ---------- */
+:root { --settle: cubic-bezier(.22, 1, .36, 1); }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 12px;
+  border: 1px solid var(--kraft-edge);
+  border-radius: 100px;
+  background: rgba(214, 196, 162, .28);
+  font: 500 13px/1 var(--sans);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #5a4a2c;
+}
+.eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mark); }
+.deva { font-family: "Noto Serif Devanagari", var(--serif); text-transform: none; letter-spacing: 0; }
+
+/* The tagline as a statement: dark band, the kraft glow behind it. */
+.vigna { background: var(--ink); color: #f6f1e6; position: relative; overflow: hidden; }
+.vigna::before {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto 55%;
+  width: 70vmin;
+  height: 70vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 196, 162, .35), transparent 65%);
+  pointer-events: none;
+}
+.vigna-in { position: relative; display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(24px, 5vw, 72px); align-items: end; padding-block: clamp(64px, 11vw, 140px); }
+.vigna-name { font: 400 clamp(3rem, 9vw, 7rem)/.95 var(--serif); letter-spacing: -.035em; }
+.vigna-gloss { color: #cfc6b3; font-size: clamp(1.05rem, 1.5vw, 1.25rem); max-width: 30em; }
+.vigna-gloss .deva { color: var(--kraft); font-size: 1.1em; }
+
+/* Scroll reveal: only when JS has run, so the page never hides itself without it. */
+.js [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity .8s var(--settle), transform .9s var(--settle); }
+.js [data-reveal].in { opacity: 1; transform: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 400 20px/1 var(--serif); }
 
@@ -62,15 +108,18 @@ a { color: inherit; text-underline-offset: 3px; }
   text-decoration: none;
   white-space: nowrap;
 }
-.btn-ink { background: var(--ink); color: #fff; }
-.btn-ink:hover { background: #000; }
+.btn { transition: transform .35s var(--settle), background .2s, border-color .2s, box-shadow .35s var(--settle); }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: scale(.96); transition-duration: 80ms; } /* feedback on press, not release */
+.btn-ink { background: var(--ink); color: #fff; box-shadow: 0 6px 18px -8px rgba(28, 24, 20, .5); }
+.btn-ink:hover { background: #000; box-shadow: 0 10px 26px -10px rgba(28, 24, 20, .6); }
 .btn-line { background: #fff; color: var(--ink); border-color: var(--rule); }
 .btn-line:hover { border-color: var(--ink); }
 .btn-small { padding: 11px 20px; font-size: 15px; }
 
 /* ---------- type ---------- */
 h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; letter-spacing: -0.01em; }
-h1 { font-size: clamp(2.5rem, 5.4vw, 4rem); line-height: 1.04; }
+h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 1.02; letter-spacing: -.03em; } /* display size: tight leading and tracking */
 h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); line-height: 1.12; max-width: 26ch; text-wrap: balance; }
 h3 { font-size: 1.3rem; line-height: 1.25; }
 p { margin: 0; }
@@ -87,8 +136,14 @@ code { font: 500 0.9em/1 ui-monospace, "Cascadia Mono", Consolas, monospace; bac
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   gap: clamp(32px, 5vw, 72px);
   align-items: center;
-  padding-block: clamp(28px, 6vw, 72px) clamp(48px, 8vw, 104px);
+  padding-block: clamp(36px, 7vw, 88px) clamp(56px, 9vw, 120px);
 }
+.hero-text > * { animation: rise .9s var(--settle) backwards; }
+.hero-text > :nth-child(2) { animation-delay: .08s; }
+.hero-text > :nth-child(3) { animation-delay: .16s; }
+.hero-text > :nth-child(4) { animation-delay: .24s; }
+.hero-text > :nth-child(5) { animation-delay: .32s; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
 .hero-text { display: grid; gap: 24px; justify-items: start; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
@@ -114,7 +169,10 @@ kbd {
   border-radius: 18px;
   padding: 18px 18px 0;
   overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 40px 80px -36px rgba(70, 52, 20, .45), 0 12px 24px -12px rgba(70, 52, 20, .25);
+  transition: transform .6s var(--settle);
 }
+.stage:hover { transform: translateY(-4px); }
 .stage svg { width: 100%; height: auto; }
 
 .says {
@@ -180,7 +238,8 @@ kbd {
 .steps-tight { grid-template-columns: 1fr; gap: 28px; }
 
 .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); }
-.three article { display: grid; gap: 10px; align-content: start; padding-top: 18px; border-top: 2px solid var(--ink); }
+.three article { display: grid; gap: 10px; align-content: start; padding: 24px; border: 1px solid var(--rule); border-radius: 20px; background: linear-gradient(180deg, #fff, #faf7f0); transition: transform .5s var(--settle), box-shadow .5s var(--settle), border-color .3s; }
+.three article:hover { transform: translateY(-4px); border-color: var(--kraft-edge); box-shadow: 0 24px 40px -24px rgba(70, 52, 20, .35); }
 .three p { color: var(--ink-soft); }
 
 .split { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: clamp(24px, 5vw, 72px); align-items: start; }
@@ -207,7 +266,7 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* ---------- small screens ---------- */
 @media (max-width: 860px) {
-  .hero, .split, .install { grid-template-columns: 1fr; }
+  .hero, .split, .install, .vigna-in { grid-template-columns: 1fr; }
   .steps, .three { grid-template-columns: 1fr; }
   .nav { display: none; }
   .top .btn { margin-left: auto; }
@@ -222,4 +281,13 @@ pre code { background: none; padding: 0; font-size: inherit; }
   .say { display: none; }
   .say.last { display: block; opacity: 1; }
   .replay { display: none; }
+  .hero-text > * { animation: none; }
+  .js [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .btn, .stage, .three article { transition: none; }
+  .btn:hover, .stage:hover, .three article:hover { transform: none; }
+}
+
+/* Frostier, solid chrome for people who ask for less transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  .top { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; }
 }

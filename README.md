@@ -1,11 +1,12 @@
-<p align="center"><img src="assets/brand/heyganesh-256.png" width="112" alt="Hey Ganesh"></p>
+# <img src="assets/brand/heyganesh-256.png" width="36" align="absmiddle"> Hey Ganesh
 
-# Hey Ganesh
+**A Windows tutor for students: hold Ctrl+Alt, ask out loud, and it points at what you mean, explains it in speech, or draws it over your screen.**
 
-**Academic Vighnaharta: an AI tutor that draws on your screen.** Hold **Ctrl+Alt** anywhere in Windows and ask out
-loud. Hey Ganesh looks at what you have open, then answers the way a good teacher would: it outlines the button you
-could not find, explains an idea in a spoken voice, or sketches a diagram (2D or 3D) over your desktop, one stroke
-per spoken sentence. It never clicks or types for you.
+```powershell
+irm https://raw.githubusercontent.com/PranavJha-3000/HeyGanesh/main/installer/install-online.ps1 | iex
+```
+
+<p align="center"><img src="assets/readme/demo.gif" width="720" alt="Hold Ctrl+Alt, ask for the structure of DNA in 3D, and a 3D double helix is drawn over the lecture slide."></p>
 
 <p align="center">
   <a href="https://github.com/PranavJha-3000/HeyGanesh/releases/latest/download/HeyGanesh-win-x64.zip"><img alt="Download for Windows" src="https://img.shields.io/badge/Download_for_Windows-1C1814?style=for-the-badge&logo=windows&logoColor=white"></a>
@@ -32,7 +33,8 @@ Existing assistants live in a chat window beside your work. Hey Ganesh answers o
 
 ## Try it in three steps
 
-1. **Install.** Download the zip from the [latest release](https://github.com/PranavJha-3000/HeyGanesh/releases/latest),
+1. **Install.** The command at the top downloads the latest release and runs the steps below for you; read
+   [`installer/install-online.ps1`](installer/install-online.ps1) first if you like. By hand: download the zip from the [latest release](https://github.com/PranavJha-3000/HeyGanesh/releases/latest),
    choose Extract All, then right-click `install.ps1` and Run with PowerShell. It installs for your account only and
    needs no admin rights. The app is not code-signed yet, so SmartScreen may warn: choose More info, then Run anyway.
 2. **Add your keys.** The tray's **Keys…** screen opens on first run. Keys are stored in Windows Credential Manager.
@@ -42,7 +44,7 @@ Existing assistants live in a chat window beside your work. Hey Ganesh answers o
 
 | | |
 |---|---|
-| **Points** | Outlines the element you asked about. It reads the window's UI Automation tree first, plus up to 40 lines of on-screen text from Windows' built-in OCR, and lets a model choose from a ranked list of candidates. A vision model is only the fallback. |
+| **Points** | Outlines the element you asked about, and never clicks or types for you. It reads the window's UI Automation tree first, plus up to 40 lines of on-screen text from Windows' built-in OCR, and lets a model choose from a ranked list of candidates. A vision model is only the fallback. |
 | **Explains** | A tutor model answers academic and technical questions, grounded in what is on your screen, and speaks the answer. |
 | **Draws** | For "how does..." questions the model writes a short program in a drawing language. A sandboxed worker runs it, a mark check runs before each pen stroke, and the strokes are paced by the speech. The program itself chooses 2D or 3D. |
 | **Replays** | Every taught turn is saved locally. "Recent lessons" in the tray replays a stored drawing without calling any model. |

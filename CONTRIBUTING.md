@@ -49,4 +49,12 @@ Ask in [Discussions](https://github.com/PranavJha-3000/HeyGanesh/discussions). U
 [issue](https://github.com/PranavJha-3000/HeyGanesh/issues/new/choose) for a bug or a concrete request.
 Security problems: please do not open a public issue; email the maintainer through the address on the GitHub profile.
 
+## How fast you will hear back
+
+The aim is a first reply to every new issue, pull request or discussion within one day. A first reply is a human
+saying one of: "reproduced, here is what I think", "I need your Windows version, scale and the log lines", "this is
+a duplicate of …", or "out of scope, because …". It is not a promise to fix it that day. Maintainer routine: watch the
+repository for all activity, label each new issue (`bug`, `enhancement`, `question`) when replying, ask for what the
+issue form did not get, and close duplicates with a link. If a day was missed, the next reply says so.
+
 By contributing you agree your work is released under the [MIT License](LICENSE).

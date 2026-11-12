@@ -1,3 +1,11 @@
+## 2026-11-12 · claude-sonnet-5-5 (repo launch readiness, release v1.1.0)
+
+Did: Audited the repo against a 16-item open-source checklist (4 pass, 12 fail), then did the top five: MIT `LICENSE`, `CONTRIBUTING.md`, bug and feature issue forms, `CHANGELOG.md`, version 1.1.0 in `Directory.Build.props`, topics, Discussions on, release v1.1.0 with `HeyGanesh-win-x64.zip` (built with `installeruild.ps1 -Zip`, 1.1.0.0, TraySmoke --assert-install 16 PASS). Deleted the merged `docs/readme-description` branch and the stale kilo worktree.
+Left: demo GIF at the top of the README (ffmpeg is not installed), a one-command install script, a 1280x640 social preview (upload in repo Settings only), good-first-issue issues (the label exists, nothing uses it), a Show HN draft, a written reply-time promise (the owner's to make). Local `feat/plan-providers` is merged but checked out in the main folder.
+Watch: the release zip is built from the committed tree, unlike v1.0.0's. The three secret-pattern hits in history are fake fixtures in `ElementSelectionSmokeHost.Text.cs` (seen by prefix only); run gitleaks to be sure. `gh-pages` is the landing-page deploy branch: keep it.
+Next: the GIF, then the one-command install.
+Verified: solution build -warnaserror 0/0; scan-secrets and scan-forbidden pass; install round trip 16 PASS.
+
 ## 2026-11-12 · claude-sonnet-5-5 (notch-style settings, DEC-082)
 
 Did: Tray **Settings…**: `SettingsPill` (a notch hanging from the top edge, spring drop), `ProviderStatusModel`, `TeacherPreference` + pure `ShellHost.Resolve`. Rows for DeepSeek key / Claude plan / Codex plan with Use, Add key, Sign in, Get. PS-1 `--assert-provider-model` 12 PASS (CI G-28), PS-2 `--assert-settings-window` 9 PASS (local). Two pinned menu rows now list `Settings…`. Looked at the window's own pixels at 150 % scale.

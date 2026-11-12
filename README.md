@@ -192,9 +192,13 @@ dotnet build tools/TraySmoke -c Debug -warnaserror
 
 ## For contributors
 
-Start with [`AGENTS.md`](AGENTS.md) and [`docs/ai/`](docs/ai/): `ARCHITECTURE.md` (modules), `FLOW.md` (call paths),
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first, then [`AGENTS.md`](AGENTS.md) and [`docs/ai/`](docs/ai/): `ARCHITECTURE.md` (modules), `FLOW.md` (call paths),
 `TEST-CHECKLIST.md` (verification rows), `DECISIONS.md` (why things are the way they are), `HANDOVER.md` (current state).
 Most rows run offline and need no keys.
+
+## License
+
+[MIT](LICENSE). The vendored drawing stage and three.js keep their own MIT notices (see Third-party code below).
 
 ## Credits and inspiration
 

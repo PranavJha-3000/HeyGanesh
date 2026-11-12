@@ -2,5 +2,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <!-- The one place the version lives: the installer reads it from the built Tray.exe, and the release tag matches. -->
+    <Version>1.1.0</Version>
   </PropertyGroup>
 </Project>

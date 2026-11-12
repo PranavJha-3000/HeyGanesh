@@ -1,0 +1,22 @@
+name: Feature request
+description: Something you would like Hey Ganesh to do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to learn or do
+      description: The situation first, then what got in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: Hey Ganesh points, explains and draws. It never clicks or types for you, so ideas that need that are out of scope.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead

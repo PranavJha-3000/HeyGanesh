@@ -1,0 +1,49 @@
+name: Bug report
+description: Something did not work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, what you said, what was on screen.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Hey Ganesh version
+      description: The release you installed, for example v1.1.0, or "built from main".
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and display scale
+      description: For example Windows 11 23H2, 150% scale, two monitors.
+    validations:
+      required: true
+  - type: dropdown
+    id: teacher
+    attributes:
+      label: What was teaching
+      description: Shown at the top of the Settings window.
+      options:
+        - DeepSeek key
+        - Claude Code plan
+        - ChatGPT plan (Codex)
+        - Nothing set up yet
+        - Not sure
+  - type: textarea
+    id: log
+    attributes:
+      label: Log lines
+      description: From the tray's "Open log folder", newest `shell-*.log`. Keys are never written to it, but read it before you paste.
+      render: text

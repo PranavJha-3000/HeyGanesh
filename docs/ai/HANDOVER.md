@@ -1,3 +1,11 @@
+## 2026-11-12 · claude-sonnet-5-5 (the rest of the launch checklist)
+
+Did: README top (title, one-line description, `irm ... | iex` install command, demo GIF), `installer/install-online.ps1` (tested with a local zip and with the live release asset, both into a throwaway target; the literal `irm | iex` was not run, since it would install on this PC), `assets/readme/demo.gif` (9 s cut of the launch video, 1.8 MB), `assets/brand/social-preview.png` (1280x640), `docs/launch/show-hn.md` (draft, not posted), a reply-within-a-day section in CONTRIBUTING, and five good-first-issue issues (#5 to #9).
+Left: upload `assets/brand/social-preview.png` in repo Settings (GitHub has no API for it). Install on a machine that is not this one before posting Show HN. The GIF is cut from the produced launch video, not a fresh screen recording; replace it with a real capture when convenient. The day-one reply promise in CONTRIBUTING is the owner's to keep.
+Watch: `install-online.ps1` uses `throw`, not `exit`, because `exit` under `irm | iex` closes the person's terminal. The installer URL tracks `main`, and the zip it fetches is whatever the latest release is, so keep the zip name `HeyGanesh-win-x64.zip` on every release.
+Next: owner uploads the social preview and posts when ready.
+Verified: scan-secrets and scan-forbidden pass; raw URLs for the script, GIF and preview return 200 after the push.
+
 ## 2026-11-12 · claude-sonnet-5-5 (repo launch readiness, release v1.1.0)
 
 Did: Audited the repo against a 16-item open-source checklist (4 pass, 12 fail), then did the top five: MIT `LICENSE`, `CONTRIBUTING.md`, bug and feature issue forms, `CHANGELOG.md`, version 1.1.0 in `Directory.Build.props`, topics, Discussions on, release v1.1.0 with `HeyGanesh-win-x64.zip` (built with `installeruild.ps1 -Zip`, 1.1.0.0, TraySmoke --assert-install 16 PASS). Deleted the merged `docs/readme-description` branch and the stale kilo worktree.

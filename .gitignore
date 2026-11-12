@@ -13,3 +13,8 @@ graphify-out/
 
 # Hotkey smoke harness event log (see tools/HotkeySmoke)
 smoke.log
+# /brag launch-video output (renders and frames, local only)
+brag-output*/
+
+# archify diagram output (local only)
+.archify/

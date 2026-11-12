@@ -138,7 +138,7 @@ internal static partial class ShellHost
         // Keys come from the key ring (DEC-046): Credential Manager first, then the environment variable. The
         // same answers decide which legs CreateRouter() and CreateLessonClient() compose.
         var typesafeKey = HasKey("typesafe");
-        var deepseekKey = HasKey("deepseek");
+        var teacher = ChooseTeacher();
         var gatewayUrl = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HEYGANESH_QWEN_GATEWAY_URL"));
 
         var trigger = options.Once
@@ -173,7 +173,7 @@ internal static partial class ShellHost
         Console.WriteLine($"  ocr        : {OcrHeader(options.NoOcr)}");
         Console.WriteLine($"  notes      : {NotesState}");
         Console.WriteLine($"  context    : {(options.NoContext ? "off (--no-context)" : $"ON: the last {SessionTurns.Keep} taught turns of this run go with each question (memory only)")}");
-        Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), deepseekKey)}");
+        Console.WriteLine($"  lesson     : {LessonHeader(options.Lesson, RoutesLessons(options, typesafeKey), teacher)}");
         Console.WriteLine($"  dpi        : {dpi}");
         Console.WriteLine();
     }
@@ -193,13 +193,13 @@ internal static partial class ShellHost
     }
 
     /// <summary>The header's lesson line; keep in step with CreateLessonClient() (DEC-027, DEC-074) and CreateRouter() (DEC-036).</summary>
-    private static string LessonHeader(bool on, bool routed, bool key) =>
-        routed ? (key
-            ? "when the route chooses one, or over a drawing on screen: lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); drawn on the stage, 2D or 3D as the program decides"
-            : "when the route chooses one: no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip")
+    private static string LessonHeader(bool on, bool routed, Teacher teacher) =>
+        routed ? (teacher != Teacher.None
+            ? $"when the route chooses one, or over a drawing on screen: lesson model {TeacherName(teacher)}; drawn on the stage, 2D or 3D as the program decides"
+            : "when the route chooses one: no lesson model, DEEPSEEK_API_KEY MISSING and no Claude Code or Codex CLI, so the leg reports its skip")
         : !on ? "off (the Tutor leg teaches; --lesson draws instead)"
-        : key ? "ON (--lesson): lesson model deepseek-flash, DEEPSEEK_API_KEY present (value suppressed); drawn on the stage, 2D or 3D as the program decides; ask over a drawing or click a part to follow up"
-        : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING, so the leg reports its skip";
+        : teacher != Teacher.None ? $"ON (--lesson): lesson model {TeacherName(teacher)}; drawn on the stage, 2D or 3D as the program decides; ask over a drawing or click a part to follow up"
+        : "ON (--lesson): no lesson model, DEEPSEEK_API_KEY MISSING and no Claude Code or Codex CLI, so the leg reports its skip";
 
     private sealed record ShellOptions(
         string Question,

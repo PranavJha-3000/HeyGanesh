@@ -34,6 +34,7 @@ internal sealed class TrayApp : ApplicationContext
     private readonly RecentLessonsSource? _recentSource;
     private RecentLessons? _recent;
     private KeyScreen? _keyScreen;
+    private SettingsPill? _settings;
     private volatile bool _keyScreenOpen;
     private bool _quitting;
 
@@ -60,6 +61,7 @@ internal sealed class TrayApp : ApplicationContext
             menu.Items.Add(line);
         }
 
+        menu.Items.Add(new ToolStripMenuItem("Settings…", null, (_, _) => OpenSettings()));
         menu.Items.Add(new ToolStripMenuItem("Keys…", null, (_, _) => OpenKeys()));
         if (_recentSource is not null)
         {
@@ -121,7 +123,7 @@ internal sealed class TrayApp : ApplicationContext
     internal KeyScreen? OpenKeyScreen => _keyScreen;
 
     /// <summary>What the shell is told before each Ctrl+Alt turn. For TK-2.</summary>
-    internal bool TriggerPaused => _keyScreenOpen || (_recent?.Replaying ?? false);
+    internal bool TriggerPaused => _keyScreenOpen || _settings is not null || (_recent?.Replaying ?? false);
 
     /// <summary>The open Recent lessons window, or null. For RL-4.</summary>
     internal RecentLessons? OpenRecentLessons => _recent;
@@ -199,6 +201,36 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         RefreshStartup();
+    }
+
+    /// <summary>The open settings window, or null. For the tests.</summary>
+    internal SettingsPill? OpenSettingsPill => _settings;
+
+    /// <summary>The menu's Settings… (DEC-082): the notch-style window; one at a time, a second click brings it forward.</summary>
+    internal void OpenSettings()
+    {
+        if (_quitting)
+        {
+            return;
+        }
+
+        if (_settings is not null)
+        {
+            _settings.Activate();
+            return;
+        }
+
+        _settings = new SettingsPill(new ProviderStatusModel(_keys));
+        _settings.FormClosed += (_, _) =>
+        {
+            _settings.Dispose();
+            _settings = null;
+            RefreshKeys();
+            Console.WriteLine("tray: settings closed; Ctrl+Alt asks again");
+        };
+        Console.WriteLine("tray: settings open; Ctrl+Alt is paused until it closes");
+        _settings.Show();
+        _settings.Activate();
     }
 
     /// <summary>The menu's Keys…: one screen at a time; a second click brings it forward.</summary>

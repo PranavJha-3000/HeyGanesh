@@ -1,3 +1,4 @@
+using HeyGanesh.Providers.Core;
 using HeyGanesh.Abstractions;
 using HeyGanesh.TutorEngine;
 using HeyGanesh.Voice;
@@ -30,15 +31,29 @@ internal static partial class ShellHost
     /// header's tutor line (TutorHeader) in step with this gate.
     /// </remarks>
     private static ITutorClient? CreateTutorClient() =>
-        HasKey("deepseek")
-            ? TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { ApiKey = Keys.Reader("deepseek") })
-            : null;
+        ChooseTeacher() switch
+        {
+            Teacher.DeepSeek => TutorClientFactory.CreateDeepSeek(new DeepSeekTutorOptions { ApiKey = Keys.Reader("deepseek") }),
+            var plan when CreatePlanClient(plan) is { } llm => new OwnedLlmTutorClient(llm),
+            _ => null,
+        };
 
     /// <summary>The header's tutor line; keep in step with CreateTutorClient().</summary>
     private static string TutorHeader() =>
-        HasKey("deepseek")
-            ? $"ON: deepseek-flash explains in prose when no lesson is drawn (DEEPSEEK_API_KEY {Keys.Describe("deepseek")})"
-            : "off: no DeepSeek key, so the teaching leg reports its skip (store one with --set-key deepseek)";
+        ChooseTeacher() switch
+        {
+            Teacher.DeepSeek => $"ON: deepseek-flash explains in prose when no lesson is drawn (DEEPSEEK_API_KEY {Keys.Describe("deepseek")})",
+            Teacher.None => "off: no DeepSeek key and no Claude Code or Codex CLI, so the teaching leg reports its skip (store a key with --set-key deepseek)",
+            var plan => $"ON: {TeacherName(plan)} explains in prose when no lesson is drawn",
+        };
+
+    /// <summary>A plan Tutor that owns the CLI client it was built over: the shell's using then frees both.</summary>
+    private sealed class OwnedLlmTutorClient(ILlmClient llm) : ITutorClient
+    {
+        private readonly LlmTutorClient _inner = new(llm);
+        public Task<TutorCompletion> CompleteAsync(TutorPrompt prompt, CancellationToken ct) => _inner.CompleteAsync(prompt, ct);
+        public void Dispose() => llm.Dispose();
+    }
 
     /// <summary>
     /// The scalar-snapshot mapping, written exactly as TutorContext's remarks prescribe. Deliberately

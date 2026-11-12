@@ -170,7 +170,7 @@ internal static partial class TraySmokeHost
             failures = Check(app.OnUi(() => app.Icon.Visible) && registered, $"the icon is visible and registered with the notification area ({(registered ? "Shell_NotifyIconGetRect S_OK" : "not found")})", failures);
 
             var texts = app.OnUi(() => app.MenuTexts);
-            var expected = new[] { "Listening: hold Ctrl+Alt to ask", "deepseek key: present", "typesafe key: missing", "fish key: missing", "gnani key: missing", "Keys…", "-", "Open log folder", "Quit" };
+            var expected = new[] { "Listening: hold Ctrl+Alt to ask", "deepseek key: present", "typesafe key: missing", "fish key: missing", "gnani key: missing", "Settings…", "Keys…", "-", "Open log folder", "Quit" };
             failures = Check(texts.SequenceEqual(expected), $"the menu: status, one presence line per key, Keys…, Open log folder, Quit ({string.Join(" | ", texts)})", failures);
             failures = Check(!texts.Any(t => t.Contains("made-up", StringComparison.Ordinal) || t.Contains("chars", StringComparison.Ordinal)), "no key value, and not even a length, is on the menu", failures);
             failures = Check(GetForegroundWindow() == foregroundBefore, "showing the icon did not take the foreground", failures);

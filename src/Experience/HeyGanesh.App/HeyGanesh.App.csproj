@@ -71,6 +71,8 @@
     <ProjectReference Include="..\..\Intelligence\HeyGanesh.LessonPlanner\HeyGanesh.LessonPlanner.csproj" />
     <ProjectReference Include="..\HeyGanesh.DrawStage\HeyGanesh.DrawStage.csproj" />
     <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.OpenAiCompat\HeyGanesh.Providers.OpenAiCompat.csproj" />
+    <!-- The Claude Code and Codex plan clients (DEC-065/066): teach on a plan, no key (DEC-081). -->
+    <ProjectReference Include="..\..\Providers\HeyGanesh.Providers.ClaudeCode\HeyGanesh.Providers.ClaudeCode.csproj" />
     <!-- The key commands use Security's KeyRing directly (DEC-045), so the reference is stated, not inherited. -->
     <ProjectReference Include="..\..\Foundation\HeyGanesh.Security\HeyGanesh.Security.csproj" />
     <!-- Each taught turn becomes a note in the local store (DEC-058/DEC-059); zero NuGet, Windows' own SQLite. -->

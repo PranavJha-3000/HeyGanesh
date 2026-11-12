@@ -23,6 +23,8 @@ internal static partial class TraySmokeHost
                 "--assert-run" => await RunAssertRunAsync(),
                 "--assert-keys-model" => RunAssertKeysModel(),
                 "--assert-keys-window" => RunAssertKeysWindow(),
+                "--assert-provider-model" => RunAssertProviderModel(),
+                "--assert-settings-window" => RunAssertSettingsWindow(),
                 "--assert-keys-pause" => await RunAssertKeysPauseAsync(),
                 "--assert-startup" => RunAssertStartup(),
                 "--assert-startup-menu" => RunAssertStartupMenu(),

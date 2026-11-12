@@ -217,3 +217,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & 'tools\DrawStageSmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.DrawStageSmoke.exe' --assert-source
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # G-28: the settings window's rules (DEC-082) - which teacher is active, each provider row's words, the saved
+      # choice, no key value in any text - with fake CLIs and an in-memory key store. The window itself (PS-2) is local.
+      - name: G-28 Provider settings model
+        shell: pwsh
+        run: |
+          dotnet build tools\TraySmoke -c Debug -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'tools\TraySmoke\bin\Debug\net8.0-windows10.0.22621.0\HeyGanesh.Tools.TraySmoke.exe' --assert-provider-model
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -94,7 +94,7 @@ internal static partial class TraySmokeHost
                 Application.DoEvents();
 
                 // The first line is the status, which turns to "Listening…" whenever the posted hookLive runs; the rest is fixed.
-                results.Add((tray.MenuTexts.Skip(1).SequenceEqual(new[] { "deepseek key: present", "typesafe key: present", "fish key: present", "gnani key: present", "Keys…", "Start at login", "-", "Open log folder", "Quit" }),
+                results.Add((tray.MenuTexts.Skip(1).SequenceEqual(new[] { "deepseek key: present", "typesafe key: present", "fish key: present", "gnani key: present", "Settings…", "Keys…", "Start at login", "-", "Open log folder", "Quit" }),
                     $"the menu has Start at login after Keys… ({string.Join(" | ", tray.MenuTexts)})"));
                 results.Add((tray.StartupItem == ("Start at login", false) && entry.State == StartupState.Off, "unchecked, and nothing written, until it is chosen"));
 

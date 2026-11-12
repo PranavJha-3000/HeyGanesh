@@ -1,3 +1,20 @@
+## 2026-11-12 · claude-sonnet-5-5 (notch-style settings, DEC-082)
+
+Did: Tray **Settings…**: `SettingsPill` (a notch hanging from the top edge, spring drop), `ProviderStatusModel`, `TeacherPreference` + pure `ShellHost.Resolve`. Rows for DeepSeek key / Claude plan / Codex plan with Use, Add key, Sign in, Get. PS-1 `--assert-provider-model` 12 PASS (CI G-28), PS-2 `--assert-settings-window` 9 PASS (local). Two pinned menu rows now list `Settings…`. Looked at the window's own pixels at 150 % scale.
+Step 3 (same day): inline key check, Tab order, keyboard-only focus ring, accessible names, text fade, High Contrast palette; PS-1 now 14 PASS, PS-2 13 PASS; looked at the window's pixels again.
+Left: an always-visible collapsed pill, the choice applying without a restart (the shell builds its clients once at start), a blur material (not possible in WinForms). Not run: a Codex sign-in or turn, a signed-out Claude CLI, the window on a second monitor or at 100 %.
+Watch: the window is excluded from capture, so a screenshot is blank; read the PNGs `--assert-settings-window` writes under `%TEMP%\heyganesh-traysmoke\settings-shot-*`. `.Read(` is banned in Tray sources by `--assert-source` (hence `Load`/`Save`). The choice applies at the next start.
+Next: owner tries Settings… by hand (a real click-through, 100 % scale, a second monitor), then commit.
+Verified: `dotnet build HeyGanesh.sln -warnaserror` 0/0; TraySmoke provider-model 12, settings-window 9, source, keys-model, startup-menu, tray, drawing-leg, log PASS.
+
+## 2026-11-12 · claude-sonnet-5-5 (teach on a Claude or Codex plan, DEC-081)
+
+Did: `ChooseTeacher` (DeepSeek key, else Claude plan, else Codex plan) feeds the lesson model, the Tutor (`LlmTutorClient`) and both header lines. App now references Providers.ClaudeCode. Live: `HeyGanesh.App.exe --once --lesson --question x` taught through the Claude plan with the Tutor answering in 7 s.
+Left: step 2, a settings window with provider status, in-app key entry and sign-in; step 3, its polish. Owner wants it notch-style, like HeyClicky's notch or Natively (a floating pill under the top edge), not a dialog. WebView2 is already pulled in transitively by the App, so check before adding anything. Codex live (CX-4) not run.
+Watch: installed is not signed in. The TEST-CHECKLIST row that expects KEY ERROR with no keys still holds (Element Selection's TypeSafe key), but the header tutor/lesson lines now depend on the CLIs on PATH.
+Next: FEATURE-012 step 2.
+Verified: App, TraySmoke build -warnaserror 0/0; TraySmoke --assert-source PASS, --assert-drawing-leg PASS; live Claude-plan turn above. Not run: --assert-notes-shell (refuses with keys stored), a Codex turn, a signed-out CLI.
+
 ## 2026-11-09 · claude-sonnet-5-5 (landing page, DEC-080)
 
 Did: `site/` static landing page: hero with an animated pen-drawn lesson, three steps, what it does, the Gnani voice section, install steps, FAQ. Checked in the browser pane at desktop and phone width (no sideways scroll); fixed a stray dot left by undrawn strokes.

@@ -87,6 +87,26 @@
 ---
 
 <!-- DEC-<nnn> ENTRIES BELOW THIS LINE — newest first -->
+## DEC-082 — 2026-11-12 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** The tray gets a **Settings…** window (`SettingsPill`, WinForms, no new dependency) shaped like a notch: it hangs from the top edge of the cursor's monitor, dark, flat on top and rounded below, and drops open on a critically damped spring (an ease when Windows animations are off). It shows who is teaching, the state of three providers (DeepSeek key, Claude Code plan, Codex plan) and the one action each needs: Use, Add key (a masked box, saved through the key ring), Sign in (opens the CLI's own `claude auth login` / `codex login` in a console window), or Get (the download page). The person's choice is one word in `teacher.txt` under the data folder (`TeacherPreference`); `ShellHost.Resolve` (pure) decides the teacher from that choice and what is available, and the shell and the window both call it. All rules live in `ProviderStatusModel` (no UI). The window is excluded from screen capture. `Keys…` and its screen stay (a key can still be replaced or removed there).
+- **Why:** DEC-081 let a plan teach, but choosing and signing in meant a terminal. The owner wants it like HeyClicky's notch or Natively: a small floating pill, not a dialog.
+- **Alternatives rejected:** a WebView2 page (the App already carries it, but a second web window for four rows costs a message bridge and a security review); a standard dialog (not what the owner asked for); probing sign-in with `claude auth status` (a process per refresh; the credential file's existence is the hint).
+- **Known gaps:** the choice is read at start, so it applies the next time Hey Ganesh starts (the window says so). "Signed in" is a file-exists hint, never read. Replace/remove of the DeepSeek key stays on the old Keys… screen. Step 3 (DEC-082, same day) added: inline key check while typing (a space inside cannot be saved and says why), Tab order with the key box after DeepSeek's, a focus ring that shows for the keyboard only, accessible names ("Claude Code plan: Use"), a 0.18 s fade for changed text (instant with animations off), and the system palette under Windows High Contrast. Not done: an always-visible collapsed pill, the choice applying without a restart, letter-spacing (WinForms has no tracking), a blur material (no backdrop-filter in WinForms; the window is opaque, so reduced-transparency has nothing to switch). Codex sign-in not run live.
+- **Date:** 2026-11-12
+- **Model version:** claude-sonnet-5-5
+
+## DEC-081 — 2026-11-12 — claude-sonnet-5-5
+
+- **Status:** accepted
+- **Decision:** The lesson model and the Tutor choose their teacher in one place (`ShellHost.ChooseTeacher`): the DeepSeek key if stored, else the Claude Code plan (`claude` found), else the Codex plan (`codex` found), else none (the legs report their skip). The plan clients are `ClaudeCodeLlmClient` / `CodexLlmClient` (DEC-065/066); the Tutor reaches them through `LlmTutorClient`, an `ITutorClient` over `ILlmClient` in the App. The header's tutor and lesson lines name the teacher.
+- **Why:** a person with no DeepSeek key could not use the teaching legs at all; most people have a Claude or ChatGPT plan already.
+- **Alternatives rejected:** putting the plan path inside TutorEngine (it must stay free of provider assemblies, TU-8); a user-chosen provider now (needs the settings window, FEATURE-012 step 2).
+- **Known gaps:** installed is not signed in: a signed-out CLI fails on the first lesson with its own AuthFailed sentence. Vision (the fallback locator) and the router still need their DeepSeek/TypeSafe keys. Codex does not stream, so its drawings start late. Codex not run live here.
+- **Date:** 2026-11-12
+- **Model version:** claude-sonnet-5-5
+
 ## DEC-080 — 2026-11-09 — claude-sonnet-5-5
 
 - **Status:** accepted

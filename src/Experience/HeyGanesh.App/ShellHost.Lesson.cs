@@ -52,9 +52,10 @@ internal static partial class ShellHost
     /// </remarks>
     private static ILlmClient? CreateLessonClient()
     {
-        if (!HasKey("deepseek"))
+        var teacher = ChooseTeacher();
+        if (teacher != Teacher.DeepSeek)
         {
-            return null;
+            return CreatePlanClient(teacher); // a plan CLI (DEC-081), or null: no teacher, the leg reports its skip
         }
 
         return new OpenAiCompatLlmClient(new OpenAiCompatOptions
